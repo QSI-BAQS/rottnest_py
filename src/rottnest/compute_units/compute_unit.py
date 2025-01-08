@@ -37,7 +37,7 @@ class ComputeUnit(abc.ABC):
         '''
         return maths.ceil(10 + 4 * maths.log2(1 / eps))
 
-    def stage_1(self, n_registers=None: int):
+    def stage_1(self, n_registers: int = None):
         '''
         Time required for stage 1 of the pipeline
         During this stage we perform: 
@@ -51,11 +51,20 @@ class ComputeUnit(abc.ABC):
         '''
         if n_registers is None:
             n_registers = self.register_max
+        return max(2 * n_registers, maths.ceil(n_registers / bell_rate)) 
+
+    def stage_2(self, n_registers: int = None): 
+        '''
+            Completes when IO written in 
+        '''
+        if n_registers is None:
+            n_registers = self.register_max
+        return 2 * n_registers 
 
     def _calc_rz_limit(
         self,
-        n_reg: int,
         eps: float,
+        n_registers: int = None,
         overclock_rate: float = 1):
         '''
     Calculates the cap on rz gates for this 
@@ -72,18 +81,11 @@ class ComputeUnit(abc.ABC):
     TODO: Forcing order of inputs may provide speedups   
     TODO: Dequeue inputs from register block, double up with teleported bells    
         ''' 
-        # Time to generate bell states
-        bell_input_time = maths.ceil(n_reg / bell_rate)
-        graph_construction_time = 2 * n_reg   
+        # Number of T gates expected in first two stages
+        t_gen = t_rate * (
+            self.stage_1(n_registers=n_registers) + 
+            self.stage_2(n_registers=n_registers))
 
-        stage_1 = max(bell_input_time, graph_construction_time)
-
-        # Time to pass inputs to graph 
-        stage_2 = 2 * n_reg 
-        
-        # Number of T gates expected in first
-        # two stages
-        t_gen = (stage_1 + stage_2) * t_rate
-
+        # Ceil rather than floor as if this is zero then we're in trouble
         n_rz_gates = maths.ceil(self.overclock_rate * t_get / self._eps_to_t_count(eps))
         return n_rz_gates
