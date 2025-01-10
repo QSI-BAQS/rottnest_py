@@ -13,14 +13,18 @@ def handle_websocket():
         abort(400, 'Expected WebSocket request.')
 
     while True:
+        # TODO: RPC this whole thing
         try:
             message = wsock.receive()
-            result = socket_binds.get(message, f"Error: {message} not recognised") 
-            wsock.send(result)
+            result = socket_binds.get(message, err) 
+            wsock.send(result(message))
         except WebSocketError:
             break
 
-def get_subtype():
+def err(message, *args, **kwargs):
+    return f"Error: {message} not recognised"
+
+def get_subtype(*args, **kwargs):
     return json.dumps(architecture.get_subtype())
 
 # Socket commands
