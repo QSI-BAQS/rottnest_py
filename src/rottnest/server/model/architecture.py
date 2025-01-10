@@ -11,7 +11,7 @@ def get_region_subtypes() -> str:
         Exposes the names of the regions as a json object
     '''
     # Import architecture, get subtype names
-    return {i: list(region_types[i].keys()) for i in region_types} 
+    return {i: list(region_types[i].keys()) for i in region_types}
    
 def get_factory_types() -> str: 
     return ''
