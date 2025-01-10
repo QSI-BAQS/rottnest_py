@@ -1,6 +1,14 @@
 import abc
 import math as maths
 
+'''
+    Base class describing an arbitrary collection of computation units
+    For example superconducting architectures, ion traps etc 
+    A compute unit is a fixed layout that is executed against 
+
+    Supports benchmarking, full compilation and simulation for probabalistic structures
+'''
+
 class ComputeUnit(abc.ABC):
 
     def __init__(
@@ -27,9 +35,16 @@ class ComputeUnit(abc.ABC):
         '''
         self.bell_rate = bell_rate
         self.t_rate = t_rate
-        self.register_max = register_max
-        self.t_buffer_max = t_buffer_max
-        self.bell_buffer_max = bell_buffer_max
+
+        self.num_registers = register_max
+        self.num_t_buffers = t_buffer_max
+        self.num_bell_buffers = bell_buffer_max
+
+    def benchmark(self, computation: Computable): 
+        pass
+
+    def set_t_rate(self, t_rate):
+        self.t_rate = t_rate
 
     def _eps_to_t_count(self, eps):
         '''
@@ -50,22 +65,56 @@ class ComputeUnit(abc.ABC):
             for the second stage
         '''
         if n_registers is None:
-            n_registers = self.register_max
-        return max(2 * n_registers, maths.ceil(n_registers / bell_rate)) 
+            n_registers = self.num_registers
+        return max(2 * n_registers, maths.ceil(n_registers / self.bell_rate)) 
 
     def stage_2(self, n_registers: int = None): 
         '''
             Completes when IO written in 
         '''
         if n_registers is None:
-            n_registers = self.register_max
+            n_registers = self.num_registers
         return 2 * n_registers 
 
-    def _calc_rz_limit(
+    @abc.abstractmethod
+    def approx_rz_limit(
+        self,
+        eps,
+        n_registers: int = None,
+        overclock_rate: float = 1,
+        pre_warm = 0):
+        '''
+            Approximates the RZ limit
+            Whereas the calc function runs a simulation to evaluate a reasonable RZ rate, 
+            this function instead performs a speculative guess as to the number of T gates 
+            based on factories and pre-warm 
+        '''
+        pass
+
+
+    @abc.abstractmethod
+    def simulate_rz_limit(
+        self,
+        eps,
+        n_registers: int = None,
+        overclock_rate: float = 1,
+        pre_warm = 0):
+        '''
+            Simulates the RZ limit
+            Whereas the calc function runs a simulation to evaluate a reasonable RZ rate, 
+            this function instead performs a speculative guess as to the number of T gates 
+            based on factories and pre-warm 
+        '''
+        pass
+
+        
+    
+    def calc_rz_limit(
         self,
         eps: float,
         n_registers: int = None,
-        overclock_rate: float = 1):
+        overclock_rate: float = 1,
+        pre_warm = 0):
         '''
     Calculates the cap on rz gates for this 
     computation unit. 
@@ -82,10 +131,10 @@ class ComputeUnit(abc.ABC):
     TODO: Dequeue inputs from register block, double up with teleported bells    
         ''' 
         # Number of T gates expected in first two stages
-        t_gen = t_rate * (
+        t_gen = self.t_rate * (
             self.stage_1(n_registers=n_registers) + 
             self.stage_2(n_registers=n_registers))
 
         # Ceil rather than floor as if this is zero then we're in trouble
-        n_rz_gates = maths.ceil(self.overclock_rate * t_get / self._eps_to_t_count(eps))
+        n_rz_gates = maths.ceil(overclock_rate * t_gen / self._eps_to_t_count(eps))
         return n_rz_gates

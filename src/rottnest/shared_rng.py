@@ -1,3 +1,6 @@
+# Used for annotating classes that take themselves as arguments
+from __future__ import annotations
+
 import numpy as np
 
 class SharedRNG:
@@ -15,7 +18,9 @@ class SharedRNG:
         self.seed = seed
         if generator is None:
             generator = np.random.default_rng(seed) 
-        self._generator = generator._generator
+        else:
+            generator = generator._generator
+        self._generator = generator
 
     def rng_uniform(self, *args, **kwargs): 
         '''
