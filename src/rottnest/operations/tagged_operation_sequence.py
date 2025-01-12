@@ -26,7 +26,6 @@ class OperationSequenceFactory(OperationTagFactory):
         pass
 
 
-
 def OperationSequenceTag(OperationTag):
     def __init__(self, start, end):
         
