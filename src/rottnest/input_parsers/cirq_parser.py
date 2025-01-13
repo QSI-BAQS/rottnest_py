@@ -1,10 +1,12 @@
+from functools import partial
+
 import cirq
 import cabaliser.gates as cabaliser_gates
 
 
 class QubitLabelTracker:
     def __init__(self):
-        self._labels = dict
+        self._labels = dict()
 
     def __getitem__(self, qubit_label):
         return self.get(qubit_label)
@@ -13,12 +15,11 @@ class QubitLabelTracker:
         '''
         Attempting to get a label 
         '''
-        index = self._labels.get(label, None)
-        if label is None: 
-            idx = len(self.labels)
-            self.labels[label] = idx
-            return idx 
-        return self.labels[label]
+        index = self._labels.get(qubit_label, None)
+        if index is None: 
+            index = len(self._labels)
+            self._labels[qubit_label] = index
+        return index
 
     def gets(self, *labels):
         return tuple(map(self.get, labels))
@@ -85,6 +86,7 @@ Format for monkey patching:
 '''
 def simple_operator(cabaliser_op):
     def _wrap(
+        _,  # Look... 
         self,
         operation_sequence,
         qubit_labels: QubitLabelTracker,
@@ -92,18 +94,19 @@ def simple_operator(cabaliser_op):
 
         operation_sequence.append(
             cabaliser_op,
-            *qubit_labels.get(self.qubits)
+            *qubit_labels.gets(*self.qubits)
         )
     return _wrap, 1, 1, 0 
-pauli_X = simple_operator(cabaliser_gates.X)
-pauli_Y = simple_operator(cabaliser_gates.Y)
-pauli_Z = simple_operator(cabaliser_gates.Z)
+pauli_X = partial(simple_operator, cabaliser_gates.X)
+pauli_Y = partial(simple_operator, cabaliser_gates.Y)
+pauli_Z = partial(simple_operator, cabaliser_gates.Z)
 
 def h_pow():
     '''
         Hadamard adapter
     '''
     def _wrap(
+        _,  # Look... 
         self,
         operation_sequence,
         qubit_labels: QubitLabelTracker,
@@ -111,8 +114,8 @@ def h_pow():
 
         if self.gate.exponent == 1.0:
             operation_sequence.append(
-                gates.H,
-                *qubit_labels.get(self.qubits)
+                cabaliser_gates.H,
+                *qubit_labels.gets(*self.qubits)
             )
         else:
             # TODO
@@ -124,14 +127,15 @@ def x_pow():
        x_pow adapter 
     '''
     def _wrap(
+        _,  # Look... 
         self,
         operation_sequence,
         qubit_labels: QubitLabelTracker,
         rz_tags: QubitLabelTracker):
         if self.gate.exponent == 1.0:
             operation_sequence.append(
-                gates.X,
-                *qubit_labels.get(self.qubits)
+                cabaliser_gates.X,
+                *qubit_labels.gets(*self.qubits)
             )
         else:
             # TODO
@@ -143,6 +147,7 @@ def y_pow():
         Hadamard adapter
     '''
     def _wrap(
+        _,  # Look... 
         self,
         operation_sequence,
         qubit_labels: QubitLabelTracker,
@@ -150,8 +155,8 @@ def y_pow():
         # Direct comparison to 1 is bad
         if self.gate.exponent == 1.0:
             operation_sequence.append(
-                gates.Y,
-                *qubit_labels.get(self.qubits)
+                cabaliser_gates.Y,
+                *qubit_labels.gets(*self.qubits)
             )
         else:
             # TODO
@@ -163,14 +168,15 @@ def z_pow():
         Hadamard adapter
     '''
     def _wrap(
+        _,  # Look... 
         self,
         operation_sequence,
         qubit_labels: QubitLabelTracker,
         rz_tags: QubitLabelTracker):
         if self.gate.exponent == 1.0:
             operation_sequence.append(
-                gates.Z,
-                *qubit_labels.get(self.qubits)
+                cabaliser_gates.Z,
+                *qubit_labels.gets(*self.qubits)
             )
         else:
             # TODO
@@ -185,16 +191,17 @@ def rz():
         # number of Rz gates 
     '''
     def _wrap(
+        _,  # Look... 
         self,
         operation_sequence,
         qubit_labels: QubitLabelTracker,
         rz_tags: QubitLabelTracker):
         
         tag = rz_tags(self.angle, self.eps)
-        target = qubit_labels.get(self.qubits)[0]
+        target = qubit_labels.gets(*self.qubits)[0]
 
         operation_sequence.append(
-            gates.RZ,
+            cabaliser_gates.RZ,
             (target, tag)
         )
     return _wrap, 1, 1, 1 
@@ -207,26 +214,27 @@ def rx():
         # number of Rz gates 
     '''
     def _wrap(
+        _,  # Look... 
         self,
         operation_sequence,
         qubit_labels: QubitLabelTracker,
         rz_tags: QubitLabelTracker):
         
         tag = rz_tags(self.angle, self.eps)
-        target = qubit_labels.get(self.qubits)[0]
+        target = qubit_labels.gets(*self.qubits)[0]
 
         operation_sequence.append(
-            gates.H,
+            cabaliser_gates.H,
             (target,) 
         )
 
         operation_sequence.append(
-            gates.RZ,
+            cabaliser_gates.RZ,
             (target, tag) 
         )
 
         operation_sequence.append(
-            gates.H,
+            cabaliser_gates.H,
             (target,) 
         )
 
@@ -242,54 +250,55 @@ def ry():
         # number of Rz gates 
     '''
     def _wrap(
+ 
         self,
         operation_sequence,
         qubit_labels: QubitLabelTracker,
         rz_tags: QubitLabelTracker):
         
         tag = rz_tags(self.angle, self.eps)
-        target = qubit_labels.get(self.qubits)[0]
+        target = qubit_labels.gets(self.qubits)[0]
 
         operation_sequence.append(
-            gates.S,
+            cabaliser_gates.S,
             (target,) 
         )
 
         operation_sequence.append(
-            gates.H,
+            cabaliser_gates.H,
             (target,) 
         )
 
         operation_sequence.append(
-            gates.H,
+            cabaliser_gates.H,
             (target,) 
         )
 
         operation_sequence.append(
-            gates.RZ,
+            cabaliser_gates.RZ,
             (target, tag) 
         )
 
         operation_sequence.append(
-            gates.H,
+            cabaliser_gates.H,
             (target,) 
         )
 
         operation_sequence.append(
-            gates.Sdag,
+            cabaliser_gates.Sdag,
             (target,) 
         )
 
     return _wrap, 1, 5, 1
 
 
-cx_pow = simple_operator(cabaliser_gates.CNOT)
-cz_pow = simple_operator(cabaliser_gates.CZ)
+cx_pow = partial(simple_operator, cabaliser_gates.CNOT)
+cz_pow = partial(simple_operator, cabaliser_gates.CZ)
 
 
 
-def __blank(self, *args, **kwargs):
-    pass
+def __blank(*args, **kwargs):
+    return lambda x: x, 0, 0, 0 
 
 class CirqParser:
     def parse(
@@ -324,11 +333,15 @@ known_gates = {
     None.__class__: __blank, # I don't know why this classical operations kick up nones like this
 }
 
+def _parse_cabaliser(self, *args, **kwargs):
+    return self.gate._parse_cabaliser(self, *args, **kwargs)
+
 def _monkey_patch():
     '''
         Injects the parsers into the cirq objects
     '''
+    cirq.ops.gate_operation.GateOperation._parse_cabaliser = _parse_cabaliser
     for gate_type, parser in known_gates.items(): 
         if gate_type is not None.__class__:
-            gate_type._parse_cabaliser = parser
+            gate_type._parse_cabaliser = parser()[0]
 _monkey_patch()
