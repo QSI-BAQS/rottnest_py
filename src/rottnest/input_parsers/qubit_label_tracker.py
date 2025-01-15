@@ -14,6 +14,9 @@ class RegisterContext:
             context = set()
         self._context = context
 
+    def __iter__(self):
+        return self._context.__iter__()
+
     def __in__(self, label):
         '''
             Checks if an item is in context
@@ -22,6 +25,7 @@ class RegisterContext:
 
     def get(self, label): 
         pass
+
     def copy(self):
         '''
             Triggers a copy of the context
@@ -41,10 +45,11 @@ class QubitLabelTracker:
     '''
     def __init__(self, context: RegisterContext = None):
         self._labels = dict()
+        self._local_labels = dict()
         if context is None:
             context = RegisterContext() 
         self._context = context
-        
+        self.n_inputs = 0 
 
     def __getitem__(self, qubit_label):
         return self.get(qubit_label)
@@ -54,7 +59,13 @@ class QubitLabelTracker:
         Attempting to get a label 
         '''
         index = self._labels.get(qubit_label, None)
+
+        # Qubit has not yet been encountered
         if index is None: 
+            # Index was teleported from the context
+            # Increase Bell state overhead
+            if index in self._context:
+                n_inputs += 1
             index = len(self._labels)
             self._labels[qubit_label] = index
         return index

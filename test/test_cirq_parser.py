@@ -36,18 +36,19 @@ class CirqTest(unittest.TestCase):
         wid(op)
 
         wid.decompose()
-        return
+        return wid.get_n_qubits()
     
     def test_ghz(self):
 
         prev_msg_len = 0
         for i in range(2, 10000, 69):
             start = time.time()
-            self.exec_ghz(n_qubits=i)
+            n_qubits = self.exec_ghz(n_qubits=i)
             end = time.time()
-            msg = '\b' * prev_msg_len + f"\rExecuted: {i} in {end - start} seconds"
+            msg = '\b' * (prev_msg_len - 1) + f"\rExecuted: {n_qubits} in {end - start} seconds"
             print(msg , flush=False, end='')
             prev_msg_len = len(msg)
+
 
 
 #n_qubits = 100 
@@ -65,4 +66,6 @@ class CirqTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    time.sleep(0.1)
+    print()
     unittest.main()

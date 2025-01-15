@@ -63,6 +63,9 @@ pauli_X = partial(simple_operator, cabaliser_gates.X)
 pauli_Y = partial(simple_operator, cabaliser_gates.Y)
 pauli_Z = partial(simple_operator, cabaliser_gates.Z)
 
+measure = partial(simple_operator, cabaliser_gates.MEAS)
+
+
 def h_pow():
     '''
         Hadamard adapter
@@ -84,7 +87,45 @@ def h_pow():
             raise Exception("Not Implemented")
     return _wrap, 1, None, None
 
+
+def X_to_Z(gate_fn):
+    def _wrap(self, operation_sequence, qubit_labels, rz_tags): 
+        operation_sequence.append(
+            cabaliser_gates.H,
+            *qubit_labels.gets(*self.qubits)
+        )
+        fn(self, operation_sequence, qubit_labels, rz_tags)
+        operation_sequence.append(
+            cabaliser_gates.H,
+            *qubit_labels.gets(*self.qubits)
+        )
+
+def Y_to_Z(gate_fn):
+    def _wrap(self, operation_sequence, qubit_labels, rz_tags): 
+        operation_sequence.append(
+            cabaliser_gates.S,
+            *qubit_labels.gets(*self.qubits)
+        )
+        operation_sequence.append(
+            cabaliser_gates.H,
+            *qubit_labels.gets(*self.qubits)
+        )
+        fn(self, operation_sequence, qubit_labels, rz_tags)
+        operation_sequence.append(
+            cabaliser_gates.H,
+            *qubit_labels.gets(*self.qubits)
+        )
+        operation_sequence.append(
+            cabaliser_gates.Sdag,
+            *qubit_labels.gets(*self.qubits)
+        )
+
 def x_pow():
+    exponent_map = {
+        1.0: _X_gate,  
+        0.5: X_to_Z(_S_gate), 
+        -0.5: X_to_Z(_Sdag_gate)
+    }
     '''
        x_pow adapter
     '''
@@ -125,24 +166,61 @@ def y_pow():
             raise Exception("Not Implemented")
     return _wrap, 1, None, None
 
+
+def _X_gate(self, operation_sequence, qubit_labels_rz_tags):
+    operation_sequence.append(
+            cabaliser_gates.X,
+            *qubit_labels.gets(*self.qubits)
+        )
+
+def _Z_gate(self, operation_sequence, qubit_labels_rz_tags):
+    operation_sequence.append(
+            cabaliser_gates.Z,
+            *qubit_labels.gets(*self.qubits)
+        )
+
+def _S_gate(self, operation_sequence, qubit_labels_rz_tags):
+    operation_sequence.append(
+            cabaliser_gates.S,
+            *qubit_labels.gets(*self.qubits)
+        )
+
+def _Sdag_gate(self, operation_sequence, qubit_labels_rz_tags):
+    operation_sequence.append(
+            cabaliser_gates.Sdag,
+            *qubit_labels.gets(*self.qubits)
+        )
+
+def _rz_gate(self, operation_sequence, qubit_labels_rz_tags):
+        tag = rz_tags(self.angle, self.eps)
+        target = qubit_labels.gets(*self.qubits)[0]
+
+        operation_sequence.append(
+            cabaliser_gates.RZ,
+            (target, tag)
+        )
+
 def z_pow():
     '''
         Hadamard adapter
     '''
+    # Indirection table for pre-set angles
+    exponent_map = {
+        1.0: _Z_gate,  
+        0.5: _S_gate, 
+        -0.5: _Sdag_gate
+    } 
+
     def _wrap(
-        _,  # Look...
+        gate,
         self,
         operation_sequence: OperationSequence,
         qubit_labels: QubitLabelTracker,
         rz_tags: QubitLabelTracker):
-        if self.gate.exponent == 1.0:
-            operation_sequence.append(
-                cabaliser_gates.Z,
-                *qubit_labels.gets(*self.qubits)
-            )
-        else:
-            # TODO
-            raise Exception("Not Implemented")
+        
+        fn = exponent_map.get(gate.exponent, _rz_gate) 
+        fn(self, operation_sequence, qubit_labels, rz_tags)
+
     return _wrap, 1, None, None
 
 def rz():
@@ -266,24 +344,29 @@ class CirqParser:
     '''
         Cirq Parser Object
     '''
-    def __init__(self, memory_bound, rz_bound, sequence_length):
+    def __init__(self, memory_bound, rz_bound, sequence_length, context=None):
         self.memory_bound = memory_bound
         self.rz_bound = rz_bound
         self.sequence_length = sequence_length
+        self._context = context
 
     def parse(
         circ_iter: cirq.circuits.circuit.Circuit,
     ):
 
-        operation_sequence = None 
         qubit_tracker = QubitLabelTracker()
         tag_tracker = RzTagTracker()
 
-        sequence = OperationSequence(self.sequence_length)
+        op = OperationSequence(self.sequence_length)
+
+        # No prior context for the circuit
 
         for moment in circ_iter:
             for gate in moment:
-                pass                                  
+               gate._parse_cabaliser(op, qubit_labels, rz_tracker) 
+
+        widget(op)
+
 
 # Monkey patching list
 # These will all be injected into their associated cirq class objects
@@ -300,9 +383,10 @@ known_gates = {
     cirq.ops.pauli_gates._PauliZ: pauli_Z,
     cirq.ops.common_gates.CXPowGate: cx_pow,
     cirq.ops.common_gates.CZPowGate: cz_pow,
-    cirq.ops.common_gates.MeasurementGate: __blank,
-    cirq.ResetChannel: __blank,
-    cirq.ClassicallyControlledOperation: __blank,
+    cirq.T : rz, 
+    cirq.ops.common_gates.MeasurementGate: measure, 
+    cirq.ResetChannel: __blank,  # Delete from context
+    cirq.ClassicallyControlledOperation: __blank, # Drop onto pauli tracker 
     None.__class__: __blank, # I don't know why the classical operations kick up nones like this
 }
 
