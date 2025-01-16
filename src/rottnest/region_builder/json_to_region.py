@@ -1,8 +1,30 @@
+from t_scheduler.router import *
 from t_scheduler.templates.generic_templates import LayoutNode 
 from t_scheduler.widget.region_types import region_types
 
-def conv(region_type_str, width, height, *args, **kwargs) -> callable:
-    return partial(region_types[region_type_str], *args, width=width, height=height, **kwargs)
+from functools import partial
+
+region_type_map = {}
+for mapping in region_types.values():
+    region_type_map |= mapping
+
+def conv(region_type, width, height, **kwargs) -> callable:
+    if 'downstream' in kwargs:
+        kwargs = {k: v for k, v in kwargs.values() if k != 'downstream'}
+    return partial(region_type_map[region_type], width=width, height=height, **kwargs)
+
+
+default_router = {
+    'CombShapedRegisterRegion': CombRegisterRouter,
+    'RouteBus': StandardBusRouter,
+    'TCultivatorBufferRegion': DenseTCultivatorBufferRouter,
+    'MagicStateFactoryRegion': MagicStateFactoryRouter,
+    'MagicStateBufferRegion': RechargableBufferRouter,
+    'SingleRowRegisterRegion': BaselineRegisterRouter,
+    'PrefilledMagicStateRegion': VerticalFilledBufferRouter,
+    'BellRegion': BellRouter
+}
+
 
 
 example = {
@@ -11,11 +33,12 @@ example = {
 "regions":
 [
 {
-    "region_type": "CombShapedRegion",
+    "region_type": "CombShapedRegisterRegion",
     "x": 0,
     "y": 0,
     "height": 10,
     "width": 10,
+    "incl_top": 0,
     "downstream": [
     {
         "region_type": "RouteBus",
@@ -33,12 +56,11 @@ example = {
                 "bell_rate": 1
             }, 
             {
-                "region_type": "MagicStateFactoryRegion",
+                "region_type": "TCultivatorBufferRegion",
                 "x": 1,
                 "y": 11, 
                 "height": 9,
                 "width": 8,
-                "factory_type": "cultivator" 
             },
             {
                 "region_type": "BellRegion", 
@@ -55,10 +77,20 @@ example = {
 ]
 }
 
+def _json_to_node(obj):
+    downstream = [_json_to_node(child) for child in obj.pop("downstream", [])]
+    return LayoutNode(
+        region_factory = conv(**obj),
+        router_factory = default_router[obj['region_type']],
+        downstream = downstream
+    )
+
+
 def json_to_layout(obj):
     """
     :: obj :: Json equivalent dictionary 
     Json should take the form of a tree rooted on the register region   
     """
-      
-    pass
+    layout = _json_to_node(obj['regions'][0]) # TODO multi-root -> Insert dummy register region as layout root
+
+    return layout
