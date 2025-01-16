@@ -5,6 +5,8 @@ from rottnest.server.model import architecture
 
 import json
 
+saved_architectures = {}
+
 def register_routes(app):
    app.route("/websocket", callback=handle_websocket)
 
@@ -17,14 +19,18 @@ def handle_websocket():
     while True:
         # TODO: RPC this whole thing
         try:
-            message = wsock.receive()
-            result = socket_binds.get(message, err) 
-            wsock.send(result(message))
+            message = json.loads(wsock.receive())
+            # Expect: {'cmd': <cmd here>, 'payload': <arguments here>}
+            cmd_func = socket_binds.get(message['cmd'], err) 
+            wsock.send(cmd_func(message))
         except WebSocketError:
             break
 
 def err(message, *args, **kwargs):
-    return f"Error: {message} not recognised"
+    return json.dumps({
+        'message': 'err',
+        'desc': f"Error: {message['cmd']} not recognised"
+    })
 
 def get_subtype(*args, **kwargs):
     return json.dumps({
@@ -32,14 +38,40 @@ def get_subtype(*args, **kwargs):
         'subtypes': architecture.get_region_subtypes()
     })
 
-
-def use_arch(*args, **kwargs):
+def example_arch(*args, **kwargs):
     return json.dumps({
-        'message': 'usearch',
+        'message': 'example_arch',
         'payload': json_to_region.example
+    }) 
+
+def run_result(message, *args, **kwargs):
+    from ...widget_compilers.main import run
+    arch_id = message['payload']['arch_id']
+    result = run(region_obj=saved_architectures[arch_id])
+
+    return json.dumps({
+        'message': 'run_result',
+        'payload': result.json
     })
+
+
+def use_arch(message, *args, **kwargs):
+    arch_obj = message['payload']
+    import random
+    arch_id = random.randint(1000000, 9999999)
+    while arch_id in saved_architectures: arch_id = random.randint(1000000, 9999999)
+
+    saved_architectures[arch_id] = arch_obj
+
+    return json.dumps({
+        'message': 'use_arch',
+        'arch_id': arch_id
+    })
+
 # Socket commands
 socket_binds = {
         'subtype': get_subtype,
-        'usearch': use_arch
+        'use_arch': use_arch,
+        'example_arch': example_arch,
+        'run_result': run_result
         } 
