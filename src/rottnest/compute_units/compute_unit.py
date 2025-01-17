@@ -107,7 +107,6 @@ class ComputeUnit(abc.ABC):
         '''
         pass
 
-        
     
     def calc_rz_limit(
         self,

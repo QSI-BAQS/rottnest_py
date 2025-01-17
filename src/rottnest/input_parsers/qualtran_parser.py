@@ -1,3 +1,6 @@
+'''
+    Handlers for qualtran functions
+'''
 from functools import partial 
 
 import qualtran
@@ -26,10 +29,8 @@ def blank():
         pass
     return _wrap
 
-
 qualtran_ops = {
     bookkeeping.join.Join: blank,
     bookkeeping.split.Split: blank,
     bookkeeping.arbitrary_clifford.ArbitraryClifford: arbitrary_clifford
 }
-

@@ -38,61 +38,48 @@ Each gate is then bound as a shim and a re-usable component
 '''
 
 
-
-class CliffordShim:
-    '''
-        Shim layer of cliffords 
-        May act as its own widget, or may simply be injected on the idle data qubits     
-    '''
-    def __init__(self, gates):
-        pass 
-
-  
-    def append(self, gate):  
-        pass
-
-
-class CallGraph:
-    '''
-        Call Graph object associated with a PyLiqtr gate
-    '''
-    
-    def __init__(self, operation): 
-        self._graph, self._gates = operation.gate.call_graph() 
-        # Find the roots, then perform the layering
-        self._roots = [
-            i for i in self._graph
-            if not any(graph.predecessors(i))
-        ] 
-
-        self._layers = nx.bfs_layers(
-            self._graph,
-            self._roots
-        )  
-
-    def compile(self):
-        pass
-
-
 class PyliqtrParser:
     tracking_targets = frozenset((
         qsvt.QSVT_real_polynomial,
         qubitized_gates.QubitizedRotation,
         qubitized_gates.QubitizedReflection,
+        qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlPauli,
+        qualtran.cirq_interop._bloq_to_cirq.BloqAsCirqGate, # Catch a bunch of qualtran gates
+        qualtran.bloqs.mcmt.and_bloq.And,
     ))
 
     '''
         Begin by collecting the pyliqtr components
     '''
-    def __init__(self):
+    def __init__(self, circuit=None, op=None, gate=None):
+        self.op = op
+        self.circuit = circuit_decompose_multi(circuit, 1)
         self._curr_shim = []
         self.shims = {} # Shims represent non-pyliqtr sequences
         self.handles = {} # Handles represent callable representations of pyliqtr objects
         
         self.decompositions = {}
+        self.fully_decomposed = None
+
+    def qualtran_handoff(self):
+        '''
+            Hands off to qualtran for the next parsing pass
+        '''
+        # Requires that the gate has been fully decomposed by pyliqtr
+        if self.fully_decomposed: 
+            qualtran_parser = QualtranParser(self.circuit) 
+            qualtran_parser.parse()
+            qualtran_parser.decompose()
 
     def __call__(self, *args, **kwargs):
-        return self.parse(*args, **kwargs)
+        # TODO
+        # Should invoke an iterator over decomposition objects
+        pass
+
+    def __iter__(self):
+        if self.circuit is not None:
+            return self.circuit.__iter__()
+        raise Exception("Circuit has not been passed")
 
     def decompose(self, *targs):
         if len(targs) == 0:
@@ -102,24 +89,31 @@ class PyliqtrParser:
             for gate in self.handles[label]:
                 tmp = cirq.Circuit()
                 tmp.append(gate)
-
-                decomp = circuit_decompose_multi(tmp, 1)
-
-                parser = PyliqtrParser()
-                parser(decomp)
+                parser = PyliqtrParser(tmp, op=gate)
                 yield parser
+
+    def graph(self):
+        if self.op is not None:
+            graph, nodes = self.op.gate.call_graph()
+            return graph, nodes
+        return None, None
+
+    def draw_graph(self):
+        graph, gates = self.graph()
+        nx.draw_kamada_kawai(graph, labels={i:str(i) for i in gates})
                 
-    def parse(self, circuit):
-        '''
-        TODO: Shim Logic
-        '''
+    def parse(self, circuit=None):
+        self.fully_decomposed = True
+        if circuit is None:
+            circuit = self.circuit
         for moment in circuit:
             for operation in moment:
                 if operation.gate.__class__ in self.tracking_targets:
                     instances = self.handles.get(operation.gate.__class__, list())
                     instances.append(operation) 
-                    self.handles[gate.__class__] = instances
+                    self.handles[operation.gate.__class__] = instances
                     self.shims[operation] = self._curr_shim
                     self._curr_shim = []
+                    self.fully_decomposed = False
                 else:
-                    self._curr_shim.append(operation)
+                    self._curr_shim.append(operation)  
