@@ -6,14 +6,12 @@ import json
 from ..region_builder.json_to_region import json_to_layout, example as example_region_obj
 
 # TODO delete after testing
-def test_comb_mapper(width, height, spacing=2):
+def test_comb_mapper(n_vertices, width, height, spacing=2):
     from graph_state_generation.mappers import weight_sort_mapper 
     from graph_state_generation.schedulers import greedy_cz_scheduler
     from graph_state_generation.graph_state import example_graphs
 
-    n_vertices = 50
     gs = example_graphs.graph_binary_tree(n_vertices)
-
     mapped_gs = weight_sort_mapper.CombWeightSortMapper(gs, height, width, comb_spacing = spacing, n_passes=100)
     # schedule = greedy_cz_scheduler.GreedyCZScheduler(gs, mapped_gs) 
     return mapped_gs
@@ -38,7 +36,7 @@ def run(gate_obj=None, region_obj=None):
     strat, widget = make_explicit(layout, region_obj['width'], region_obj['height'])
     
     temp_reg_region = region_obj['regions'][0]# TODO delete
-    strat.mapper = test_comb_mapper(temp_reg_region['width'], temp_reg_region['height']) # TODO gosc mapper
+    strat.mapper = test_comb_mapper(gate_obj['n_qubits'], temp_reg_region['width'], temp_reg_region['height']) # TODO gosc mapper
 
     orc = ScheduleOrchestrator(dag_roots, widget, strat, json=True)
     orc.schedule()
