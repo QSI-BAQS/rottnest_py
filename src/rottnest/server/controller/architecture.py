@@ -27,11 +27,16 @@ def handle_websocket():
             cmd_func = socket_binds.get(message['cmd'], err)
             print("Dispatch", cmd_func) 
             resp = cmd_func(message)
-            print("Resp:", resp)
+            resp_log = str(resp)
+            if len(resp_log) > 200:
+                resp_log = resp_log[:200] + '<... output truncated>'
+            print("Resp:", resp_log)
             wsock.send(resp)
         except WebSocketError:
             break
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             wsock.send(json.dumps({'message': 'err', 'desc': f"{e}"}))
 
 def err(message, *args, **kwargs):
@@ -54,7 +59,7 @@ def example_arch(*args, **kwargs):
 
 def run_result(message, *args, **kwargs):
     print("Running!", message)
-    from ...widget_compilers.main import run as run_widget
+    from rottnest.widget_compilers.main import run as run_widget
     arch_id = message['payload']['arch_id']
     result = run_widget(region_obj=saved_architectures[arch_id])
     return json.dumps({
