@@ -14,6 +14,7 @@ def conv(region_type, width, height, **kwargs) -> callable:
     return partial(region_type_map[region_type], width=width, height=height, **kwargs)
 
 
+# TODO move into settings and frontend
 default_router = {
     'CombShapedRegisterRegion': CombRegisterRouter,
     'RouteBus': StandardBusRouter,
