@@ -19,6 +19,7 @@ default_router = {
     'RouteBus': StandardBusRouter,
     'TCultivatorBufferRegion': DenseTCultivatorBufferRouter,
     'MagicStateFactoryRegion': MagicStateFactoryRouter,
+    'MagicStateFactoryRegion_auto_litinski_6x3_dense': MagicStateFactoryRouter,
     'MagicStateBufferRegion': RechargableBufferRouter,
     'SingleRowRegisterRegion': BaselineRegisterRouter,
     'PrefilledMagicStateRegion': VerticalFilledBufferRouter,
