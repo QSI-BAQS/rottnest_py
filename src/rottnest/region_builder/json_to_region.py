@@ -11,6 +11,8 @@ for mapping in region_types.values():
 def conv(region_type, width, height, **kwargs) -> callable:
     if 'downstream' in kwargs:
         kwargs = {k: v for k, v in kwargs.values() if k != 'downstream'}
+    if width is None or height is None:
+        raise ValueError(f"Invalid value for width or height ({region_type=}): {width=}, {height=}")
     return partial(region_type_map[region_type], width=width, height=height, **kwargs)
 
 
