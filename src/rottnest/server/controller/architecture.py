@@ -74,7 +74,7 @@ def use_arch(message, *args, **kwargs):
 
     return json.dumps({
         'message': 'use_arch',
-        'arch_id': architecture.save_arch()
+        'arch_id': architecture.save_arch(arch_obj)
     })
 
 # Socket commands
