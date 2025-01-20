@@ -24,6 +24,7 @@
      holding a reference to the gate_operation.
 '''
 
+from types import MethodType
 from functools import partial
 
 import cirq
@@ -48,7 +49,7 @@ def simple_operator(cabaliser_op):
      Cabaliser gate
     '''
     def _wrap(
-        _,  # Look...
+        gate,  # Look...
         self,
         operation_sequence: OperationSequence,
         qubit_labels: QubitLabelTracker,
@@ -191,13 +192,13 @@ def _Sdag_gate(self, operation_sequence, qubit_labels_rz_tags):
             *qubit_labels.gets(*self.qubits)
         )
 
-def _rz_gate(self, operation_sequence, qubit_labels_rz_tags):
-        tag = rz_tags(self.angle, self.eps)
+def _rz_gate(self, operation_sequence, qubit_labels, rz_tags):
+        tag = rz_tags.get(self.gate.exponent, None)
         target = qubit_labels.gets(*self.qubits)[0]
 
         operation_sequence.append(
             cabaliser_gates.RZ,
-            (target, tag)
+            target, tag
         )
 
 def z_pow():
@@ -231,18 +232,18 @@ def rz():
         # number of Rz gates
     '''
     def _wrap(
-        _,  # Look...
+        gate,  # Look...
         self,
         operation_sequence: OperationSequence,
         qubit_labels: QubitLabelTracker,
         rz_tags: QubitLabelTracker):
 
-        tag = rz_tags(self.angle, self.eps)
+        tag = rz_tags.get(gate.exponent, None)
         target = qubit_labels.gets(*self.qubits)[0]
 
         operation_sequence.append(
             cabaliser_gates.RZ,
-            (target, tag)
+            target, tag
         )
     return _wrap, 1, 1, 1
 
@@ -254,13 +255,13 @@ def rx():
         # number of Rz gates
     '''
     def _wrap(
-        _,  # Look...
+        gate,  # Look...
         self,
         operation_sequence: OperationSequence,
         qubit_labels: QubitLabelTracker,
         rz_tags: QubitLabelTracker):
 
-        tag = rz_tags(self.angle, self.eps)
+        tag = rz_tags(gate.angle, gate.eps)
         target = qubit_labels.gets(*self.qubits)[0]
 
         operation_sequence.append(
@@ -351,11 +352,13 @@ class CirqParser:
         self._context = context
 
     def parse(
+        self,
         circ_iter: cirq.circuits.circuit.Circuit,
+        widget = None
     ):
 
-        qubit_tracker = QubitLabelTracker()
-        tag_tracker = RzTagTracker()
+        qubit_labels = QubitLabelTracker()
+        rz_tracker = RzTagTracker()
 
         op = OperationSequence(self.sequence_length)
 
@@ -363,10 +366,9 @@ class CirqParser:
 
         for moment in circ_iter:
             for gate in moment:
-               gate._parse_cabaliser(op, qubit_labels, rz_tracker) 
+               gate.gate._parse_cabaliser(gate, op, qubit_labels, rz_tracker) 
 
-        widget(op)
-
+        return op
 
 # Monkey patching list
 # These will all be injected into their associated cirq class objects
@@ -405,10 +407,14 @@ def _monkey_patch():
         Injects the parsers into the cirq objects
         Linters will complain about this
     '''
-    cirq.ops.gate_operation.GateOperation._parse_cabaliser = _parse_cabaliser
+    parse_method = MethodType(_parse_cabaliser, cirq.ops.gate_operation.GateOperation)
+    cirq.ops.gate_operation.GateOperation._parse_cabaliser = parse_method 
     for gate_type, parser in known_gates.items():
+        fn = parser()[0]
+        bound_method = MethodType(fn, gate_type)
+
         if gate_type is not None.__class__:
-            gate_type._parse_cabaliser = parser()[0]
+            gate_type._parse_cabaliser = bound_method 
 
 # Perform the monkey patching
 _monkey_patch()

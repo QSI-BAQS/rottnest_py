@@ -12,8 +12,16 @@
     Otherwise, each child pyLIQTR gate is independently
     compiled 
 '''
+
+from pyLIQTR.utils.circuit_decomposition import circuit_decompose_multi
+
 import networkx as nx
 import pyLIQTR
+import qualtran
+import qualtran.bloqs
+import qualtran.bloqs.mcmt
+import cirq
+
 from pyLIQTR.qubitization import qsvt, qubitized_gates
 
 from . import cirq_parser
@@ -116,4 +124,18 @@ class PyliqtrParser:
                     self._curr_shim = []
                     self.fully_decomposed = False
                 else:
-                    self._curr_shim.append(operation)  
+                    self._curr_shim.append(operation)      
+
+    def traverse(self):
+        for r in self.decompose():
+            r.parse()
+            if r.fully_decomposed:
+                yield r
+            else:
+                it = r.traverse()
+                while True:
+                    try:
+                        v = next(it)
+                        yield v
+                    except:
+                        break

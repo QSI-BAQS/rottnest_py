@@ -9,6 +9,7 @@ from cabaliser import widget
 
 
 
+
 class CirqTest(unittest.TestCase):
 
     def ghz(self, n_qubits=2):
@@ -22,33 +23,30 @@ class CirqTest(unittest.TestCase):
         return c  
 
     def exec_ghz(self, n_qubits=2):
-
         circ = self.ghz(n_qubits=n_qubits)
-        op = operation_sequence.OperationSequence(n_qubits)
         qubit_labels = cirq_parser.QubitLabelTracker()
         rz_tracker = cirq_parser.RzTagTracker() 
 
-        for moment in circ:
-            for gate in moment:
-                gate._parse_cabaliser(op, qubit_labels, rz_tracker) 
+        parser = cirq_parser.CirqParser(n_qubits * 3, n_qubits, n_qubits + 1) 
+        op = parser.parse(circ)
        
         wid = widget.Widget(n_qubits, n_qubits * 2 + 1);
         wid(op)
 
         wid.decompose()
+
         return wid.get_n_qubits()
     
     def test_ghz(self):
 
         prev_msg_len = 0
-        for i in range(2, 10000, 69):
+        for i in range(2, 3): #10000, 69):
             start = time.time()
             n_qubits = self.exec_ghz(n_qubits=i)
             end = time.time()
             msg = '\b' * (prev_msg_len - 1) + f"\rExecuted: {n_qubits} in {end - start} seconds"
             print(msg , flush=False, end='')
             prev_msg_len = len(msg)
-
 
 
 #n_qubits = 100 

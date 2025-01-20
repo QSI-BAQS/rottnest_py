@@ -1,5 +1,3 @@
-from rottnest.gridsynth import gridsynth
-
 '''
     Adapter class for mapping Rz gates to tags 
 '''
@@ -7,7 +5,7 @@ from rottnest.gridsynth import gridsynth
 
 class RzTagTracker():
 
-    _gs = gridsynth.GridSynth()
+    #_gs = gridsynth.GridSynth()
     '''
         Maps angles to tags
         TODO: This currently makes some very rough
@@ -28,14 +26,15 @@ class RzTagTracker():
         '''
         tag = self._angles_to_tags.get(angle, None)
         if tag is None: 
-            tag = len(self.angles_to_tags)
+            tag = len(self._angles_to_tags)
             self._angles_to_tags[angle] = tag 
             self._tags_to_angles.append(angle)
             self._eps.append(eps)
         return tag 
 
     def decompose_tag(self, tag, eps=None):
-        rz = self.get(          
+        pass
+        #rz = self.get()         
 
     def gets(self, *angles):
         return tuple(map(self.get, angles))
