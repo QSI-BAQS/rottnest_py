@@ -69,6 +69,12 @@ def get_router(*args, **kwargs):
         'payload': architecture.get_router_mapping()
     })
 
+def get_args(*args, **kwargs):
+    return json.dumps({
+        'message': 'get_args',
+        'payload': architecture.get_region_arguments()
+    })
+
 def use_arch(message, *args, **kwargs):
     arch_obj = message['payload']
 
@@ -84,4 +90,5 @@ socket_binds = {
         'example_arch': example_arch,
         'run_result': run_result,
         'get_router': get_router,
+        'get_args': get_args,
         } 
