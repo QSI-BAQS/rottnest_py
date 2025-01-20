@@ -58,9 +58,8 @@ def make_fh_circuit(N=2, times=1.0, p_algo=0.95):
     return make_qsvt_circuit(model,encoding=getEncoding(VALID_ENCODINGS.PauliLCU),times=times,p_algo=p_algo)
 
 
-
-
-fh = make_fh_circuit(N=2,p_algo=0.9999999904,times=0.01)
+N = 20  
+fh = make_fh_circuit(N=N,p_algo=0.9999999904,times=0.01)
 parser = PyliqtrParser(fh)
 parser.parse()
 
