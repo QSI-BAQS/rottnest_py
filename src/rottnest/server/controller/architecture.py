@@ -5,8 +5,6 @@ from rottnest.server.model import architecture
 
 import json
 
-saved_architectures = {}
-
 def register_routes(app):
    app.route("/websocket", callback=handle_websocket)
 
@@ -59,26 +57,24 @@ def example_arch(*args, **kwargs):
 
 def run_result(message, *args, **kwargs):
     print("Running!", message)
-    from rottnest.widget_compilers.main import run as run_widget
     arch_id = message['payload']['arch_id']
-    result = run_widget(region_obj=saved_architectures[arch_id])
     return json.dumps({
         'message': 'run_result',
-        'payload': result.json
+        'payload': architecture.run_widget_scheduler(arch_id)
     })
 
+def get_router(*args, **kwargs):
+    return json.dumps({
+        'message': 'get_router',
+        'payload': architecture.get_router_mapping()
+    })
 
 def use_arch(message, *args, **kwargs):
     arch_obj = message['payload']
-    import random
-    arch_id = random.randint(1000000, 9999999)
-    while arch_id in saved_architectures: arch_id = random.randint(1000000, 9999999)
-
-    saved_architectures[arch_id] = arch_obj
 
     return json.dumps({
         'message': 'use_arch',
-        'arch_id': arch_id
+        'arch_id': architecture.save_arch()
     })
 
 # Socket commands
@@ -86,5 +82,6 @@ socket_binds = {
         'subtype': get_subtype,
         'use_arch': use_arch,
         'example_arch': example_arch,
-        'run_result': run_result
+        'run_result': run_result,
+        'get_router': get_router,
         } 
