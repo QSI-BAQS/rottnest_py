@@ -18,7 +18,7 @@ def conv(region_type, width, height, **kwargs) -> callable:
 default_router = {
     'CombShapedRegisterRegion': CombRegisterRouter,
     'RouteBus': StandardBusRouter,
-    'TCultivatorBufferRegion': DenseTCultivatorBufferRouter,
+    'TCultivatorBufferRegion.with_dense_layout': DenseTCultivatorBufferRouter,
     'MagicStateFactoryRegion': MagicStateFactoryRouter,
     'MagicStateFactoryRegion_auto_litinski_6x3_dense': MagicStateFactoryRouter,
     'MagicStateBufferRegion': RechargableBufferRouter,
