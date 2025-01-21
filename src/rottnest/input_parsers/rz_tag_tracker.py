@@ -13,9 +13,10 @@ class RzTagTracker():
         the same angle and differing values of eps 
     '''
     def __init__(self):
-        self._angles_to_tags = dict()
-        self._tags_to_angles = list()
-        self._eps = list()
+        # Reserve tag 0 
+        self._angles_to_tags = dict(None: NOne)
+        self._tags_to_angles = [None] 
+        self._eps = [0] 
 
     def __getitem__(self, tag):
         return self._tags_to_angles[tag]
