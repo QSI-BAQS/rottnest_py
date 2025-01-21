@@ -9,10 +9,11 @@ class RegisterContext:
         Detects if a qubit is in context or not, 
         and by extension is used to track non-participatory qubits 
     '''
-    def __init__(self, context = None):
+    def __init__(self, context=None, global_context = None):
         if context is None:
             context = set()
         self._context = context
+        self._global_context = global_context 
 
     def __iter__(self):
         return self._context.__iter__()
@@ -43,12 +44,13 @@ class QubitLabelTracker:
 
         Acts an adapter
     '''
-    def __init__(self, context: RegisterContext = None):
+    def __init__(self, context: RegisterContext = None, global_context: RegisterContext = None):
         self._labels = dict()
         self._local_labels = dict()
         if context is None:
-            context = RegisterContext() 
+            context = RegisterContext(global_context=global_context) 
         self._context = context
+        self._global_context = global_context
         self.n_inputs = 0 
 
     def __getitem__(self, qubit_label):
@@ -73,8 +75,8 @@ class QubitLabelTracker:
     def gets(self, *labels):
         return tuple(map(self.get, labels))
 
-    def len(self):
-        return len(self.labels)
+    def __len__(self):
+        return len(self._labels)
 
     def __str__(self):
         return self.__str__()

@@ -14,7 +14,7 @@ class RzTagTracker():
     '''
     def __init__(self):
         # Reserve tag 0 
-        self._angles_to_tags = dict(None: NOne)
+        self._angles_to_tags = {None: None}
         self._tags_to_angles = [None] 
         self._eps = [0] 
 

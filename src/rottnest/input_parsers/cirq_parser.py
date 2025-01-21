@@ -344,16 +344,31 @@ class CirqParser:
     '''
         Cirq Parser Object
     '''
-    def __init__(self, sequence_length):
+    def __init__(
+            self,
+            sequence_length,
+            rz_tracker=None
+        ):
         self.sequence_length = sequence_length
         self._qubit_labels = QubitLabelTracker()
-        self._rz_tracker = RzTagTracker()
-    
-    def reset(self):
+
+        if rz_tracker is None:
+            rz_tracker = RzTagTracker()
+        self._rz_tracker = rz_tracker 
+
+    def __len__(self):
+        '''
+            Returns the amount of memory currently in use
+        '''
+        return len(self._qubit_labels)
+
+    def reset_context(self):
         '''
             Resets local context
         '''
+        prev_context = self._qubit_labels 
         self._qubit_labels = QubitLabelTracker()
+        return prev_context
 
     def parse(
         self,
