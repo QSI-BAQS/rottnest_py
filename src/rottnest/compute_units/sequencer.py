@@ -2,8 +2,21 @@ class Sequencer():
     '''
         Widget Sequencer
     '''
-    def __init__(self, memory_limit, rz_limit):
-        self.memory_limit = memory_limit
-        self.rz_limit = rz_limit
+    def __init__(self,
+            *architectures,
+            sequence_length = 2000
+            ):
+       
+        # Map architectures to proxies 
+        self._architecture_proxies = architectures
+        self.priority_shim = [] 
 
-    def sequence(iterable):  
+        self.sequence_length = sequence_length
+
+
+    def sequence(self, parser): 
+
+        for ops in zip(parser.parse()):
+            if len(self.priority_shim) == 0: 
+                yield(ops)
+

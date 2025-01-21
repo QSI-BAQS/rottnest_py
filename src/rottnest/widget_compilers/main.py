@@ -51,13 +51,12 @@ def run(cabaliser_obj=None, region_obj=None):
     temp_reg_region = region_obj['regions'][0]# TODO delete
     strategy.mapper = make_mapper(graph_state, temp_reg_region) # TODO gosc mapper
     
+    orc = ScheduleOrchestrator(dag_roots, widget, strategy, json=True)
 
     # Graph State Scheduler
-    gs_scheduler = graph_state_orchestration(graph_state, strategy)  
-    prewarm_cycles = len(gs_scheduler) * 4 
+    graph_state_orchestration(orc, graph_state)  
 
     # T scheduler
-    t_orc = ScheduleOrchestrator(dag_roots, widget, strategy, json=True)
-    t_orchestration(t_orc, prewarm_cycles=prewarm_cycles)
+    t_orchestration(orc, prewarm_cycles=prewarm_cycles)
 
-    return t_orc
+    return orc

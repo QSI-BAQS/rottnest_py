@@ -64,7 +64,5 @@ parser = PyliqtrParser(fh)
 parser.parse()
 
 # Create generator object
-circ_parser = CirqParser(100, 100, 100)
 for circuit in parser.traverse():
-    print(circuit)
     circ_parser.parse(circuit)

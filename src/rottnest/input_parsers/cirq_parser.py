@@ -59,7 +59,8 @@ def simple_operator(cabaliser_op):
             cabaliser_op,
             *qubit_labels.gets(*self.qubits)
         )
-    return _wrap, 1, 1, 0
+    return _wrap, 1
+
 pauli_X = partial(simple_operator, cabaliser_gates.X)
 pauli_Y = partial(simple_operator, cabaliser_gates.Y)
 pauli_Z = partial(simple_operator, cabaliser_gates.Z)
@@ -86,7 +87,7 @@ def h_pow():
         else:
             # TODO
             raise Exception("Not Implemented")
-    return _wrap, 1, None, None
+    return _wrap, 1
 
 
 def X_to_Z(gate_fn):
@@ -144,7 +145,7 @@ def x_pow():
         else:
             # TODO
             raise Exception("Not Implemented")
-    return _wrap, 1, None, None
+    return _wrap, 1
 
 def y_pow():
     '''
@@ -165,7 +166,7 @@ def y_pow():
         else:
             # TODO
             raise Exception("Not Implemented")
-    return _wrap, 1, None, None
+    return _wrap, 1
 
 
 def _X_gate(self, operation_sequence, qubit_labels_rz_tags):
@@ -222,7 +223,7 @@ def z_pow():
         fn = exponent_map.get(gate.exponent, _rz_gate) 
         fn(self, operation_sequence, qubit_labels, rz_tags)
 
-    return _wrap, 1, None, None
+    return _wrap, 1
 
 def rz():
     '''
@@ -245,7 +246,7 @@ def rz():
             cabaliser_gates.RZ,
             target, tag
         )
-    return _wrap, 1, 1, 1
+    return _wrap, 1
 
 def rx():
     '''
@@ -279,7 +280,7 @@ def rx():
             (target,)
         )
 
-    return _wrap, 1, 3, 1
+    return _wrap, 3
 
 
 def ry():
@@ -330,26 +331,29 @@ def ry():
             (target,)
         )
 
-    return _wrap, 1, 5, 1
+    return _wrap, 5
 
 
 cx_pow = partial(simple_operator, cabaliser_gates.CNOT)
 cz_pow = partial(simple_operator, cabaliser_gates.CZ)
 
-
-
 def __blank(*args, **kwargs):
-    return lambda x: x, 0, 0, 0
+    return lambda x: x, 0 
 
 class CirqParser:
     '''
         Cirq Parser Object
     '''
-    def __init__(self, memory_bound, rz_bound, sequence_length, context=None):
-        self.memory_bound = memory_bound
-        self.rz_bound = rz_bound
+    def __init__(self, sequence_length):
         self.sequence_length = sequence_length
-        self._context = context
+        self._qubit_labels = QubitLabelTracker()
+        self._rz_tracker = RzTagTracker()
+    
+    def reset(self):
+        '''
+            Resets local context
+        '''
+        self._qubit_labels = QubitLabelTracker()
 
     def parse(
         self,
@@ -357,18 +361,16 @@ class CirqParser:
         widget = None
     ):
 
-        qubit_labels = QubitLabelTracker()
-        rz_tracker = RzTagTracker()
-
         op = OperationSequence(self.sequence_length)
-
-        # No prior context for the circuit
-
         for moment in circ_iter:
-            for gate in moment:
-               gate.gate._parse_cabaliser(gate, op, qubit_labels, rz_tracker) 
-
-        return op
+            for operation in moment:
+                if operation.gate._n_cabaliser_ops + len(op) > self.sequence_length:  
+                    yield(op)
+                    op = OperationSequence(self.sequence_length)
+                operation.gate._parse_cabaliser(operation, op, self._qubit_labels, self._rz_tracker) 
+        if len(op) > 0:
+            yield op
+        return
 
 # Monkey patching list
 # These will all be injected into their associated cirq class objects
@@ -410,11 +412,12 @@ def _monkey_patch():
     parse_method = MethodType(_parse_cabaliser, cirq.ops.gate_operation.GateOperation)
     cirq.ops.gate_operation.GateOperation._parse_cabaliser = parse_method 
     for gate_type, parser in known_gates.items():
-        fn = parser()[0]
+        fn, n_gates = parser()
         bound_method = MethodType(fn, gate_type)
 
         if gate_type is not None.__class__:
             gate_type._parse_cabaliser = bound_method 
+            gate_type._n_cabaliser_ops = n_gates
 
 # Perform the monkey patching
 _monkey_patch()

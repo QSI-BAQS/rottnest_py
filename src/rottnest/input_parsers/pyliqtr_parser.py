@@ -59,8 +59,11 @@ class PyliqtrParser:
     '''
         Begin by collecting the pyliqtr components
     '''
-    def __init__(self, circuit=None, op=None, gate=None):
+    def __init__(self, circuit=None, op=None, gate=None, sequence_length=1000):
         self.op = op
+        self.sequence_length = sequence_length
+        self.gate = gate
+        
         self.circuit = circuit_decompose_multi(circuit, 1)
         self._curr_shim = []
         self.shims = {} # Shims represent non-pyliqtr sequences
@@ -127,6 +130,9 @@ class PyliqtrParser:
                     self._curr_shim.append(operation)      
 
     def traverse(self):
+        '''
+        Return each circuit object
+        '''
         for r in self.decompose():
             r.parse()
             if r.fully_decomposed:
@@ -139,3 +145,12 @@ class PyliqtrParser:
                         yield v
                     except:
                         break
+
+    def parse(self):
+        '''
+        Dump the whole circuit 
+        '''
+        parser = CirqParser(self.sequence_length)
+        for circuit in self.traverse(): 
+            for ops in parser.parse(circuit): 
+                yield ops

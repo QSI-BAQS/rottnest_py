@@ -7,11 +7,8 @@ from rottnest.input_parsers import cirq_parser
 from cabaliser import operation_sequence
 from cabaliser import widget
 
-
-
-
 class CirqTest(unittest.TestCase):
-
+    
     def ghz(self, n_qubits=2):
 
         qubits = [cirq.NamedQubit(f'{i}') for i in range(n_qubits)] 
@@ -22,25 +19,23 @@ class CirqTest(unittest.TestCase):
             c.append(cirq.CNOT(qubits[0], qubits[i]))
         return c  
 
-    def exec_ghz(self, n_qubits=2):
+    def exec_ghz(self, n_qubits=2, seq_length=100):
         circ = self.ghz(n_qubits=n_qubits)
         qubit_labels = cirq_parser.QubitLabelTracker()
         rz_tracker = cirq_parser.RzTagTracker() 
 
-        parser = cirq_parser.CirqParser(n_qubits * 3, n_qubits, n_qubits + 1) 
-        op = parser.parse(circ)
-       
-        wid = widget.Widget(n_qubits, n_qubits * 2 + 1);
-        wid(op)
+        parser = cirq_parser.CirqParser(seq_length) 
 
+        wid = widget.Widget(n_qubits, n_qubits * 2 + 1);
+        for op in parser.parse(circ):
+            wid(op)
         wid.decompose()
 
         return wid.get_n_qubits()
     
     def test_ghz(self):
-
         prev_msg_len = 0
-        for i in range(2, 3): #10000, 69):
+        for i in range(2, 5000, 169):
             start = time.time()
             n_qubits = self.exec_ghz(n_qubits=i)
             end = time.time()
