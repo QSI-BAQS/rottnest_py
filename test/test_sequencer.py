@@ -1,3 +1,5 @@
+import unittest
+
 from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
 from rottnest.input_parsers.cirq_parser import CirqParser
 from rottnest.compute_units.sequencer import Sequencer
@@ -58,13 +60,36 @@ def make_fh_circuit(N=2, times=1.0, p_algo=0.95):
     return make_qsvt_circuit(model,encoding=getEncoding(VALID_ENCODINGS.PauliLCU),times=times,p_algo=p_algo)
 
 
-N = 20  
-fh = make_fh_circuit(N=N,p_algo=0.9999999904,times=0.01)
+class SequencerTest(unittest.TestCase):
+    def test_fh(self, N=30, debug=True):
+        
+        if debug:
+            start = time.time()
+            print(f"Creating Fermi Hubbard {N}x{N} from PyLIQTR")
+        fh = make_fh_circuit(N=N,p_algo=0.9999999904,times=0.01)
 
-parser = PyliqtrParser(fh)
-parser.parse()
+        if debug:
+            runtime = time.time() - start
+            print(f"\t Completed in {runtime} seconds")
 
-seq = Sequencer(None)
+        parser = PyliqtrParser(fh)
+        parser.parse()
 
-for compute_unit in seq.sequence_pyliqtr(parser):
-    print(compute_unit)
+        seq = Sequencer(None)
+
+        if debug:
+            start = time.time()
+            print("Parsing PyLIQTR object")
+
+        cnt = 0
+        for compute_unit in seq.sequence_pyliqtr(parser):
+            cnt += 1
+
+        if debug:
+            runtime = time.time() - start
+            print(f"\t Completed in {runtime} seconds")
+            print("Total Widgets: ", cnt)
+
+if __name__ == '__main__':
+    st = SequencerTest()
+    st.test_fh()
