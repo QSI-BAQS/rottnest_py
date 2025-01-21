@@ -63,6 +63,9 @@ fh = make_fh_circuit(N=N,p_algo=0.9999999904,times=0.01)
 parser = PyliqtrParser(fh)
 parser.parse()
 
+circ_parser = CirqParser(100)
+
 # Create generator object
 for circuit in parser.traverse():
-    circ_parser.parse(circuit)
+    for seq in circ_parser.parse(circuit):
+        print(seq)

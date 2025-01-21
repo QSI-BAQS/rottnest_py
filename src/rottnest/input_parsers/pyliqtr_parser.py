@@ -146,7 +146,7 @@ class PyliqtrParser:
                     except:
                         break
 
-    def parse(self):
+    def traverse_all(self):
         '''
         Dump the whole circuit 
         '''
