@@ -31,8 +31,9 @@ def make_mapper(graph_state, reg_region_obj):
 
 def run(cabaliser_obj=None, region_obj=None):
     # TODO delete after testing passes
-    with open('qft_test_obj.json') as f:
-        cabaliser_obj = json.load(f)
+    if cabaliser_obj is None:
+        with open('qft_test_obj.json') as f:
+            cabaliser_obj = json.load(f)
     
     if region_obj == None:
         region_obj = example_region_obj
