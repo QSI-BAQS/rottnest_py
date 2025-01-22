@@ -17,7 +17,7 @@ class RzTagTracker():
         self._angles_to_tags = {None: None}
         self._tags_to_angles = [None] 
         self._eps = [0] 
-        self.n_gates = 0
+        self.n_rz_gates = 0
 
     def __getitem__(self, tag):
         return self._tags_to_angles[tag]
@@ -27,7 +27,7 @@ class RzTagTracker():
         Attempting to get a label is bound to allocating one
         '''
         # Get is triggered by adding an RZ gate
-        self.n_gates += 1
+        self.n_rz_gates += 1
 
         tag = self._angles_to_tags.get(angle, None)
         if tag is None: 
@@ -41,7 +41,7 @@ class RzTagTracker():
         '''
             Context for the tracker is reset
         '''
-        self.n_gates = 0
+        self.n_rz_gates = 0
 
     def decompose_tag(self, tag, eps=None):
         pass

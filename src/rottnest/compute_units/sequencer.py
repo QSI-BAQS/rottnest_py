@@ -36,6 +36,8 @@ class Sequencer():
 
         for cirq_obj in parser.traverse():
             for op_seq in cirq_parser.parse(cirq_obj): 
+
+                # TODO: inject RZ bounds here
                 if op_seq.n_rz_operations + len(cirq_parser) > compute_unit.memory_bound:
                     local_context = cirq_parser.extract_context()
                     compute_unit.add_context(*local_context)

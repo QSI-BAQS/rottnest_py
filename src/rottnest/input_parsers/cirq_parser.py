@@ -32,7 +32,7 @@ class CirqParser:
         '''
             Returns the amount of memory currently in use
         '''
-        return len(self._qubit_labels)
+        return len(self._qubit_labels) + self._rz_tracker.n_rz_gates 
 
     def reset_context(self):
         '''
@@ -48,7 +48,7 @@ class CirqParser:
         TODO: Tighten this 
         '''
         n_inputs = len(self._qubit_labels)
-        n_rz_gates = self._rz_tracker.n_gates 
+        n_rz_gates = self._rz_tracker.n_rz_gates 
         n_qubits = 2 * n_inputs + n_rz_gates 
         n_outputs = n_inputs 
         return n_inputs, n_qubits, n_outputs
