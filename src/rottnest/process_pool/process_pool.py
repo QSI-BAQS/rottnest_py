@@ -77,6 +77,8 @@ def task_run_sequence(arch_obj):
     it = seq.sequence_pyliqtr(parser)
     task_work_fn = run_sequence_elem
     task_args_additional = (arch_obj,)
+
+    print("circuit done")
     return (it, task_work_fn, task_args_additional)
 
 operation_map = {"task_run_sequence": task_run_sequence}
@@ -123,4 +125,4 @@ class AsyncIteratorProcessPool:
         self.task_queue.put((task_name, *args))
 
     def terminate(self):
-        self.task_queue.put(('terminate'))
+        self.task_queue.put(('terminate', ))
