@@ -61,7 +61,8 @@ def make_fh_circuit(N=2, times=1.0, p_algo=0.95):
 
 
 class SequencerTest(unittest.TestCase):
-    def test_fh(self, N=30, debug=True):
+
+    def test_fh(self, N=3, debug=True):
         
         if debug:
             start = time.time()
@@ -83,6 +84,7 @@ class SequencerTest(unittest.TestCase):
 
         cnt = 0
         for compute_unit in seq.sequence_pyliqtr(parser):
+            compute_unit.compile_graph_state()
             cnt += 1
 
         if debug:

@@ -1,3 +1,5 @@
+from cabaliser.widget import Widget
+
 '''
 Wrapper object for cabaliser sequences 
 '''
@@ -31,3 +33,22 @@ class ComputeUnit():
         for seq in self.sequences: 
             widget(seq)
 
+    def compile_graph_state(self):
+        '''
+            TODO: Setup context extraction decorator
+        '''
+
+        # Tidy this up
+        print(self.n_inputs, self.n_qubits)
+        widget = Widget(self.n_inputs, self.n_qubits * 2 + 1)
+        for op in self.sequences:
+            widget(op)
+        widget.decompose()
+        return widget
+
+    def export(self):
+        return {
+            'n_inputs': self.n_inputs,
+            'n_outputs': self.n_outputs,
+            'n_qubits': self.n_qubits,
+        }

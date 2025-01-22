@@ -92,7 +92,6 @@ class ArchitectureProxy(abc.ABC):
         '''
         pass
 
-
     @abc.abstractmethod
     def simulate_rz_limit(
         self,
@@ -108,7 +107,6 @@ class ArchitectureProxy(abc.ABC):
         '''
         pass
 
-    
     def calc_rz_limit(
         self,
         eps: float,

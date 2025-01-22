@@ -368,7 +368,16 @@ class CirqParser:
         '''
         prev_context = self._qubit_labels 
         self._qubit_labels = QubitLabelTracker()
+        self._rz_tracker.reset()
         return prev_context
+
+    def extract_context(self): 
+        n_inputs = len(self._qubit_labels)
+        n_rz_gates = self._rz_tracker.n_gates 
+        n_qubits = 2 * n_inputs + n_rz_gates 
+        n_outputs = n_inputs 
+        return n_inputs, n_qubits, n_outputs
+
 
     def parse(
         self,
