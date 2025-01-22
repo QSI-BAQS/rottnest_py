@@ -2,17 +2,26 @@ import multiprocessing as mp
 from threading import Thread
 from typing import Any
 from rottnest.compute_units.compute_unit import ComputeUnit 
+from rottnest.widget_compilers.main import run as run_widget
 
 
 def run_sequence_elem(args):
     compute_unit, arch_obj = args
     compute_unit: ComputeUnit
-
+    print("running elem")
     # TODO replace with actual impl + add try/except
-    s = str(arch_obj)
-    print(compute_unit, "with", s[:min(len(s), 200)])
-    return (False, None)
-
+    try:
+        widget = compute_unit.compile_graph_state()
+        print("compile done")
+        orch = run_widget(cabaliser_obj=widget.json(), region_obj=arch_obj)
+        print("execution done")
+        resp = orch.json
+        print("returning result")
+        return (False, resp)
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exception(e)
+        return (True, {'err_type': repr(e), 'traceback': tb})
 
 def task_run_sequence(arch_obj):
     # TODO farm off to actual code
@@ -77,7 +86,7 @@ class AsyncIteratorProcessPool:
     @staticmethod
     def _manager_main(task_queue: mp.Queue, completion_queue: mp.Queue, completion_callback: Any):
         print("in manager main")
-        pool = mp.Pool()
+        pool = mp.Pool(processes=1)
 
         while True:
             task_name, *args = task_queue.get()
@@ -91,7 +100,13 @@ class AsyncIteratorProcessPool:
 
             wrapped_iter = ((obj, *work_args) for obj in it)
 
-            for (is_err, payload) in pool.imap_unordered(work_fn, wrapped_iter):
+            def wrapped_iter_test(it):
+                for i, obj in enumerate(it):
+                    yield (obj, *work_args)
+                    if i > 2:
+                        break
+
+            for (is_err, payload) in pool.imap_unordered(work_fn, wrapped_iter_test(it)):
                 print("pool completed", payload)
                 completion_callback(payload, err=is_err)
 

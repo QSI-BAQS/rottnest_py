@@ -15,7 +15,8 @@ def handle_websocket():
     if not wsock:
         abort(400, 'Expected WebSocket request.')
 
-    pool = AsyncIteratorProcessPool(websocket_response_callback(wsock, 'debug'))
+    # TODO fix which callback
+    pool = AsyncIteratorProcessPool(websocket_response_callback(wsock, 'run_result'))
 
     try:
         while True:
@@ -76,7 +77,7 @@ def example_arch(*args, **kwargs):
     }) 
 
 def run_result(message, *args, pool: AsyncIteratorProcessPool = None, **kwargs):
-    print("Running!", message)
+    print("Running!", str(message)[:min(200, len(str(message)))])
     arch_id = message['payload']['arch_id']
     architecture.run_widget_pool(pool, arch_id)
     return json.dumps({

@@ -54,9 +54,9 @@ def run(cabaliser_obj=None, region_obj=None):
     orc = ScheduleOrchestrator(dag_roots, widget, strategy, json=True)
 
     # Graph State Scheduler
-    graph_state_orchestration(orc, graph_state)  
+    # graph_state_orchestration(orc, graph_state)  
 
     # T scheduler
-    t_orchestration(orc, prewarm_cycles=prewarm_cycles)
+    t_orchestration(orc)
 
     return orc
