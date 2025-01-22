@@ -111,7 +111,9 @@ class AsyncIteratorProcessPool:
 
             for (is_err, payload) in pool.imap_unordered(work_fn, wrapped_iter_test(it)):
                 s = str(payload)
-                print("pool completed", s[:min(200, len(s))])
+                if not is_err: # Always print full errors
+                    s = s[:min(200, len(s))]
+                print("pool completed", s)
                 completion_callback(payload, err=is_err)
 
         pool.terminate()
@@ -121,8 +123,26 @@ class AsyncIteratorProcessPool:
         self.manager = Thread(target=self._manager_main, args=[self.task_queue, None, completion_callback])
         self.manager.start()
         print("init done")
+        # TODO delete, we don't need this field
+        self.completion_callback = completion_callback
 
     def pool_submit(self, task_name, *args):
+        if task_name == "debug":
+            class Debug:
+                def compile_graph_state(self):
+                    class Debug2:
+                        def json(self):
+                            return {
+                                "n_qubits": 4,
+                                "consumptionschedule": [[{0: []}], [{1: [0]}]],
+                                "adjacencies": {0: [1], 1: [0], 2: [3], 3: [2]}
+                            }
+                    return Debug2()
+            (is_err, payload) = run_sequence_elem((Debug(), args[0]))
+            if is_err:
+                print("err", payload)
+            self.completion_callback(payload, err=is_err)
+            return
         self.task_queue.put((task_name, *args))
 
     def terminate(self):

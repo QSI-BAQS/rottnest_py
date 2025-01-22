@@ -84,6 +84,8 @@ def run_result(message, *args, pool: AsyncIteratorProcessPool = None, **kwargs):
         'message': 'run_result',
         'payload': 'pending',
     })
+    # Debug:
+    # return json.dumps({'message': 'debug'})
 
 def get_router(*args, **kwargs):
     return json.dumps({

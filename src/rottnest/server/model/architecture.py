@@ -43,7 +43,8 @@ def run_widget_scheduler(arch_id):
 def run_widget_pool(pool, arch_id):
     print("in run_widget_pool")
     pool.pool_submit("task_run_sequence", saved_architectures[arch_id])
-    
+    # pool.pool_submit("debug", saved_architectures[arch_id])
+    # debug runs one widget on single thread
 # END mess
 
 def get_router_mapping():
