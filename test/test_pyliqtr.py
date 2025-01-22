@@ -30,7 +30,7 @@ def make_fh_circuit(N=2, times=1.0, p_algo=0.95):
     return make_qsvt_circuit(model,encoding=getEncoding(VALID_ENCODINGS.PauliLCU),times=times,p_algo=p_algo)
 
 
-N = 20  
+N = 2  
 fh = make_fh_circuit(N=N,p_algo=0.9999999904,times=0.01)
 parser = PyliqtrParser(fh)
 parser.parse()
@@ -40,4 +40,5 @@ circ_parser = CirqParser(100)
 # Create generator object
 for circuit in parser.traverse():
     for seq in circ_parser.parse(circuit):
-        print(seq)
+        pass    
+        #print(seq)
