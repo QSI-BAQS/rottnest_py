@@ -2,6 +2,7 @@ from bottle import request, abort
 from geventwebsocket import WebSocketError
 from rottnest.region_builder import json_to_region
 from rottnest.server.model import architecture 
+from rottnest.process_pool.process_pool import AsyncIteratorProcessPool
 
 import json
 
@@ -14,28 +15,47 @@ def handle_websocket():
     if not wsock:
         abort(400, 'Expected WebSocket request.')
 
-    while True:
-        # TODO: RPC this whole thing
-        try:
-            message_raw = wsock.receive()
-            if message_raw is None: continue
-            print(message_raw)
-            message = json.loads(message_raw)
-            # Expect: {'cmd': <cmd here>, 'payload': <arguments here>}
-            cmd_func = socket_binds.get(message['cmd'], err)
-            print("Dispatch", cmd_func) 
-            resp = cmd_func(message)
-            resp_log = str(resp)
-            if len(resp_log) > 200:
-                resp_log = resp_log[:200] + '<... output truncated>'
-            print("Resp:", resp_log)
-            wsock.send(resp)
-        except WebSocketError:
-            break
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            wsock.send(json.dumps({'message': 'err', 'desc': f"{e}"}))
+    pool = AsyncIteratorProcessPool(websocket_response_callback(wsock, 'debug'))
+
+    try:
+        while True:
+            # TODO: RPC this whole thing
+            try:
+                message_raw = wsock.receive()
+                if message_raw is None: continue
+                print(message_raw)
+                message = json.loads(message_raw)
+                # Expect: {'cmd': <cmd here>, 'payload': <arguments here>}
+                cmd_func = socket_binds.get(message['cmd'], err)
+                print("Dispatch", cmd_func) 
+                resp = cmd_func(message, pool=pool, callback=websocket_response_callback(wsock, message.get('cmd', 'err')))
+                architecture.log_resp(resp)
+                wsock.send(resp)
+            except WebSocketError:
+                break
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                wsock.send(json.dumps({'message': 'err', 'desc': f"{e}"}))
+    finally:
+        pool.terminate()
+
+def websocket_response_callback(ws, message_type):
+    def _callback(payload, err=False):
+        if not err:
+            resp = json.dumps({
+                'message': message_type,
+                'payload': payload
+            })
+        else:
+            resp = json.dumps({
+                'message': 'err',
+                'payload': payload
+            })
+        print("In callback: ", end='')
+        architecture.log_resp(resp)
+        ws.send(resp)
+    return _callback
 
 def err(message, *args, **kwargs):
     return json.dumps({
@@ -55,12 +75,13 @@ def example_arch(*args, **kwargs):
         'payload': json_to_region.example
     }) 
 
-def run_result(message, *args, **kwargs):
+def run_result(message, *args, pool: AsyncIteratorProcessPool = None, **kwargs):
     print("Running!", message)
     arch_id = message['payload']['arch_id']
+    architecture.run_widget_pool(pool, arch_id)
     return json.dumps({
         'message': 'run_result',
-        'payload': architecture.run_widget_scheduler(arch_id)
+        'payload': 'pending',
     })
 
 def get_router(*args, **kwargs):

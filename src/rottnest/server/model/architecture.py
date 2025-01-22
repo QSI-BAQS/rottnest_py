@@ -1,5 +1,6 @@
 from functools import lru_cache
 import random
+from typing import Any
 
 # Ill advised, but forces the generation and capture of the region types
 from t_scheduler.widget import * 
@@ -24,9 +25,26 @@ def get_region_subtypes() -> str:
 def get_factory_types() -> str: 
     return ''
 
-def run_widget_scheduler(arch_id):
-    result = run_widget(region_obj=saved_architectures[arch_id])
+def log_resp(resp: Any):
+    resp_log = str(resp)
+    if len(resp_log) > 200:
+        resp_log = resp_log[:200] + '<... output truncated>'
+    print("Resp:", resp_log)
+
+# TODO reorganise this mess and cull unused
+
+def run_widget_scheduler_obj(arch_obj):
+    result = run_widget(region_obj=arch_obj)
     return result.json
+
+def run_widget_scheduler(arch_id):
+    return run_widget_scheduler_obj(saved_architectures[arch_id])
+
+def run_widget_pool(pool, arch_id):
+    print("in run_widget_pool")
+    pool.pool_submit("task_run_sequence", saved_architectures[arch_id])
+    
+# END mess
 
 def get_router_mapping():
     return region_router_exports
