@@ -16,7 +16,8 @@ def handle_websocket():
         abort(400, 'Expected WebSocket request.')
 
     # TODO fix which callback
-    pool = AsyncIteratorProcessPool(websocket_response_callback(wsock, 'run_result'))
+    pool = AsyncIteratorProcessPool(websocket_response_callback(wsock, 
+                                                                'run_result'))
 
     try:
         while True:
@@ -29,7 +30,12 @@ def handle_websocket():
                 # Expect: {'cmd': <cmd here>, 'payload': <arguments here>}
                 cmd_func = socket_binds.get(message['cmd'], err)
                 print("Dispatch", cmd_func) 
-                resp = cmd_func(message, pool=pool, callback=websocket_response_callback(wsock, message.get('cmd', 'err')))
+                resp = cmd_func(message, 
+                                pool=pool, 
+                                callback=
+                                websocket_response_callback(
+                                    wsock, message.get('cmd', 'err')))
+
                 architecture.log_resp(resp)
                 wsock.send(resp)
             except WebSocketError:
@@ -107,6 +113,16 @@ def use_arch(message, *args, **kwargs):
         'arch_id': architecture.save_arch(arch_obj)
     })
 
+def get_graph(message, *args, **kwargs):
+    gid = message['gid']
+    return json.dumps({
+            'message': 'get_graph',
+            'payload' : {
+                'gid' : gid,
+                'graph' : architecture.retrieve_graph_segment(gid)
+            }
+        })
+
 # Socket commands
 socket_binds = {
         'subtype': get_subtype,
@@ -115,4 +131,5 @@ socket_binds = {
         'run_result': run_result,
         'get_router': get_router,
         'get_args': get_args,
+        'get_graph' : get_graph
         } 
