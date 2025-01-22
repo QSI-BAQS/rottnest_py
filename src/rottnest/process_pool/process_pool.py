@@ -15,6 +15,7 @@ def run_sequence_elem(args):
         print("compile done")
         orch = run_widget(cabaliser_obj=widget.json(), region_obj=arch_obj)
         print("execution done")
+        print("ST volume:", orch.get_space_time_volume())
         resp = orch.json
         print("returning result")
         return (False, resp)
@@ -104,9 +105,9 @@ class AsyncIteratorProcessPool:
 
             def wrapped_iter_test(it):
                 for i, obj in enumerate(it):
-                    yield (obj, *work_args)
-                    if i > 2:
+                    if i > 0:
                         break
+                    yield (obj, *work_args)
 
             for (is_err, payload) in pool.imap_unordered(work_fn, wrapped_iter_test(it)):
                 s = str(payload)
