@@ -107,7 +107,8 @@ class AsyncIteratorProcessPool:
                         break
 
             for (is_err, payload) in pool.imap_unordered(work_fn, wrapped_iter_test(it)):
-                print("pool completed", payload)
+                s = str(payload)
+                print("pool completed", s[:min(200, len(s))])
                 completion_callback(payload, err=is_err)
 
         pool.terminate()
