@@ -1,7 +1,8 @@
 from bottle import request, abort 
 from geventwebsocket import WebSocketError
 from rottnest.region_builder import json_to_region
-from rottnest.server.model import architecture 
+from rottnest.server.model import architecture
+import rottnest.process_pool.process_pool as process_pool
 from rottnest.process_pool.process_pool import AsyncIteratorProcessPool
 
 import json
@@ -98,7 +99,7 @@ def run_result(message, *args,
 def debug_send(message, *args, pool: AsyncIteratorProcessPool = None, **kwargs):
     # Debug:
     architecture.run_debug(pool, next(iter(architecture.saved_architectures.keys())))
-    return json.dumps({'message': 'debug'})
+    return get_status({'cu_id': 'debug'})
 
 def get_router(*args, **kwargs):
     return json.dumps({
@@ -130,6 +131,13 @@ def get_graph(message, *args, **kwargs):
             }
         })
 
+def get_status(message):
+    cu_id = message['cu_id']
+    return json.dumps({
+        'message': 'status_response',
+        'payload': process_pool.dummy_result_cache[cu_id],
+    })
+
 # Socket commands
 socket_binds = {
         'subtype': get_subtype,
@@ -140,4 +148,5 @@ socket_binds = {
         'get_args': get_args,
         'get_graph' : get_graph,
         'debug_send': debug_send,
+        'get_status': get_status,
         } 

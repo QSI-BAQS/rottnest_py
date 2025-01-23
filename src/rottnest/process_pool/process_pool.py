@@ -22,7 +22,8 @@ def run_sequence_elem(args):
         stats = {
             'volumes': orch.get_space_time_volume(),
             't_source': orch.get_T_stats(),
-            'vis_obj': None
+            'vis_obj': None,
+            'cu_id': compute_unit.unit_id,
         }
         print(stats)
         if full_output:
@@ -32,7 +33,7 @@ def run_sequence_elem(args):
     except Exception as e:
         import traceback
         tb = traceback.format_exception(e)
-        return (True, {'err_type': repr(e), 'traceback': tb})
+        return (True, {'err_type': repr(e), 'traceback': tb, 'cu_id': compute_unit.unit_id})
 
 def task_run_sequence(arch_obj):
     # TODO farm off to actual code
@@ -144,6 +145,7 @@ class AsyncIteratorProcessPool:
     def pool_submit(self, task_name, *args):
         if task_name == "debug":
             class Debug:
+                unit_id = 'debug'
                 def compile_graph_state(self):
                     class Debug2:
                         def json(self):
@@ -156,7 +158,9 @@ class AsyncIteratorProcessPool:
             (is_err, payload) = run_sequence_elem((Debug(), args[0], False))
             if is_err:
                 print("err", payload)
+            dummy_result_cache[payload['cu_id']] = payload
             self.completion_callback(payload, err=is_err)
+
             return
         self.task_queue.put((task_name, *args))
 
