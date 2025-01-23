@@ -16,8 +16,8 @@ def handle_websocket():
         abort(400, 'Expected WebSocket request.')
 
     # TODO fix which callback
-    pool = AsyncIteratorProcessPool(websocket_response_callback(wsock, 
-                                                                'run_result'))
+    pool = AsyncIteratorProcessPool(
+            websocket_response_callback(wsock,'run_result'))
 
     try:
         while True:
@@ -27,7 +27,9 @@ def handle_websocket():
                 if message_raw is None: continue
                 print(message_raw)
                 message = json.loads(message_raw)
-                # Expect: {'cmd': <cmd here>, 'payload': <arguments here>}
+                # Expect: {'cmd': <cmd here>, 'payload': 
+                # <arguments here>}
+
                 cmd_func = socket_binds.get(message['cmd'], err)
                 print("Dispatch", cmd_func) 
                 resp = cmd_func(message, 
@@ -43,7 +45,8 @@ def handle_websocket():
             except Exception as e:
                 import traceback
                 traceback.print_exc()
-                wsock.send(json.dumps({'message': 'err', 'desc': f"{e}"}))
+                wsock.send(json.dumps({'message': 'err', 
+                                       'desc': f"{e}"}))
     finally:
         pool.terminate()
 
@@ -82,7 +85,8 @@ def example_arch(*args, **kwargs):
         'payload': json_to_region.example
     }) 
 
-def run_result(message, *args, pool: AsyncIteratorProcessPool = None, **kwargs):
+def run_result(message, *args, 
+               pool: AsyncIteratorProcessPool = None, **kwargs):
     print("Running!", str(message)[:min(200, len(str(message)))])
     arch_id = message['payload']['arch_id']
     architecture.run_widget_pool(pool, arch_id)
@@ -114,12 +118,12 @@ def use_arch(message, *args, **kwargs):
     })
 
 def get_graph(message, *args, **kwargs):
-    gid = message['gid']
+    gobj = message['payload']
     return json.dumps({
             'message': 'get_graph',
             'payload' : {
-                'gid' : gid,
-                'graph' : architecture.retrieve_graph_segment(gid)
+                'gid' : gobj['gid'], #super silly
+                'graph_view' : architecture.retrieve_graph_segment(gobj)
             }
         })
 
