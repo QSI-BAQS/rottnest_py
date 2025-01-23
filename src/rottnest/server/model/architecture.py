@@ -10,7 +10,7 @@ from t_scheduler.router import *
 from t_scheduler.router import region_router_exports
 
 from rottnest.widget_compilers.main import run as run_widget
-
+from rottnest.process_pool import process_pool
 saved_architectures = {}
 
 @lru_cache
@@ -43,7 +43,9 @@ def run_widget_scheduler(arch_id):
 def run_widget_pool(pool, arch_id):
     print("in run_widget_pool")
     pool.pool_submit("task_run_sequence", saved_architectures[arch_id])
-    # pool.pool_submit("debug", saved_architectures[arch_id])
+
+def run_debug(pool, arch_id):
+    pool.pool_submit("debug", saved_architectures[arch_id])
     # debug runs one widget on single thread
 # END mess
 
@@ -85,3 +87,10 @@ def retrieve_graph_segment(gid):
 
 def get_region_arguments():
     return region_args
+
+
+def get_status(cu_id):
+    if cu_id in process_pool.dummy_result_cache:
+        return process_pool.dummy_result_cache[cu_id]
+    else:
+        return {'cu_id': cu_id, 'status': 'not_found'}

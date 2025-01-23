@@ -4,26 +4,42 @@ from typing import Any
 from rottnest.compute_units.compute_unit import ComputeUnit 
 from rottnest.widget_compilers.main import run as run_widget
 
+result_manager = mp.Manager()
+dummy_result_cache = result_manager.dict()
+
 
 def run_sequence_elem(args):
-    compute_unit, arch_obj = args
+    compute_unit, arch_obj, full_output = args
     compute_unit: ComputeUnit
     print("running elem")
     # TODO replace with actual impl + add try/except
     try:
+        # TODO signal running here
+        stats = {
+            'cu_id': compute_unit.unit_id,
+            'status': 'running'
+        }
         widget = compute_unit.compile_graph_state()
         print("compile done")
-        orch = run_widget(cabaliser_obj=widget.json(), region_obj=arch_obj)
+        orch = run_widget(cabaliser_obj=widget.json(), region_obj=arch_obj, full_output=full_output)
         print("execution done")
-        print("ST volume:", orch.get_space_time_volume())
-        print("T source stats:", orch.get_T_stats())
-        resp = orch.json
+        
+        stats = {
+            'volumes': orch.get_space_time_volume(),
+            't_source': orch.get_T_stats(),
+            'vis_obj': None,
+            'cu_id': compute_unit.unit_id,
+            'status': 'complete'
+        }
+        print(stats)
+        if full_output:
+            stats['vis_obj'] = orch.json
         print("returning result")
-        return (False, resp)
+        return (False, stats)
     except Exception as e:
         import traceback
         tb = traceback.format_exception(e)
-        return (True, {'err_type': repr(e), 'traceback': tb})
+        return (True, {'err_type': repr(e), 'traceback': tb, 'cu_id': compute_unit.unit_id})
 
 def task_run_sequence(arch_obj):
     # TODO farm off to actual code
@@ -78,7 +94,7 @@ def task_run_sequence(arch_obj):
     # Actual work here.
     it = seq.sequence_pyliqtr(parser)
     task_work_fn = run_sequence_elem
-    task_args_additional = (arch_obj,)
+    task_args_additional = (arch_obj, False)
 
     print("circuit done")
     return (it, task_work_fn, task_args_additional)
@@ -88,7 +104,7 @@ operation_map = {"task_run_sequence": task_run_sequence}
 
 class AsyncIteratorProcessPool:    
     @staticmethod
-    def _manager_main(task_queue: mp.Queue, completion_queue: mp.Queue, completion_callback: Any):
+    def _manager_main(task_queue: mp.Queue, completion_queue: mp.Queue, completion_callback: Any, result_cache):
         print("in manager main")
         pool = mp.Pool(processes=1)
 
@@ -119,13 +135,14 @@ class AsyncIteratorProcessPool:
                 else:
                     print("pool completed err:")
                     print(''.join(payload['traceback']))
+                result_cache[payload['cu_id']] = payload
                 completion_callback(payload, err=is_err)
 
         pool.terminate()
 
     def __init__(self, completion_callback):
         self.task_queue = mp.Queue()
-        self.manager = Thread(target=self._manager_main, args=[self.task_queue, None, completion_callback])
+        self.manager = Thread(target=self._manager_main, args=[self.task_queue, None, completion_callback, dummy_result_cache])
         self.manager.start()
         print("init done")
         # TODO delete, we don't need this field
@@ -134,6 +151,7 @@ class AsyncIteratorProcessPool:
     def pool_submit(self, task_name, *args):
         if task_name == "debug":
             class Debug:
+                unit_id = 'debug'
                 def compile_graph_state(self):
                     class Debug2:
                         def json(self):
@@ -143,10 +161,12 @@ class AsyncIteratorProcessPool:
                                 "adjacencies": {0: [1], 1: [0], 2: [3], 3: [2]}
                             }
                     return Debug2()
-            (is_err, payload) = run_sequence_elem((Debug(), args[0]))
+            (is_err, payload) = run_sequence_elem((Debug(), args[0], False))
             if is_err:
                 print("err", payload)
+            dummy_result_cache[payload['cu_id']] = payload
             self.completion_callback(payload, err=is_err)
+
             return
         self.task_queue.put((task_name, *args))
 

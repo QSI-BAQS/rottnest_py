@@ -29,7 +29,7 @@ def make_mapper(graph_state, reg_region_obj):
     return mapped_gs
 
 
-def run(cabaliser_obj=None, region_obj=None):
+def run(cabaliser_obj=None, region_obj=None, full_output=False):
     # TODO delete after testing passes
     if cabaliser_obj is None:
         with open('qft_test_obj.json') as f:
@@ -52,7 +52,7 @@ def run(cabaliser_obj=None, region_obj=None):
     temp_reg_region = region_obj['regions'][0]# TODO delete
     strategy.mapper = make_mapper(graph_state, temp_reg_region) # TODO gosc mapper
     
-    orc = ScheduleOrchestrator(dag_roots, widget, strategy, json=True)
+    orc = ScheduleOrchestrator(dag_roots, widget, strategy, json=full_output)
 
     # Graph State Scheduler
     graph_state_orchestration(orc, graph_state)  
