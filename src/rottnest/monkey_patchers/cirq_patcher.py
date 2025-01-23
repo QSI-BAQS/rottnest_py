@@ -292,43 +292,38 @@ def ry():
         # number of Rz gates
     '''
     def _wrap(
-
+        gate,
         self,
         operation_sequence: OperationSequence,
         qubit_labels: QubitLabelTracker,
         rz_tags: QubitLabelTracker):
 
-        tag = rz_tags(self.angle, self.eps)
-        target = qubit_labels.gets(self.qubits)[0]
+        tag = rz_tags.get(gate.exponent, None)
+        target = qubit_labels.gets(*self.qubits)[0]
 
         operation_sequence.append(
             cabaliser_gates.S,
-            (target,)
+            target
         )
 
         operation_sequence.append(
             cabaliser_gates.H,
-            (target,)
-        )
-
-        operation_sequence.append(
-            cabaliser_gates.H,
-            (target,)
+            target
         )
 
         operation_sequence.append(
             cabaliser_gates.RZ,
-            (target, tag)
+            target, tag
         )
 
         operation_sequence.append(
             cabaliser_gates.H,
-            (target,)
+            target
         )
 
         operation_sequence.append(
             cabaliser_gates.Sdag,
-            (target,)
+            target
         )
 
     return _wrap, 5

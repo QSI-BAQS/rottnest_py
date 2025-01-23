@@ -23,16 +23,16 @@ import qualtran.bloqs.mcmt
 import cirq
 
 from pyLIQTR.qubitization import qsvt, qubitized_gates
+from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU 
+from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
+from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
+
 
 from . import cirq_parser
 
 # pyLIQTR gates include cirq gates
 known_gates = dict(cirq_parser.known_gates) 
 
-
-#known_gates |= {
-#    pyLIQTR.qubitization.qsvt.QSVT_real_polynomial
-#}
 
 # Difficult to assert uniqueness of hash function
 def cmp_qsvt(self, other):
@@ -45,15 +45,39 @@ All pyLIQTR gates should be decomposed into their call graph
 Each gate is then bound as a shim and a re-usable component 
 '''
 
+class PyliqtrCache:
+
+    def __init__(self):
+        self._cache = []
+
+    def get(self, gate):
+        self._cache.append(gate)
+
+    def append(self, obj):
+        self._cache.append(obj)
+
+class PyliqtrGateCache:
+
+    def __init__(self, gate_type, cache_len):
+        self.gate_type = gate_type
+        self.cache_len = cache_len
 
 class PyliqtrParser:
     tracking_targets = frozenset((
         qsvt.QSVT_real_polynomial,
+        PauliStringLCU,
+        prepare_pauli_lcu,
+        QSP_Prepare,
         qubitized_gates.QubitizedRotation,
         qubitized_gates.QubitizedReflection,
         qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlPauli,
         qualtran.cirq_interop._bloq_to_cirq.BloqAsCirqGate, # Catch a bunch of qualtran gates
         qualtran.bloqs.mcmt.and_bloq.And,
+    ))
+
+    # Targets to decompose on the spot 
+    cirq_decomposing_targets = frozenset((
+        cirq.ControlledGate,
     ))
 
     '''
@@ -65,12 +89,13 @@ class PyliqtrParser:
         self.gate = gate
         
         self.circuit = circuit_decompose_multi(circuit, 1)
-        self._curr_shim = []
+
         self.shims = {} # Shims represent non-pyliqtr sequences
         self.handles = {} # Handles represent callable representations of pyliqtr objects
         
         self.decompositions = {}
         self.fully_decomposed = None
+        self._cache = PyliqtrCache() 
 
     def qualtran_handoff(self):
         '''
@@ -114,7 +139,12 @@ class PyliqtrParser:
         nx.draw_kamada_kawai(graph, labels={i:str(i) for i in gates})
                 
     def parse(self, circuit=None):
+        # This is the decomposition
+
         self.fully_decomposed = True
+
+        self._curr_shim = cirq_parser.CirqShim() 
+
         if circuit is None:
             circuit = self.circuit
         for moment in circuit:
@@ -123,9 +153,14 @@ class PyliqtrParser:
                     instances = self.handles.get(operation.gate.__class__, list())
                     instances.append(operation) 
                     self.handles[operation.gate.__class__] = instances
+
+                    # Create a new shim object
                     self.shims[operation] = self._curr_shim
-                    self._curr_shim = []
+                    self._curr_shim = cirq_parser.CirqShim() 
                     self.fully_decomposed = False
+                elif operation.gate.__class__ in self.cirq_decomposing_targets:
+                    # TODO: decompose and append to shim 
+                    pass
                 else:
                     self._curr_shim.append(operation)      
 
@@ -135,15 +170,24 @@ class PyliqtrParser:
         '''
         for r in self.decompose():
             r.parse()
+
+            # Inject shim
+            shim = self.shims[r.op]
+            if len(shim) > 0:
+                print("SHIM")
+                yield shim 
+
             if r.fully_decomposed:
+                self._cache.append(r)
                 yield r
             else:
+                print("UNROLL")
                 it = r.traverse()
                 while True:
                     try:
                         v = next(it)
                         yield v
-                    except:
+                    except StopIteration:
                         break
 
     def traverse_all(self):

@@ -34,6 +34,7 @@ class Sequencer():
 
         cirq_parser = CirqParser(self.sequence_length)
 
+        print("Sequencing")
         for cirq_obj in parser.traverse():
             for op_seq in cirq_parser.parse(cirq_obj): 
 

@@ -59,10 +59,9 @@ def make_fh_circuit(N=2, times=1.0, p_algo=0.95):
     model = getInstance("FermiHubbard", shape=(N, N), J=J, U=U, cell=SquareLattice)
     return make_qsvt_circuit(model,encoding=getEncoding(VALID_ENCODINGS.PauliLCU),times=times,p_algo=p_algo)
 
-
 class SequencerTest(unittest.TestCase):
 
-    def test_fh(self, N=30, debug=True):
+    def test_fh(self, N=2, debug=True):
         
         if debug:
             start = time.time()
@@ -84,7 +83,7 @@ class SequencerTest(unittest.TestCase):
 
         cnt = 0
         for compute_unit in seq.sequence_pyliqtr(parser):
-            compute_unit.compile_graph_state()
+           #compute_unit.compile_graph_state()
             cnt += 1
 
         if debug:
@@ -94,4 +93,4 @@ class SequencerTest(unittest.TestCase):
 
 if __name__ == '__main__':
     st = SequencerTest()
-    st.test_fh()
+    st.test_fh(N=33)

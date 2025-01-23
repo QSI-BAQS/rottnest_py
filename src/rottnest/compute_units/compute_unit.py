@@ -8,7 +8,11 @@ class ComputeUnit():
     '''
         Wrapped object for sending
     '''
-    def __init__(self, architecture):
+    def __init__(self, architecture, unit_id: str=None):
+
+        # TODO: mem bounds from architecture 
+        
+        self.unit_id = unit_id
         self.memory_bound = 100 
         self.architecture = architecture
         self.sequences = list()
@@ -37,7 +41,6 @@ class ComputeUnit():
         '''
             TODO: Setup context extraction decorator
         '''
-
         widget = Widget(self.n_inputs, self.n_qubits * 2 + 1)
         for op in self.sequences:
             widget(op)
