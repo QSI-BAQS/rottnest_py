@@ -12,7 +12,7 @@ from rottnest.input_parsers.rz_tag_tracker import RzTagTracker
 from rottnest.monkey_patchers import cirq_patcher 
 from rottnest.monkey_patchers.cirq_patcher import known_gates 
 
-shared_rz_tracker = RzTagTracker()
+shared_rz_tag_tracker = RzTagTracker()
 
 class CirqParser:
     '''
@@ -27,7 +27,9 @@ class CirqParser:
         self._qubit_labels = QubitLabelTracker()
 
         if rz_tracker is None:
+            global shared_rz_tag_tracker 
             rz_tracker = shared_rz_tag_tracker 
+
         self._rz_tracker = rz_tracker 
 
     def __len__(self):
