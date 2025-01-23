@@ -14,6 +14,11 @@ def run_sequence_elem(args):
     print("running elem")
     # TODO replace with actual impl + add try/except
     try:
+        # TODO signal running here
+        stats = {
+            'cu_id': compute_unit.unit_id,
+            'status': 'running'
+        }
         widget = compute_unit.compile_graph_state()
         print("compile done")
         orch = run_widget(cabaliser_obj=widget.json(), region_obj=arch_obj, full_output=full_output)
@@ -24,6 +29,7 @@ def run_sequence_elem(args):
             't_source': orch.get_T_stats(),
             'vis_obj': None,
             'cu_id': compute_unit.unit_id,
+            'status': 'complete'
         }
         print(stats)
         if full_output:

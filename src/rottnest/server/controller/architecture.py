@@ -133,9 +133,10 @@ def get_graph(message, *args, **kwargs):
 
 def get_status(message):
     cu_id = message['cu_id']
+    
     return json.dumps({
         'message': 'status_response',
-        'payload': process_pool.dummy_result_cache[cu_id],
+        'payload': architecture.get_status(cu_id),
     })
 
 # Socket commands
