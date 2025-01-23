@@ -195,14 +195,14 @@ class PyliqtrParser:
             # Inject shim
             shim = self.shims[r.op]
             if len(shim) > 0:
-                print("SHIM")
+                # print("SHIM")
                 yield shim 
 
             if r.fully_decomposed:
                 self._cache.append(r)
                 yield r
             else:
-                print("UNROLL")
+                # print("UNROLL")
                 it = r.traverse()
                 while True:
                     try:
