@@ -12,15 +12,31 @@ class RzTagTracker():
         assumptions that no two gates will have
         the same angle and differing values of eps 
     '''
-    def __init__(self):
+    def __init__(self, default_eps = 10):
         # Reserve tag 0 
         self._angles_to_tags = {None: None}
         self._tags_to_angles = [None] 
-        self._eps = [0] 
+        self._eps = [None] 
         self.n_rz_gates = 0
+    
+        self.default_eps = default_eps
 
     def __getitem__(self, tag):
         return self._tags_to_angles[tag]
+
+    def get_gridsynth_params(self, tag):
+        '''
+            Helper function to turn a tag into a gridsynth input
+        '''
+        angle = self._tags_to_angles[tag]
+        eps = self._eps[tag]  
+
+        if eps is None: 
+            eps = self.default_eps 
+        denominator = int(10 ** eps) 
+        numerator = int(angle * denominator)
+        
+        return numerator, denominator, eps  
 
     def get(self, angle, eps): 
         '''
