@@ -11,9 +11,13 @@ def get_graph():
 
     graph = []
 
-    # TODO: move the view logic to view
 
+    # TODO: move the view logic to view
     for node in parser.unroll_graph():
+
+        # Populate the view cache
+        view_cache[node.handle_id] = node
+
         graph.append(
         {
             "name": node.name, 
@@ -30,4 +34,10 @@ def get_graph():
 
 
 def get_view(unit_id): 
-    pass
+    '''
+        Gets a view of the object
+    '''
+    if unit_id not in view_cache:
+        raise Exception("Unknown ID")
+
+
