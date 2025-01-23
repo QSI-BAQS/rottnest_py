@@ -94,8 +94,11 @@ def run_result(message, *args,
         'message': 'run_result',
         'payload': 'pending',
     })
+
+def debug_send(message, *args, pool: AsyncIteratorProcessPool = None, **kwargs):
     # Debug:
-    # return json.dumps({'message': 'debug'})
+    architecture.run_debug(pool, next(iter(architecture.saved_architectures.keys())))
+    return json.dumps({'message': 'debug'})
 
 def get_router(*args, **kwargs):
     return json.dumps({
@@ -135,5 +138,6 @@ socket_binds = {
         'run_result': run_result,
         'get_router': get_router,
         'get_args': get_args,
-        'get_graph' : get_graph
+        'get_graph' : get_graph,
+        'debug_send': debug_send,
         } 
