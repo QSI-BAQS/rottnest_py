@@ -1,6 +1,6 @@
 from t_scheduler.base import util, util_additional
 
-from t_scheduler.widget import CombShapedRegisterRegion, SingleRowRegisterRegion
+from t_scheduler.region import CombShapedRegisterRegion, SingleRowRegisterRegion
 from graph_state_generation.graph_state.graph_state import GraphState
 from graph_state_generation.schedulers.greedy_cz_scheduler import GreedyCZScheduler 
 

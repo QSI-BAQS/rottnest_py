@@ -31,8 +31,9 @@ def make_mapper(graph_state, reg_region_obj):
 
 def run(cabaliser_obj=None, region_obj=None):
     # TODO delete after testing passes
-    with open('qft_test_obj.json') as f:
-        cabaliser_obj = json.load(f)
+    if cabaliser_obj is None:
+        with open('qft_test_obj.json') as f:
+            cabaliser_obj = json.load(f)
     
     if region_obj == None:
         region_obj = example_region_obj
@@ -57,6 +58,6 @@ def run(cabaliser_obj=None, region_obj=None):
     graph_state_orchestration(orc, graph_state)  
 
     # T scheduler
-    t_orchestration(orc, prewarm_cycles=prewarm_cycles)
+    t_orchestration(orc)
 
     return orc

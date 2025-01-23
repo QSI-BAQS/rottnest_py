@@ -1,6 +1,6 @@
 from t_scheduler.router import *
 from t_scheduler.templates.generic_templates import LayoutNode 
-from t_scheduler.widget.region_types import region_types
+from t_scheduler.region.region_types import region_types
 
 from functools import partial
 
