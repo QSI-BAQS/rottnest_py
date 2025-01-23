@@ -32,9 +32,9 @@ class Debug:
 
 
 def run_sequence_elem(args):
-    import sys
-    f = open('/dev/null', 'w')
-    sys.stdout = f
+    # import sys
+    # f = open('/dev/null', 'w')
+    # sys.stdout = f
     print("running elem", flush=True)
     compute_unit, arch_obj, full_output = args
     compute_unit: ComputeUnit
