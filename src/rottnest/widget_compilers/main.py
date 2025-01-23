@@ -42,7 +42,7 @@ def run(cabaliser_obj=None, region_obj=None, full_output=False):
     gates = make_gates(cabaliser_obj)
     dag_layers, all_gates = dag_create(cabaliser_obj, gates)
     dag_roots = dag_layers[0]
-
+    # print("roots", dag_roots)
     # Load layout
     layout = json_to_layout(region_obj)
     strategy, widget = make_explicit(layout, region_obj['width'], region_obj['height'])
@@ -55,7 +55,7 @@ def run(cabaliser_obj=None, region_obj=None, full_output=False):
     orc = ScheduleOrchestrator(dag_roots, widget, strategy, json=full_output)
 
     # Graph State Scheduler
-    graph_state_orchestration(orc, graph_state)  
+    # graph_state_orchestration(orc, graph_state)  
 
     # T scheduler
     t_orchestration(orc)
