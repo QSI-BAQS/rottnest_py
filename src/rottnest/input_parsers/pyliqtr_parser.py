@@ -131,6 +131,7 @@ class PyliqtrParser:
                 tmp.append(gate)
                 parser = PyliqtrParser(tmp, op=gate, handle_id = f"{self.handle_id}_{handle_id}")
                 yield parser
+                handle_id += 1
 
     def graph(self):
         if self.op is not None:
@@ -229,3 +230,7 @@ class GraphWrapper():
         self.name = name
         self.description = description
         self.children = children
+        self._parser = None #parser
+
+    def get_graph(self): 
+        return self.parser
