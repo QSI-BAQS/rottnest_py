@@ -23,4 +23,5 @@ def run(hostname="localhost", port=8080):
     server.serve_forever()
 
 if __name__ == '__main__':
+    print("Running!")
     run()
