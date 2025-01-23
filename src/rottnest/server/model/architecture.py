@@ -58,34 +58,29 @@ def save_arch(arch_obj):
     saved_architectures[arch_id] = arch_obj
     return arch_id
 
-def retrieve_graph_segment(run_result_gid):
+def retrieve_graph_segment(gid):
     #TODO: Please finish this, not sure what you'd want
     # Provided example layout
     return { 
-            "gid": run_result_gid,
-            "graph_view": {
-                    "root_index" : 0,
-                    "graph" : 
-                        [ 
-                            {
-                                "name" : "start",
-                                "description" : "simple thing",
-                                "children" : [1, 2]
-                            },
-                            {
-                                "name" : "c1",
-                                "description" : "child 1",
-                                "children" : []
-                            },
-                            {
-                                "name" : "c2",
-                                "description" : "child 2",
-                                "children" : []
-                            },
+            "root_index" : 0,
+            "graph" : [ 
+                {
+                        "name" : "start",
+                        "description" : "simple thing",
+                        "children" : [1, 2]
+                    },
+                    {
+                        "name" : "c1",
+                        "description" : "child 1",
+                        "children" : []
+                    },
+                    {
+                        "name" : "c2",
+                        "description" : "child 2",
+                        "children" : []
+                    },
 
-                        ]
-                }
-            
+                ]
             }
 
 def get_region_arguments():
