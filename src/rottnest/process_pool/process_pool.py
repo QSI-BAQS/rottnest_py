@@ -16,6 +16,7 @@ def run_sequence_elem(args):
         orch = run_widget(cabaliser_obj=widget.json(), region_obj=arch_obj)
         print("execution done")
         print("ST volume:", orch.get_space_time_volume())
+        print("T source stats:", orch.get_T_stats())
         resp = orch.json
         print("returning result")
         return (False, resp)
@@ -113,7 +114,11 @@ class AsyncIteratorProcessPool:
                 s = str(payload)
                 if not is_err: # Always print full errors
                     s = s[:min(200, len(s))]
-                print("pool completed", s)
+
+                    print("pool completed", s)
+                else:
+                    print("pool completed err:")
+                    print(''.join(payload['traceback']))
                 completion_callback(payload, err=is_err)
 
         pool.terminate()
@@ -134,7 +139,7 @@ class AsyncIteratorProcessPool:
                         def json(self):
                             return {
                                 "n_qubits": 4,
-                                "consumptionschedule": [[{0: []}], [{1: [0]}]],
+                                "consumptionschedule": [[{0: []}], [{1: [0]}], [{2: [1]}], [{3: [2]}]],
                                 "adjacencies": {0: [1], 1: [0], 2: [3], 3: [2]}
                             }
                     return Debug2()
