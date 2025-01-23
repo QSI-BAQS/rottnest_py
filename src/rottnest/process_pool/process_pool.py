@@ -2,16 +2,42 @@ import multiprocessing as mp
 from threading import Thread
 from typing import Any
 from rottnest.compute_units.compute_unit import ComputeUnit 
+from rottnest.compute_units.sequencer import Sequencer
+from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
 from rottnest.widget_compilers.main import run as run_widget
+import time 
 
-result_manager = mp.Manager()
-dummy_result_cache = result_manager.dict()
+N_PROCESSES = 8
+
+# result_manager = mp.Manager()
+# dummy_result_cache = result_manager.dict()
+
+class Debug:
+    def __init__(self, obj = None):
+        self.obj = obj
+    unit_id = 'debug'
+    def compile_graph_state(self):
+        return self
+    
+    def json(self):
+        if self.obj is None:
+            return {
+                "n_qubits": 4,
+                "consumptionschedule": [[{0: []}], [{1: [0]}], [{2: [1]}], [{3: [2]}]],
+                "adjacencies": {0: [1], 1: [0], 2: [3], 3: [2]}
+            }
+        else:
+            import json
+            return json.load(self.obj)
 
 
 def run_sequence_elem(args):
+    import sys
+    f = open('/dev/null', 'w')
+    sys.stdout = f
+    print("running elem", flush=True)
     compute_unit, arch_obj, full_output = args
     compute_unit: ComputeUnit
-    print("running elem")
     # TODO replace with actual impl + add try/except
     try:
         # TODO signal running here
@@ -20,9 +46,12 @@ def run_sequence_elem(args):
             'status': 'running'
         }
         widget = compute_unit.compile_graph_state()
-        print("compile done")
+        print("compile done", flush=True)
+        # Debug output widget outputs
+        # with open('debug_obj.json', 'w') as f:
+        #     print(widget.json(), file=f)
         orch = run_widget(cabaliser_obj=widget.json(), region_obj=arch_obj, full_output=full_output)
-        print("execution done")
+        print("execution done", flush=True)
         
         stats = {
             'volumes': orch.get_space_time_volume(),
@@ -39,56 +68,19 @@ def run_sequence_elem(args):
     except Exception as e:
         import traceback
         tb = traceback.format_exception(e)
-        return (True, {'err_type': repr(e), 'traceback': tb, 'cu_id': compute_unit.unit_id})
+        # Debug output exceptions
+        # with open('errors.out', 'a') as f:
+        #     print('=============file===========', file=f)
+        #     print(widget.json(), file=f)
+        #     print('=============tb===========', file=f)
+        #     print(''.join(tb), file=f)
+        return (True, {'cu_id': str(compute_unit.unit_id), 'err_type': repr(e), 'traceback': tb})
 
 def task_run_sequence(arch_obj):
-    # TODO farm off to actual code
-    from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
-    from rottnest.input_parsers.cirq_parser import CirqParser
-    from rottnest.compute_units.sequencer import Sequencer
-
-    # pyLIQTR 1.3.3
-    from pyLIQTR.ProblemInstances.getInstance import getInstance
-    from pyLIQTR.clam.lattice_definitions import SquareLattice, TriangularLattice
-    from pyLIQTR.BlockEncodings.getEncoding import getEncoding, VALID_ENCODINGS
-    from pyLIQTR.qubitization.qsvt_dynamics import qsvt_dynamics, simulation_phases
-    from pyLIQTR.qubitization.qubitized_gates import QubitizedWalkOperator
-    from pyLIQTR.circuits.operators.AddMod import AddMod as pyLAM
-
-    # https://github.com/isi-usc-edu/qb-gsee-benchmark, commit 4c547e8
-    from qb_gsee_benchmark.qre import get_df_qpe_circuit
-    from qb_gsee_benchmark.utils import retrieve_fcidump_from_sftp
-
-    # pyscf v2.7.0
-    from pyscf  import ao2mo, tools
-
-    # openfermion v1.6.1
-    from openfermion import InteractionOperator
-
-    from pyLIQTR.utils.circuit_decomposition import circuit_decompose_multi
-
-    print("import done")
-
-    def make_qsvt_circuit(model,encoding,times=1.0,p_algo=0.95):
-        """Make a QSVT based circuit from pyLIQTR"""
-        eps = (1 - p_algo) / 2
-        scaled_times = times * model.alpha
-        phases = simulation_phases(times=scaled_times, eps=eps, precompute=False, phase_algorithm="random")
-        gate_qsvt = qsvt_dynamics(encoding=encoding, instance=model, phase_sets=phases)
-        return gate_qsvt.circuit
-    def make_fh_circuit(N=2, times=1.0, p_algo=0.95):
-        """Helper function to build Fermi-Hubbard circuit."""
-        # Create Fermi-Hubbard Instance
-        J = -1.0
-        U = 2.0
-        model = getInstance("FermiHubbard", shape=(N, N), J=J, U=U, cell=SquareLattice)
-        return make_qsvt_circuit(model,encoding=getEncoding(VALID_ENCODINGS.PauliLCU),times=times,p_algo=p_algo)
-    
-    N = 2
-    fh = make_fh_circuit(N=N,p_algo=0.9999999904,times=0.01)
-    parser = PyliqtrParser(fh)
+    from rottnest.executables.current_executable import current_executable
+    parser = PyliqtrParser(current_executable)
     parser.parse()
-    seq = Sequencer(None)
+    seq = Sequencer(arch_obj)
 
 
     # Actual work here.
@@ -104,9 +96,9 @@ operation_map = {"task_run_sequence": task_run_sequence}
 
 class AsyncIteratorProcessPool:    
     @staticmethod
-    def _manager_main(task_queue: mp.Queue, completion_queue: mp.Queue, completion_callback: Any, result_cache):
+    def _manager_main(task_queue: mp.Queue, completion_queue: mp.Queue, completion_callback: Any):
         print("in manager main")
-        pool = mp.Pool(processes=1)
+        pool = mp.Pool(N_PROCESSES)
 
         while True:
             task_name, *args = task_queue.get()
@@ -125,24 +117,30 @@ class AsyncIteratorProcessPool:
                     if i > 0:
                         break
                     yield (obj, *work_args)
+            print("start time:", time.time())
+            n_completed = 0
+            for (is_err, payload) in pool.imap_unordered(work_fn, wrapped_iter):
+                n_completed += 1
+                print("completed count", n_completed, "@", time.time())
+                # s = str(payload)
+                # if not is_err: # Always print full errors
+                #     s = s[:min(200, len(s))]
 
-            for (is_err, payload) in pool.imap_unordered(work_fn, wrapped_iter_test(it)):
-                s = str(payload)
-                if not is_err: # Always print full errors
-                    s = s[:min(200, len(s))]
-
-                    print("pool completed", s)
-                else:
-                    print("pool completed err:")
-                    print(''.join(payload['traceback']))
-                result_cache[payload['cu_id']] = payload
-                completion_callback(payload, err=is_err)
+                #     print("pool completed", s)
+                # else:
+                #     print("pool completed err:")
+                #     print(''.join(payload['traceback']))
+                # result_cache[payload['cu_id']] = payload
+                # completion_callback(payload, err=is_err)
+            print("iterator exhausted!")
+            print("time:", time.time())
 
         pool.terminate()
 
     def __init__(self, completion_callback):
         self.task_queue = mp.Queue()
-        self.manager = Thread(target=self._manager_main, args=[self.task_queue, None, completion_callback, dummy_result_cache])
+        self.manager = Thread(target=self._manager_main, args=[self.task_queue, None, completion_callback],
+                              name="PoolManager")
         self.manager.start()
         print("init done")
         # TODO delete, we don't need this field
@@ -150,24 +148,22 @@ class AsyncIteratorProcessPool:
 
     def pool_submit(self, task_name, *args):
         if task_name == "debug":
-            class Debug:
-                unit_id = 'debug'
-                def compile_graph_state(self):
-                    class Debug2:
-                        def json(self):
-                            return {
-                                "n_qubits": 4,
-                                "consumptionschedule": [[{0: []}], [{1: [0]}], [{2: [1]}], [{3: [2]}]],
-                                "adjacencies": {0: [1], 1: [0], 2: [3], 3: [2]}
-                            }
-                    return Debug2()
-            (is_err, payload) = run_sequence_elem((Debug(), args[0], False))
-            if is_err:
-                print("err", payload)
-            dummy_result_cache[payload['cu_id']] = payload
-            self.completion_callback(payload, err=is_err)
+            test_obj = Debug('debug_obj2.json')
+            # test_obj = next(iter(task_run_sequence(args[0])[0]))
+            print("args:", args)
+            (is_err, payload) = run_sequence_elem((test_obj, args[0], False))
+            if not is_err: # Always print full errors
+                s = str(payload)
+                s = s[:min(200, len(s))]
+                print("pool completed", s)
+            else:
+                print("pool completed err:")
+                print(''.join(payload['traceback']))
 
+            # dummy_result_cache[payload['cu_id']] = payload
+            # self.completion_callback(payload, err=is_err)
             return
+        # return
         self.task_queue.put((task_name, *args))
 
     def terminate(self):
