@@ -83,7 +83,10 @@ class PyliqtrParser:
     '''
         Begin by collecting the pyliqtr components
     '''
-    def __init__(self, circuit=None, op=None, gate=None, sequence_length=1000):
+    def __init__(self, circuit=None, op=None, gate=None, sequence_length=1000, handle_id="0"):
+
+        self.handle_id = handle_id
+
         self.op = op
         self.sequence_length = sequence_length
         self.gate = gate
@@ -118,6 +121,7 @@ class PyliqtrParser:
         raise Exception("Circuit has not been passed")
 
     def decompose(self, *targs):
+        handle_id = 0
         if len(targs) == 0:
             targs = self.handles
         
@@ -125,7 +129,7 @@ class PyliqtrParser:
             for gate in self.handles[label]:
                 tmp = cirq.Circuit()
                 tmp.append(gate)
-                parser = PyliqtrParser(tmp, op=gate)
+                parser = PyliqtrParser(tmp, op=gate, handle_id = f"{self.handle_id}_{handle_id}")
                 yield parser
 
     def graph(self):
@@ -157,12 +161,28 @@ class PyliqtrParser:
                     # Create a new shim object
                     self.shims[operation] = self._curr_shim
                     self._curr_shim = cirq_parser.CirqShim() 
+                    
+                    # If this is created then 
                     self.fully_decomposed = False
                 elif operation.gate.__class__ in self.cirq_decomposing_targets:
                     # TODO: decompose and append to shim 
                     pass
                 else:
                     self._curr_shim.append(operation)      
+
+
+    def unroll_graph(self):
+        '''
+        Return each circuit object
+        '''
+        for r in self.decompose():
+            # Retrieve shim 
+            shim = self.shims[r.op]
+
+            if len(shim) > 0:
+                shim_id = f"{r.handle_id}s" 
+                yield GraphWrapper(shim_id, f"Shim: {str(r.op.gate)}")
+            yield GraphWrapper(r.handle_id, str(r.op.gate))
 
     def traverse(self):
         '''
@@ -198,3 +218,14 @@ class PyliqtrParser:
         for circuit in self.traverse(): 
             for ops in parser.parse(circuit): 
                 yield ops
+
+
+class GraphWrapper():
+    '''
+        Thin graph node wrapper object
+    '''
+    def __init__(self, handle_id, name, description="", children = None):
+        self.handle_id = handle_id
+        self.name = name
+        self.description = description
+        self.children = children

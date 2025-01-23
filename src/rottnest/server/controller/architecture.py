@@ -1,7 +1,8 @@
 from bottle import request, abort 
 from geventwebsocket import WebSocketError
 from rottnest.region_builder import json_to_region
-from rottnest.server.model import architecture 
+from rottnest.server.model import architecture, graph_view 
+
 from rottnest.process_pool.process_pool import AsyncIteratorProcessPool
 
 import json
@@ -119,11 +120,14 @@ def use_arch(message, *args, **kwargs):
 
 def get_graph(message, *args, **kwargs):
     gobj = message['payload']
+
+    graph_object = graph_view.get_graph()
+
     return json.dumps({
             'message': 'get_graph',
             'payload' : {
                 'gid' : gobj['gid'], #super silly
-                'graph_view' : architecture.retrieve_graph_segment(gobj)
+                'graph_view' : graph_object 
             }
         })
 
