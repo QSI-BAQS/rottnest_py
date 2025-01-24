@@ -47,7 +47,7 @@ class ArchitectureProxy():
     def to_json(self):
         return saved_architectures[self.architecure_id]
 
-    def benchmark(self, computation: Computable): 
+    def benchmark(self, computation): 
         pass
 
     def set_t_rate(self, t_rate):

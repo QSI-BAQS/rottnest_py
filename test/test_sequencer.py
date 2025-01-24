@@ -69,7 +69,6 @@ class SequencerTest(unittest.TestCase):
         #fh = make_fh_circuit(N=N,p_algo=0.9999999904,times=0.01)
         fh = make_fh_circuit(N=N, p_algo=0.9, times=0.1)
 
-
         if debug:
             runtime = time.time() - start
             print(f"\t Completed in {runtime} seconds")
@@ -85,10 +84,10 @@ class SequencerTest(unittest.TestCase):
 
         cnt = 0
         for compute_unit in seq.sequence_pyliqtr(parser):
-            #print(cnt)
-            #if cnt == 16:
-            #    assert False
-            #compute_unit.compile_graph_state()
+            print(cnt)
+            if cnt == 16:
+                assert False
+            compute_unit.compile_graph_state()
             cnt += 1
 
         if debug:

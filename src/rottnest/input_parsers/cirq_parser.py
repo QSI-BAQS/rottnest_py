@@ -40,11 +40,13 @@ class CirqParser:
         '''
         return len(self._qubit_labels) + self._rz_tracker.n_rz_gates 
 
-    def reset_context(self):
+    def reset_context(self, *sequences):
         '''
             Resets local context
         '''
         prev_context = self._qubit_labels 
+
+
         self._qubit_labels = QubitLabelTracker()
         self._rz_tracker.reset()
         return prev_context
@@ -64,7 +66,6 @@ class CirqParser:
         circ_iter: cirq.circuits.circuit.Circuit,
         widget = None
     ):
-
         op = OperationSequence(self.sequence_length)
         interrupt = INTERRUPT()
         for moment in circ_iter:

@@ -1,8 +1,10 @@
+from itertools import cycle
+
 from rottnest.input_parsers.qubit_label_tracker import QubitLabelTracker
 from rottnest.input_parsers.cirq_parser import CirqParser
 from rottnest.input_parsers.pyliqtr_parser import INTERRUPT
 from rottnest.compute_units.compute_unit import ComputeUnit
-
+from rottnest.compute_units.architecture_proxy import ArchitectureProxy
 
 class Sequencer():
     '''
@@ -15,7 +17,7 @@ class Sequencer():
             ):
 
         # Map architectures to proxies
-        self._architecture_proxies = architectures
+        self._architecture_proxies = list(map(ArchitectureProxy, architectures))
         self.priority_shim = []
 
         self.sequence_length = sequence_length
@@ -32,8 +34,11 @@ class Sequencer():
 
         # The choice of architecture should
         # eventually be passed to a scheduler
-        compute_unit = ComputeUnit(self._architecture_proxies[architecture_idx])
 
+        architectures = cycle(self._architecture_proxies)    
+ 
+        architecture = next(architectures) 
+        compute_unit = ComputeUnit(architecture.json())
         cirq_parser = CirqParser(self.sequence_length)
 
         print("Sequencing")
@@ -46,10 +51,11 @@ class Sequencer():
                 if op_seq == interrupt:
                     if len(compute_unit) > 0:
                         yield compute_unit
-                    architecture_idx += 1
-                    architecture_idx %= len(self._architecture_proxies)
+
+                    architecture = next(architectures)
+
                     # Create a new compute unit
-                    compute_unit = ComputeUnit(self._architecture_proxies[architecture_idx])
+                    compute_unit = ComputeUnit(architecture.json())
 
                     # Reset the context of the parser
                     cirq_parser.reset_context()
@@ -71,7 +77,8 @@ class Sequencer():
                     compute_unit = ComputeUnit(self._architecture_proxies[architecture_idx])
 
                     # Reset the context of the parser
-                    cirq_parser.reset_context()
+                    cirq_parser.reset_context(op_seq)
+                    print("Roll-forward")
                 # Add the offending sequence
                 # TODO: This sequence may need splitting or similar special logic
                 # For now, so long as len(op_seq) is less than the number of qubits

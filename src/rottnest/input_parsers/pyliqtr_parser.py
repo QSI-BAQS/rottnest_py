@@ -170,7 +170,6 @@ class PyliqtrParser:
                 else:
                     self._curr_shim.append(operation)      
 
-
     def unroll_graph(self):
         '''
         Return each circuit object
@@ -221,7 +220,6 @@ class PyliqtrParser:
         for circuit in self.traverse(): 
             for ops in parser.parse(circuit): 
                 yield ops
-
 
 class GraphWrapper():
     '''
