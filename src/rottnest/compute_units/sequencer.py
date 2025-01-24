@@ -1,6 +1,8 @@
 from rottnest.input_parsers.qubit_label_tracker import QubitLabelTracker
 from rottnest.input_parsers.cirq_parser import CirqParser
+from rottnest.input_parsers.pyliqtr_parser import INTERRUPT
 from rottnest.compute_units.compute_unit import ComputeUnit
+
 
 class Sequencer():
     '''
@@ -35,11 +37,26 @@ class Sequencer():
         cirq_parser = CirqParser(self.sequence_length)
 
         print("Sequencing")
+        interrupt = INTERRUPT()
         for cirq_obj in parser.traverse():
+            # Interrupt between cirq objects
             for op_seq in cirq_parser.parse(cirq_obj):
 
+                # Interrupt encountered, force yield
+                if op_seq == interrupt:
+                    if len(compute_unit) > 0:
+                        yield compute_unit
+                    architecture_idx += 1
+                    architecture_idx %= len(self._architecture_proxies)
+                    # Create a new compute unit
+                    compute_unit = ComputeUnit(self._architecture_proxies[architecture_idx])
+
+                    # Reset the context of the parser
+                    cirq_parser.reset_context()
+                    continue
+
                 # TODO: inject RZ bounds here
-                if op_seq.n_rz_operations + len(cirq_parser) > compute_unit.memory_bound:
+                if op_seq.n_rz_operations + 2 * len(cirq_parser) > compute_unit.memory_bound:
                     local_context = cirq_parser.extract_context()
                     compute_unit.add_context(*local_context)
                     if len(compute_unit) > 0:

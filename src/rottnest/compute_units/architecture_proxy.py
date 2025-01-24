@@ -9,16 +9,12 @@ import math as maths
     Supports benchmarking, full compilation and simulation for probabalistic structures
 '''
 
-
-class ArchitectureProxy(abc.ABC):
+class ArchitectureProxy():
 
     def __init__(
         self,
-        bell_rate: float,
-        t_rate: float,
-        register_max: int,
-        t_buffer_max: int,
-        bell_buffer_max : int):
+        json_obj
+        ):
         '''
             Comput Unit Constructor
             :: bell_rate : float :: Number of bell states generated per toc for one interface 
@@ -34,12 +30,14 @@ class ArchitectureProxy(abc.ABC):
             TODO: More complex, but forward speculating some diminishing number of additional T
             gates generated during stage 3 
         '''
-        self.bell_rate = bell_rate
-        self.t_rate = t_rate
+        self.json = json_obj
+        self.arch = None # TODO: generate architecture
+        #self.bell_rate = bell_rate
+        #self.t_rate = t_rate
 
-        self.num_registers = register_max
-        self.num_t_buffers = t_buffer_max
-        self.num_bell_buffers = bell_buffer_max
+        #self.num_registers = register_max
+        #self.num_t_buffers = t_buffer_max
+        #self.num_bell_buffers = bell_buffer_max
 
     def benchmark(self, computation: Computable): 
         pass

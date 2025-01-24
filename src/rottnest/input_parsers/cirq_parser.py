@@ -12,6 +12,8 @@ from rottnest.input_parsers.rz_tag_tracker import RzTagTracker
 from rottnest.monkey_patchers import cirq_patcher 
 from rottnest.monkey_patchers.cirq_patcher import known_gates 
 
+from rottnest.input_parsers.interrupt import INTERRUPT
+
 shared_rz_tag_tracker = RzTagTracker()
 
 class CirqParser:
@@ -64,10 +66,15 @@ class CirqParser:
     ):
 
         op = OperationSequence(self.sequence_length)
+        interrupt = INTERRUPT()
         for moment in circ_iter:
             for operation in moment:
+                if operation == interrupt:
+                    yield op 
+                    break 
+
                 if operation.gate._n_cabaliser_ops + len(op) > self.sequence_length:  
-                    yield(op)
+                    yield op
                     op = OperationSequence(self.sequence_length)
                 operation.gate._parse_cabaliser(operation, op, self._qubit_labels, self._rz_tracker) 
         if len(op) > 0:

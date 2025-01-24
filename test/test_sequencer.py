@@ -66,7 +66,9 @@ class SequencerTest(unittest.TestCase):
         if debug:
             start = time.time()
             print(f"Creating Fermi Hubbard {N}x{N} from PyLIQTR")
-        fh = make_fh_circuit(N=N,p_algo=0.9999999904,times=0.01)
+        #fh = make_fh_circuit(N=N,p_algo=0.9999999904,times=0.01)
+        fh = make_fh_circuit(N=N, p_algo=0.9, times=0.1)
+
 
         if debug:
             runtime = time.time() - start
@@ -83,7 +85,10 @@ class SequencerTest(unittest.TestCase):
 
         cnt = 0
         for compute_unit in seq.sequence_pyliqtr(parser):
-           #compute_unit.compile_graph_state()
+            #print(cnt)
+            #if cnt == 16:
+            #    assert False
+            #compute_unit.compile_graph_state()
             cnt += 1
 
         if debug:
@@ -93,4 +98,4 @@ class SequencerTest(unittest.TestCase):
 
 if __name__ == '__main__':
     st = SequencerTest()
-    st.test_fh(N=33)
+    st.test_fh(N=3)

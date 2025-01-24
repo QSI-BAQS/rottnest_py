@@ -1,5 +1,4 @@
 # TODO: Parameterisation
-
 '''
     pyLIQTR gates trigger the call-graph tracker
     Each pyLIQTR gate is decomposed into the following
@@ -27,12 +26,12 @@ from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU
 from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
 from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
 
-
 from . import cirq_parser
 
 # pyLIQTR gates include cirq gates
 known_gates = dict(cirq_parser.known_gates) 
 
+from rottnest.input_parsers.interrupt import INTERRUPT 
 
 # Difficult to assert uniqueness of hash function
 def cmp_qsvt(self, other):
@@ -197,10 +196,13 @@ class PyliqtrParser:
             if len(shim) > 0:
                 # print("SHIM")
                 yield shim 
+                yield INTERRUPT()
 
             if r.fully_decomposed:
                 self._cache.append(r)
                 yield r
+                yield INTERRUPT()
+
             else:
                 # print("UNROLL")
                 it = r.traverse()
