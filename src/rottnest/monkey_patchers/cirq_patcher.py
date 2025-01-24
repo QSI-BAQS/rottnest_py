@@ -169,25 +169,25 @@ def y_pow():
     return _wrap, 1
 
 
-def _X_gate(self, operation_sequence, qubit_labels_rz_tags):
+def _X_gate(self, operation_sequence, qubit_labels, rz_tags):
     operation_sequence.append(
             cabaliser_gates.X,
             *qubit_labels.gets(*self.qubits)
         )
 
-def _Z_gate(self, operation_sequence, qubit_labels_rz_tags):
+def _Z_gate(self, operation_sequence, qubit_labels, rz_tags):
     operation_sequence.append(
             cabaliser_gates.Z,
             *qubit_labels.gets(*self.qubits)
         )
 
-def _S_gate(self, operation_sequence, qubit_labels_rz_tags):
+def _S_gate(self, operation_sequence, qubit_labels, rz_tags):
     operation_sequence.append(
             cabaliser_gates.S,
             *qubit_labels.gets(*self.qubits)
         )
 
-def _Sdag_gate(self, operation_sequence, qubit_labels_rz_tags):
+def _Sdag_gate(self, operation_sequence, qubit_labels, rz_tags):
     operation_sequence.append(
             cabaliser_gates.Sdag,
             *qubit_labels.gets(*self.qubits)
@@ -220,7 +220,7 @@ def z_pow():
         qubit_labels: QubitLabelTracker,
         rz_tags: QubitLabelTracker):
         
-        fn = exponent_map.get(gate.exponent, _rz_gate) 
+        fn = exponent_map.get(self.gate.exponent, _rz_gate) 
         fn(self, operation_sequence, qubit_labels, rz_tags)
 
     return _wrap, 1
@@ -239,9 +239,10 @@ def rz():
         qubit_labels: QubitLabelTracker,
         rz_tags: QubitLabelTracker):
 
-        tag = rz_tags.get(gate.exponent, None)
+        tag = rz_tags.get(self.gate.exponent, None)
         target = qubit_labels.gets(*self.qubits)[0]
 
+        print(f"Angle: {self.gate.exponent}")
         operation_sequence.append(
             cabaliser_gates.RZ,
             target, tag
@@ -262,7 +263,7 @@ def rx():
         qubit_labels: QubitLabelTracker,
         rz_tags: QubitLabelTracker):
 
-        tag = rz_tags(gate.angle, gate.eps)
+        tag = rz_tags(self.gate.angle, self.gate.eps)
         target = qubit_labels.gets(*self.qubits)[0]
 
         operation_sequence.append(
@@ -298,7 +299,7 @@ def ry():
         qubit_labels: QubitLabelTracker,
         rz_tags: QubitLabelTracker):
 
-        tag = rz_tags.get(gate.exponent, None)
+        tag = rz_tags.get(self.gate.exponent, None)
         target = qubit_labels.gets(*self.qubits)[0]
 
         operation_sequence.append(
