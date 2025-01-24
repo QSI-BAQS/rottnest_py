@@ -138,7 +138,7 @@ class ComputeUnitExecutorPool:
         # Main loop
         #############################
 
-        manager_task_fds = [manager_task_queue._reader, manager_priority_task_queue._reader]
+        manager_task_fds = [manager_task_queue._reader, manager_priority_task_queue._reader, priority_result_queue._reader]
         while True:
             # Wait until either task queue is ready for reading
             select.select(manager_task_fds, [], [])
