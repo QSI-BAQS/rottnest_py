@@ -10,7 +10,7 @@ import queue
 from rottnest.process_pool.process_worker import pool_worker_main
 from rottnest.executables.current_executable import current_executable
 
-N_PROCESSES = 4
+N_PROCESSES = 8
 SEGFAULT_SENTINEL_TIMEOUT_SECS = 20
 # result_manager = mp.Manager()
 # dummy_result_cache = result_manager.dict()
@@ -93,7 +93,8 @@ class ComputeUnitExecutorPool:
             print("manager job start time:", time.time())
 
             n_submitted = 0
-            n_received =0
+            n_received = 0
+            n_error = 0
 
             for obj in it:
                 if worker_task_queue.full():
@@ -107,7 +108,8 @@ class ComputeUnitExecutorPool:
                     restart = []
                     for i, proc in enumerate(pool):
                         if proc.exitcode is not None:
-                            print(f"proc {i} exited with {proc.exitcode}")
+                            n_error += 1
+                            print(f"proc {i} exited with {proc.exitcode}, err count = {n_error}")
                             proc.join()
                             restart.append(i)
                     for i in restart:
@@ -133,8 +135,8 @@ class ComputeUnitExecutorPool:
                     manager_completion_queue.put(result)
                     n_received += 1            
             except queue.Empty:
-                print(f"aborting, sentinel secs reached at {n_received}/{n_submitted} received")
-            
+                print(f"aborting, sentinel secs reached at {n_received}/{n_submitted} received ({n_error} errors)")
+                print(f"unaccounted items: {n_submitted - n_received - n_error}")
             print("all received")
             print("time:", time.time())
 
