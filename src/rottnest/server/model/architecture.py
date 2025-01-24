@@ -16,6 +16,9 @@ from rottnest.process_pool import process_pool
 # TODO: Unbind references from here
 from rottnest.compute_units.architecture_proxy import saved_architectures
 
+# saved_architectures: Dict[int, arch_json_obj | ArchProxyObj]
+# arch_json_obj is json from front end
+
 from rottnest.process_pool.process_pool import ComputeUnitExecutorPool
 cu_executor_pool = ComputeUnitExecutorPool()
 
@@ -42,7 +45,7 @@ def log_resp(resp: Any):
 def run_widget_pool(arch_id):
     print("in run_widget_pool")
     # TODO use more than single object here
-    cu_executor_pool.run_sequence([saved_architectures[arch_id]])
+    cu_executor_pool.run_sequence([arch_id])
     t = threading.Thread(target=_read_results, name="ResultReaderThread", args=[cu_executor_pool], daemon=True)
     t.start()
 
@@ -55,8 +58,7 @@ def _read_results(pool):
 
 
 def run_debug(arch_id):
-    arch_obj = saved_architectures[arch_id]
-    compute_unit = next(iter(ComputeUnitExecutorPool._run_sequence(arch_obj)))[0]
+    compute_unit = next(iter(ComputeUnitExecutorPool._run_sequence([arch_id])))[0]
     cu_executor_pool.run_priority(compute_unit, True)
     print("priority test got result", str(cu_executor_pool.manager_priority_completion_queue.get())[:200], "<...truncated>")
 # END mess
@@ -64,12 +66,13 @@ def run_debug(arch_id):
 def get_router_mapping():
     return region_router_exports
 
-def save_arch(arch_obj):
+def save_arch(arch_json_obj):
     arch_id = random.randint(1000000, 9999999)
     while arch_id in saved_architectures: arch_id = random.randint(1000000,
                                                                    9999999)
 
-    saved_architectures[arch_id] = arch_obj
+    saved_architectures[arch_id] = arch_json_obj
+    cu_executor_pool.save_arch(arch_id, arch_json_obj)
     return arch_id
 
 def retrieve_graph_segment(gid):

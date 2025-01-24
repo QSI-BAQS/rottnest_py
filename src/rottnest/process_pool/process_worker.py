@@ -34,7 +34,7 @@ def execute_compute_unit(args, worker_results_queue: mp.Queue):
             'status': 'running'
         }
 
-        arch_obj = compute_unit.get_architecture_json()
+        arch_json_obj = compute_unit.get_architecture_json()
 
         # worker_results_queue.put(stats.copy())
 
@@ -46,7 +46,7 @@ def execute_compute_unit(args, worker_results_queue: mp.Queue):
         # with open('debug_obj.json', 'w') as f:
         #     print(widget.json(), file=f)
 
-        orch = run_widget(cabaliser_obj=widget.json(), region_obj=arch_obj, full_output=full_output)
+        orch = run_widget(cabaliser_obj=widget.json(), region_obj=arch_json_obj, full_output=full_output)
         
         print("execution done", flush=True, file=old_stdout)
         

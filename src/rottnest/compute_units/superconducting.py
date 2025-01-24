@@ -2,7 +2,7 @@ from rottnest.compute_units import compute_unit
 from rottnest.shared_rng import SharedRNG
 
 from t_scheduler.templates.generic_templates import LayoutNode
-from t_scheduler.widget.widget_region import RegionStats 
+from t_scheduler.region.widget_region import RegionStats 
 
 '''
     Superconducting class
