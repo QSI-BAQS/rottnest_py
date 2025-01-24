@@ -18,14 +18,14 @@ class ArchitectureProxy(object):
     def check_pregenerated(cls, architecture_id):
         if architecture_id not in saved_architectures:
             raise ValueError(f"Unknown architecture with id {architecture_id}")
-        
+ 
         return isinstance(saved_architectures[architecture_id], cls)
 
     def __new__(cls, architecture_id):
         if cls.check_pregenerated(architecture_id):
             return saved_architectures[architecture_id]
         else:
-            return super(cls).__new__()
+            return object.__new__(ArchitectureProxy)
 
     def __init__(
         self,
