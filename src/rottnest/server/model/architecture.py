@@ -90,6 +90,7 @@ def get_region_arguments():
 
 
 def get_status(cu_id):
+    return {'cu_id': cu_id, 'status': 'not_found'}
     if cu_id in process_pool.dummy_result_cache:
         return process_pool.dummy_result_cache[cu_id]
     else:

@@ -8,7 +8,7 @@ region_type_map = {}
 for mapping in region_types.values():
     region_type_map |= mapping
 
-def conv(region_type, width, height, **kwargs) -> callable:
+def conv(region_type, width, height, downstream = None, **kwargs) -> callable:
     if 'downstream' in kwargs:
         kwargs = {k: v for k, v in kwargs.values() if k != 'downstream'}
     if width is None or height is None:
@@ -82,7 +82,7 @@ example = {
 }
 
 def _json_to_node(obj):
-    downstream = [_json_to_node(child) for child in obj.pop("downstream", [])]
+    downstream = [_json_to_node(child) for child in obj.get("downstream", [])]
     return LayoutNode(
         region_factory = conv(**obj),
         router_factory = default_router[obj['region_type']],
