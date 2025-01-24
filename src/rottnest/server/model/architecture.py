@@ -1,4 +1,5 @@
 from functools import lru_cache
+import json
 import random
 from typing import Any
 import threading
@@ -57,10 +58,15 @@ def _read_results(pool):
         # TODO handle results in this thread
 
 
-def run_debug(arch_id):
+def run_debug(arch_id, wsock):
     compute_unit = next(iter(ComputeUnitExecutorPool._run_sequence([arch_id])))[0]
     cu_executor_pool.run_priority(compute_unit, True)
-    print("priority test got result", str(cu_executor_pool.manager_priority_completion_queue.get())[:200], "<...truncated>")
+    result = cu_executor_pool.manager_priority_completion_queue.get()
+    print("priority test got result", str(result)[:200], "<...truncated>")
+    wsock.send(json.dumps({
+        "message": "run_result",
+        "payload": result,
+    }))
 # END mess
 
 def get_router_mapping():
