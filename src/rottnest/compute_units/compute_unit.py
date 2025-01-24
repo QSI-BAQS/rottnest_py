@@ -53,3 +53,6 @@ class ComputeUnit():
             'n_outputs': self.n_outputs,
             'n_qubits': self.n_qubits,
         }
+
+    def get_architecture_json(self):
+        return self.architecture

@@ -150,8 +150,8 @@ class ComputeUnitExecutorPool:
             if task_name == 'terminate':
                 break
             elif task_name == 'run_sequence':
-                arch_obj = args[0]
-                it = ComputeUnitExecutorPool._run_sequence(arch_obj)
+                arch_objs = args[0]
+                it = ComputeUnitExecutorPool._run_sequence(arch_objs)
             elif task_name == 'ping':
                 # Wait for at least one worker to start
                 worker_task_queue.put('ping')
@@ -259,16 +259,16 @@ class ComputeUnitExecutorPool:
         priority_process.join()
 
     @staticmethod
-    def _run_sequence(arch_obj):
+    def _run_sequence(arch_objs):
         parser = PyliqtrParser(current_executable)
         parser.parse()
 
-        seq = Sequencer(arch_obj)
+        seq = Sequencer(arch_objs)
 
         it = seq.sequence_pyliqtr(parser)
 
-        # Yields (compute_unit, architecture_json_obj, full_output)
-        wrapped_it = ((obj, arch_obj, False) for obj in it)
+        # Yields (compute_unit, full_output)
+        wrapped_it = ((obj, False) for obj in it)
 
         print("iterator generation done")
 
@@ -289,8 +289,8 @@ class ComputeUnitExecutorPool:
                                    name="PoolManager")
         self.manager.start()
     
-    def run_sequence(self, arch_obj):
-        self.manager_task_queue.put(('run_sequence', arch_obj))
+    def run_sequence(self, arch_objs):
+        self.manager_task_queue.put(('run_sequence', arch_objs))
     
     def terminate(self):
         self.task_queue.put(('terminate', ))
@@ -302,5 +302,5 @@ class ComputeUnitExecutorPool:
         self.manager_task_queue.put(('ping',))
         assert self.manager_completion_queue.get() == 'pong'
     
-    def run_priority(self, compute_unit, arch_obj, full_output=True):
-        self.manager_priority_task_queue.put((compute_unit, arch_obj, full_output))
+    def run_priority(self, compute_unit, full_output=True):
+        self.manager_priority_task_queue.put((compute_unit, full_output))
