@@ -3,6 +3,7 @@ from geventwebsocket import WebSocketError
 from rottnest.region_builder import json_to_region
 from rottnest.server.model import architecture, graph_view 
 
+from rottnest.compute_units.architecture_proxy import saved_architectures
 
 import json
 
@@ -95,7 +96,7 @@ def run_result(message, *args, **kwargs):
 
 def debug_send(message, *args, **kwargs):
     # Debug:
-    architecture.run_debug(next(iter(architecture.saved_architectures.keys())))
+    architecture.run_debug(next(iter(saved_architectures.keys())))
     return get_status({'cu_id': 'debug'})
 
 def get_router(*args, **kwargs):
@@ -111,11 +112,11 @@ def get_args(*args, **kwargs):
     })
 
 def use_arch(message, *args, **kwargs):
-    arch_obj = message['payload']
+    arch_json_obj = message['payload']
 
     return json.dumps({
         'message': 'use_arch',
-        'arch_id': architecture.save_arch(arch_obj)
+        'arch_id': architecture.save_arch(arch_json_obj)
     })
 
 def get_graph(message, *args, **kwargs):

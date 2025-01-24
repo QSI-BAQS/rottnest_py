@@ -1,5 +1,7 @@
 import abc
 import math as maths
+from rottnest.region_builder.json_to_region import json_to_layout
+from t_scheduler.region.widget_region import RegionStats 
 
 saved_architectures = {}
 
@@ -11,7 +13,19 @@ saved_architectures = {}
     Supports benchmarking, full compilation and simulation for probabalistic structures
 '''
 
-class ArchitectureProxy():
+class ArchitectureProxy(object):
+    @classmethod
+    def check_pregenerated(cls, architecture_id):
+        if architecture_id not in saved_architectures:
+            raise ValueError(f"Unknown architecture with id {architecture_id}")
+        
+        return isinstance(saved_architectures[architecture_id], cls)
+
+    def __new__(cls, architecture_id):
+        if cls.check_pregenerated(architecture_id):
+            return saved_architectures[architecture_id]
+        else:
+            return super(cls).__new__()
 
     def __init__(
         self,
@@ -32,20 +46,43 @@ class ArchitectureProxy():
             TODO: More complex, but forward speculating some diminishing number of additional T
             gates generated during stage 3 
         '''
-        self.architecture_id = architecture_id 
-        #self.bell_rate = bell_rate
-        #self.t_rate = t_rate
 
-        #self.num_registers = register_max
-        #self.num_t_buffers = t_buffer_max
-        #self.num_bell_buffers = bell_buffer_max
+        if self.check_pregenerated(architecture_id):
+            # Skip __init__, we returned an past generated object in __new__
+            return
+
+        self.architecture_id = architecture_id 
+
+        self.underlying_json = saved_architectures[architecture_id]
+
+        # We checked in __new__ whether we're pregenerated, so this is the path otherwise
+        # Hence saved_architectures contains the raw json under architecture_id
+        layout = json_to_layout(self.underlying_json)
+
+        # Now that we've stolen the layout, save ourselves to the mapping
+        saved_architectures[architecture_id] = self
+
+        # Generate the layout
+        regions, routers = layout.create()
+
+        self.regions = regions
+        # self.routers = routers
+        
+        stats = sum((region.stats for region in regions), start=RegionStats())
+        self.stats = stats
+
+        self.num_registers = stats.num_registers  
+        self.num_t_buffers = stats.num_t_buffers
+        self.num_bell_buffers = stats.num_bell_buffers
+
+        # self.bell_rate = bell_rate
+        # self.t_rate = t_rate
 
     def num_qubits(self):
-        # TODO: GEN 
-        return 100
+        return self.num_registers
 
     def to_json(self):
-        return saved_architectures[self.architecure_id]
+        return self.underlying_json
 
     def benchmark(self, computation): 
         pass

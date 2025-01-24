@@ -11,6 +11,8 @@ import select
 from rottnest.process_pool.process_worker import pool_worker_main
 from rottnest.executables.current_executable import current_executable
 
+from rottnest.compute_units.architecture_proxy import saved_architectures
+
 N_PROCESSES = 8
 SEGFAULT_SENTINEL_TIMEOUT_SECS = 20
 # result_manager = mp.Manager()
@@ -93,18 +95,24 @@ class ComputeUnitExecutorPool:
         def check_run_priority():
             nonlocal priority_submitted_count, priority_process
             nonlocal manager_priority_task_queue
+            global saved_architectures
 
             while not manager_priority_task_queue.empty():
                 # Get task
-                obj = manager_priority_task_queue.get() # This should not block, now that we checked
-                print("manager got priority task", obj)
-                # Check if process is alive
-                check_restart_priority_worker()
+                task, args = manager_priority_task_queue.get() # This should not block, now that we checked
 
-                # Submit task
-                priority_task_queue.put(obj)
-                print("submitted priority", priority_submitted_count)
-                priority_submitted_count += 1
+                if task == "run_priority":
+                    print("manager got priority task", task, args)
+                    # Check if process is alive
+                    check_restart_priority_worker()
+
+                    # Submit task
+                    priority_task_queue.put(args)
+                    print("submitted priority", priority_submitted_count)
+                    priority_submitted_count += 1
+                elif task == "save_arch":
+                    arch_id, arch_json_obj = args
+                    saved_architectures[arch_id] = arch_json_obj
 
         def check_priority_result():
             nonlocal priority_received_count, priority_process
@@ -150,8 +158,8 @@ class ComputeUnitExecutorPool:
             if task_name == 'terminate':
                 break
             elif task_name == 'run_sequence':
-                arch_objs = args[0]
-                it = ComputeUnitExecutorPool._run_sequence(arch_objs)
+                arch_ids = args[0]
+                it = ComputeUnitExecutorPool._run_sequence(arch_ids)
             elif task_name == 'ping':
                 # Wait for at least one worker to start
                 worker_task_queue.put('ping')
@@ -259,11 +267,11 @@ class ComputeUnitExecutorPool:
         priority_process.join()
 
     @staticmethod
-    def _run_sequence(arch_objs):
+    def _run_sequence(arch_ids):
         parser = PyliqtrParser(current_executable)
         parser.parse()
 
-        seq = Sequencer(arch_objs)
+        seq = Sequencer(*arch_ids)
 
         it = seq.sequence_pyliqtr(parser)
 
@@ -289,8 +297,8 @@ class ComputeUnitExecutorPool:
                                    name="PoolManager")
         self.manager.start()
     
-    def run_sequence(self, arch_objs):
-        self.manager_task_queue.put(('run_sequence', arch_objs))
+    def run_sequence(self, arch_ids):
+        self.manager_task_queue.put(('run_sequence', arch_ids))
     
     def terminate(self):
         self.task_queue.put(('terminate', ))
@@ -303,4 +311,7 @@ class ComputeUnitExecutorPool:
         assert self.manager_completion_queue.get() == 'pong'
     
     def run_priority(self, compute_unit, full_output=True):
-        self.manager_priority_task_queue.put((compute_unit, full_output))
+        self.manager_priority_task_queue.put(("run_priority", (compute_unit, full_output)))
+
+    def save_arch(self, arch_id, arch_json_obj):
+        self.manager_priority_task_queue.put(("save_arch", (arch_id, arch_json_obj)))
