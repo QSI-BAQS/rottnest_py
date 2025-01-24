@@ -3,3 +3,6 @@
 test.py
 debug*.json
 errors.out
+**/gridsynth/*.hi
+**/gridsynth/*.o
+**/gridsynth/gridsynth
