@@ -242,7 +242,6 @@ def rz():
         tag = rz_tags.get(self.gate.exponent, None)
         target = qubit_labels.gets(*self.qubits)[0]
 
-        print(f"Angle: {self.gate.exponent}")
         operation_sequence.append(
             cabaliser_gates.RZ,
             target, tag

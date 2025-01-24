@@ -79,6 +79,8 @@ class Sequencer():
                     # Reset the context of the parser
                     cirq_parser.reset_context(op_seq)
                     print("Roll-forward")
+                    # TODO: Better sequence splitting logic here!
+                    continue
                 # Add the offending sequence
                 # TODO: This sequence may need splitting or similar special logic
                 # For now, so long as len(op_seq) is less than the number of qubits

@@ -42,6 +42,27 @@ from openfermion import InteractionOperator
 from pyLIQTR.utils.circuit_decomposition import circuit_decompose_multi
 
 
+from rottnest.compute_units.architecture_proxy import ArchitectureProxy, saved_architectures
+def arch_constructor(n_qubits):
+    class ProxyArch(ArchitectureProxy):
+        def __new__(cls): 
+            return object.__new__(ProxyArch)
+
+        def check_pregenerated(self):
+            return True
+
+        def __init__(self, *args, **kwargs): 
+            pass
+
+        def num_qubits(self):
+            return n_qubits 
+        
+        def json(self):
+            return ""
+
+    saved_architectures[666] = object()
+    saved_architectures[666] = ProxyArch() 
+    return 666 
 
 def make_qsvt_circuit(model,encoding,times=1.0,p_algo=0.95):
     """Make a QSVT based circuit from pyLIQTR"""
@@ -76,7 +97,8 @@ class SequencerTest(unittest.TestCase):
         parser = PyliqtrParser(fh)
         parser.parse()
 
-        seq = Sequencer(None)
+        arch = arch_constructor(100) 
+        seq = Sequencer(arch)
 
         if debug:
             start = time.time()
@@ -85,8 +107,8 @@ class SequencerTest(unittest.TestCase):
         cnt = 0
         for compute_unit in seq.sequence_pyliqtr(parser):
             print(cnt)
-            if cnt == 16:
-                assert False
+            #]if cnt == 16:
+            #]    assert False
             compute_unit.compile_graph_state()
             cnt += 1
 
@@ -94,7 +116,8 @@ class SequencerTest(unittest.TestCase):
             runtime = time.time() - start
             print(f"\t Completed in {runtime} seconds")
             print("Total Widgets: ", cnt)
+        return compute_unit
 
 if __name__ == '__main__':
     st = SequencerTest()
-    st.test_fh(N=3)
+    x = st.test_fh(N=3)
