@@ -1,5 +1,4 @@
 from cabaliser.widget import Widget
-from rottnest.compute_units.architecture_proxy import saved_architectures
 '''
 Wrapper object for cabaliser sequences 
 '''
@@ -8,13 +7,13 @@ class ComputeUnit():
     '''
         Wrapped object for sending
     '''
-    def __init__(self, arch_id, unit_id: str=None):
+    def __init__(self, architecture, unit_id: str=None):
 
         # TODO: mem bounds from architecture 
         
         self.unit_id = unit_id
         self.memory_bound = 100 # Should be equal to number of registers
-        self.architecture = saved_architectures[arch_id]
+        self.architecture = architecture 
         self.sequences = list()
         
         # Context trackers
