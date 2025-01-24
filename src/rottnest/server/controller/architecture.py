@@ -93,9 +93,9 @@ def run_result(message, *args, **kwargs):
         'payload': 'pending',
     })
 
-def debug_send(message, *args, wsock=None, **kwargs):
+def debug_send(message, *args, **kwargs):
     # Debug:
-    architecture.run_debug(next(iter(architecture.saved_architectures.keys())), wsock)
+    architecture.run_debug(next(iter(architecture.saved_architectures.keys())))
     return get_status({'cu_id': 'debug'})
 
 def get_router(*args, **kwargs):
