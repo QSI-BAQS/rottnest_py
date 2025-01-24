@@ -3,8 +3,6 @@ from geventwebsocket import WebSocketError
 from rottnest.region_builder import json_to_region
 from rottnest.server.model import architecture, graph_view 
 
-import rottnest.process_pool.process_pool as process_pool
-from rottnest.process_pool.process_pool import AsyncIteratorProcessPool
 
 import json
 
@@ -18,8 +16,6 @@ def handle_websocket():
         abort(400, 'Expected WebSocket request.')
 
     # TODO fix which callback
-    pool = AsyncIteratorProcessPool(
-            websocket_response_callback(wsock,'run_result'))
 
     try:
         while True:
@@ -35,10 +31,10 @@ def handle_websocket():
                 cmd_func = socket_binds.get(message['cmd'], err)
                 print("Dispatch", cmd_func) 
                 resp = cmd_func(message, 
-                                pool=pool, 
                                 callback=
                                 websocket_response_callback(
-                                    wsock, message.get('cmd', 'err')))
+                                    wsock, message.get('cmd', 'err')),
+                                wsock = wsock)
 
                 architecture.log_resp(resp)
                 wsock.send(resp)
@@ -50,7 +46,8 @@ def handle_websocket():
                 wsock.send(json.dumps({'message': 'err', 
                                        'desc': f"{e}"}))
     finally:
-        pool.terminate()
+        pass
+        # cu_executor_pool.terminate()
 
 def websocket_response_callback(ws, message_type):
     def _callback(payload, err=False):
@@ -87,19 +84,18 @@ def example_arch(*args, **kwargs):
         'payload': json_to_region.example
     }) 
 
-def run_result(message, *args, 
-               pool: AsyncIteratorProcessPool = None, **kwargs):
+def run_result(message, *args, **kwargs):
     print("Running!", str(message)[:min(200, len(str(message)))])
     arch_id = message['payload']['arch_id']
-    architecture.run_widget_pool(pool, arch_id)
+    architecture.run_widget_pool(arch_id)
     return json.dumps({
         'message': 'run_result',
         'payload': 'pending',
     })
 
-def debug_send(message, *args, pool: AsyncIteratorProcessPool = None, **kwargs):
+def debug_send(message, *args, wsock=None, **kwargs):
     # Debug:
-    architecture.run_debug(pool, next(iter(architecture.saved_architectures.keys())))
+    architecture.run_debug(next(iter(architecture.saved_architectures.keys())), wsock)
     return get_status({'cu_id': 'debug'})
 
 def get_router(*args, **kwargs):

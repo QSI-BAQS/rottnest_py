@@ -1,6 +1,7 @@
 from functools import lru_cache
 import random
 from typing import Any
+import threading
 
 # Ill advised, but forces the generation and capture of the region types
 from t_scheduler.region import * 
@@ -12,6 +13,9 @@ from t_scheduler.router import region_router_exports
 from rottnest.widget_compilers.main import run as run_widget
 from rottnest.process_pool import process_pool
 saved_architectures = {}
+
+from rottnest.process_pool.process_pool import ComputeUnitExecutorPool
+cu_executor_pool = ComputeUnitExecutorPool()
 
 @lru_cache
 def get_region_subtypes() -> str: 
@@ -40,12 +44,21 @@ def run_widget_scheduler_obj(arch_obj):
 def run_widget_scheduler(arch_id):
     return run_widget_scheduler_obj(saved_architectures[arch_id])
 
-def run_widget_pool(pool, arch_id):
+def run_widget_pool(arch_id):
     print("in run_widget_pool")
-    pool.pool_submit("task_run_sequence", saved_architectures[arch_id])
+    cu_executor_pool.run_sequence(saved_architectures[arch_id])
+    t = threading.Thread(target=_read_results, name="ResultReaderThread", args=[cu_executor_pool], daemon=True)
+    t.start()
 
-def run_debug(pool, arch_id):
-    pool.pool_submit("debug", saved_architectures[arch_id])
+
+def _read_results(pool):
+    while True:
+        result = pool.manager_completion_queue.get()
+        # print("Got thread result", result)
+
+
+def run_debug(arch_id, wsock):
+    cu_executor_pool.pool_submit("debug", saved_architectures[arch_id], wsock)
     # debug runs one widget on single thread
 # END mess
 

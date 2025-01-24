@@ -4,18 +4,23 @@ from typing import Any
 from rottnest.compute_units.compute_unit import ComputeUnit 
 from rottnest.compute_units.sequencer import Sequencer
 from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
-from rottnest.widget_compilers.main import run as run_widget
 import time 
+import queue
 
-N_PROCESSES = 8
+from rottnest.process_pool.process_worker import pool_worker_main
+from rottnest.executables.current_executable import current_executable
 
+N_PROCESSES = 4
+SEGFAULT_SENTINEL_TIMEOUT_SECS = 20
 # result_manager = mp.Manager()
 # dummy_result_cache = result_manager.dict()
 
-class Debug:
+class DebugComputeUnit:
+    unit_id = 'debug'
+    
     def __init__(self, obj = None):
         self.obj = obj
-    unit_id = 'debug'
+    
     def compile_graph_state(self):
         return self
     
@@ -30,141 +35,145 @@ class Debug:
             import json
             return json.load(self.obj)
 
-
-def run_sequence_elem(args):
-    # import sys
-    # f = open('/dev/null', 'w')
-    # sys.stdout = f
-    print("running elem", flush=True)
-    compute_unit, arch_obj, full_output = args
-    compute_unit: ComputeUnit
-    # TODO replace with actual impl + add try/except
-    try:
-        # TODO signal running here
-        stats = {
-            'cu_id': compute_unit.unit_id,
-            'status': 'running'
-        }
-        widget = compute_unit.compile_graph_state()
-        print("compile done", flush=True)
-        # Debug output widget outputs
-        # with open('debug_obj.json', 'w') as f:
-        #     print(widget.json(), file=f)
-        orch = run_widget(cabaliser_obj=widget.json(), region_obj=arch_obj, full_output=full_output)
-        print("execution done", flush=True)
-        
-        stats = {
-            'volumes': orch.get_space_time_volume(),
-            't_source': orch.get_T_stats(),
-            'vis_obj': None,
-            'cu_id': compute_unit.unit_id,
-            'status': 'complete'
-        }
-        print(stats)
-        if full_output:
-            stats['vis_obj'] = orch.json
-        print("returning result")
-        return (False, stats)
-    except Exception as e:
-        import traceback
-        tb = traceback.format_exception(e)
-        # Debug output exceptions
-        # with open('errors.out', 'a') as f:
-        #     print('=============file===========', file=f)
-        #     print(widget.json(), file=f)
-        #     print('=============tb===========', file=f)
-        #     print(''.join(tb), file=f)
-        return (True, {'cu_id': str(compute_unit.unit_id), 'err_type': repr(e), 'traceback': tb})
-
-def task_run_sequence(arch_obj):
-    from rottnest.executables.current_executable import current_executable
-    parser = PyliqtrParser(current_executable)
-    parser.parse()
-    seq = Sequencer(arch_obj)
-
-
-    # Actual work here.
-    it = seq.sequence_pyliqtr(parser)
-    task_work_fn = run_sequence_elem
-    task_args_additional = (arch_obj, False)
-
-    print("circuit done")
-    return (it, task_work_fn, task_args_additional)
-
-operation_map = {"task_run_sequence": task_run_sequence}
-
-
-class AsyncIteratorProcessPool:    
+class ComputeUnitExecutorPool:
     @staticmethod
-    def _manager_main(task_queue: mp.Queue, completion_queue: mp.Queue, completion_callback: Any):
+    def _pool_manager_entrypoint(manager_task_queue: mp.Queue, 
+                                 manager_completion_queue: mp.Queue):
+        '''
+            Entrypoint for pool manager
+        '''
+
         print("in manager main")
-        pool = mp.Pool(N_PROCESSES)
+
+        ctx = mp.get_context('spawn')
+        mp_manager = ctx.Manager()
+
+        worker_task_queue = mp_manager.Queue(maxsize=4 * N_PROCESSES)
+        worker_result_queue = mp_manager.Queue()
+
+        pool = [
+            ctx.Process(target=pool_worker_main, 
+                        name="PoolWorker", 
+                        args=(worker_task_queue, worker_result_queue), 
+                        daemon=True)
+            for _ in range(N_PROCESSES)
+        ]
+
+        for proc in pool:
+            proc.start()
 
         while True:
-            task_name, *args = task_queue.get()
+            task_name, *args = manager_task_queue.get()
 
-            print("got task", task_name)
+            print("manager got task", task_name)
 
             if task_name == 'terminate':
                 break
-            
-            it, work_fn, work_args = operation_map[task_name](*args)
+            elif task_name == 'run_sequence':
+                arch_obj = args[0]
+                it = ComputeUnitExecutorPool._run_sequence(arch_obj)
+            elif task_name == 'ping':
+                # Wait for at least one worker to start
+                worker_task_queue.put('ping')
+                assert worker_result_queue.get() == 'pong'
+                manager_completion_queue.put('pong')
+                continue
 
-            wrapped_iter = ((obj, *work_args) for obj in it)
 
-            def wrapped_iter_test(it):
+            def wrapped_iter_test(it, limit):
                 for i, obj in enumerate(it):
-                    if i > 0:
+                    if i > limit:
                         break
-                    yield (obj, *work_args)
-            print("start time:", time.time())
-            n_completed = 0
-            for (is_err, payload) in pool.imap_unordered(work_fn, wrapped_iter):
-                n_completed += 1
-                print("completed count", n_completed, "@", time.time())
-                # s = str(payload)
-                # if not is_err: # Always print full errors
-                #     s = s[:min(200, len(s))]
+                    yield obj
 
-                #     print("pool completed", s)
-                # else:
-                #     print("pool completed err:")
-                #     print(''.join(payload['traceback']))
-                # result_cache[payload['cu_id']] = payload
-                # completion_callback(payload, err=is_err)
-            print("iterator exhausted!")
+            # it = wrapped_iter_test(it, 50)
+
+            # it = iter(it)
+
+            print("manager job start time:", time.time())
+
+            n_submitted = 0
+            n_received =0
+
+            for obj in it:
+                if worker_task_queue.full():
+                    while not worker_result_queue.empty():
+                        result = worker_result_queue.get()
+                        print("received", n_received)
+                        manager_completion_queue.put(result)
+                        n_received += 1
+                    
+                    # Check status of processes
+                    restart = []
+                    for i, proc in enumerate(pool):
+                        if proc.exitcode is not None:
+                            print(f"proc {i} exited with {proc.exitcode}")
+                            proc.join()
+                            restart.append(i)
+                    for i in restart:
+                        print(f"restarting worker {i}")
+                        pool[i] = ctx.Process(target=pool_worker_main, 
+                                    name="PoolWorker", 
+                                    args=(worker_task_queue, worker_result_queue), 
+                                    daemon=True)
+                        pool[i].start()
+    
+                print("submitting", n_submitted)
+                worker_task_queue.put(obj)
+                print("submitted", n_submitted)
+                n_submitted += 1
+                
+            
+            print("all submitted!")
+
+            try:
+                while n_received < n_submitted:
+                    result = worker_result_queue.get(timeout=SEGFAULT_SENTINEL_TIMEOUT_SECS)
+                    print("received", n_received)
+                    manager_completion_queue.put(result)
+                    n_received += 1            
+            except queue.Empty:
+                print(f"aborting, sentinel secs reached at {n_received}/{n_submitted} received")
+            
+            print("all received")
             print("time:", time.time())
 
         pool.terminate()
 
-    def __init__(self, completion_callback):
-        self.task_queue = mp.Queue()
-        self.manager = Thread(target=self._manager_main, args=[self.task_queue, None, completion_callback],
-                              name="PoolManager")
+    @staticmethod
+    def _run_sequence(arch_obj):
+        parser = PyliqtrParser(current_executable)
+        parser.parse()
+
+        seq = Sequencer(arch_obj)
+
+        it = seq.sequence_pyliqtr(parser)
+        task_args_additional = (arch_obj, False)
+
+        wrapped_it = ((obj, *task_args_additional) for obj in it)
+
+        print("iterator generation done")
+
+        return wrapped_it
+
+    def __init__(self):
+        ctx = mp.get_context('spawn')
+        self.manager_task_queue = ctx.Queue()
+        self.manager_completion_queue = ctx.Queue()
+        self.manager = ctx.Process(target=self._pool_manager_entrypoint, 
+                                   args=[self.manager_task_queue, self.manager_completion_queue],
+                                   name="PoolManager")
         self.manager.start()
-        print("init done")
-        # TODO delete, we don't need this field
-        self.completion_callback = completion_callback
-
-    def pool_submit(self, task_name, *args):
-        if task_name == "debug":
-            test_obj = Debug('debug_obj2.json')
-            # test_obj = next(iter(task_run_sequence(args[0])[0]))
-            print("args:", args)
-            (is_err, payload) = run_sequence_elem((test_obj, args[0], False))
-            if not is_err: # Always print full errors
-                s = str(payload)
-                s = s[:min(200, len(s))]
-                print("pool completed", s)
-            else:
-                print("pool completed err:")
-                print(''.join(payload['traceback']))
-
-            # dummy_result_cache[payload['cu_id']] = payload
-            # self.completion_callback(payload, err=is_err)
-            return
-        # return
-        self.task_queue.put((task_name, *args))
-
+    
+    def run_sequence(self, arch_obj):
+        self.manager_task_queue.put(('run_sequence', arch_obj))
+    
     def terminate(self):
         self.task_queue.put(('terminate', ))
+    
+    def ping(self):
+        '''
+        Startup delay wait
+        '''
+        self.manager_task_queue.put(('ping',))
+        assert self.manager_completion_queue.get() == 'pong'
