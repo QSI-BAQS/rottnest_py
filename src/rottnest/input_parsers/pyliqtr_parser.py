@@ -182,8 +182,8 @@ class PyliqtrParser:
 
             if len(shim) > 0:
                 shim_id = f"{r.handle_id}s" 
-                yield GraphWrapper(shim_id, f"Shim: {str(r.op.gate)}")
-            yield GraphWrapper(r.handle_id, str(r.op.gate))
+                yield GraphWrapper(shim_id, f"Shim: {str(r.op.gate)}", None)
+            yield GraphWrapper(r.handle_id, str(r.op.gate), parser=r)
 
     def traverse(self):
         '''
@@ -225,12 +225,12 @@ class GraphWrapper():
     '''
         Thin graph node wrapper object
     '''
-    def __init__(self, handle_id, name, description="", children = None):
+    def __init__(self, handle_id, name, description="", children = None, parser=None):
         self.handle_id = handle_id
         self.name = name
         self.description = description
         self.children = children
-        self._parser = None #parser
+        self.parser = parser 
 
     def get_graph(self): 
         return self.parser

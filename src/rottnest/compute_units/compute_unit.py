@@ -13,7 +13,7 @@ class ComputeUnit():
         # TODO: mem bounds from architecture 
         
         self.unit_id = unit_id
-        self.memory_bound = 100 
+        self.memory_bound = 100
         self.architecture = architecture
         self.sequences = list()
         
