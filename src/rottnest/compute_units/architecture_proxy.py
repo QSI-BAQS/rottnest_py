@@ -1,6 +1,8 @@
 import abc
 import math as maths
 
+saved_architectures = {}
+
 '''
     Base class describing an arbitrary collection of computation units
     For example superconducting architectures, ion traps etc 
@@ -13,10 +15,10 @@ class ArchitectureProxy():
 
     def __init__(
         self,
-        json_obj
+        architecture_id 
         ):
         '''
-            Comput Unit Constructor
+            Compute Unit Constructor
             :: bell_rate : float :: Number of bell states generated per toc for one interface 
             :: t_rate : float :: Average number of T states generated per toc 
             :: reg_max : int :: Maximum number of allocatable registers
@@ -30,14 +32,20 @@ class ArchitectureProxy():
             TODO: More complex, but forward speculating some diminishing number of additional T
             gates generated during stage 3 
         '''
-        self.json = json_obj
-        self.arch = None # TODO: generate architecture
+        self.architecture_id = architecture_id 
         #self.bell_rate = bell_rate
         #self.t_rate = t_rate
 
         #self.num_registers = register_max
         #self.num_t_buffers = t_buffer_max
         #self.num_bell_buffers = bell_buffer_max
+
+    def num_qubits(self):
+        # TODO: GEN 
+        return 100
+
+    def to_json(self):
+        return saved_architectures[self.architecure_id]
 
     def benchmark(self, computation: Computable): 
         pass

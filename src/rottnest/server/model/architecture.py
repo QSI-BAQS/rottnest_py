@@ -12,7 +12,9 @@ from t_scheduler.router import region_router_exports
 
 from rottnest.widget_compilers.main import run as run_widget
 from rottnest.process_pool import process_pool
-saved_architectures = {}
+
+# TODO: Unbind references from here
+from rottnest.compute_units.architecture_proxy import saved_architectures
 
 from rottnest.process_pool.process_pool import ComputeUnitExecutorPool
 cu_executor_pool = ComputeUnitExecutorPool()
