@@ -38,7 +38,7 @@ class Sequencer():
         architectures = cycle(self._architecture_proxies)    
  
         architecture = next(architectures) 
-        compute_unit = ComputeUnit(architecture.json())
+        compute_unit = ComputeUnit(architecture.to_json())
         cirq_parser = CirqParser(self.sequence_length)
 
         print("Sequencing")
@@ -55,7 +55,7 @@ class Sequencer():
                     architecture = next(architectures)
 
                     # Create a new compute unit
-                    compute_unit = ComputeUnit(architecture.json())
+                    compute_unit = ComputeUnit(architecture.to_json())
 
                     # Reset the context of the parser
                     cirq_parser.reset_context()
@@ -70,11 +70,10 @@ class Sequencer():
 
                     # Grab next architecture
                     # Eventually replace this with another scheduler
-                    architecture_idx += 1
-                    architecture_idx %= len(self._architecture_proxies)
+                    architecture = next(architectures)
 
                     # Create a new compute unit
-                    compute_unit = ComputeUnit(self._architecture_proxies[architecture_idx])
+                    compute_unit = ComputeUnit(architecture.to_json())
 
                     # Reset the context of the parser
                     cirq_parser.reset_context(op_seq)
