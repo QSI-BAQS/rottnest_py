@@ -37,16 +37,10 @@ def log_resp(resp: Any):
 
 # TODO reorganise this mess and cull unused
 
-def run_widget_scheduler_obj(arch_obj):
-    result = run_widget(region_obj=arch_obj)
-    return result.json
-
-def run_widget_scheduler(arch_id):
-    return run_widget_scheduler_obj(saved_architectures[arch_id])
-
 def run_widget_pool(arch_id):
     print("in run_widget_pool")
-    cu_executor_pool.run_sequence(saved_architectures[arch_id])
+    # TODO use more than single object here
+    cu_executor_pool.run_sequence([saved_architectures[arch_id]])
     t = threading.Thread(target=_read_results, name="ResultReaderThread", args=[cu_executor_pool], daemon=True)
     t.start()
 
@@ -55,11 +49,14 @@ def _read_results(pool):
     while True:
         result = pool.manager_completion_queue.get()
         # print("Got thread result", result)
+        # TODO handle results in this thread
 
 
-def run_debug(arch_id, wsock):
-    cu_executor_pool.pool_submit("debug", saved_architectures[arch_id], wsock)
-    # debug runs one widget on single thread
+def run_debug(arch_id):
+    arch_obj = saved_architectures[arch_id]
+    compute_unit = next(iter(ComputeUnitExecutorPool._run_sequence(arch_obj)))[0]
+    cu_executor_pool.run_priority(compute_unit, True)
+    print("priority test got result", str(cu_executor_pool.manager_priority_completion_queue.get())[:200], "<...truncated>")
 # END mess
 
 def get_router_mapping():

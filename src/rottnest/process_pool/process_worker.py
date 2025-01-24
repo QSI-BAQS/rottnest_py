@@ -26,13 +26,15 @@ def execute_compute_unit(args, worker_results_queue: mp.Queue):
 
     print("running elem", flush=True)
     try:
-        compute_unit, arch_obj, full_output = args
+        compute_unit, full_output = args
         compute_unit: ComputeUnit
 
         stats = {
             'cu_id': compute_unit.unit_id,
             'status': 'running'
         }
+
+        arch_obj = compute_unit.get_architecture_json()
 
         # worker_results_queue.put(stats.copy())
 
