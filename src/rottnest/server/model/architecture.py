@@ -54,17 +54,24 @@ def run_widget_pool(arch_id, wsock=None):
 
 
 def _read_results(pool, wsock=None):
-    while True:
-        result = pool.manager_completion_queue.get()
-        if result == 'done':
-            print('reader thread exiting')
-            break
-        print("Got thread result", str(result))
-        wsock.send(json.dumps({
-            'message': 'run_result',
-            'payload': result,
-        }))
-        # TODO handle results in this thread
+    with open("stream_output.json", "w") as f:
+        while True:
+            result = pool.manager_completion_queue.get()
+            if result == 'done':
+                print('reader thread exiting')
+                break
+            # print("Got thread result", str(result))
+            if 'cache_hash' in result:
+                del result['cache_hash']
+
+            json.dump(result, f)
+            print(file=f)
+
+            wsock.send(json.dumps({
+                'message': 'run_result',
+                'payload': result,
+            }))
+            # TODO handle results in this thread
 
 
 def run_debug(arch_id, wsock):

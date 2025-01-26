@@ -26,12 +26,13 @@ def execute_compute_unit(args, worker_results_queue: mp.Queue):
 
     print("running elem", flush=True)
     try:
-        compute_unit, rz_tag_tracker, full_output = args
+        compute_unit, rz_tag_tracker, full_output, cache_hash = args
         compute_unit: ComputeUnit
 
         stats = {
             'cu_id': compute_unit.unit_id,
-            'status': 'running'
+            'status': 'running',
+            'cache_hash': cache_hash,
         }
 
         arch_json_obj = compute_unit.get_architecture_json()
@@ -53,9 +54,11 @@ def execute_compute_unit(args, worker_results_queue: mp.Queue):
         stats = {
             'volumes': orch.get_space_time_volume(),
             't_source': orch.get_T_stats(),
+            'tocks': orch.get_total_cycles(),
             'vis_obj': None,
             'cu_id': compute_unit.unit_id,
-            'status': 'complete'
+            'status': 'complete',
+            'cache_hash': cache_hash,
         }
 
         print(stats)
