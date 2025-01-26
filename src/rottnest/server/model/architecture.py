@@ -17,6 +17,8 @@ from rottnest.process_pool import process_pool
 # TODO: Unbind references from here
 from rottnest.compute_units.architecture_proxy import saved_architectures
 
+from rottnest.input_parsers.cirq_parser import shared_rz_tag_tracker
+
 # saved_architectures: Dict[int, arch_json_obj | ArchProxyObj]
 # arch_json_obj is json from front end
 
@@ -59,10 +61,21 @@ def _read_results(pool):
 
 
 def run_debug(arch_id, wsock):
-    compute_unit = next(iter(ComputeUnitExecutorPool._run_sequence([arch_id])))[0]
-    cu_executor_pool.run_priority(compute_unit, True)
+    it = ComputeUnitExecutorPool._run_sequence([arch_id])
+    # compute_unit = next(it)[0]
+    for obj in it:
+        if len(shared_rz_tag_tracker._tags_to_angles) > 3:
+            wid = obj[0].compile_graph_state()
+            if max(wid.get_measurement_tags()) >= 3:
+                print("tags are", list(wid.get_measurement_tags()))
+                break
+    compute_unit = obj[0]
+    print("tag tracker", shared_rz_tag_tracker._tags_to_angles)
+    cu_executor_pool.run_priority(compute_unit, shared_rz_tag_tracker, True)
     result = cu_executor_pool.manager_priority_completion_queue.get()
     print("priority test got result", str(result)[:200], "<...truncated>")
+    if 'traceback' in result:
+        print(''.join(result['traceback']))
     wsock.send(json.dumps({
         "message": "run_result",
         "payload": result,

@@ -26,7 +26,7 @@ def execute_compute_unit(args, worker_results_queue: mp.Queue):
 
     print("running elem", flush=True)
     try:
-        compute_unit, full_output = args
+        compute_unit, rz_tag_tracker, full_output = args
         compute_unit: ComputeUnit
 
         stats = {
@@ -46,7 +46,7 @@ def execute_compute_unit(args, worker_results_queue: mp.Queue):
         # with open('debug_obj.json', 'w') as f:
         #     print(widget.json(), file=f)
 
-        orch = run_widget(cabaliser_obj=widget.json(), region_obj=arch_json_obj, full_output=full_output)
+        orch = run_widget(cabaliser_obj=widget.json(), region_obj=arch_json_obj, full_output=full_output, rz_tag_tracker=rz_tag_tracker)
         
         print("execution done", flush=True, file=old_stdout)
         

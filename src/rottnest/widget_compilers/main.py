@@ -13,7 +13,11 @@ from ..region_builder.json_to_region import json_to_layout, example as example_r
 from .t_orchestrator import t_orchestration
 from .graph_state_orchestrator import graph_state_orchestration, cabaliser_to_graph_state
 #from .bell_orchestrator import bell_orchestrator
+from .gate_construction import make_pseudo_gates
+from rottnest.gridsynth.gridsynth import Gridsynth
 
+print("Gridsynth load path:",Gridsynth.GATE_SYNTH_BNR)
+shared_gridsynth = None
 
 def make_mapper(graph_state, reg_region_obj):
 
@@ -29,7 +33,7 @@ def make_mapper(graph_state, reg_region_obj):
     return mapped_gs
 
 
-def run(cabaliser_obj=None, region_obj=None, full_output=False):
+def run(cabaliser_obj=None, region_obj=None, full_output=False, rz_tag_tracker=None):
     # TODO delete after testing passes
     if cabaliser_obj is None:
         with open('qft_test_obj.json') as f:
@@ -39,9 +43,15 @@ def run(cabaliser_obj=None, region_obj=None, full_output=False):
         region_obj = example_region_obj
 
     # Load Gates
-    gates = make_gates(cabaliser_obj)
-    dag_layers, all_gates = dag_create(cabaliser_obj, gates)
-    dag_roots = dag_layers[0]
+    # gates = make_gates(cabaliser_obj)
+    # dag_layers, all_gates = dag_create(cabaliser_obj, gates)
+    # dag_roots = dag_layers[0]
+    global shared_gridsynth
+    if shared_gridsynth is None:
+        shared_gridsynth = Gridsynth()
+
+    dag_roots = make_pseudo_gates(cabaliser_obj, shared_gridsynth, rz_tag_tracker)
+
     # print("roots", dag_roots)
     # Load layout
     layout = json_to_layout(region_obj)

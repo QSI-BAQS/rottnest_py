@@ -11,6 +11,7 @@ import select
 from rottnest.process_pool.process_worker import pool_worker_main
 from rottnest.executables.current_executable import current_executable
 
+from rottnest.input_parsers.cirq_parser import shared_rz_tag_tracker
 from rottnest.compute_units.architecture_proxy import saved_architectures
 
 N_PROCESSES = 8
@@ -174,7 +175,7 @@ class ComputeUnitExecutorPool:
                         break
                     yield obj
 
-            # it = wrapped_iter_test(it, 50)
+            # it = wrapped_iter_test(it, 0)
 
             # it = iter(it)
 
@@ -275,8 +276,8 @@ class ComputeUnitExecutorPool:
 
         it = seq.sequence_pyliqtr(parser)
 
-        # Yields (compute_unit, full_output)
-        wrapped_it = ((obj, False) for obj in it)
+        # Yields (compute_unit, rz_tag_tracker, full_output)
+        wrapped_it = ((obj, shared_rz_tag_tracker, False) for obj in it)
 
         print("iterator generation done")
 
@@ -310,8 +311,8 @@ class ComputeUnitExecutorPool:
         self.manager_task_queue.put(('ping',))
         assert self.manager_completion_queue.get() == 'pong'
     
-    def run_priority(self, compute_unit, full_output=True):
-        self.manager_priority_task_queue.put(("run_priority", (compute_unit, full_output)))
+    def run_priority(self, compute_unit, rz_tag_tracker, full_output=True):
+        self.manager_priority_task_queue.put(("run_priority", (compute_unit, rz_tag_tracker, full_output)))
 
     def save_arch(self, arch_id, arch_json_obj):
         self.manager_priority_task_queue.put(("save_arch", (arch_id, arch_json_obj)))
