@@ -253,6 +253,8 @@ class ComputeUnitExecutorPool:
                         cache_hash = cache_obj.cache_hash()
                         while not process_cache_request(cache_hash):
                             result = worker_result_queue.get() # Block in this barrier
+                            # if n_received == 0 or 'cache_hash' not in result:
+                            #     print(result)
                             result_hash_stack = result.get('cache_hash', [None])
                             for stack_hash in result_hash_stack:
                                 compute_unit_counts[stack_hash] += 1
@@ -301,7 +303,7 @@ class ComputeUnitExecutorPool:
                     check_priority_result()
 
                     if not worker_task_queue.full():
-                        worker_task_queue.put((*obj, cache_hash_stack)) # This may block, so check
+                        worker_task_queue.put((*obj, cache_hash_stack.copy())) # This may block, so check
                         break
                     else:
                         time.sleep(0.1) # Wait for space in worker task queue
