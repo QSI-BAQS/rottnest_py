@@ -85,10 +85,10 @@ def example_arch(*args, **kwargs):
         'payload': json_to_region.example
     }) 
 
-def run_result(message, *args, **kwargs):
+def run_result(message, *args, wsock=None, **kwargs):
     print("Running!", str(message)[:min(200, len(str(message)))])
     arch_id = message['payload']['arch_id']
-    architecture.run_widget_pool(arch_id)
+    architecture.run_widget_pool(arch_id, wsock)
     return json.dumps({
         'message': 'run_result',
         'payload': 'pending',

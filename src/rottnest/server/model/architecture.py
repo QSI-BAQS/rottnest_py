@@ -45,18 +45,25 @@ def log_resp(resp: Any):
 
 # TODO reorganise this mess and cull unused
 
-def run_widget_pool(arch_id):
+def run_widget_pool(arch_id, wsock=None):
     print("in run_widget_pool")
     # TODO use more than single object here
     cu_executor_pool.run_sequence([arch_id])
-    t = threading.Thread(target=_read_results, name="ResultReaderThread", args=[cu_executor_pool], daemon=True)
+    t = threading.Thread(target=_read_results, name="ResultReaderThread", args=[cu_executor_pool, wsock], daemon=True)
     t.start()
 
 
-def _read_results(pool):
+def _read_results(pool, wsock=None):
     while True:
         result = pool.manager_completion_queue.get()
-        # print("Got thread result", result)
+        if result == 'done':
+            print('reader thread exiting')
+            break
+        print("Got thread result", str(result))
+        wsock.send(json.dumps({
+            'message': 'run_result',
+            'payload': result,
+        }))
         # TODO handle results in this thread
 
 
