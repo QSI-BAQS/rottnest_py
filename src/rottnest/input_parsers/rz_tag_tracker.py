@@ -70,7 +70,7 @@ class RzTagTracker():
         return len(self.labels)
 
     def __str__(self):
-        return self.__str__()
+        return self.__repr__()
 
     def __repr__(self):
-        return self.__str__()
+        return super().__repr__()
