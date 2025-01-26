@@ -127,33 +127,31 @@ class PyliqtrParser:
 
     def decompose(self, *targs):
         handle_id = 0
-        if len(targs) == 0:
-            targs = self.handles
         
         #for label in targs:
         #    for gate in self.handles[label]:
-            for gate in self.sequence:
+        for gate in self.sequence:
 
-                # Cache check
-                rottnest_hash = gate._rottnest_hash()
-                if rottnest_hash is not None and self._caching:
-                    if rottnest_hash in local_cache:  
-                        # TODO: Return a cached interrupt object
-                        yield CACHED(rottnest_hash, request_type=CACHED.REQUEST)
-                        continue
-                    else:
-                        local_cache.add(rottnest_hash)
-
-                tmp = cirq.Circuit()
-                tmp.append(gate)
-                parser = PyliqtrParser(tmp, op=gate, handle_id = f"{self.handle_id}_{handle_id}")
-                if rottnest_hash is not None:
-                    yield CACHED(rottnest_hash, request_type=CACHED.START)
-                    yield parser
-                    yield CACHED(rottnest_hash, request_type=CACHED.END)
+            # Cache check
+            rottnest_hash = gate._rottnest_hash()
+            if rottnest_hash is not None and self._caching:
+                if rottnest_hash in local_cache:  
+                    # TODO: Return a cached interrupt object
+                    yield CACHED(rottnest_hash, request_type=CACHED.REQUEST)
+                    continue
                 else:
-                    yield parser
-                handle_id += 1
+                    local_cache.add(rottnest_hash)
+
+            tmp = cirq.Circuit()
+            tmp.append(gate)
+            parser = PyliqtrParser(tmp, op=gate, handle_id = f"{self.handle_id}_{handle_id}")
+            if rottnest_hash is not None:
+                yield CACHED(rottnest_hash, request_type=CACHED.START)
+                yield parser
+                yield CACHED(rottnest_hash, request_type=CACHED.END)
+            else:
+                yield parser
+            handle_id += 1
 
     def graph(self):
         if self.op is not None:
