@@ -52,8 +52,8 @@ def pauli_string_lcu_hash(_, operation):
 def qubitized_rotation_hash(_, operation):
     gate = operation.gate
     return MD5.new(
-        str(gate.__class__).encode('ascii')
-        + gate.num_qubits().to_bytes(length=4)   
+        str(gate.__class__).encode('ascii') 
+        + gate.num_qubits().to_bytes(byteorder='little', length=4)   
         + gate._rads.tobytes()
     ).digest()
 
@@ -61,7 +61,7 @@ def qubitized_reflection_hash(_, operation):
     gate = operation.gate
     return MD5.new(
         str(gate.__class__).encode('ascii')
-        + gate._n_controls.to_bytes(length=4)   
+        + gate._n_controls.to_bytes(byteorder='little', length=4)   
     ).digest()
 
 def prepare_pauli_lcu_hash(_, operation): 

@@ -1,8 +1,9 @@
 import unittest
 
 from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
-from rottnest.input_parsers.cirq_parser import CirqParser
+from rottnest.input_parsers.cirq_parser import CirqParser, shared_rz_tag_tracker
 from rottnest.compute_units.sequencer import Sequencer
+from rottnest.widget_compilers.compiler_flow import run_widget
 
 import pyLIQTR
 import qualtran
@@ -41,6 +42,8 @@ from openfermion import InteractionOperator
 
 from pyLIQTR.utils.circuit_decomposition import circuit_decompose_multi
 
+with open('region_test_obj.json') as f:
+    test_region_obj = json.load(f)
 
 from rottnest.compute_units.architecture_proxy import ArchitectureProxy, saved_architectures
 def arch_constructor(n_qubits):
@@ -84,6 +87,8 @@ class SequencerTest(unittest.TestCase):
 
     def test_fh(self, N=2, debug=True):
         
+    
+
         if debug:
             start = time.time()
             print(f"Creating Fermi Hubbard {N}x{N} from PyLIQTR")
@@ -108,7 +113,8 @@ class SequencerTest(unittest.TestCase):
         for compute_unit in seq.sequence_pyliqtr(parser):
             #]if cnt == 16:
             #]    assert False
-            compute_unit.compile_graph_state()
+            widget = compute_unit.compile_graph_state()
+            run_widget(cabaliser_obj=widget.json(), region_obj=test_region_obj, full_output=False, rz_tag_tracker=shared_rz_tag_tracker)
             cnt += 1
 
         if debug:
