@@ -26,11 +26,22 @@ class _INTERRUPT:
 INTERRUPT = _INTERRUPT()
 
 class CACHED(_INTERRUPT):
+
+    REQUEST = object()
+    START = object()
+    END = object()
+
     '''
         This interrupt triggers if a result is cached 
     '''
-    def __init__(self, cache_hash): 
+    def __init__(self, cache_hash, request_type): 
         self._cache_hash = cache_hash
+        self.request_type = request_type
+        self.op = None
+        self.fully_decomposed = True
 
     def cache_hash(self):
         return self._cache_hash
+
+    def parse(self):
+        pass

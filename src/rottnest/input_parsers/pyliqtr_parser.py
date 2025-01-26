@@ -96,8 +96,9 @@ class PyliqtrParser:
         
         self.circuit = circuit_decompose_multi(circuit, 1)
 
-        self.shims = {} # Shims represent non-pyliqtr sequences
+        self.shims = {None:[]} # Shims represent non-pyliqtr sequences
         self.handles = {} # Handles represent callable representations of pyliqtr objects
+        self.sequence = []
         
         self.decompositions = {}
         self.fully_decomposed = None
@@ -129,23 +130,26 @@ class PyliqtrParser:
         if len(targs) == 0:
             targs = self.handles
         
-        for label in targs:
-            for gate in self.handles[label]:
+        #for label in targs:
+        #    for gate in self.handles[label]:
+            for gate in self.sequence:
 
                 # Cache check
                 rottnest_hash = gate._rottnest_hash()
                 if rottnest_hash is not None and self._caching:
                     if rottnest_hash in local_cache:  
                         # TODO: Return a cached interrupt object
+                        yield CACHED(rottnest_hash, request_type=CACHED.REQUEST)
                         continue
-                        #yield CACHED(rottnest_hash)
                     else:
                         local_cache.add(rottnest_hash)
 
                 tmp = cirq.Circuit()
                 tmp.append(gate)
                 parser = PyliqtrParser(tmp, op=gate, handle_id = f"{self.handle_id}_{handle_id}")
+                yield CACHED(rottnest_hash, request_type=CACHED.START)
                 yield parser
+                yield CACHED(rottnest_hash, request_type=CACHED.END)
                 handle_id += 1
 
     def graph(self):
@@ -168,16 +172,17 @@ class PyliqtrParser:
             circuit = self.circuit
         for moment in circuit:
             for operation in moment:
-
                 if operation.gate.__class__ in self.tracking_targets:
                     instances = self.handles.get(operation.gate.__class__, list())
                     instances.append(operation) 
                     self.handles[operation.gate.__class__] = instances
 
                     # Create a new shim object
+                    self.sequence.append(operation)
+
                     self.shims[operation] = self._curr_shim
                     self._curr_shim = cirq_parser.CirqShim() 
-                    
+            
                     # If this is created then 
                     self.fully_decomposed = False
                 elif operation.gate.__class__ in self.cirq_decomposing_targets:

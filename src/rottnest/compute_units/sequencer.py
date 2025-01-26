@@ -52,6 +52,11 @@ class Sequencer():
                 #  sequences of widgets
                 # TODO: Option to skip interrupts to reduce widget count  
                 if op_seq == INTERRUPT:
+
+                    # Cache interrupt
+                    if INTERRUPT.cache_hash() is not None:
+                        yield op_seq
+
                     if len(compute_unit) > 0:
                         yield compute_unit
 
