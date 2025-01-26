@@ -187,6 +187,8 @@ class PyliqtrParser:
                     self.fully_decomposed = False
                 elif operation.gate.__class__ in self.cirq_decomposing_targets:
                     # TODO: decompose and append to shim 
+                    for g in cirq.decompose(operation):
+                        self._curr_shim.append(g)
                     pass
                 else:
                     self._curr_shim.append(operation)      
