@@ -147,9 +147,12 @@ class PyliqtrParser:
                 tmp = cirq.Circuit()
                 tmp.append(gate)
                 parser = PyliqtrParser(tmp, op=gate, handle_id = f"{self.handle_id}_{handle_id}")
-                yield CACHED(rottnest_hash, request_type=CACHED.START)
-                yield parser
-                yield CACHED(rottnest_hash, request_type=CACHED.END)
+                if rottnest_hash is not None:
+                    yield CACHED(rottnest_hash, request_type=CACHED.START)
+                    yield parser
+                    yield CACHED(rottnest_hash, request_type=CACHED.END)
+                else:
+                    yield parser
                 handle_id += 1
 
     def graph(self):
