@@ -27,11 +27,15 @@ from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
 from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
 
 from . import cirq_parser
+from rottnest.monkey_patchers import pyliqtr_patcher
 
 # pyLIQTR gates include cirq gates
 known_gates = dict(cirq_parser.known_gates) 
 
-from rottnest.input_parsers.interrupt import INTERRUPT 
+# Used to cache results 
+local_cache = set() 
+
+from rottnest.input_parsers.interrupt import INTERRUPT, CACHED
 
 # Difficult to assert uniqueness of hash function
 def cmp_qsvt(self, other):
@@ -82,7 +86,7 @@ class PyliqtrParser:
     '''
         Begin by collecting the pyliqtr components
     '''
-    def __init__(self, circuit=None, op=None, gate=None, sequence_length=1000, handle_id="0"):
+    def __init__(self, circuit=None, op=None, gate=None, sequence_length=1000, handle_id="0", cache=True):
 
         self.handle_id = handle_id
 
@@ -98,6 +102,7 @@ class PyliqtrParser:
         self.decompositions = {}
         self.fully_decomposed = None
         self._cache = PyliqtrCache() 
+        self._caching = True
 
     def qualtran_handoff(self):
         '''
@@ -126,6 +131,17 @@ class PyliqtrParser:
         
         for label in targs:
             for gate in self.handles[label]:
+
+                # Cache check
+                rottnest_hash = gate._rottnest_hash()
+                if rottnest_hash is not None and self._caching:
+                    if rottnest_hash in local_cache:  
+                        # TODO: Return a cached interrupt object
+                        continue
+                        #yield CACHED(rottnest_hash)
+                    else:
+                        local_cache.add(rottnest_hash)
+
                 tmp = cirq.Circuit()
                 tmp.append(gate)
                 parser = PyliqtrParser(tmp, op=gate, handle_id = f"{self.handle_id}_{handle_id}")
@@ -144,7 +160,6 @@ class PyliqtrParser:
                 
     def parse(self, circuit=None):
         # This is the decomposition
-
         self.fully_decomposed = True
 
         self._curr_shim = cirq_parser.CirqShim() 
@@ -153,6 +168,7 @@ class PyliqtrParser:
             circuit = self.circuit
         for moment in circuit:
             for operation in moment:
+
                 if operation.gate.__class__ in self.tracking_targets:
                     instances = self.handles.get(operation.gate.__class__, list())
                     instances.append(operation) 
@@ -195,12 +211,12 @@ class PyliqtrParser:
             if len(shim) > 0:
                 # print("SHIM")
                 yield shim 
-                yield INTERRUPT()
+                yield INTERRUPT
 
             if r.fully_decomposed:
                 self._cache.append(r)
                 yield r
-                yield INTERRUPT()
+                yield INTERRUPT
 
             else:
                 # print("UNROLL")

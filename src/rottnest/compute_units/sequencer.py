@@ -28,7 +28,7 @@ class Sequencer():
     def priority(self, gate, architecture):
         pass
 
-    def sequence_pyliqtr(self, parser):
+    def sequence_pyliqtr(self, parser, compactness = 0.9):
 
         architecture_idx = 0
 
@@ -41,14 +41,17 @@ class Sequencer():
         compute_unit = ComputeUnit(architecture.to_json())
         cirq_parser = CirqParser(self.sequence_length)
 
-        print("Sequencing")
-        interrupt = INTERRUPT()
+        gate_count = 0
+
         for cirq_obj in parser.traverse():
             # Interrupt between cirq objects
             for op_seq in cirq_parser.parse(cirq_obj):
 
                 # Interrupt encountered, force yield
-                if op_seq == interrupt:
+                # This ensures that pyliqtr level objects compile to distinct  
+                #  sequences of widgets
+                # TODO: Option to skip interrupts to reduce widget count  
+                if op_seq == INTERRUPT:
                     if len(compute_unit) > 0:
                         yield compute_unit
 
@@ -61,8 +64,11 @@ class Sequencer():
                     cirq_parser.reset_context()
                     continue
 
-                # TODO: inject RZ bounds here
-                if op_seq.n_rz_operations + 2 * len(cirq_parser) > compute_unit.memory_bound:
+                gate_count += len(op_seq)
+                # Saturated memory bound 
+                if op_seq.n_rz_operations + 2 * len(cirq_parser) > compute_unit.memory_bound * compactness :
+                    compute_unit.append(op_seq)
+
                     local_context = cirq_parser.extract_context()
                     compute_unit.add_context(*local_context)
                     if len(compute_unit) > 0:
@@ -77,18 +83,19 @@ class Sequencer():
 
                     # Reset the context of the parser
                     cirq_parser.reset_context(op_seq)
-                    print("Roll-forward")
-                    # TODO: Better sequence splitting logic here!
+                    cirq_parser.sequence_length = self.sequence_length 
                     continue
-                # Add the offending sequence
-                # TODO: This sequence may need splitting or similar special logic
-                # For now, so long as len(op_seq) is less than the number of qubits
-                # in register memory for the architecture this can't result in an illegal
-                # allocation
+
+                # Add the  sequence
                 compute_unit.append(op_seq)
+               
+                # Reduce sequence length 
+                # This guarantees that hitting the compactness threshold doesn't run over the memory bound 
+                cirq_parser.sequence_length = int(compactness * (compute_unit.memory_bound - (op_seq.n_rz_operations) + 2 * len(cirq_parser))) 
 
         if len(compute_unit) > 0:
             local_context = cirq_parser.extract_context()
             compute_unit.add_context(*local_context)
             if local_context[0] > 0:
                 yield compute_unit
+        print("Gate Count:", gate_count)

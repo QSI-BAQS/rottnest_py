@@ -67,10 +67,9 @@ class CirqParser:
         widget = None
     ):
         op = OperationSequence(self.sequence_length)
-        interrupt = INTERRUPT()
         for moment in circ_iter:
             for operation in moment:
-                if operation == interrupt:
+                if operation == INTERRUPT:
                     yield op 
                     break 
 

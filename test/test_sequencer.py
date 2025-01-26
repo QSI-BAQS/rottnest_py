@@ -57,7 +57,7 @@ def arch_constructor(n_qubits):
         def num_qubits(self):
             return n_qubits 
         
-        def json(self):
+        def underlying_json(self):
             return ""
 
     saved_architectures[666] = object()
@@ -87,12 +87,12 @@ class SequencerTest(unittest.TestCase):
         if debug:
             start = time.time()
             print(f"Creating Fermi Hubbard {N}x{N} from PyLIQTR")
-        #fh = make_fh_circuit(N=N,p_algo=0.9999999904,times=0.01)
-        fh = make_fh_circuit(N=N, p_algo=0.9, times=0.1)
+        fh = make_fh_circuit(N=N,p_algo=0.9999999904,times=0.01)
+        #fh = make_fh_circuit(N=N, p_algo=0.9, times=0.1)
 
         if debug:
             runtime = time.time() - start
-            print(f"\t Completed in {runtime} seconds")
+            print(f"\t Completed Generation in {runtime} seconds")
 
         parser = PyliqtrParser(fh)
         parser.parse()
@@ -106,7 +106,6 @@ class SequencerTest(unittest.TestCase):
 
         cnt = 0
         for compute_unit in seq.sequence_pyliqtr(parser):
-            print(cnt)
             #]if cnt == 16:
             #]    assert False
             compute_unit.compile_graph_state()
@@ -114,10 +113,14 @@ class SequencerTest(unittest.TestCase):
 
         if debug:
             runtime = time.time() - start
-            print(f"\t Completed in {runtime} seconds")
+            print(f"\t Completed Compilation in {runtime} seconds")
             print("Total Widgets: ", cnt)
-        return compute_unit
+        #return compute_unit
 
+import sys
 if __name__ == '__main__':
+    n_qubits = 10
+    if len(sys.argv) > 1:
+        n_qubits = int(sys.argv[1])
     st = SequencerTest()
-    x = st.test_fh(N=3)
+    x = st.test_fh(N=n_qubits)

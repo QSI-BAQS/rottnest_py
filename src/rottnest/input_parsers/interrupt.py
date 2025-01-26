@@ -1,10 +1,12 @@
-class INTERRUPT:
+class _INTERRUPT:
     '''
         This is an interrupt class for chucking into streams of cirq moments 
         It iters into itself, and evaluates against itself 
         This means that it acts as a cirquit, a moment and an operator and can be caught
         at all three levels
     '''
+    
+    NON_CACHING = object()
 
     def __iter__(self):
         yield self 
@@ -14,3 +16,21 @@ class INTERRUPT:
 
     def __eq__(self, other):
         return hash(self) == hash(other) 
+
+    def cache_hash(self):
+        '''
+            Reserved value, None should never be hashed
+        '''
+        return NON_CACHING 
+
+INTERRUPT = _INTERRUPT()
+
+class CACHED(_INTERRUPT):
+    '''
+        This interrupt triggers if a result is cached 
+    '''
+    def __init__(self, cache_hash): 
+        self._cache_hash = cache_hash
+
+    def cache_hash(self):
+        return self._cache_hash
