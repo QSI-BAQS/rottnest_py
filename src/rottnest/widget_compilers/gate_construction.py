@@ -12,11 +12,11 @@ class NopGate(Gate):
 
 class SGate(Gate):
     def __init__(self, targ):
-        super().__init__(targ, GateType.LOCAL_GATE, duration=1)
+        super().__init__(targ, GateType.ANCILLA, duration=2)
 
 class HGate(Gate):
     def __init__(self, targ):
-        super().__init__(targ, GateType.ANCILLA, duration=1)
+        super().__init__(targ, GateType.ANCILLA, duration=3)
 
 class XGate(Gate):
     def __init__(self, targ):
@@ -33,7 +33,6 @@ gate_map = {
     'S':SGate,
     'H':HGate,
 }
-
 
 class PseudoRZGate:
     targ: int
