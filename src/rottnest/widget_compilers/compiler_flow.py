@@ -33,7 +33,7 @@ def make_mapper(graph_state, reg_region_obj):
     return mapped_gs
 
 
-def run(cabaliser_obj=None, region_obj=None, full_output=False, rz_tag_tracker=None):
+def run_widget(cabaliser_obj=None, region_obj=None, full_output=False, rz_tag_tracker=None):
     # TODO delete after testing passes
     if cabaliser_obj is None:
         with open('qft_test_obj.json') as f:

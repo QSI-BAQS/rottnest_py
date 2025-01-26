@@ -1,5 +1,5 @@
 from rottnest.compute_units.compute_unit import ComputeUnit
-from rottnest.widget_compilers.main import run as run_widget
+from rottnest.widget_compilers.compiler_flow import run_widget as run_widget
 import multiprocessing as mp
 import traceback
 import time

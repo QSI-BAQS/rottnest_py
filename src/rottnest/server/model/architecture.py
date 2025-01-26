@@ -11,7 +11,7 @@ from t_scheduler.region.region_types import region_types, region_args
 from t_scheduler.router import *
 from t_scheduler.router import region_router_exports
 
-from rottnest.widget_compilers.main import run as run_widget
+from rottnest.widget_compilers.compiler_flow import run_widget as run_widget
 from rottnest.process_pool import process_pool
 
 # TODO: Unbind references from here
