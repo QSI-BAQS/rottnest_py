@@ -1,3 +1,10 @@
+'''
+    Interrupts act as a pseudo message passing interface
+    This allows us to pass information from the parsers down to the compiler as an instruction  
+'''
+
+NON_CACHING = object()
+
 class _INTERRUPT:
     '''
         This is an interrupt class for chucking into streams of cirq moments 
@@ -5,8 +12,6 @@ class _INTERRUPT:
         This means that it acts as a cirquit, a moment and an operator and can be caught
         at all three levels
     '''
-    
-    NON_CACHING = object()
 
     def __iter__(self):
         yield self 

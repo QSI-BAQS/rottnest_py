@@ -2,7 +2,7 @@ from itertools import cycle
 
 from rottnest.input_parsers.qubit_label_tracker import QubitLabelTracker
 from rottnest.input_parsers.cirq_parser import CirqParser
-from rottnest.input_parsers.pyliqtr_parser import INTERRUPT
+from rottnest.input_parsers.interrupt import INTERRUPT, NON_CACHING
 from rottnest.compute_units.compute_unit import ComputeUnit
 from rottnest.compute_units.architecture_proxy import ArchitectureProxy
 
@@ -51,23 +51,27 @@ class Sequencer():
                 # This ensures that pyliqtr level objects compile to distinct  
                 #  sequences of widgets
                 # TODO: Option to skip interrupts to reduce widget count  
+                print("Interrupt")
                 if op_seq == INTERRUPT:
-
                     # Cache interrupt
-                    if INTERRUPT.cache_hash() is not None:
+                    if op_seq.cache_hash() is not NON_CACHING:
+                        print("Cache interrupt")
                         yield op_seq
+                        continue
 
-                    if len(compute_unit) > 0:
+                    if len(compute_unit.sequences) > 0:
+                        local_context = cirq_parser.extract_context()
+                        compute_unit.add_context(*local_context)
                         yield compute_unit
 
-                    architecture = next(architectures)
+                        architecture = next(architectures)
+                        # Create a new compute unit
+                        compute_unit = ComputeUnit(architecture.to_json())
 
-                    # Create a new compute unit
-                    compute_unit = ComputeUnit(architecture.to_json())
-
-                    # Reset the context of the parser
-                    cirq_parser.reset_context()
-                    continue
+                        # Reset the context of the parser
+                        cirq_parser.reset_context(op_seq)
+                        cirq_parser.sequence_length = self.sequence_length 
+                        continue
 
                 gate_count += len(op_seq)
                 # Saturated memory bound 

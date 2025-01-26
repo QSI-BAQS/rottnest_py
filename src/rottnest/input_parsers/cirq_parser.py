@@ -12,7 +12,7 @@ from rottnest.input_parsers.rz_tag_tracker import RzTagTracker
 from rottnest.monkey_patchers import cirq_patcher 
 from rottnest.monkey_patchers.cirq_patcher import known_gates 
 
-from rottnest.input_parsers.interrupt import INTERRUPT
+from rottnest.input_parsers.interrupt import INTERRUPT, NON_CACHING
 
 shared_rz_tag_tracker = RzTagTracker()
 
@@ -70,8 +70,13 @@ class CirqParser:
         for moment in circ_iter:
             for operation in moment:
                 if operation == INTERRUPT:
+                    if operation.cache_hash() != NON_CACHING: 
+                        yield operation
+                        continue 
+                    # Non Caching, immediately interrupt
                     yield op 
-                    break 
+                    op = OperationSequence(self.sequence_length)
+                    continue
 
                 if operation.gate._n_cabaliser_ops + len(op) > self.sequence_length:  
                     yield op

@@ -1,6 +1,7 @@
 import unittest
 
 from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
+from rottnest.input_parsers.interrupt import INTERRUPT
 from rottnest.input_parsers.cirq_parser import CirqParser, shared_rz_tag_tracker
 from rottnest.compute_units.sequencer import Sequencer
 from rottnest.widget_compilers.compiler_flow import run_widget
@@ -111,11 +112,11 @@ class SequencerTest(unittest.TestCase):
 
         cnt = 0
         for compute_unit in seq.sequence_pyliqtr(parser):
-            #]if cnt == 16:
-            #]    assert False
-            widget = compute_unit.compile_graph_state()
-            run_widget(cabaliser_obj=widget.json(), region_obj=test_region_obj, full_output=False, rz_tag_tracker=shared_rz_tag_tracker)
-            cnt += 1
+
+            if compute_unit != INTERRUPT: 
+                widget = compute_unit.compile_graph_state()
+                run_widget(cabaliser_obj=widget.json(), region_obj=test_region_obj, full_output=False, rz_tag_tracker=shared_rz_tag_tracker)
+                cnt += 1
 
         if debug:
             runtime = time.time() - start
