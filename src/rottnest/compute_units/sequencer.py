@@ -51,11 +51,9 @@ class Sequencer():
                 # This ensures that pyliqtr level objects compile to distinct  
                 #  sequences of widgets
                 # TODO: Option to skip interrupts to reduce widget count  
-                print("Interrupt")
                 if op_seq == INTERRUPT:
                     # Cache interrupt
                     if op_seq.cache_hash() is not NON_CACHING:
-                        print("Cache interrupt")
                         yield op_seq
                         continue
 
@@ -107,4 +105,3 @@ class Sequencer():
             compute_unit.add_context(*local_context)
             if local_context[0] > 0:
                 yield compute_unit
-        print("Gate Count:", gate_count)

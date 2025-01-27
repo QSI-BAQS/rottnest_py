@@ -137,6 +137,7 @@ class PyliqtrParser:
             if rottnest_hash is not None and self._caching:
                 if rottnest_hash in local_cache:  
                     # TODO: Return a cached interrupt object
+                    print("Cached:", gate.gate.__class__)
                     yield CACHED(rottnest_hash, request_type=CACHED.REQUEST)
                     continue
                 else:
@@ -217,7 +218,6 @@ class PyliqtrParser:
             # Inject shim
             shim = self.shims[r.op]
             if len(shim) > 0:
-                # print("SHIM")
                 yield shim 
                 yield INTERRUPT
 
@@ -227,7 +227,6 @@ class PyliqtrParser:
                 yield INTERRUPT
 
             else:
-                # print("UNROLL")
                 it = r.traverse()
                 while True:
                     try:

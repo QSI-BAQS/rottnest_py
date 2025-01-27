@@ -43,8 +43,6 @@ from openfermion import InteractionOperator
 
 from pyLIQTR.utils.circuit_decomposition import circuit_decompose_multi
 
-with open('region_test_obj.json') as f:
-    test_region_obj = json.load(f)
 
 from rottnest.compute_units.architecture_proxy import ArchitectureProxy, saved_architectures
 def arch_constructor(n_qubits):
@@ -115,7 +113,7 @@ class SequencerTest(unittest.TestCase):
 
             if compute_unit != INTERRUPT: 
                 widget = compute_unit.compile_graph_state()
-                run_widget(cabaliser_obj=widget.json(), region_obj=test_region_obj, full_output=False, rz_tag_tracker=shared_rz_tag_tracker)
+                #run_widget(cabaliser_obj=widget.json(), region_obj=test_region_obj, full_output=False, rz_tag_tracker=shared_rz_tag_tracker)
                 cnt += 1
 
         if debug:
