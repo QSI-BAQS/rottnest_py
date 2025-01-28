@@ -41,13 +41,13 @@ def run_widget(cabaliser_obj=None, region_obj=None, full_output=False, rz_tag_tr
     
     if region_obj == None:
         region_obj = example_region_obj
-    # for key, val in cabaliser_obj['adjacencies'].items():
-    #     for x in val:
-    #         if key not in cabaliser_obj['adjacencies'][x]:
-    #             cabaliser_obj['adjacencies'][x].append(key)
-    #             cabaliser_obj['adjacencies'][x].sort()
-    # for key, val in cabaliser_obj['adjacencies'].items():
-    #     cabaliser_obj['adjacencies'][key] = sorted(set(val))
+    for key, val in cabaliser_obj['adjacencies'].items():
+        for x in val:
+            if key not in cabaliser_obj['adjacencies'][x]:
+                cabaliser_obj['adjacencies'][x].append(key)
+                cabaliser_obj['adjacencies'][x].sort()
+    for key, val in cabaliser_obj['adjacencies'].items():
+        cabaliser_obj['adjacencies'][key] = sorted(set(val))
 
     # Load Gates
     # gates = make_gates(cabaliser_obj)

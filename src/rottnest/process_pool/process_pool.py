@@ -388,7 +388,7 @@ class ComputeUnitExecutorPoolManager:
 class ComputeUnitExecutorPool:    
     @staticmethod
     def _run_sequence(arch_ids):
-        parser = PyliqtrParser(current_executable)
+        parser = PyliqtrParser(current_executable())
         parser.parse()
 
         seq = Sequencer(*arch_ids)

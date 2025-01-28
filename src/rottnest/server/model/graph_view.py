@@ -8,7 +8,7 @@ view_cache = {}
 def get_graph(graph_id=None):
     
     if graph_id is None:
-        pyliqtr_obj = current_executable.current_executable 
+        pyliqtr_obj = current_executable.current_executable() 
     else:
         pyliqtr_obj = view_cache[graph_id].parser 
 
