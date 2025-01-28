@@ -55,6 +55,22 @@ def add_result_dicts(res1, res2):
         'tocks': res1.get('tocks', 0) + res2.get('tocks', 0),
     }
 
+def _iadd_dict(d1, d2):
+    for k in d2:
+        d1[k] = d1.get(k, 0) + d2[k]
+
+def iadd_result_dicts(res1, res2):
+    if 'volumes' not in res1:
+        res1['volumes'] = {}
+    if 't_source' not in res1:
+        res1['t_source'] = {}
+    if 'tocks' not in res1:
+        res1['tocks'] = 0
+    _iadd_dict(res1['volumes'], res2.get('volumes', {}))
+    _iadd_dict(res1['t_source'], res2.get('t_source', {}))
+    res1['tocks'] += res2.get('tocks', 0)
+    
+
 class ComputeUnitExecutorPool:
     @staticmethod
     def _pool_manager_entrypoint(manager_task_queue: mp.Queue, 
@@ -194,8 +210,8 @@ class ComputeUnitExecutorPool:
             # it = wrapped_iter_test(it, 0)
 
             # it = iter(it)
-
-            print("manager job start time:", time.time())
+            start = time.time()
+            print("manager job start time:", start)
 
             n_submitted = 0
             n_received = 0
@@ -216,15 +232,21 @@ class ComputeUnitExecutorPool:
                 output['cache_hash_hex'] = cache_hash.hex()
                 manager_completion_queue.put(output)
                 for stack_hash in cache_hash_stack:
-                    compute_unit_result_cache[stack_hash] = add_result_dicts(
-                        compute_unit_result_cache[cache_hash], compute_unit_result_cache[stack_hash]
+                    iadd_result_dicts(
+                        compute_unit_result_cache[stack_hash], compute_unit_result_cache[cache_hash]
                     )
                 return True
 
             # Submit all jobs provided by sequencer
             # This loop blocks when task queue is full
+            
+            sequencer_time = 0
+            cache_time = 0
+
             while True:
+                seq_start = time.time()
                 obj = next(it, StopIteration)
+                sequencer_time += (time.time() - seq_start)
                 if obj == StopIteration:
                     break
 
@@ -235,6 +257,7 @@ class ComputeUnitExecutorPool:
                 # print("id check", id(obj), id(INTERRUPT), obj == INTERRUPT, obj)
 
                 if obj[0] == INTERRUPT:
+                    cache_start = time.time()
                     cache_obj = obj[0]
                     check={CACHED.START: "START", CACHED.END: "END", CACHED.REQUEST: "REQ"}
                     # print(cache_obj.cache_hash(), check[cache_obj.request_type])
@@ -253,16 +276,23 @@ class ComputeUnitExecutorPool:
                         cache_hash = cache_obj.cache_hash()
                         while not process_cache_request(cache_hash):
                             result = worker_result_queue.get() # Block in this barrier
-                            # if n_received == 0 or 'cache_hash' not in result:
-                            #     print(result)
+                            if 'cache_hash' not in result:
+                                print(result)
                             result_hash_stack = result.get('cache_hash', [None])
                             for stack_hash in result_hash_stack:
                                 compute_unit_counts[stack_hash] += 1
-                                compute_unit_result_cache[stack_hash] = add_result_dicts(compute_unit_result_cache[stack_hash], result)
+                                iadd_result_dicts(
+                                    compute_unit_result_cache[stack_hash], compute_unit_result_cache[cache_hash]
+                                )
+                            # print(compute_unit_counts, compute_unit_totals)
                             print("received", n_received)
                             manager_completion_queue.put(result)
                             n_received += 1
+
+                    cache_time += time.time() - cache_start
                     continue # Skip normal processing
+                
+                submit_time = time.time()
 
                 for stack_hash in cache_hash_stack:
                     compute_unit_totals[stack_hash] += 1
@@ -270,10 +300,14 @@ class ComputeUnitExecutorPool:
                 if worker_task_queue.full():
                     while not worker_result_queue.empty():
                         result = worker_result_queue.get() # This should not block, now that we checked
+                        if 'cache_hash' not in result:
+                            print(result)
                         result_hash_stack = result.get('cache_hash', [None])
                         for stack_hash in result_hash_stack:
                             compute_unit_counts[stack_hash] += 1
-                            compute_unit_result_cache[stack_hash] = add_result_dicts(compute_unit_result_cache[stack_hash], result)
+                            iadd_result_dicts(
+                                compute_unit_result_cache[stack_hash], compute_unit_result_cache[cache_hash]
+                            )
                         print("received", n_received)
                         manager_completion_queue.put(result)
                         n_received += 1
@@ -312,7 +346,8 @@ class ComputeUnitExecutorPool:
                 n_submitted += 1
                 
             print("all submitted!")
-
+            print("last non-cache job at", submit_time, "delta", submit_time - start)
+            print("sequencer time:", sequencer_time, "cache_time:", cache_time)
             # Read remaining data from processes
             # This loops and blocks up to SEGFAULT_SENTINEL_TIMEOUT_SECS
             # Note that priority tasks are not processed if this blocks
@@ -326,7 +361,9 @@ class ComputeUnitExecutorPool:
                     result_hash_stack = result.get('cache_hash', [None])
                     for stack_hash in result_hash_stack:
                         compute_unit_counts[stack_hash] += 1
-                        compute_unit_result_cache[stack_hash] = add_result_dicts(compute_unit_result_cache[stack_hash], result)
+                        iadd_result_dicts(
+                            compute_unit_result_cache[stack_hash], compute_unit_result_cache[cache_hash]
+                        )
                     print("received", n_received)
                     manager_completion_queue.put(result)
                     n_received += 1
@@ -338,11 +375,12 @@ class ComputeUnitExecutorPool:
             totals = compute_unit_result_cache[None]
             totals['cu_id'] = "TOTAL"
             manager_completion_queue.put(totals)
+            print(totals)
             # print(compute_unit_counts, compute_unit_totals, compute_unit_result_cache)
             manager_completion_queue.put('done')
 
             print("all received")
-            print("time:", time.time())
+            print("time:", time.time() - start)
 
         # Cleanup after receiving "terminate"
         for proc in pool:

@@ -64,13 +64,14 @@ def _read_results(pool, wsock=None):
             if 'cache_hash' in result:
                 del result['cache_hash']
 
-            json.dump(result, f)
-            print(file=f)
+            if result.get("cu_id", "") == "TOTAL":
+                json.dump(result, f)
+                print(file=f)
 
-            wsock.send(json.dumps({
-                'message': 'run_result',
-                'payload': result,
-            }))
+            # wsock.send(json.dumps({
+            #     'message': 'run_result',
+            #     'payload': result,
+            # }))
             # TODO handle results in this thread
 
 

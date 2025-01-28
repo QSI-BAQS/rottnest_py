@@ -41,6 +41,13 @@ def run_widget(cabaliser_obj=None, region_obj=None, full_output=False, rz_tag_tr
     
     if region_obj == None:
         region_obj = example_region_obj
+    # for key, val in cabaliser_obj['adjacencies'].items():
+    #     for x in val:
+    #         if key not in cabaliser_obj['adjacencies'][x]:
+    #             cabaliser_obj['adjacencies'][x].append(key)
+    #             cabaliser_obj['adjacencies'][x].sort()
+    # for key, val in cabaliser_obj['adjacencies'].items():
+    #     cabaliser_obj['adjacencies'][key] = sorted(set(val))
 
     # Load Gates
     # gates = make_gates(cabaliser_obj)
@@ -65,7 +72,13 @@ def run_widget(cabaliser_obj=None, region_obj=None, full_output=False, rz_tag_tr
     orc = ScheduleOrchestrator(dag_roots, widget, strategy, json=full_output)
 
     # Graph State Scheduler
-    graph_state_orchestration(orc, graph_state)  
+    try:
+        graph_state_orchestration(orc, graph_state)  
+    except:
+        import traceback
+        import sys
+        traceback.print_exc(file=sys.stderr)
+        print(cabaliser_obj, file=sys.stderr)
 
     # T scheduler
     t_orchestration(orc)
