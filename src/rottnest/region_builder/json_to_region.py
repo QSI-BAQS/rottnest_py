@@ -1,7 +1,7 @@
 from t_scheduler.router import *
 from t_scheduler.templates.generic_templates import LayoutNode 
 from t_scheduler.region.region_types import region_types
-
+from t_scheduler.router.abstract_router import router_constructors
 from functools import partial
 
 region_type_map = {}
@@ -14,21 +14,6 @@ def conv(region_type, width, height, downstream = None, **kwargs) -> callable:
     if width is None or height is None:
         raise ValueError(f"Invalid value for width or height ({region_type=}): {width=}, {height=}")
     return partial(region_type_map[region_type], width=width, height=height, **kwargs)
-
-
-# TODO move into settings and frontend
-default_router = {
-    'CombShapedRegisterRegion': CombRegisterRouter,
-    'RouteBus': StandardBusRouter,
-    'TCultivatorBufferRegion.with_dense_layout': DenseTCultivatorBufferRouter,
-    'MagicStateFactoryRegion': MagicStateFactoryRouter,
-    'MagicStateFactoryRegion.with_litinski_6x3_dense': MagicStateFactoryRouter,
-    'MagicStateFactoryRegion.with_litinski_5x3': MagicStateFactoryRouter,
-    'MagicStateBufferRegion': RechargableBufferRouter,
-    'SingleRowRegisterRegion': BaselineRegisterRouter,
-    'PrefilledMagicStateRegion': VerticalFilledBufferRouter,
-    'BellRegion': BellRouter
-}
 
 
 
@@ -86,7 +71,7 @@ def _json_to_node(obj):
     downstream = [_json_to_node(child) for child in obj.get("downstream", [])]
     return LayoutNode(
         region_factory = conv(**obj),
-        router_factory = default_router[obj['region_type']],
+        router_factory = router_constructors[obj['router_type']],
         downstream = downstream
     )
 
