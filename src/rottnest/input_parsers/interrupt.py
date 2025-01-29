@@ -39,7 +39,18 @@ class CACHED(_INTERRUPT):
     '''
         This interrupt triggers if a result is cached 
     '''
-    def __init__(self, cache_hash, request_type): 
+    def __init__(
+        self,
+        cache_hash: bytes,
+        request_type: object,
+        non_participatory_qubits: int = 0
+    ): 
+        '''
+Constructor for a cache interrupt
+    :: cache_hash : bytes :: Hash of the cache request 
+    :: request_type : object :: Enum-like of singleton instances acting as a message interface   
+    :: non_participatory_qubits : int :: Number of qubits that will idle across this cache 
+        '''
         self._cache_hash = cache_hash
         self.request_type = request_type
         self.op = None

@@ -95,6 +95,7 @@ class PyliqtrParser:
         self.gate = gate
         
         self.circuit = circuit_decompose_multi(circuit, 1)
+        self.n_qubits = len(self.circuit.all_qubits()) 
 
         self.shims = {None:[]} # Shims represent non-pyliqtr sequences
         self.handles = {} # Handles represent callable representations of pyliqtr objects
@@ -127,27 +128,32 @@ class PyliqtrParser:
 
     def decompose(self, *targs):
         handle_id = 0
-        
-        #for label in targs:
-        #    for gate in self.handles[label]:
+       
+        # Sequence is a valid ordering of the operations 
         for gate in self.sequence:
-
             # Cache check
             rottnest_hash = gate._rottnest_hash()
             if rottnest_hash is not None and self._caching:
                 if rottnest_hash in local_cache:  
                     # TODO: Return a cached interrupt object
-                    print("Cached:", gate.gate.__class__)
-                    yield CACHED(rottnest_hash, request_type=CACHED.REQUEST)
+                    non_participatory = len(
+                        self.circuit.all_qubits().difference(gate._qubits)
+                    )
+                    yield CACHED(rottnest_hash, request_type=CACHED.REQUEST, non_participatory_qubits=non_participatory)
                     continue
                 else:
                     local_cache.add(rottnest_hash)
 
             tmp = cirq.Circuit()
             tmp.append(gate)
+
             parser = PyliqtrParser(tmp, op=gate, handle_id = f"{self.handle_id}_{handle_id}")
             if rottnest_hash is not None:
-                yield CACHED(rottnest_hash, request_type=CACHED.START)
+                non_participatory = len(
+                    self.circuit.all_qubits().difference(tmp.all_qubits())
+                )
+                print(f"Cache Start: {gate}, {non_participatory}") 
+                yield CACHED(rottnest_hash, request_type=CACHED.START, non_participatory_qubits=non_participatory)
                 yield parser
                 yield CACHED(rottnest_hash, request_type=CACHED.END)
             else:
@@ -234,6 +240,7 @@ class PyliqtrParser:
                         yield v
                     except StopIteration:
                         break
+                yield INTERRUPT
 
     def traverse_all(self):
         '''
