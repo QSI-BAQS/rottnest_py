@@ -119,11 +119,24 @@ def use_arch(message, *args, **kwargs):
         'arch_id': architecture.save_arch(arch_json_obj)
     })
 
-def get_graph(message, *args, **kwargs):
+def get_root_graph(message, *args, **kwargs): 
     gobj = message['payload']
-
+    
     graph_object = graph_view.get_graph()
 
+    return json.dumps({
+            'message': 'get_root_graph',
+            'payload' : {
+                'gid' : 'cg', #super silly
+                'graph_view' : graph_object 
+            }
+        })
+
+def get_graph(message, *args, **kwargs):
+    gobj = message['payload']
+    
+    graph_object = graph_view.get_graph(gobj['gid'])
+     
     return json.dumps({
             'message': 'get_graph',
             'payload' : {
@@ -149,6 +162,7 @@ socket_binds = {
         'get_router': get_router,
         'get_args': get_args,
         'get_graph' : get_graph,
+        'get_root_graph' : get_root_graph,
         'debug_send': debug_send,
         'get_status': get_status,
         } 
