@@ -54,7 +54,7 @@ def add_result_dicts(res1, res2):
     return {
         'volumes': _add_dict(res1.get('volumes', {}), res2.get('volumes', {})),
         't_source': _add_dict(res1.get('t_source', {}), res2.get('t_source', {})),
-        'tocks': res1.get('tocks', 0) + res2.get('tocks', 0),
+        'tocks': _add_dict(res1.get('tocks', {}), res2.get('tocks', {})),
     }
 
 def _iadd_dict(d1, d2):
@@ -67,10 +67,10 @@ def iadd_result_dicts(res1, res2):
     if 't_source' not in res1:
         res1['t_source'] = {}
     if 'tocks' not in res1:
-        res1['tocks'] = 0
+        res1['tocks'] = {}
     _iadd_dict(res1['volumes'], res2.get('volumes', {}))
     _iadd_dict(res1['t_source'], res2.get('t_source', {}))
-    res1['tocks'] += res2.get('tocks', 0)
+    _iadd_dict(res1['tocks'], res2.get('tocks', {}))
 
 class ComputeUnitExecutorPoolManager:
     def __init__(self, 
@@ -109,7 +109,7 @@ class ComputeUnitExecutorPoolManager:
 
         self.priority_process = self.ctx.Process(target=pool_worker_main, 
                                        name="PoolWorker(Priority)", 
-                                       args=(self.priority_task_queue, self.priority_result_queue), 
+                                       args=(self.priority_task_queue, self.priority_result_queue, True), 
                                        daemon=True)
         self.priority_process.start()
 
@@ -431,7 +431,7 @@ class ComputeUnitExecutorPool:
         assert self.manager_completion_queue.get() == 'pong'
     
     def run_priority(self, compute_unit, rz_tag_tracker, full_output=True):
-        self.manager_priority_task_queue.put(("run_priority", (compute_unit, rz_tag_tracker, full_output)))
+        self.manager_priority_task_queue.put(("run_priority", (compute_unit, rz_tag_tracker, full_output, [None])))
 
     def save_arch(self, arch_id, arch_json_obj):
         self.manager_priority_task_queue.put(("save_arch", (arch_id, arch_json_obj)))

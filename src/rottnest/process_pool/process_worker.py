@@ -4,7 +4,7 @@ import multiprocessing as mp
 import traceback
 import time
 
-def pool_worker_main(task_queue: mp.Queue, worker_results_queue: mp.Queue):
+def pool_worker_main(task_queue: mp.Queue, worker_results_queue: mp.Queue, is_priority: bool = False):
     '''
     execute_compute_unit should not throw
     '''
@@ -14,15 +14,20 @@ def pool_worker_main(task_queue: mp.Queue, worker_results_queue: mp.Queue):
         if args == 'ping':
             worker_results_queue.put('pong')
             continue
-        execute_compute_unit(args, worker_results_queue)
+        execute_compute_unit(args, worker_results_queue, is_priority)
 
-def execute_compute_unit(args, worker_results_queue: mp.Queue):
+def execute_compute_unit(args, worker_results_queue: mp.Queue, is_priority):
     # print("got", args, flush=True)
-    import sys
-    # old_stdout = sys.stdout # Enable printing
-    f = open('/dev/null', 'w')
-    sys.stdout = f
-    old_stdout = sys.stdout # Disable printing
+
+    if not is_priority:
+        import sys
+        # old_stdout = sys.stdout # Enable printing
+        f = open('/dev/null', 'w')
+        sys.stdout = f
+        old_stdout = sys.stdout # Disable printing
+    else:
+        import sys
+        old_stdout = sys.stdout
 
     print("running elem", flush=True)
     try:
@@ -44,8 +49,9 @@ def execute_compute_unit(args, worker_results_queue: mp.Queue):
         print("compile done", flush=True, file=old_stdout)
 
         # Debug output widget outputs
-        # with open('debug_obj.json', 'w') as f:
-        #     print(widget.json(), file=f)
+        if is_priority:
+            with open('debug_obj.json', 'w') as f:
+                print(widget.json(), file=f)
 
         orch = run_widget(cabaliser_obj=widget.json(), region_obj=arch_json_obj, full_output=full_output, rz_tag_tracker=rz_tag_tracker)
         
@@ -54,13 +60,15 @@ def execute_compute_unit(args, worker_results_queue: mp.Queue):
         stats = {
             'volumes': orch.get_space_time_volume(),
             't_source': orch.get_T_stats(),
-            'tocks': orch.get_total_cycles(),
+            'tocks': orch.get_tock_stats(),
             'vis_obj': None,
             'cu_id': compute_unit.unit_id,
             'status': 'complete',
             'cache_hash': cache_hash,
         }
 
+        stats['tocks']['total'] = sum(stats['tocks'].values())
+        
         print(stats)
 
         if full_output:
