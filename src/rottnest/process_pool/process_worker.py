@@ -31,7 +31,7 @@ def execute_compute_unit(args, worker_results_queue: mp.Queue, is_priority):
 
     print("running elem", flush=True)
     try:
-        compute_unit, rz_tag_tracker, full_output, cache_hash = args
+        compute_unit, rz_tag_tracker, full_output, cache_hash, np_qubits = args
         compute_unit: ComputeUnit
 
         stats = {
@@ -65,6 +65,7 @@ def execute_compute_unit(args, worker_results_queue: mp.Queue, is_priority):
             'cu_id': compute_unit.unit_id,
             'status': 'complete',
             'cache_hash': cache_hash,
+            'np_qubits': np_qubits,
         }
 
         stats['tocks']['total'] = sum(stats['tocks'].values())

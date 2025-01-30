@@ -171,6 +171,7 @@ class ComputeUnitExecutorPoolManager:
         self.compute_unit_counts = defaultdict(int)
         self.compute_unit_totals = defaultdict(int)
         self.cache_hash_stack = [None]
+        self.non_participatory_stack = [0]
         if None in self.compute_unit_result_cache:
             del self.compute_unit_result_cache[None]
 
@@ -247,6 +248,11 @@ class ComputeUnitExecutorPoolManager:
                 self.compute_unit_result_cache[stack_hash], result
             )
 
+        if 'NON_PARTICIPATORY_VOLUME' not in self.compute_unit_result_cache[None]['volumes']:
+            self.compute_unit_result_cache[None]['volumes']['NON_PARTICIPATORY_VOLUME'] = 0
+        
+        self.compute_unit_result_cache[None]['volumes']['NON_PARTICIPATORY_VOLUME'] += result['np_qubits'] * result['tocks']['total']
+
         # print(compute_unit_counts, compute_unit_totals)
 
         print("received", self.n_received)
@@ -262,16 +268,19 @@ class ComputeUnitExecutorPoolManager:
         # Process cache command
         if cache_obj.request_type == CACHED.START:
             self.cache_hash_stack.append(cache_obj.cache_hash())
+            self.non_participatory_stack.append(cache_obj.non_participatory_qubits)
 
         elif cache_obj.request_type == CACHED.END:
             if self.cache_hash_stack[-1] != cache_obj.cache_hash():
                 raise Exception("Received unmatched cache_end in stream", cache_obj.cache_hash(), self.cache_hash_stack)
-            self.cache_hash_stack.pop()
+            
+            cache_hash = self.cache_hash_stack.pop()
+            non_participatory = self.non_participatory_stack.pop()
 
         elif cache_obj.request_type == CACHED.REQUEST:
             # Process result from cache
             cache_hash = cache_obj.cache_hash()
-            while not self.process_cache_request(cache_hash):
+            while not self.process_cache_request(cache_hash, np_qubits = cache_obj.non_participatory_qubits):
                 # Barrier until we can resolve this cache request
                 self.process_result_elem()
 
@@ -313,7 +322,7 @@ class ComputeUnitExecutorPoolManager:
             self.check_priority_result()
 
             if not self.worker_task_queue.full():
-                self.worker_task_queue.put((*obj, self.cache_hash_stack.copy())) # This may block, so check
+                self.worker_task_queue.put((*obj, self.cache_hash_stack.copy(), sum(self.non_participatory_stack))) # This may block, so check
                 break
             else:
                 time.sleep(0.1) # Wait for space in worker task queue
@@ -321,7 +330,7 @@ class ComputeUnitExecutorPoolManager:
         print("submitted", self.n_submitted)
         self.n_submitted += 1
 
-    def process_cache_request(self, cache_hash) -> bool:
+    def process_cache_request(self, cache_hash, np_qubits = 0) -> bool:
         '''
         Returns true if success, false if blocking on previously submitted compute units
         '''
@@ -335,8 +344,11 @@ class ComputeUnitExecutorPoolManager:
 
         for stack_hash in self.cache_hash_stack:
             iadd_result_dicts(
-                self.compute_unit_result_cache[stack_hash], self.compute_unit_result_cache[cache_hash]
+                self.compute_unit_result_cache[stack_hash], output
             )
+        
+        self.compute_unit_result_cache[None]['volumes']['NON_PARTICIPATORY_VOLUME'] += sum(self.non_participatory_stack, start=np_qubits) * output['tocks']['total']
+        print(sum(self.non_participatory_stack, start=np_qubits), self.compute_unit_result_cache[None]['volumes']['NON_PARTICIPATORY_VOLUME'], self.compute_unit_result_cache[None]['tocks']['total'])
 
         return True
 
@@ -431,7 +443,7 @@ class ComputeUnitExecutorPool:
         assert self.manager_completion_queue.get() == 'pong'
     
     def run_priority(self, compute_unit, rz_tag_tracker, full_output=True):
-        self.manager_priority_task_queue.put(("run_priority", (compute_unit, rz_tag_tracker, full_output, [None])))
+        self.manager_priority_task_queue.put(("run_priority", (compute_unit, rz_tag_tracker, full_output, [None], 0)))
 
     def save_arch(self, arch_id, arch_json_obj):
         self.manager_priority_task_queue.put(("save_arch", (arch_id, arch_json_obj)))
