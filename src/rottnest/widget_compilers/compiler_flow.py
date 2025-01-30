@@ -3,6 +3,7 @@ import json
 from t_scheduler import ScheduleOrchestrator
 from t_scheduler.base.util import make_gates, dag_create
 from t_scheduler.templates.generic_templates import make_explicit
+from t_scheduler.base.gate_additional import BellGate
 
 from graph_state_generation.mappers import weight_sort_mapper 
 from graph_state_generation.schedulers import greedy_cz_scheduler
@@ -80,7 +81,14 @@ def run_widget(cabaliser_obj=None, region_obj=None, full_output=False, rz_tag_tr
         traceback.print_exc(file=sys.stderr)
         print(cabaliser_obj, file=sys.stderr)
 
+    bell_in = [BellGate(targ) for targ in cabaliser_obj["statenodes"]]
+    bell_out = [BellGate(targ, is_input=False) for targ in cabaliser_obj["outputnodes"]]
+
+    orc.run_bell(bell_in)
+
     # T scheduler
     t_orchestration(orc)
+
+    orc.run_bell(bell_out)
 
     return orc
