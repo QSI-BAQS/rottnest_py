@@ -34,6 +34,7 @@ known_gates = dict(cirq_parser.known_gates)
 
 # Used to cache results 
 local_cache = set() 
+local_cache_tag = None
 
 from rottnest.input_parsers.interrupt import INTERRUPT, CACHED
 

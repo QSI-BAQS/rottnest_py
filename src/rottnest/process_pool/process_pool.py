@@ -6,6 +6,7 @@ from rottnest.compute_units.compute_unit import ComputeUnit
 from rottnest.compute_units.sequencer import Sequencer
 from rottnest.input_parsers.interrupt import INTERRUPT, CACHED
 from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
+import rottnest.input_parsers.pyliqtr_parser as pyliqtr_parser
 import time 
 import queue
 import select
@@ -348,7 +349,7 @@ class ComputeUnitExecutorPoolManager:
             )
         
         self.compute_unit_result_cache[None]['volumes']['NON_PARTICIPATORY_VOLUME'] += sum(self.non_participatory_stack, start=np_qubits) * output['tocks']['total']
-        print(sum(self.non_participatory_stack, start=np_qubits), self.compute_unit_result_cache[None]['volumes']['NON_PARTICIPATORY_VOLUME'], self.compute_unit_result_cache[None]['tocks']['total'])
+        # print(sum(self.non_participatory_stack, start=np_qubits), self.compute_unit_result_cache[None]['volumes']['NON_PARTICIPATORY_VOLUME'], self.compute_unit_result_cache[None]['tocks']['total'])
 
         return True
 
@@ -400,6 +401,10 @@ class ComputeUnitExecutorPoolManager:
 class ComputeUnitExecutorPool:    
     @staticmethod
     def _run_sequence(arch_ids):
+        if pyliqtr_parser.local_cache_tag != arch_ids:
+            pyliqtr_parser.local_cache_tag = arch_ids
+            pyliqtr_parser.local_cache = set()
+
         parser = PyliqtrParser(current_executable())
         parser.parse()
 
