@@ -28,8 +28,13 @@ class RzTagTracker():
         '''
             Helper function to turn a tag into a gridsynth input
         '''
-        angle = self._tags_to_angles[tag]
-        eps = self._eps[tag]  
+        if tag == 268435455:
+            # Measurement gate tag
+            angle = 0
+            eps = 10
+        else:
+            angle = self._tags_to_angles[tag]
+            eps = self._eps[tag]
 
         if eps is None: 
             eps = self.default_eps 
