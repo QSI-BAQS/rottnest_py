@@ -52,7 +52,7 @@ def adjoint_hash(_, operation):
         hsh.update(
             id(operation).to_bytes(length=8, byteorder='little')
         )
-    return hsh
+    return hsh.digest()
 
 def select_pauli_lcu_hash(_, operation): 
     hsh = MD5.new(str(operation.gate.__class__).encode('ascii'))
