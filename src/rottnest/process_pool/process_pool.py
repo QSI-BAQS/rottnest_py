@@ -351,7 +351,7 @@ class ComputeUnitExecutorPoolManager:
             )
         if 'NON_PARTICIPATORY_VOLUME' not in self.compute_unit_result_cache[None]['volumes']:
             self.compute_unit_result_cache[None]['volumes']['NON_PARTICIPATORY_VOLUME'] = 0
-        self.compute_unit_result_cache[None]['volumes']['NON_PARTICIPATORY_VOLUME'] += sum(self.non_participatory_stack, start=np_qubits) * output['tocks']['total']
+        self.compute_unit_result_cache[None]['volumes']['NON_PARTICIPATORY_VOLUME'] += sum(self.non_participatory_stack, start=np_qubits) * output.get('tocks', {}).get('total', 0)
         # print(sum(self.non_participatory_stack, start=np_qubits), self.compute_unit_result_cache[None]['volumes']['NON_PARTICIPATORY_VOLUME'], self.compute_unit_result_cache[None]['tocks']['total'])
 
         return True
@@ -391,7 +391,7 @@ class ComputeUnitExecutorPoolManager:
         # Check if process is alive
         self.check_restart_priority_worker()
 
-        while self.priority_error_count + self.priority_received_count < self.priority_submitted_count:
+        while self.priority_error_count + self.priority_received_count < self.priority_submitted_count or not self.manager_priority_completion_queue.empty():
             try:
                 result = self.priority_result_queue.get_nowait()
                 print("received priority", self.priority_received_count)
@@ -453,6 +453,10 @@ class ComputeUnitExecutorPool:
     
     def run_priority(self, compute_unit, rz_tag_tracker, full_output=True):
         self.manager_priority_task_queue.put(("run_priority", ('exc_cu', compute_unit, rz_tag_tracker, full_output, [None], 0)))
+
+    
+    def run_priority_graph_node(self, node_name, arch_obj):
+        self.manager_priority_task_queue.put(("run_priority", ('exc_graph_node', node_name, arch_obj)))
 
     def save_arch(self, arch_id, arch_json_obj):
         self.manager_priority_task_queue.put(("save_arch", (arch_id, arch_json_obj)))
