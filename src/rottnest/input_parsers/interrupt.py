@@ -62,6 +62,7 @@ Constructor for a cache interrupt
         self.request_type = request_type
         self.op = op 
         self.fully_decomposed = True
+        self.non_participatory_qubits = non_participatory_qubits
 
     def cache_hash(self):
         return self._cache_hash

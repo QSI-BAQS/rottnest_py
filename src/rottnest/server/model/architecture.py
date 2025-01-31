@@ -88,6 +88,7 @@ def run_debug(arch_id, wsock):
     print("tag tracker", shared_rz_tag_tracker._tags_to_angles)
     cu_executor_pool.run_priority(compute_unit, shared_rz_tag_tracker, True)
     result = cu_executor_pool.manager_priority_completion_queue.get()
+    print(result.get('tocks', {}))
     print("priority test got result", str(result)[:200], "<...truncated>")
     if 'traceback' in result:
         print(''.join(result['traceback']))
