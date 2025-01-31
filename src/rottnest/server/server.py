@@ -27,6 +27,7 @@ def run(hostname="localhost", port=8080):
     server.serve_forever()
 
 if __name__ == '__main__':
+    cu_executor_pool.start()
     cu_executor_pool.ping()
     print("Running!")
     run()

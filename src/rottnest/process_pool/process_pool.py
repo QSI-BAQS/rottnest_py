@@ -92,10 +92,10 @@ class ComputeUnitExecutorPoolManager:
 
         self.pool = [
             self.ctx.Process(target=pool_worker_main, 
-                        name="PoolWorker", 
+                        name=f"PoolWorker{i}", 
                         args=(self.worker_task_queue, self.worker_result_queue), 
                         daemon=True)
-            for _ in range(N_PROCESSES)
+            for i in range(N_PROCESSES)
         ]
 
         #############################
@@ -154,7 +154,9 @@ class ComputeUnitExecutorPoolManager:
             return True
         elif task_name == 'ping':
             # Wait for at least one worker to start
-            self.worker_task_queue.put('ping')
+            # print("manager got ping")
+            self.worker_task_queue.put(('ping',))
+            # print("waiting for child pong")
             assert self.worker_result_queue.get() == 'pong'
             self.manager_completion_queue.put('pong')
             return
@@ -309,7 +311,7 @@ class ComputeUnitExecutorPoolManager:
             for i in restart:
                 print(f"restarting worker {i}")
                 self.pool[i] = self.ctx.Process(target=pool_worker_main, 
-                            name="PoolWorker", 
+                            name=f"PoolWorker{i}", 
                             args=(self.worker_task_queue, self.worker_result_queue), 
                             daemon=True)
                 self.pool[i].start()
@@ -323,7 +325,7 @@ class ComputeUnitExecutorPoolManager:
             self.check_priority_result()
 
             if not self.worker_task_queue.full():
-                self.worker_task_queue.put((*obj, self.cache_hash_stack.copy(), sum(self.non_participatory_stack))) # This may block, so check
+                self.worker_task_queue.put(('exc_cu', *obj, self.cache_hash_stack.copy(), sum(self.non_participatory_stack))) # This may block, so check
                 break
             else:
                 time.sleep(0.1) # Wait for space in worker task queue
@@ -340,14 +342,15 @@ class ComputeUnitExecutorPoolManager:
         
         output = deepcopy(self.compute_unit_result_cache[cache_hash])
         output['cache_hash_hex'] = cache_hash.hex()
-
+        # print("output:", output, self.compute_unit_counts, self.compute_unit_totals)
         self.manager_completion_queue.put(output)
 
         for stack_hash in self.cache_hash_stack:
             iadd_result_dicts(
                 self.compute_unit_result_cache[stack_hash], output
             )
-        
+        if 'NON_PARTICIPATORY_VOLUME' not in self.compute_unit_result_cache[None]['volumes']:
+            self.compute_unit_result_cache[None]['volumes']['NON_PARTICIPATORY_VOLUME'] = 0
         self.compute_unit_result_cache[None]['volumes']['NON_PARTICIPATORY_VOLUME'] += sum(self.non_participatory_stack, start=np_qubits) * output['tocks']['total']
         # print(sum(self.non_participatory_stack, start=np_qubits), self.compute_unit_result_cache[None]['volumes']['NON_PARTICIPATORY_VOLUME'], self.compute_unit_result_cache[None]['tocks']['total'])
 
@@ -420,13 +423,14 @@ class ComputeUnitExecutorPool:
         return wrapped_it
 
     def __init__(self):
-        ctx = mp.get_context('spawn')
-        self.manager_task_queue = ctx.Queue()
-        self.manager_completion_queue = ctx.Queue()
-        self.manager_priority_task_queue = ctx.Queue()
-        self.manager_priority_completion_queue = ctx.Queue()
+        self.ctx = mp.get_context('spawn')
+        self.manager_task_queue = self.ctx.Queue()
+        self.manager_completion_queue = self.ctx.Queue()
+        self.manager_priority_task_queue = self.ctx.Queue()
+        self.manager_priority_completion_queue = self.ctx.Queue()
 
-        self.manager = ctx.Process(target=ComputeUnitExecutorPoolManager.entrypoint, 
+    def start(self):
+        self.manager = self.ctx.Process(target=ComputeUnitExecutorPoolManager.entrypoint, 
                                    args=[self.manager_task_queue, 
                                          self.manager_completion_queue,
                                          self.manager_priority_task_queue,
@@ -448,7 +452,10 @@ class ComputeUnitExecutorPool:
         assert self.manager_completion_queue.get() == 'pong'
     
     def run_priority(self, compute_unit, rz_tag_tracker, full_output=True):
-        self.manager_priority_task_queue.put(("run_priority", (compute_unit, rz_tag_tracker, full_output, [None], 0)))
+        self.manager_priority_task_queue.put(("run_priority", ('exc_cu', compute_unit, rz_tag_tracker, full_output, [None], 0)))
 
     def save_arch(self, arch_id, arch_json_obj):
         self.manager_priority_task_queue.put(("save_arch", (arch_id, arch_json_obj)))
+
+    def get_graph(self, graph_id):
+        self.manager_priority_task_queue.put(("run_priority", ('get_graph', graph_id)))

@@ -17,7 +17,7 @@ from .graph_state_orchestrator import graph_state_orchestration, cabaliser_to_gr
 from .gate_construction import make_pseudo_gates
 from rottnest.gridsynth.gridsynth import Gridsynth
 
-print("Gridsynth load path:",Gridsynth.GATE_SYNTH_BNR)
+# print("Gridsynth load path:",Gridsynth.GATE_SYNTH_BNR)
 shared_gridsynth = None
 
 def make_mapper(graph_state, reg_region_obj):
