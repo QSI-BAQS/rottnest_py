@@ -32,8 +32,7 @@ def handle_websocket():
                 cmd_func = socket_binds.get(message['cmd'], err)
                 print("Dispatch", cmd_func) 
                 resp = cmd_func(message, 
-                                callback=
-                                websocket_response_callback(
+                                callback=websocket_response_callback(
                                     wsock, message.get('cmd', 'err')),
                                 wsock = wsock)
 
@@ -149,7 +148,7 @@ def get_graph(message, *args, **kwargs):
             }
         })
 
-def get_status(message):
+def get_status(message, *args, **kwargs):
     cu_id = message['cu_id']
     
     return json.dumps({
@@ -157,7 +156,7 @@ def get_status(message):
         'payload': architecture.get_status(cu_id),
     })
 
-def run_graph_node(message):
+def run_graph_node(message, *args, **kwargs):
     gid = message['payload']['gid']
     return architecture.run_debug3(gid)
 
