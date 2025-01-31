@@ -120,6 +120,9 @@ class CirqShim:
         for element in self._lst: 
             yield (element,)
 
+    def traverse(self):
+        yield self 
+
     def flatten(self):
         return iter(self._lst)
 
