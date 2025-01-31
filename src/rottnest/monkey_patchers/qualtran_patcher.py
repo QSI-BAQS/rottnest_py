@@ -12,7 +12,8 @@ import qualtran
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate 
 from qualtran.bloqs.mcmt.and_bloq import MultiAnd
-
+from qualtran._infra.adjoint import Adjoint
+from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
 
 from Crypto.Hash import MD5
 import cirq
@@ -33,7 +34,33 @@ def multi_and_hash(_, operation):
         str(gate.__class__).encode('ascii')
         + operation.gate.cvs.__hash__().to_bytes(byteorder='little', length=8)
     ).digest()
-   
+
+def adjoint_hash(_, operation): 
+    # TODO: Hash over cabaliser ops 
+    hsh = MD5.new(str(operation.gate.__class__).encode('ascii'))
+    nested = False
+    for i in cirq.decompose(operation):
+        try:
+            op_hash = i._rottnest_hash() 
+            if op_hash is not None:
+                nested = True
+                hsh.update(op_hash)
+        except:
+            pass
+
+    if not nested:
+        hsh.update(
+            id(operation).to_bytes(length=8, byteorder='little')
+        )
+    return hsh
+
+def select_pauli_lcu_hash(_, operation): 
+    hsh = MD5.new(str(operation.gate.__class__).encode('ascii'))
+    for i in operation.gate.select_unitaries:
+        hsh.update(i.pauli_mask.tobytes())
+        hsh.update(np.array([i.coefficient]).tobytes())
+    return hsh.digest()
+
 class BloqWrapper:
     '''
         Tiny wrapper to remap bloqascirq objects
@@ -48,7 +75,9 @@ def bloq_as_cirq_hash(_, operation):
 hash_function_patchers = {
     MultiControlPauli: mcmt_pauli_prepare_hash,
     MultiAnd: multi_and_hash,
-    BloqAsCirqGate: bloq_as_cirq_hash
+    BloqAsCirqGate: bloq_as_cirq_hash,
+    Adjoint: adjoint_hash,
+    SelectPauliLCU: select_pauli_lcu_hash
 }
 
 def _monkey_patch():

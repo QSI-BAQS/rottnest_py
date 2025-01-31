@@ -14,6 +14,7 @@ from pyLIQTR.qubitization.qubitized_gates import QubitizedRotation, QubitizedRef
 from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU
 from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
 from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare 
+from cirq.ops.raw_types import _InverseCompositeGate
 
 from rottnest.monkey_patchers import qualtran_patcher
 from Crypto.Hash import MD5
@@ -71,7 +72,6 @@ def prepare_pauli_lcu_hash(_, operation):
         + np.array(gate._alphas).tobytes()
     ).digest()
 
-
 def qsp_prepare_hash(_, operation): 
     # TODO: Confirm alphas is sufficient
     gate = operation.gate
@@ -80,6 +80,22 @@ def qsp_prepare_hash(_, operation):
         + np.array(gate.alphas).tobytes()
     ).digest()
 
+def inverse_composite_hash(_, operation):
+    class InverseProxy():
+        '''
+        Doing this because some absolute pain at Cirq decided that things should be properties
+        #TODO: Add anti-properties rant here
+        ''' 
+        def __init__(self, gate): 
+            self.gate = gate
+
+    hsh = MD5.new(
+        str(operation.gate.__class__).encode('ascii')
+    )
+
+    proxy = InverseProxy(operation.gate._original)
+    hsh.update(operation.gate._original._rottnest_hash(proxy))
+    return hsh.digest()
 
 hash_function_patchers = {
     QSVT_real_polynomial_sum: qsvt_polynomial_sum_hash, 
@@ -88,12 +104,12 @@ hash_function_patchers = {
     QubitizedReflection: qubitized_reflection_hash,
     PauliStringLCU: pauli_string_lcu_hash,
     prepare_pauli_lcu: prepare_pauli_lcu_hash,
-    QSP_Prepare: qsp_prepare_hash
+    QSP_Prepare: qsp_prepare_hash,
+    _InverseCompositeGate: inverse_composite_hash
 } | qualtran_patcher.hash_function_patchers
 
 
 def _rottnest_hash(self):
-    print(self, self.gate, self.gate.__class__ in hash_function_patchers)
     if self.gate.__class__ in hash_function_patchers: 
         return self.gate._rottnest_hash(self)
     # Non-hashing object

@@ -25,6 +25,8 @@ from pyLIQTR.qubitization import qsvt, qubitized_gates
 from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU 
 from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
 from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
+from cirq.ops.raw_types import _InverseCompositeGate
+
 
 from . import cirq_parser
 from rottnest.monkey_patchers import pyliqtr_patcher, qualtran_patcher
@@ -59,13 +61,15 @@ class PyliqtrParser:
         qubitized_gates.QubitizedReflection,
         qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlPauli,
         qualtran.cirq_interop._bloq_to_cirq.BloqAsCirqGate, # Catch a bunch of qualtran gates
+        qualtran._infra.adjoint.Adjoint,
+        qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU,
+    _InverseCompositeGate,
     ))
 
     # Targets to decompose on the spot 
     cirq_decomposing_targets = frozenset((
         cirq.ControlledGate,
         qualtran.bloqs.mcmt.and_bloq.And,
-        qualtran._infra.adjoint.Adjoint,
     ))
 
     '''
@@ -180,9 +184,20 @@ class PyliqtrParser:
                     self.fully_decomposed = False
 
                 elif operation.gate.__class__ in self.cirq_decomposing_targets:
+                    # TODO: Flatten this into a regular decomposition
                     # Force cirq decomposition to shim
+                    # For now just hope that these aren't nested
                     for g in cirq.decompose(operation):
-                        _curr_shim.append(g)
+                        if g.gate.__class__ in self.tracking_targets:
+                            self.sequence.append(g)
+                    
+                            _curr_shim.set_parent(operation)
+                            self.shims.append(_curr_shim)
+                            _curr_shim = cirq_parser.CirqShim() 
+                                                    
+                            self.fully_decomposed = False
+                        else:
+                            _curr_shim.append(g)
                 else:
                     # Operation is directly added to the shim
                     _curr_shim.append(operation)      
