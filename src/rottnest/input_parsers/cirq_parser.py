@@ -67,16 +67,25 @@ class CirqParser:
         widget = None
     ):
         op = OperationSequence(self.sequence_length)
-        for moment in circ_iter:
+        for moment in circ_iter.decompose():
             for operation in moment:
+
+                # TODO: Clean up the shim interface
+                if isinstance(operation, tuple):
+                    operation = operation[0]
+
                 if operation == INTERRUPT:
-                    if operation.cache_hash() != NON_CACHING: 
+                    if operation.cache_hash() != NON_CACHING:
                         yield operation
                         continue 
                     # Non Caching, immediately interrupt
                     yield op 
                     op = OperationSequence(self.sequence_length)
                     continue
+
+                # Classically controlled gate
+                if operation.gate is None:
+                    operation = operation.without_classical_controls() 
 
                 if operation.gate._n_cabaliser_ops + len(op) > self.sequence_length:  
                     yield op
@@ -95,6 +104,11 @@ class CirqShim:
     def __init__(self): 
         # List of gates object
         self._lst = [] 
+        self.fully_decomposed = True
+        self._parent_str = None
+
+    def cache_hash(self):
+        return None 
 
     def append(self, obj):
         self._lst.append(obj)
@@ -105,6 +119,21 @@ class CirqShim:
         '''
         for element in self._lst: 
             yield (element,)
+
+    def flatten(self):
+        return iter(self._lst)
+
+    def __str__(self):
+        return f"Shim: {self._parent_str}"
+
+    def set_parent(self, operation):
+        self._parent_str = str(operation.gate.__class__) 
+
+    def decompose(self):
+        return iter(self)
+
+    def parse(self):
+        pass
 
     def __len__(self):
         return len(self._lst)

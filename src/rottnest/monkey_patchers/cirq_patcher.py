@@ -90,7 +90,7 @@ def h_pow():
     return _wrap, 1
 
 
-def X_to_Z(gate_fn):
+def X_to_Z(fn):
     def _wrap(self, operation_sequence, qubit_labels, rz_tags): 
         operation_sequence.append(
             cabaliser_gates.H,
@@ -101,8 +101,9 @@ def X_to_Z(gate_fn):
             cabaliser_gates.H,
             *qubit_labels.gets(*self.qubits)
         )
+    return _wrap
 
-def Y_to_Z(gate_fn):
+def Y_to_Z(fn):
     def _wrap(self, operation_sequence, qubit_labels, rz_tags): 
         operation_sequence.append(
             cabaliser_gates.S,
@@ -112,7 +113,9 @@ def Y_to_Z(gate_fn):
             cabaliser_gates.H,
             *qubit_labels.gets(*self.qubits)
         )
+
         fn(self, operation_sequence, qubit_labels, rz_tags)
+
         operation_sequence.append(
             cabaliser_gates.H,
             *qubit_labels.gets(*self.qubits)
@@ -121,12 +124,14 @@ def Y_to_Z(gate_fn):
             cabaliser_gates.Sdag,
             *qubit_labels.gets(*self.qubits)
         )
+    return _wrap
 
 def x_pow():
+
     exponent_map = {
-        1.0: _X_gate,  
-        0.5: X_to_Z(_S_gate), 
-        -0.5: X_to_Z(_Sdag_gate)
+        1.0: _Z_gate,  
+        0.5: _S_gate, 
+        -0.5: _Sdag_gate
     }
     '''
        x_pow adapter
@@ -137,20 +142,19 @@ def x_pow():
         operation_sequence: OperationSequence,
         qubit_labels: QubitLabelTracker,
         rz_tags: QubitLabelTracker):
-        if self.gate.exponent == 1.0:
-            operation_sequence.append(
-                cabaliser_gates.X,
-                *qubit_labels.gets(*self.qubits)
-            )
-        else:
-            # TODO
-            raise Exception("Not Implemented")
-    return _wrap, 1
+
+        fn = X_to_Z(exponent_map.get(self.gate.exponent, _rz_gate)) 
+        fn(self, operation_sequence, qubit_labels, rz_tags)
+
+    return _wrap, 3
 
 def y_pow():
-    '''
-        Hadamard adapter
-    '''
+    exponent_map = {
+            1.0: _Z_gate,  
+            0.5: _S_gate, 
+            -0.5: _Sdag_gate
+        }
+
     def _wrap(
         _,  # Look...
         self,
@@ -158,20 +162,23 @@ def y_pow():
         qubit_labels: QubitLabelTracker,
         rz_tags: QubitLabelTracker):
         # Direct comparison to 1 is bad
-        if self.gate.exponent == 1.0:
-            operation_sequence.append(
-                cabaliser_gates.Y,
-                *qubit_labels.gets(*self.qubits)
-            )
-        else:
-            # TODO
-            raise Exception("Not Implemented")
-    return _wrap, 1
 
+        # Less efficient but skips switches
+        
+        fn = Y_to_Z(exponent_map.get(self.gate.exponent, _rz_gate)) 
+        fn(self, operation_sequence, qubit_labels, rz_tags)
+
+    return _wrap, 5
 
 def _X_gate(self, operation_sequence, qubit_labels, rz_tags):
     operation_sequence.append(
             cabaliser_gates.X,
+            *qubit_labels.gets(*self.qubits)
+        )
+
+def _Y_gate(self, operation_sequence, qubit_labels, rz_tags):
+    operation_sequence.append(
+            cabaliser_gates.Y,
             *qubit_labels.gets(*self.qubits)
         )
 
@@ -329,13 +336,28 @@ def ry():
 
     return _wrap, 5
 
+def wrapper_fn():
+    def _wrap(
+        gate,
+        self,
+        operation_sequence: OperationSequence,
+        qubit_labels: QubitLabelTracker,
+        rz_tags: QubitLabelTracker):
+        
+        # Strip controls 
+        # TODO: Ensure that the Pauli frame tracking catches this 
+        operation = operation.without_classical_controls()
+        return operation.gate._parse_cabaliser(operation, operation_sequence, qubit_labels, rz_tags) 
+
+    return _wrap, 1
 
 cx_pow = partial(simple_operator, cabaliser_gates.CNOT)
 cz_pow = partial(simple_operator, cabaliser_gates.CZ)
 
 def __blank(*args, **kwargs):
-    return lambda x: x, 0 
-
+    def _wrap(*args, **kwargs):
+        return 
+    return _wrap, 0
 
 # Monkey patching list
 # These will all be injected into their associated cirq class objects
@@ -355,7 +377,7 @@ known_gates = {
     cirq.T : rz, 
     cirq.ops.common_gates.MeasurementGate: measure, 
     cirq.ResetChannel: __blank,  # Delete from context
-    cirq.ClassicallyControlledOperation: __blank, # Drop onto pauli tracker 
+    cirq.ClassicallyControlledOperation: wrapper_fn, # Drop onto pauli tracker 
     None.__class__: __blank, # I don't know why the classical operations kick up nones like this
 }
 

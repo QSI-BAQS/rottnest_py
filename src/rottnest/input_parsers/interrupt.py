@@ -16,6 +16,12 @@ class _INTERRUPT:
     def __iter__(self):
         yield self 
 
+    def decompose(self):
+        '''
+        Proxy function for pyliqtr parser 
+        '''
+        return iter(self)
+
     def __hash__(self):
         return id(INTERRUPT)
 
@@ -43,7 +49,8 @@ class CACHED(_INTERRUPT):
         self,
         cache_hash: bytes,
         request_type: object,
-        non_participatory_qubits: int = 0
+        non_participatory_qubits: int = 0,
+        op = None
     ): 
         '''
 Constructor for a cache interrupt
@@ -53,7 +60,7 @@ Constructor for a cache interrupt
         '''
         self._cache_hash = cache_hash
         self.request_type = request_type
-        self.op = None
+        self.op = op 
         self.fully_decomposed = True
 
     def cache_hash(self):

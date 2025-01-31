@@ -15,7 +15,7 @@ from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU
 from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
 from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare 
 
-
+from rottnest.monkey_patchers import qualtran_patcher
 from Crypto.Hash import MD5
 import cirq
 
@@ -89,14 +89,15 @@ hash_function_patchers = {
     PauliStringLCU: pauli_string_lcu_hash,
     prepare_pauli_lcu: prepare_pauli_lcu_hash,
     QSP_Prepare: qsp_prepare_hash
-}
+} | qualtran_patcher.hash_function_patchers
 
 
 def _rottnest_hash(self):
+    print(self, self.gate, self.gate.__class__ in hash_function_patchers)
     if self.gate.__class__ in hash_function_patchers: 
-        return self.gate._rottnest_hash(self) 
+        return self.gate._rottnest_hash(self)
     # Non-hashing object
-    return None 
+    return None
 
 def _monkey_patch():
     '''
@@ -107,10 +108,14 @@ def _monkey_patch():
     cirq.ops.gate_operation.GateOperation._rottnest_hash = _rottnest_hash 
     cirq.ops.controlled_operation.ControlledOperation._rottnest_hash = _rottnest_hash 
 
+    cirq.ops.gate_operation.GateOperation._cached_rottnest_hash = None 
+    cirq.ops.controlled_operation.ControlledOperation._cached_rottnest_hash = None 
+    
     for gate_type, fn in hash_function_patchers.items():
         bound_method = MethodType(fn, gate_type)
         if gate_type is not None.__class__:
-            gate_type._rottnest_hash = bound_method 
+            # TODO Some hash calculations take a while, caching is good
+            gate_type._rottnest_hash = bound_method
 
 # Perform the monkey patching
 # This will inject the _rottnest_hash method on import 
