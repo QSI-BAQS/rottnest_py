@@ -8,13 +8,19 @@ def pool_worker_main(task_queue: mp.Queue, worker_results_queue: mp.Queue, is_pr
     '''
     execute_compute_unit should not throw
     '''
-    print("Worker started", flush=True)
+    print("Worker started:", mp.current_process().name, flush=True)
     while True:
-        args = task_queue.get()
-        if args == 'ping':
+        task, *args = task_queue.get()
+        if task == 'ping':
+            print("Worker received ping")
             worker_results_queue.put('pong')
             continue
-        execute_compute_unit(args, worker_results_queue, is_priority)
+        elif task == 'exc_cu':
+            execute_compute_unit(args, worker_results_queue, is_priority)
+        elif task == 'get_graph':
+            from rottnest.server.model.graph_view import get_graph
+            worker_results_queue.put(get_graph(args[0]))
+            
 
 def execute_compute_unit(args, worker_results_queue: mp.Queue, is_priority):
     # print("got", args, flush=True)

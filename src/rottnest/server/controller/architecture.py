@@ -119,11 +119,11 @@ def use_arch(message, *args, **kwargs):
         'arch_id': architecture.save_arch(arch_json_obj)
     })
 
-def get_root_graph(message, *args, **kwargs): 
+def get_root_graph(message, *args, wsock=None, **kwargs): 
     gobj = message['payload']
-    
-    graph_object = graph_view.get_graph()
 
+    architecture.cu_executor_pool.get_graph(None)
+    graph_object = architecture.cu_executor_pool.manager_priority_completion_queue.get()
     return json.dumps({
             'message': 'get_root_graph',
             'payload' : {
@@ -135,8 +135,10 @@ def get_root_graph(message, *args, **kwargs):
 def get_graph(message, *args, **kwargs):
     gobj = message['payload']
     
-    graph_object = graph_view.get_graph(gobj['gid'])
-     
+
+    architecture.cu_executor_pool.get_graph(gobj['gid'])
+    graph_object = architecture.cu_executor_pool.manager_priority_completion_queue.get()
+    
     return json.dumps({
             'message': 'get_graph',
             'payload' : {
