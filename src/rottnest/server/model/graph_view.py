@@ -44,8 +44,8 @@ def get_graph(graph_id=None):
             "name": node.name, 
             "description": node.description, 
             "children": [],
-            "id": handle_id
-            "expands": expands
+            "id": handle_id,
+            "expands": expands,
         }
             ) 
     graph_segment = {
