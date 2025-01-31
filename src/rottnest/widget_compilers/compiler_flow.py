@@ -81,8 +81,8 @@ def run_widget(cabaliser_obj=None, region_obj=None, full_output=False, rz_tag_tr
         traceback.print_exc(file=sys.stderr)
         print(cabaliser_obj, file=sys.stderr)
 
-    bell_in = [BellGate(targ) for targ in cabaliser_obj["statenodes"]]
-    bell_out = [BellGate(targ, is_input=False) for targ in cabaliser_obj["outputnodes"]]
+    bell_in = [BellGate(targ) for targ in cabaliser_obj["statenodes"] if targ is not None]
+    bell_out = [BellGate(targ, is_input=False) for targ in cabaliser_obj["outputnodes"] if targ is not None]
 
     orc.run_bell(bell_in)
 
