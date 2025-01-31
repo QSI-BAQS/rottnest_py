@@ -164,6 +164,7 @@ class PyliqtrParser:
 
         if circuit is None:
             circuit = self.circuit
+
         for moment in circuit:
             for operation in moment:
 
@@ -190,7 +191,7 @@ class PyliqtrParser:
                     for g in cirq.decompose(operation):
                         if g.gate.__class__ in self.tracking_targets:
                             self.sequence.append(g)
-                    
+
                             _curr_shim.set_parent(operation)
                             self.shims.append(_curr_shim)
                             _curr_shim = cirq_parser.CirqShim() 
@@ -198,6 +199,7 @@ class PyliqtrParser:
                             self.fully_decomposed = False
                         else:
                             _curr_shim.append(g)
+
                 else:
                     # Operation is directly added to the shim
                     _curr_shim.append(operation)      
@@ -244,7 +246,7 @@ class PyliqtrParser:
 
     def traverse(self):
         '''
-        Return each circuit object
+            Return each circuit object
         '''
         for r in self.decompose():
             r.parse()
