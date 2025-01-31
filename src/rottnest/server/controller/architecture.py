@@ -96,8 +96,10 @@ def run_result(message, *args, wsock=None, **kwargs):
 
 def debug_send(message, *args, wsock=None, **kwargs):
     # Debug:
-    architecture.run_debug(next(iter(saved_architectures.keys())), wsock)
-    return get_status({'cu_id': 'debug'})
+    # architecture.run_debug(next(iter(saved_architectures.keys())), wsock)
+    # return get_status({'cu_id': 'debug'})
+    
+    return architecture.run_debug2(next(iter(saved_architectures.keys())))
 
 def get_router(*args, **kwargs):
     return json.dumps({
@@ -155,6 +157,10 @@ def get_status(message):
         'payload': architecture.get_status(cu_id),
     })
 
+def run_graph_node(message):
+    gid = message['payload']['gid']
+    return architecture.run_debug3(gid)
+
 # Socket commands
 socket_binds = {
         'subtype': get_subtype,
@@ -167,4 +173,5 @@ socket_binds = {
         'get_root_graph' : get_root_graph,
         'debug_send': debug_send,
         'get_status': get_status,
+        'run_graph_node': run_graph_node,
         } 

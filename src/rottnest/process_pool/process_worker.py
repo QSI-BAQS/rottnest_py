@@ -19,8 +19,45 @@ def pool_worker_main(task_queue: mp.Queue, worker_results_queue: mp.Queue, is_pr
             execute_compute_unit(args, worker_results_queue, is_priority)
         elif task == 'get_graph':
             from rottnest.server.model.graph_view import get_graph
-            worker_results_queue.put(get_graph(args[0]))
-            
+            try:
+                worker_results_queue.put(get_graph(args[0]))
+            except:
+                import traceback
+                traceback.print_exc()
+                worker_results_queue.put('ERROR')
+        elif task == 'exc_graph_node':
+            try:
+                execute_graph_node(args[0], args[1], worker_results_queue)
+            except:
+                import traceback
+                traceback.print_exc()
+                worker_results_queue.put('ERROR')
+
+def execute_graph_node(node_hash, arch_obj, worker_results_queue: mp.Queue):
+    from rottnest.server.model.graph_view import view_cache
+    from rottnest.compute_units.sequencer import Sequencer
+    from rottnest.input_parsers.cirq_parser import shared_rz_tag_tracker
+    from rottnest.compute_units.architecture_proxy import saved_architectures
+    from rottnest.input_parsers import pyliqtr_parser
+    
+    saved_architectures[-666666] = arch_obj
+    node = view_cache[node_hash]
+    parser = node.parser
+    print(parser)
+    pyliqtr_parser.local_cache = set()
+    seq = Sequencer(-666666)
+
+    it = seq.sequence_pyliqtr(parser)
+
+    # Yields (compute_unit, rz_tag_tracker, full_output)
+    wrapped_it = ((obj, shared_rz_tag_tracker, True, None, None) for obj in it)
+
+    for args in wrapped_it:
+        print(args)
+        execute_compute_unit(args, worker_results_queue, True)
+
+    worker_results_queue.put('end')
+
 
 def execute_compute_unit(args, worker_results_queue: mp.Queue, is_priority):
     # print("got", args, flush=True)

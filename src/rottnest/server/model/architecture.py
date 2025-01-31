@@ -96,6 +96,27 @@ def run_debug(arch_id, wsock):
         "message": "run_result",
         "payload": result,
     }))
+
+def run_debug2(arch_id):
+    return run_debug3(arch_id=arch_id, node_id='0s_0s')
+def run_debug3(node_id, arch_id=None):
+    if arch_id is None:
+        arch_id = next(iter(saved_architectures.keys()))
+    cu_executor_pool.run_priority_graph_node('0s_0s', saved_architectures[arch_id])
+    last_result = None
+    while True:
+        result = cu_executor_pool.manager_priority_completion_queue.get()
+        if result == 'end':
+            break
+        last_result = result
+    result = last_result
+    print("priority test got result", str(result)[:200], "<...truncated>")
+    if isinstance(result, dict) and 'traceback' in result:
+        print(''.join(result['traceback']))
+    return json.dumps({
+        "message": "run_result",
+        "payload": result,
+    })
 # END mess
 
 def get_router_mapping():
