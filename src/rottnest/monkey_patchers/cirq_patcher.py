@@ -92,8 +92,8 @@ def h_pow():
 
 def X_to_Z(fn):
     '''
-    Monadic transformer to map Z based operations to X based operations   
-    The monadic functions compile down efficiently in the clifford cache within cabaliser, leading to no real additional overheads if fn is clifford    
+    Monadic transformer to map Z based operations to X based operations
+    The monadic functions compile down efficiently in the clifford cache within cabaliser, leading to no real additional overheads if fn is clifford
     If fn is non-clifford (rz) then this is the expected behaviour
     '''
     def _wrap(self, operation_sequence, qubit_labels, rz_tags):
@@ -110,8 +110,8 @@ def X_to_Z(fn):
 
 def Y_to_Z(fn):
     '''
-    Monadic transformer to map Z based operations to Y based operations   
-    The monadic functions compile down efficiently in the clifford cache within cabaliser, leading to no real additional overheads if fn is clifford    
+    Monadic transformer to map Z based operations to Y based operations
+    The monadic functions compile down efficiently in the clifford cache within cabaliser, leading to no real additional overheads if fn is clifford
     If fn is non-clifford (rz) then this is the expected behaviour
     '''
     def _wrap(self, operation_sequence, qubit_labels, rz_tags):
@@ -138,7 +138,7 @@ def Y_to_Z(fn):
 
 def x_pow():
     '''
-    x_pow gate wrapper 
+    x_pow gate wrapper
     '''
     exponent_map = {
         1.0: _Z_gate,

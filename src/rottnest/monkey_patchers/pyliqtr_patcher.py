@@ -1,8 +1,8 @@
 '''
-    Monkey Patchers for pyLIQTR objects 
+    Monkey Patchers for pyLIQTR objects
     Hash functions are overloaded for caching
     Hashes must include the class name to avoid collisions
-    on common integer sequences  
+    on common integer sequences
 '''
 import struct
 from types import MethodType
@@ -10,10 +10,10 @@ import numpy as np
 
 import pyLIQTR
 from pyLIQTR.qubitization.qsvt import QSVT_real_polynomial, QSVT_real_polynomial_sum
-from pyLIQTR.qubitization.qubitized_gates import QubitizedRotation, QubitizedReflection 
+from pyLIQTR.qubitization.qubitized_gates import QubitizedRotation, QubitizedReflection
 from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU
 from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
-from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare 
+from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
 from cirq.ops.raw_types import _InverseCompositeGate
 
 from rottnest.monkey_patchers import qualtran_patcher
@@ -22,7 +22,10 @@ import cirq
 
 
 def qsvt_polynomial_sum_hash(_, operation):
-    gate = operation.gate 
+    '''
+    Hash function for qsvt polynomial sum function
+    '''
+    gate = operation.gate
 
     return MD5.new(
         str(gate.__class__).encode('ascii')
@@ -31,7 +34,10 @@ def qsvt_polynomial_sum_hash(_, operation):
     ).digest()
 
 def qsvt_real_polynomial_hash(_, operation):
-    gate = operation.gate 
+    '''
+    Hash function for real polynomial hash
+    '''
+    gate = operation.gate
 
     return MD5.new(
         str(gate.__class__).encode('ascii')
@@ -39,40 +45,60 @@ def qsvt_real_polynomial_hash(_, operation):
     ).digest()
 
 def pauli_string_lcu_hash(_, operation):
+    '''
+    Hash function for lcu
+    '''
     gate = operation.gate
 
     md5 = MD5.new(
             str(gate.__class__).encode('ascii')
         )
-    
+
+    # Read each LCU as an array of bytes
+    # First element is a string, second is the coefficient as a float
+    # String is ascii encoded and hashed, float is cast to struct and hashed as bytes
     for lcu in gate.PI.yield_PauliLCU_Info(return_as='arrays'):
         md5.update(np.array(lcu[0]).tobytes() + lcu[1].encode('ascii') + struct.pack('f', lcu[2]))
 
-    return md5.digest() 
+    return md5.digest()
 
 def qubitized_rotation_hash(_, operation):
+    '''
+    Qubitized rotation hash function
+    '''
     gate = operation.gate
+    # Hashes over the rads and the number of qubits
+    # Assumes that number of qubits <= (2 ** 32) - 1
     return MD5.new(
-        str(gate.__class__).encode('ascii') 
-        + gate.num_qubits().to_bytes(byteorder='little', length=4)   
+        str(gate.__class__).encode('ascii')
+        + gate.num_qubits().to_bytes(byteorder='little', length=4)
         + gate._rads.tobytes()
     ).digest()
 
 def qubitized_reflection_hash(_, operation):
+    '''
+    Qubitized reflection hash function
+    '''
     gate = operation.gate
     return MD5.new(
         str(gate.__class__).encode('ascii')
-        + gate._n_controls.to_bytes(byteorder='little', length=4)   
+        + gate._n_controls.to_bytes(byteorder='little', length=4)
     ).digest()
 
-def prepare_pauli_lcu_hash(_, operation): 
+def prepare_pauli_lcu_hash(_, operation):
+    '''
+    Prepare pauli lcu hash
+    '''
     gate = operation.gate
     return MD5.new(
         str(gate.__class__).encode('ascii')
         + np.array(gate._alphas).tobytes()
     ).digest()
 
-def qsp_prepare_hash(_, operation): 
+def qsp_prepare_hash(_, operation):
+    '''
+    Prepare qsp hash
+    '''
     # TODO: Confirm alphas is sufficient
     gate = operation.gate
     return MD5.new(
@@ -81,12 +107,15 @@ def qsp_prepare_hash(_, operation):
     ).digest()
 
 def inverse_composite_hash(_, operation):
+    '''
+    Inverse composite hash
+    '''
     class InverseProxy():
         '''
         Doing this because some absolute pain at Cirq decided that things should be properties
         #TODO: Add anti-properties rant here
-        ''' 
-        def __init__(self, gate): 
+        '''
+        def __init__(self, gate):
             self.gate = gate
 
     hsh = MD5.new(
@@ -97,8 +126,9 @@ def inverse_composite_hash(_, operation):
     hsh.update(operation.gate._original._rottnest_hash(proxy))
     return hsh.digest()
 
+# Map of functions to classes to inject
 hash_function_patchers = {
-    QSVT_real_polynomial_sum: qsvt_polynomial_sum_hash, 
+    QSVT_real_polynomial_sum: qsvt_polynomial_sum_hash,
     QSVT_real_polynomial: qsvt_real_polynomial_hash,
     QubitizedRotation: qubitized_rotation_hash,
     QubitizedReflection: qubitized_reflection_hash,
@@ -110,7 +140,10 @@ hash_function_patchers = {
 
 
 def _rottnest_hash(self):
-    if self.gate.__class__ in hash_function_patchers: 
+    '''
+        Dispatch method for rottnest hashing
+    '''
+    if self.gate.__class__ in hash_function_patchers:
         return self.gate._rottnest_hash(self)
     # Non-hashing object
     return None
@@ -121,12 +154,12 @@ def _monkey_patch():
         Linters will complain about this
     '''
     parse_method = MethodType(_rottnest_hash, cirq.ops.gate_operation.GateOperation)
-    cirq.ops.gate_operation.GateOperation._rottnest_hash = _rottnest_hash 
-    cirq.ops.controlled_operation.ControlledOperation._rottnest_hash = _rottnest_hash 
+    cirq.ops.gate_operation.GateOperation._rottnest_hash = _rottnest_hash
+    cirq.ops.controlled_operation.ControlledOperation._rottnest_hash = _rottnest_hash
 
-    cirq.ops.gate_operation.GateOperation._cached_rottnest_hash = None 
-    cirq.ops.controlled_operation.ControlledOperation._cached_rottnest_hash = None 
-    
+    cirq.ops.gate_operation.GateOperation._cached_rottnest_hash = None
+    cirq.ops.controlled_operation.ControlledOperation._cached_rottnest_hash = None
+
     for gate_type, fn in hash_function_patchers.items():
         bound_method = MethodType(fn, gate_type)
         if gate_type is not None.__class__:
@@ -134,5 +167,5 @@ def _monkey_patch():
             gate_type._rottnest_hash = bound_method
 
 # Perform the monkey patching
-# This will inject the _rottnest_hash method on import 
+# This will inject the _rottnest_hash method on import
 _monkey_patch()
