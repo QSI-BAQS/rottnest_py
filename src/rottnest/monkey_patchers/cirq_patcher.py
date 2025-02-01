@@ -91,6 +91,11 @@ def h_pow():
 
 
 def X_to_Z(fn):
+    '''
+    Monadic transformer to map Z based operations to X based operations
+    The monadic functions compile down efficiently in the clifford cache within cabaliser, leading to no real additional overheads if fn is clifford
+    If fn is non-clifford (rz) then this is the expected behaviour
+    '''
     def _wrap(self, operation_sequence, qubit_labels, rz_tags):
         operation_sequence.append(
             cabaliser_gates.H,
@@ -105,7 +110,9 @@ def X_to_Z(fn):
 
 def Y_to_Z(fn):
     '''
-    
+    Monadic transformer to map Z based operations to Y based operations
+    The monadic functions compile down efficiently in the clifford cache within cabaliser, leading to no real additional overheads if fn is clifford
+    If fn is non-clifford (rz) then this is the expected behaviour
     '''
     def _wrap(self, operation_sequence, qubit_labels, rz_tags):
         operation_sequence.append(
@@ -130,7 +137,9 @@ def Y_to_Z(fn):
     return _wrap
 
 def x_pow():
-
+    '''
+    x_pow gate wrapper
+    '''
     exponent_map = {
         1.0: _Z_gate,
         0.5: _S_gate,
@@ -152,6 +161,9 @@ def x_pow():
     return _wrap, 3
 
 def y_pow():
+    '''
+    y_pow gate wrapper
+    '''
     exponent_map = {
             1.0: _Z_gate,
             0.5: _S_gate,
@@ -174,36 +186,54 @@ def y_pow():
     return _wrap, 5
 
 def _X_gate(self, operation_sequence, qubit_labels, rz_tags):
+    '''
+    Pauli X gate appender
+    '''
     operation_sequence.append(
             cabaliser_gates.X,
             *qubit_labels.gets(*self.qubits)
         )
 
 def _Y_gate(self, operation_sequence, qubit_labels, rz_tags):
+    '''
+    Pauli Y gate appender
+    '''
     operation_sequence.append(
             cabaliser_gates.Y,
             *qubit_labels.gets(*self.qubits)
         )
 
 def _Z_gate(self, operation_sequence, qubit_labels, rz_tags):
+    '''
+    Pauli Z gate appender
+    '''
     operation_sequence.append(
             cabaliser_gates.Z,
             *qubit_labels.gets(*self.qubits)
         )
 
 def _S_gate(self, operation_sequence, qubit_labels, rz_tags):
+    '''
+    Phase gate appender
+    '''
     operation_sequence.append(
             cabaliser_gates.S,
             *qubit_labels.gets(*self.qubits)
         )
 
 def _Sdag_gate(self, operation_sequence, qubit_labels, rz_tags):
+    '''
+    Inv Phase gate appender
+    '''
     operation_sequence.append(
             cabaliser_gates.Sdag,
             *qubit_labels.gets(*self.qubits)
         )
 
 def _rz_gate(self, operation_sequence, qubit_labels, rz_tags):
+    '''
+    Rz gate appender
+    '''
     tag = rz_tags.get(self.gate.exponent, None)
     target = qubit_labels.gets(*self.qubits)[0]
 
@@ -214,7 +244,8 @@ def _rz_gate(self, operation_sequence, qubit_labels, rz_tags):
 
 def z_pow():
     '''
-        Hadamard adapter
+    z_pow appender
+    Maps to an Rz
     '''
     # Indirection table for pre-set angles
     exponent_map = {
