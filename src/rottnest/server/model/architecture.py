@@ -102,7 +102,7 @@ def run_debug2(arch_id):
 def run_debug3(node_id, arch_id=None):
     if arch_id is None:
         arch_id = next(iter(saved_architectures.keys()))
-    cu_executor_pool.run_priority_graph_node('0s_0s', saved_architectures[arch_id])
+    cu_executor_pool.run_priority_graph_node(node_id, saved_architectures[arch_id])
     last_result = None
     while True:
         result = cu_executor_pool.manager_priority_completion_queue.get()
