@@ -391,7 +391,7 @@ class ComputeUnitExecutorPoolManager:
         # Check if process is alive
         self.check_restart_priority_worker()
 
-        while self.priority_error_count + self.priority_received_count < self.priority_submitted_count or not self.manager_priority_completion_queue.empty():
+        while self.priority_error_count + self.priority_received_count < self.priority_submitted_count or not self.priority_result_queue.empty():
             try:
                 result = self.priority_result_queue.get_nowait()
                 print("received priority", self.priority_received_count)

@@ -123,9 +123,10 @@ def get_router_mapping():
     return region_router_exports
 
 def save_arch(arch_json_obj):
-    arch_id = random.randint(1000000, 9999999)
-    while arch_id in saved_architectures: arch_id = random.randint(1000000,
-                                                                   9999999)
+    # arch_id = random.randint(1000000, 9999999)
+    # while arch_id in saved_architectures: arch_id = random.randint(1000000,
+    #                                                                9999999)
+    arch_id = 1000000
     saved_architectures[arch_id] = arch_json_obj
     cu_executor_pool.save_arch(arch_id, arch_json_obj)
     return arch_id
