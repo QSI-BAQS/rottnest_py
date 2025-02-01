@@ -46,7 +46,6 @@ class CirqParser:
         '''
         prev_context = self._qubit_labels 
 
-
         self._qubit_labels = QubitLabelTracker()
         self._rz_tracker.reset()
         return prev_context
