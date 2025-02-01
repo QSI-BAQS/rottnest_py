@@ -46,7 +46,6 @@ class Sequencer():
         for cirq_obj in parser.traverse():
             # Interrupt between cirq objects
             for op_seq in cirq_parser.parse(cirq_obj):
-
                 # Interrupt encountered, force yield
                 # This ensures that pyliqtr level objects compile to distinct  
                 #  sequences of widgets

@@ -81,7 +81,7 @@ class LuantiVisualiser:
             return LuantiVisualiser.luanti_node(LuantiVisualiser.ANCILLAE, activity=None, text="", 
                 top=LuantiVisualiser.JOIN, bottom=LuantiVisualiser.JOIN, left=LuantiVisualiser.JOIN, right=LuantiVisualiser.JOIN)
         else:
-            return LuantiVisualiser.luanti_node(LuantiVisualiser.ANCILLAE, activity=None, text="")
+            return None #LuantiVisualiser.luanti_node(LuantiVisualiser.ANCILLAE, activity=None, text="")
 
     @staticmethod
     def reg(obj):
