@@ -174,7 +174,7 @@ class ComputeUnitExecutorPoolManager:
         self.compute_unit_counts = defaultdict(int)
         self.compute_unit_totals = defaultdict(int)
         self.cache_hash_stack = [None]
-        self.non_participatory_stack = [0]
+        self.np_stack = [0]
         if None in self.compute_unit_result_cache:
             del self.compute_unit_result_cache[None]
 
@@ -245,16 +245,25 @@ class ComputeUnitExecutorPoolManager:
             print(result)
 
         result_hash_stack = result.get('cache_hash', [None])
-        for stack_hash in result_hash_stack:
+        np_stack = result.get('np_qubits', [0])
+        tock_dict = result.get('tocks', {})
+        np_dur = tock_dict.get('bell', 0) + tock_dict.get('t_schedule', 0) + tock_dict.get('bell2', 0)
+        if 'volumes' not in result:
+            result['volumes'] = {}
+
+        old_volume = result['volumes'].get('NP_VOLUME', 0) 
+        result['volumes']['NP_VOLUME'] = old_volume
+
+        # print(result_hash_stack, np_stack)
+
+        for i, stack_hash in enumerate(reversed(result_hash_stack)):
             self.compute_unit_counts[stack_hash] += 1
             iadd_result_dicts(
                 self.compute_unit_result_cache[stack_hash], result
             )
+            result['volumes']['NP_VOLUME'] += np_stack[-i-1] * np_dur
 
-        if 'NON_PARTICIPATORY_VOLUME' not in self.compute_unit_result_cache[None]['volumes']:
-            self.compute_unit_result_cache[None]['volumes']['NON_PARTICIPATORY_VOLUME'] = 0
-        
-        self.compute_unit_result_cache[None]['volumes']['NON_PARTICIPATORY_VOLUME'] += result['np_qubits'] * result['tocks']['total']
+        result['volumes']['NP_VOLUME'] = old_volume
 
         # print(compute_unit_counts, compute_unit_totals)
 
@@ -271,14 +280,14 @@ class ComputeUnitExecutorPoolManager:
         # Process cache command
         if cache_obj.request_type == CACHED.START:
             self.cache_hash_stack.append(cache_obj.cache_hash())
-            self.non_participatory_stack.append(cache_obj.non_participatory_qubits)
+            self.np_stack.append(cache_obj.non_participatory_qubits)
 
         elif cache_obj.request_type == CACHED.END:
             if self.cache_hash_stack[-1] != cache_obj.cache_hash():
                 raise Exception("Received unmatched cache_end in stream", cache_obj.cache_hash(), self.cache_hash_stack)
             
             cache_hash = self.cache_hash_stack.pop()
-            non_participatory = self.non_participatory_stack.pop()
+            non_participatory = self.np_stack.pop()
 
         elif cache_obj.request_type == CACHED.REQUEST:
             # Process result from cache
@@ -325,7 +334,7 @@ class ComputeUnitExecutorPoolManager:
             self.check_priority_result()
 
             if not self.worker_task_queue.full():
-                self.worker_task_queue.put(('exc_cu', *obj, self.cache_hash_stack.copy(), sum(self.non_participatory_stack))) # This may block, so check
+                self.worker_task_queue.put(('exc_cu', *obj, self.cache_hash_stack.copy(), self.np_stack.copy())) # This may block, so check
                 break
             else:
                 time.sleep(0.1) # Wait for space in worker task queue
@@ -345,14 +354,23 @@ class ComputeUnitExecutorPoolManager:
         # print("output:", output, self.compute_unit_counts, self.compute_unit_totals)
         self.manager_completion_queue.put(output)
 
-        for stack_hash in self.cache_hash_stack:
+        tock_dict = output.get('tocks', {})
+        np_dur = tock_dict.get('bell', 0) + tock_dict.get('t_schedule', 0) + tock_dict.get('bell2', 0)
+        if 'volumes' not in output:
+            output['volumes'] = {}
+
+        old_volume = output['volumes'].get('NP_VOLUME', 0) 
+        output['volumes']['NP_VOLUME'] = old_volume + np_qubits * np_dur
+
+        for i,stack_hash in enumerate(reversed(self.cache_hash_stack)):
             iadd_result_dicts(
                 self.compute_unit_result_cache[stack_hash], output
             )
-        if 'NON_PARTICIPATORY_VOLUME' not in self.compute_unit_result_cache[None]['volumes']:
-            self.compute_unit_result_cache[None]['volumes']['NON_PARTICIPATORY_VOLUME'] = 0
-        self.compute_unit_result_cache[None]['volumes']['NON_PARTICIPATORY_VOLUME'] += sum(self.non_participatory_stack, start=np_qubits) * output.get('tocks', {}).get('total', 0)
-        # print(sum(self.non_participatory_stack, start=np_qubits), self.compute_unit_result_cache[None]['volumes']['NON_PARTICIPATORY_VOLUME'], self.compute_unit_result_cache[None]['tocks']['total'])
+            output['volumes']['NP_VOLUME'] += self.np_stack[-i-1] * np_dur
+
+        output['volumes']['NP_VOLUME'] = old_volume
+
+        # print(sum(self.np_stack, start=np_qubits), self.compute_unit_result_cache[None]['volumes']['NP_VOLUME'], self.compute_unit_result_cache[None]['tocks']['total'])
 
         return True
 
