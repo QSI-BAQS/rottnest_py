@@ -90,7 +90,7 @@ def run_result(message, *args, wsock=None, **kwargs):
     architecture.run_widget_pool(arch_id, wsock)
     return json.dumps({
         'message': 'run_result',
-        'payload': 'pending',
+        'payload': { 'status': 'pending' },
     })
 
 def debug_send(message, *args, wsock=None, **kwargs):
