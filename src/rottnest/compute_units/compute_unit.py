@@ -3,6 +3,8 @@ from cabaliser.widget import Widget
 Wrapper object for cabaliser sequences 
 '''
 
+counter = 0
+
 class ComputeUnit(): 
     '''
         Wrapped object for sending
@@ -11,7 +13,9 @@ class ComputeUnit():
 
         # TODO: mem bounds from architecture 
         
-        self.unit_id = unit_id
+        self.unit_id = counter 
+        counter += 1
+
         self.memory_bound = 100 # Should be equal to number of registers
         self.architecture = architecture 
         self.sequences = list()
