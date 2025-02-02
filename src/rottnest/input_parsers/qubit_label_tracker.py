@@ -66,8 +66,9 @@ class QubitLabelTracker:
         if index is None: 
             # Index was teleported from the context
             # Increase Bell state overhead
-            if index in self._context:
-                n_inputs += 1
+            # TODO Integrate the context here
+            #if index in self._context:
+            n_inputs += 1
             index = len(self._labels)
             self._labels[qubit_label] = index
         return index
