@@ -143,7 +143,9 @@ class PyliqtrParser:
                     self.circuit.all_qubits().difference(tmp.all_qubits())
                 )
                 yield CACHED(rottnest_hash, request_type=CACHED.START, non_participatory_qubits=non_participatory)
+                print(parser.rottnest_hash)
                 if parser.rottnest_hash in pandora_cache:  
+                    print("Hitting Pandora Cache")
                     pandora_sequencer = PandoraSequencer()
                     yield pandora_sequencer
                 else:

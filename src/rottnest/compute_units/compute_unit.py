@@ -32,6 +32,9 @@ class ComputeUnit():
         self.n_inputs = n_inputs
         self.n_outputs = n_outputs
         self.n_qubits = n_qubits
+
+    def __iter__(self):
+        return iter(self.sequences)
  
     def __len__(self):
         return len(self.sequences)

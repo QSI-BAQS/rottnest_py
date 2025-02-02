@@ -11,8 +11,9 @@ from rottnest.input_parsers.rz_tag_tracker import RzTagTracker
 # Load and run the monkey patcher for cirq objects
 from rottnest.monkey_patchers import cirq_patcher 
 from rottnest.monkey_patchers.cirq_patcher import known_gates 
-
 from rottnest.input_parsers.interrupt import INTERRUPT, NON_CACHING
+
+from rottnest.pandora.pandora_sequencer import PandoraSequencer
 
 shared_rz_tag_tracker = RzTagTracker()
 
@@ -65,6 +66,11 @@ class CirqParser:
         circ_iter: cirq.circuits.circuit.Circuit,
         widget = None
     ):
+
+        # This needs to be better
+        if isinstance(circ_iter, PandoraSequencer):
+            return circ_iter.to_operation_sequence()
+
         op = OperationSequence(self.sequence_length)
         for moment in circ_iter.decompose():
             for operation in moment:
@@ -118,6 +124,9 @@ class CirqShim:
         '''
         for element in self._lst: 
             yield (element,)
+
+    def to_operation_sequence(self):
+        return iter(self._lst) 
 
     def traverse(self):
         yield self 

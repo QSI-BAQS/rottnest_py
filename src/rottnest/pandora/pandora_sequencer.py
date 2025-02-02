@@ -49,10 +49,13 @@ class PandoraSequencer():
             max_d = 100,
             batch_size = 100
         ):
-
+        self.fully_decomposed = True
         self.pandora_connection = pandora_connection    
 
-        self._architecture_proxies = list(map(ArchitectureProxy, architectures))
+        if len(architectures) == 0:
+            self._architecture_proxies = [None]
+        else:
+            self._architecture_proxies = list(map(ArchitectureProxy, architectures))
         self.sequence_length = sequence_length 
         if rz_tags is None:
             rz_tags = RzTagTracker() 
@@ -69,14 +72,31 @@ class PandoraSequencer():
         for compute_unit in sequence_pandora:
             yield ProxyCirqParser(compute_unit.op_seq, len(compute_unit))
           
+    def parse(self):
+        '''
+            No further parsing needed
+        '''
+        pass
+
+    def to_operation_sequence(self):
+        return self.sequence_pandora()
+
+    def decompose(self):
+        print("Decomposing")
+        for i in self.sequence_pandora():
+            print(i)
+            yield i
+        return
 
     def sequence_pandora(self):
-
         architectures = cycle(self._architecture_proxies)
 
         # Execution context
         architecture = next(architectures)
-        compute_unit = ComputeUnit(architecture.to_json())       
+        if architecture is not None:
+            compute_unit = ComputeUnit(architecture.to_json())       
+        else:
+            compute_unit = ComputeUnit(None)       
         qubit_labels = PandoraQubitLabelTracker()
         rz_tags = self.rz_tags 
         operation_sequence = OperationSequence(5000)
@@ -120,4 +140,4 @@ class PandoraSequencer():
             ) 
             qubit_labels = PandoraQubitLabelTracker()
             rz_tags.reset()
-            operation_sequence = OperationSequence(5000)
+            operation_sequence = OperationSequence(5000) 
