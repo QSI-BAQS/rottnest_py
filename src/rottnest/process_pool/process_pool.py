@@ -250,7 +250,7 @@ class ComputeUnitExecutorPoolManager:
         Blocking read from worker_result_queue and process result
         '''
         result = self.worker_result_queue.get(timeout=timeout)
-        if 'cache_hash' not in result: # Probably an error, dump to stdout
+        if result.get('status', 'error') == 'error': # Probably an error, dump to stdout
             print(result)
 
         result_hash_stack = result.get('cache_hash', [None])

@@ -124,19 +124,23 @@ def execute_compute_unit(args, worker_results_queue: mp.Queue, is_priority):
 
     except Exception as e:
         tb = traceback.format_exception(e)
-
-        # Debug output exceptions
-        # with open('errors.out', 'a') as f:
-        #     print('=============file===========', file=f)
-        #     print(widget.json(), file=f)
-        #     print('=============tb===========', file=f)
-        #     print(''.join(tb), file=f)
+        try:
+            # Debug output exceptions
+            with open('errors.out', 'a') as f:
+                print('=============file===========', file=f)
+                print(widget.json(), file=f)
+                print('=============tb===========', file=f)
+                print(''.join(tb), file=f)
+        except:
+            pass
 
         stats = {
             'cu_id': str(compute_unit.unit_id), 
             'err_type': repr(e), 
             'traceback': tb,
             'status': 'error',
+            'cache_hash': cache_hash,
+            'np_qubits': np_qubits,
         }
 
         worker_results_queue.put(stats)
