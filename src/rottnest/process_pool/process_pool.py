@@ -201,12 +201,13 @@ class ComputeUnitExecutorPoolManager:
 
         update_counter = 20
 
-        while True:
-            seq_start = time.time()
-            obj = next(it, StopIteration)
-            self.sequencer_time += (time.time() - seq_start)
-            if obj == StopIteration:
-                break
+        for obj in it:
+        # while True:
+        #     seq_start = time.time()
+        #     obj = next(it, StopIteration)
+        #     self.sequencer_time += (time.time() - seq_start)
+        #     if obj == StopIteration:
+        #         break
 
             if obj[0] == INTERRUPT:
                 self.process_elem_cache(obj)
