@@ -68,7 +68,7 @@ class QubitLabelTracker:
             # Increase Bell state overhead
             # TODO Integrate the context here
             #if index in self._context:
-            n_inputs += 1
+            self.n_inputs += 1
             index = len(self._labels)
             self._labels[qubit_label] = index
         return index

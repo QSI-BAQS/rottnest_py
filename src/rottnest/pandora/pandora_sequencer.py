@@ -7,13 +7,14 @@ from rottnest.compute_units.compute_unit import ComputeUnit
 from rottnest.compute_units.architecture_proxy import ArchitectureProxy
 
 from rottnest.pandora.pandora_translator import PandoraTranslator
+from rottnest.pandora.pandora_qubit_label_tracker import PandoraQubitLabelTracker
+
 
 from cabaliser.operation_sequence import OperationSequence
 
 from pandora.pandora import Pandora, PandoraConfig
 
-
-
+# TODO: Break this out
 default = {
   "database":"postgres",
   "user":"alan",
@@ -39,9 +40,9 @@ class PandoraSequencer():
             sequence_length = 100,
             global_context = None,
             rz_tags = None,
-            max_t = 10,
-            max_d = 5,
-            batch_size = 10
+            max_t = 100,
+            max_d = 100,
+            batch_size = 100
         ):
 
         self.pandora_connection = pandora_connection    
@@ -63,7 +64,7 @@ class PandoraSequencer():
         # Execution context
         architecture = next(architectures)
         compute_unit = ComputeUnit(architecture.to_json())       
-        qubit_labels = QubitLabelTracker()
+        qubit_labels = PandoraQubitLabelTracker()
         rz_tags = self.rz_tags 
         operation_sequence = OperationSequence(5000)
 
@@ -79,7 +80,6 @@ class PandoraSequencer():
         )
 
         for pandora_widget in widgets:
-            print(pandora_widget)
             pandora_translator.translate_batch(
                 pandora_widget,
                 operation_sequence,
@@ -95,13 +95,16 @@ class PandoraSequencer():
                 len(qubit_labels),
             )
 
+            if compute_unit.n_gates == 0:
+                continue
+
+            print(f"Unit: {len(compute_unit.sequences[0])}")
             yield compute_unit
 
             # Reset context
             compute_unit = ComputeUnit(
                 next(architectures).to_json()
             ) 
-            qubit_labels = QubitLabelTracker()
+            qubit_labels = PandoraQubitLabelTracker()
             rz_tags.reset()
             operation_sequence = OperationSequence(5000)
-

@@ -25,6 +25,8 @@ class ComputeUnit():
         self.n_inputs = None
         self.n_outputs = None
         self.n_qubits = None
+        
+        self.n_gates = 0
       
     def add_context(self, n_inputs, n_qubits, n_outputs):
         self.n_inputs = n_inputs
@@ -35,6 +37,7 @@ class ComputeUnit():
         return len(self.sequences)
  
     def append(self, sequence):
+        self.n_gates += len(sequence)
         self.sequences.append(sequence)
 
     def apply(self, widget): 

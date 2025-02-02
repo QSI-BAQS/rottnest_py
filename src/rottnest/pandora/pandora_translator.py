@@ -1,5 +1,9 @@
+from functools import partial
 import cabaliser.gates as cabaliser_gates
 import pandora
+from cabaliser.operation_sequence import OperationSequence
+
+from rottnest.pandora.pandora_qubit_label_tracker import PandoraQubitLabelTracker
 
 def pandora_gates_to_compute_unit(pandora_gates):
     '''
@@ -23,14 +27,14 @@ class PandoraTranslator:
             6:  self.YPowGate,
             7:  self.ZPowGate,
             8:  self.HPowGate,
-            9:  self._PauliX,
-            10:  self._PauliZ,
-            11:  self._PauliY,
+            9:  partial(self.single_qubit_gate, cabaliser_gates.X),
+            10:  partial(self.single_qubit_gate, cabaliser_gates.Z),
+            11:  partial(self.single_qubit_gate, cabaliser_gates.Y),
             12:  self.GlobalPhaseGate,
             13:  self.ResetChannel,
-            14:  self.M,
-            15:  self.CNOT,
-            16:  self.CZ,
+            14:  partial(self.single_qubit_gate, cabaliser_gates.MEAS),
+            15:  partial(self.two_qubit_gate, cabaliser_gates.CZ),
+            16:  partial(self.two_qubit_gate, cabaliser_gates.CNOT),
             17:  self.CZPowGate,
             18:  self.CXPowGate,
             19:  self.XXPowGate,
@@ -84,21 +88,68 @@ class PandoraTranslator:
         self.rotation_table.get(angle, self._rz)
 
     def translate(self, pandora_gate, operation_sequence, qubit_labels, rz_tags):
-        return self.pandora_map[pandora_gate.type](pandora_gate, operation_sequence, qubit_labels, rz_tags) 
+        self.pandora_map[pandora_gate.type](pandora_gate, operation_sequence, qubit_labels, rz_tags) 
 
     def translate_batch(self, pandora_gates, operation_sequence, qubit_labels, rz_tags):
+        '''
+            Bulk dispatch call for translate
+            Saves passing some parameters around repeatedly
+        '''
         for i in pandora_gates:
             self.translate(i, operation_sequence, qubit_labels, rz_tags)
 
-    def NOT_IMPLEMENTED(self, *args, **kwargs):
-        raise NotImplementedError 
+    def rotation_gate(self, gate, operation_sequence, qubit_labels, rz_tags):
+        '''
+            Wrapper for gates that potentially reduce
+        '''
+        self.rotation_table.get(gate.param, self._rz)(gate, operation_sequence, qubit_labels, rz_tags)
 
-    def In(self, gate, operation_sequence, qubit_labels, rz_tags):
-        return 
+    def Z_to_X(self, fn, gate, operation_sequence, qubit_labels, rz_tags): 
+        '''
+        '''
+        self._H(gate, operation_sequence, qubit_labels, rz_tags)
+        fn(gate, operation_sequence, qubit_labels, rz_tags)
+        self._H(gate, operation_sequence, qubit_labels, rz_tags)
 
-    def Out(self, gate, operation_sequence, qubit_labels, rz_tags):
-        return 
+    def Z_to_Y(self, fn, gate, operation_sequence, qubit_labels, rz_tags): 
+        self._H(gate, operation_sequence, qubit_labels, rz_tags)
+        self._S(gate, operation_sequence, qubit_labels, rz_tags)
+        fn(gate, operation_sequence, qubit_labels, rz_tags)
+        self._Sdag(gate, operation_sequence, qubit_labels, rz_tags)
+        self._H(gate, operation_sequence, qubit_labels, rz_tags)
 
+    '''
+        These gates are hard coded for ease of reference
+    '''
+    def _Z(self, gate, operation_sequence, qubit_labels, rz_tags):
+        target = qubit_labels.get_single_qubit(gate)
+        operation_sequence.append(
+            cabaliser_gates.Z,
+            target
+        )
+
+    def _S(self, gate, operation_sequence, qubit_labels, rz_tags):
+        target = qubit_labels.get_single_qubit(gate)
+        operation_sequence.append(
+            cabaliser_gates.S,
+            target
+        )
+
+    def _H(self, gate, operation_sequence, qubit_labels, rz_tags):
+        target = qubit_labels.get_single_qubit(gate)
+        operation_sequence.append(
+            cabaliser_gates.H,
+            target
+        )
+
+
+
+    def _Sdag(self, gate, operation_sequence, qubit_labels, rz_tags):
+        target = qubit_labels.get_single_qubit(gate)
+        operation_sequence.append(
+            cabaliser_gates.Sdag,
+            target
+        )
 
     def _rz(self, gate, operation_sequence, qubit_labels, rz_tags):
         tag = rz_tags(gate.param)
@@ -107,9 +158,36 @@ class PandoraTranslator:
             (target, tag)
         )
 
+
+    def single_qubit_gate(self, cabaliser_op, gate, operation_sequence, qubit_labels, rz_tags): 
+        target = qubit_labels.get_single_qubit(gate)
+        operation_sequence.append(
+            cabaliser_op,
+            target
+        )
+
+    def two_qubit_gate(self, cabaliser_op, gate, operation_sequence, qubit_labels, rz_tags): 
+        targets = qubit_labels.get_two_qubit(gate)
+        operation_sequence.append(
+            cabaliser_op,
+            *targets
+        )
+
+
+    def NOT_IMPLEMENTED(self, *args, **kwargs):
+        raise NotImplementedError 
+
+    def In(self, gate, operation_sequence, qubit_labels, rz_tags):
+        # TODO Track qubit indicies from here 
+        return 
+
+    def Out(self, gate, operation_sequence, qubit_labels, rz_tags):
+        return 
+
+
     def Rx(self, gate, operation_sequence, qubit_labels, rz_tags):
         angle = gate.param
-        target = qubit_labels.gets(*self.qubits)[0]
+        target = qubit_labels.get_single_qubit(gate)
 
         operation_sequence.append(
             cabaliser_gates.H,
@@ -123,13 +201,9 @@ class PandoraTranslator:
             target
         )
 
-    def _Z(self, gate, operation_sequence, qubit_labels, rz_tags):
-        pass
-    def _S(self, gate, operation_sequence, qubit_labels, rz_tags):
-        pass
-    def _Sdag(self, gate, operation_sequence, qubit_labels, rz_tags):
-        pass
 
+
+    
     def Ry(self, gate, operation_sequence, qubit_labels, rz_tags):
         pass
 
@@ -147,31 +221,6 @@ class PandoraTranslator:
 
     def HPowGate(self, gate, operation_sequence, qubit_labels, rz_tags):
         pass
-
-    def _PauliX(self, gate, operation_sequence, qubit_labels, rz_tags):
-        target = qubit_labels.gets(*self.qubits)[0]
-
-        operation_sequence.append(
-            cabaliser_gates.X,
-            target
-        )
-
-
-    def _PauliZ(self, gate, operation_sequence, qubit_labels, rz_tags):
-        target = qubit_labels.gets(*self.qubits)[0]
-
-        operation_sequence.append(
-            cabaliser_gates.Z,
-            target
-        )
-
-    def _PauliY(self, gate, operation_sequence, qubit_labels, rz_tags):
-        target = qubit_labels.gets(*self.qubits)[0]
-
-        operation_sequence.append(
-            cabaliser_gates.Y,
-            target
-        )
 
     def GlobalPhaseGate(self, gate, operation_sequence, qubit_labels, rz_tags):
         pass

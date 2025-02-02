@@ -4,6 +4,9 @@ from rottnest.compute_units.architecture_proxy import ArchitectureProxy, saved_a
 
 
 from rottnest.pandora.pandora_sequencer import PandoraSequencer 
+from rottnest.pandora.pandora_qubit_label_tracker import PandoraQubitLabelTracker
+
+
 
 #pan.build_pandora()
 
