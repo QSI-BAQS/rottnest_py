@@ -69,9 +69,19 @@ class PandoraTranslator:
             24: 0,  # self.GlobalIn,
             25: 0,  # self.GlobalOut
         }
+        self.rotation_table = { 
+            1.0: self._Z,
+            0.5: self._S,
+            -0.5: self._Sdag,
+            -1.0: self._Z 
+        }
+
 
     def __call__(self, *args, **kwargs):
         return self.translate(*args, **kwargs)
+
+    def get_rot_gate(self, angle):
+        self.rotation_table.get(angle, self._rz)
 
     def translate(self, pandora_gate, operation_sequence, qubit_labels, rz_tags):
         return self.pandora_map[pandora_gate.type](pandora_gate, operation_sequence, qubit_labels, rz_tags) 
@@ -89,25 +99,36 @@ class PandoraTranslator:
     def Out(self, gate, operation_sequence, qubit_labels, rz_tags):
         return 
 
-    def Rx(self, gate, operation_sequence, qubit_labels, rz_tags):
+
+    def _rz(self, gate, operation_sequence, qubit_labels, rz_tags):
         tag = rz_tags(gate.param)
-
-        target = qubit_labels.gets(*self.qubits)[0]
-
-        operation_sequence.append(
-            cabaliser_gates.H,
-            (target,)
-        )
-
         operation_sequence.append(
             cabaliser_gates.RZ,
             (target, tag)
         )
 
+    def Rx(self, gate, operation_sequence, qubit_labels, rz_tags):
+        angle = gate.param
+        target = qubit_labels.gets(*self.qubits)[0]
+
         operation_sequence.append(
             cabaliser_gates.H,
-            (target,)
+            target
         )
+        
+        self.get_rotation_gate(angle)
+
+        operation_sequence.append(
+            cabaliser_gates.H,
+            target
+        )
+
+    def _Z(self, gate, operation_sequence, qubit_labels, rz_tags):
+        pass
+    def _S(self, gate, operation_sequence, qubit_labels, rz_tags):
+        pass
+    def _Sdag(self, gate, operation_sequence, qubit_labels, rz_tags):
+        pass
 
     def Ry(self, gate, operation_sequence, qubit_labels, rz_tags):
         pass
@@ -132,7 +153,7 @@ class PandoraTranslator:
 
         operation_sequence.append(
             cabaliser_gates.X,
-            (target,)
+            target
         )
 
 
@@ -141,7 +162,7 @@ class PandoraTranslator:
 
         operation_sequence.append(
             cabaliser_gates.Z,
-            (target,)
+            target
         )
 
     def _PauliY(self, gate, operation_sequence, qubit_labels, rz_tags):
@@ -149,7 +170,7 @@ class PandoraTranslator:
 
         operation_sequence.append(
             cabaliser_gates.Y,
-            (target,)
+            target
         )
 
     def GlobalPhaseGate(self, gate, operation_sequence, qubit_labels, rz_tags):
@@ -166,11 +187,16 @@ class PandoraTranslator:
 
         operation_sequence.append(
             cabaliser_gates.CNOT,
-            targets 
+            *targets 
         )
 
     def CZ(self, gate, operation_sequence, qubit_labels, rz_tags):
-        pass
+        targets = qubit_labels.gets(*self.qubits)
+
+        operation_sequence.append(
+            cabaliser_gates.CZ,
+            *targets 
+        )
 
     def CZPowGate(self, gate, operation_sequence, qubit_labels, rz_tags):
         pass
