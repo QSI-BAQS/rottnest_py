@@ -27,10 +27,11 @@ from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
 from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
 from cirq.ops.raw_types import _InverseCompositeGate
 
+from rottnest.pandora.pandora_sequencer import PandoraSequencer 
 
 from . import cirq_parser
 from rottnest.monkey_patchers import pyliqtr_patcher, qualtran_patcher
-
+from rottnest.pandora.pandora_cache import pandora_cache
 
 # pyLIQTR gates include cirq gates
 known_gates = dict(cirq_parser.known_gates) 
@@ -38,6 +39,8 @@ known_gates = dict(cirq_parser.known_gates)
 # Used to cache results 
 local_cache = set() 
 local_cache_tag = None
+
+# Todo: move this to a pandora module
 
 from rottnest.input_parsers.interrupt import INTERRUPT, CACHED, NON_CACHING
 
@@ -121,7 +124,6 @@ class PyliqtrParser:
             rottnest_hash = gate._rottnest_hash()
             if rottnest_hash is not None and self._caching:
                 if rottnest_hash in local_cache:  
-                    # TODO: Return a cached interrupt object
                     non_participatory = len(
                         self.circuit.all_qubits().difference(gate._qubits)
                     )
@@ -141,7 +143,11 @@ class PyliqtrParser:
                     self.circuit.all_qubits().difference(tmp.all_qubits())
                 )
                 yield CACHED(rottnest_hash, request_type=CACHED.START, non_participatory_qubits=non_participatory)
-                yield parser
+                if parser.rottnest_hash in pandora_cache:  
+                    pandora_sequencer = PandoraSequencer()
+                    yield pandora_sequencer
+                else:
+                    yield parser
                 yield CACHED(rottnest_hash, request_type=CACHED.END)
             else:
                 yield parser

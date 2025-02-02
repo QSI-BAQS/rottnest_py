@@ -135,6 +135,9 @@ class CirqShim:
         return iter(self)
 
     def parse(self):
+        '''
+            Shims require no parsing
+        '''
         pass
 
     def __len__(self):

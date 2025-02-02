@@ -2,10 +2,8 @@
 
 from rottnest.compute_units.architecture_proxy import ArchitectureProxy, saved_architectures
 
-
 from rottnest.pandora.pandora_sequencer import PandoraSequencer 
 from rottnest.pandora.pandora_qubit_label_tracker import PandoraQubitLabelTracker
-
 
 
 #pan.build_pandora()
@@ -38,8 +36,6 @@ def arch_constructor(n_qubits):
     saved_architectures[666] = object()
     saved_architectures[666] = ProxyArch() 
     return 666 
-
-
 
 arch = arch_constructor(100) 
 seq = PandoraSequencer(arch)

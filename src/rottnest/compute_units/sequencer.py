@@ -32,9 +32,6 @@ class Sequencer():
 
         architecture_idx = 0
 
-        # The choice of architecture should
-        # eventually be passed to a scheduler
-
         architectures = cycle(self._architecture_proxies)    
  
         architecture = next(architectures) 

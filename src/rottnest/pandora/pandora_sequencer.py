@@ -1,5 +1,8 @@
 from itertools import cycle
 
+from cabaliser.operation_sequence import OperationSequence
+from pandora.pandora import Pandora, PandoraConfig
+
 from rottnest.input_parsers.qubit_label_tracker import QubitLabelTracker
 from rottnest.input_parsers.rz_tag_tracker import RzTagTracker 
 from rottnest.input_parsers.interrupt import INTERRUPT, NON_CACHING
@@ -9,10 +12,8 @@ from rottnest.compute_units.architecture_proxy import ArchitectureProxy
 from rottnest.pandora.pandora_translator import PandoraTranslator
 from rottnest.pandora.pandora_qubit_label_tracker import PandoraQubitLabelTracker
 
+from rottnest.pandora.proxy_cirq_parser import ProxyCirqParser
 
-from cabaliser.operation_sequence import OperationSequence
-
-from pandora.pandora import Pandora, PandoraConfig
 
 # TODO: Break this out
 default = {
@@ -25,9 +26,13 @@ default = {
 # TODO make this nicer
 config = PandoraConfig(**default)
 
-pandora_connection = Pandora(pandora_config=config,
-          max_time=3600,
-          decomposition_window_size=1000000)
+try:
+    pandora_connection = Pandora(pandora_config=config,
+              max_time=3600,
+              decomposition_window_size=1000000)
+except:
+    print("Connection to Pandora failed")
+
 
 class PandoraSequencer():
     '''
@@ -56,6 +61,14 @@ class PandoraSequencer():
         self.max_t = max_t
         self.max_d = max_d
         self.batch_size = batch_size
+
+    def traverse(self):
+        '''
+            Returns proxied cirq parser objects
+        '''
+        for compute_unit in sequence_pandora:
+            yield ProxyCirqParser(compute_unit.op_seq, len(compute_unit))
+          
 
     def sequence_pandora(self):
 
