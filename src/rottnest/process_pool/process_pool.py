@@ -201,12 +201,13 @@ class ComputeUnitExecutorPoolManager:
 
         update_counter = 20
 
-        while True:
-            seq_start = time.time()
-            obj = next(it, StopIteration)
-            self.sequencer_time += (time.time() - seq_start)
-            if obj == StopIteration:
-                break
+        for obj in it:
+        # while True:
+        #     seq_start = time.time()
+        #     obj = next(it, StopIteration)
+        #     self.sequencer_time += (time.time() - seq_start)
+        #     if obj == StopIteration:
+        #         break
 
             if obj[0] == INTERRUPT:
                 self.process_elem_cache(obj)
@@ -249,7 +250,7 @@ class ComputeUnitExecutorPoolManager:
         Blocking read from worker_result_queue and process result
         '''
         result = self.worker_result_queue.get(timeout=timeout)
-        if 'cache_hash' not in result: # Probably an error, dump to stdout
+        if result.get('status', 'error') == 'error': # Probably an error, dump to stdout
             print(result)
 
         result_hash_stack = result.get('cache_hash', [None])
