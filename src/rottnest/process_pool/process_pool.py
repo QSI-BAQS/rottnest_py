@@ -143,6 +143,10 @@ class ComputeUnitExecutorPoolManager:
             if not self.manager_task_queue.empty():
                 if self.run_task(): break
 
+    def send_total(self):
+        totals = self.compute_unit_result_cache[None]
+        totals['cu_id'] = "TOTAL"
+        self.manager_completion_queue.put(totals)
     
     def run_task(self):
         '''
@@ -195,6 +199,8 @@ class ComputeUnitExecutorPoolManager:
 
         # it = wrapped_iter_test(it, 0)
 
+        update_counter = 20
+
         while True:
             seq_start = time.time()
             obj = next(it, StopIteration)
@@ -206,6 +212,11 @@ class ComputeUnitExecutorPoolManager:
                 self.process_elem_cache(obj)
             else:
                 self.process_elem_obj(obj)
+
+            update_counter -= 1
+            if update_counter < 0:
+                update_counter = 20
+                self.send_total()
         
         print("all submitted!")
         print("last non-cache job at", self.submit_time, "delta", self.submit_time - self.run_seq_start)
@@ -226,10 +237,7 @@ class ComputeUnitExecutorPoolManager:
             print(f"aborting, sentinel secs reached at {self.n_received}/{self.n_submitted} received ({self.n_error} errors)")
             print(f"unaccounted items: {self.n_submitted - self.n_received - self.n_error}")
 
-        totals = self.compute_unit_result_cache[None]
-        totals['cu_id'] = "TOTAL"
-        self.manager_completion_queue.put(totals)
-        print(totals)
+        self.send_total()
         # print(compute_unit_counts, compute_unit_totals, compute_unit_result_cache)
         self.manager_completion_queue.put('done')
 
@@ -304,7 +312,7 @@ class ComputeUnitExecutorPoolManager:
         for stack_hash in self.cache_hash_stack:
             self.compute_unit_totals[stack_hash] += 1
 
-        if self.worker_task_queue.full():
+        if self.worker_task_queue.full() or self.worker_result_queue.qsize() > 50:
             while not self.worker_result_queue.empty():
                 # Drain result queue
                 self.process_result_elem()
