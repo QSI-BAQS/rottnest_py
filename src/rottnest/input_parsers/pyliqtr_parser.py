@@ -229,7 +229,7 @@ class PyliqtrParser:
         handle_idx = 0
 
         for r in self.decompose():
-            
+            r.parse()
             # TODO: re-wrangle this
             if r == INTERRUPT:
                 if (r.cache_hash() is NON_CACHING 
@@ -250,7 +250,12 @@ class PyliqtrParser:
                 yield GraphWrapper(shim_id, str(r), parser=r)
                 continue
 
-            yield GraphWrapper(f"{prefix}{handle_idx}", str(r.op.gate), parser=r, rottnest_hash=r.rottnest_hash)
+            if isinstance(r, PandoraSequencer):
+                shim_id = f"{prefix}{handle_idx}p" 
+                yield GraphWrapper(shim_id, str(r), parser=r)
+                continue
+
+            yield GraphWrapper(f"{prefix}{handle_idx}", str(getattr(getattr(r, "op", None), "gate", "Missing attr")), parser=r, rottnest_hash=r.rottnest_hash)
             handle_idx += 1
 
     def traverse(self):
