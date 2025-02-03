@@ -47,10 +47,14 @@ class PandoraSequencer():
             rz_tags = None,
             max_t = 100,
             max_d = 100,
-            batch_size = 100
+            batch_size = 100,
+            conn = None
         ):
         self.fully_decomposed = True
-        self.pandora_connection = pandora_connection    
+
+        if conn is None:
+            conn = pandora_connection    
+        self.pandora_connection = conn 
 
         if len(architectures) == 0:
             self._architecture_proxies = [None]

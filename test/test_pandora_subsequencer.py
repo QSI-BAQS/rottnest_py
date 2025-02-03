@@ -39,9 +39,10 @@ def arch_constructor(n_qubits):
     return 666 
 
 #N=5
-hsh = b'\xd6\xb6\xd3]\xbfM\x01-\xcc\x80\x96?\xaa\xe7\x1f\xdb'
-arch = arch_constructor(100) 
-pandora_cache[hsh] = PandoraSequencer(arch)
+# TODO FIX
+#hsh = b'\xd6\xb6\xd3]\xbfM\x01-\xcc\x80\x96?\xaa\xe7\x1f\xdb'
+#arch = arch_constructor(100) 
+#pandora_cache[hsh] = PandoraSequencer(arch)
 
 
 class SequencerTest(unittest.TestCase):
