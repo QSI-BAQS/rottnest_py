@@ -55,6 +55,8 @@ def execute_graph_node(node_hash, arch_obj, worker_results_queue: mp.Queue):
     for args in wrapped_it:
         print(args)
         execute_compute_unit(args, worker_results_queue, True)
+        # TODO delete after demo: only run first compute unit
+        break
 
     worker_results_queue.put('end')
 
