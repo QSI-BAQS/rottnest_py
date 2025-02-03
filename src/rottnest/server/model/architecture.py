@@ -101,7 +101,13 @@ def run_debug2(arch_id):
     return run_debug3(arch_id=arch_id, node_id='0s_0s')
 def run_debug3(node_id, arch_id=None):
     if arch_id is None:
-        arch_id = next(iter(saved_architectures.keys()))
+        try:
+            arch_id = next(iter(saved_architectures.keys()))
+        except:
+            return json.dumps({
+                "message": "err",
+                "payload": "No architecture submitted yet!",
+            })
     cu_executor_pool.run_priority_graph_node(node_id, saved_architectures[arch_id])
     last_result = None
     while True:
