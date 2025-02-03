@@ -147,6 +147,7 @@ def _read_root_graph(pool, wsock=None, wsock_sem=None):
                     'graph_view' : graph_object 
                 }
             }))
+    print("Get root graph completed!")
 def get_root_graph(wsock, wsock_sem=None):
     cu_executor_pool.get_graph(None)
     t = threading.Thread(target=_read_root_graph, name="GraphResultReaderThread", args=[cu_executor_pool, wsock, wsock_sem], daemon=True)
