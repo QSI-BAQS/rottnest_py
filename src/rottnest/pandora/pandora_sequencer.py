@@ -34,6 +34,10 @@ except:
     print("Connection to Pandora failed")
 
 
+class PandoraGate:
+    def __init__(self, name):
+        self.gate = name
+
 class PandoraSequencer():
     '''
         Pandora based widget sequencer
@@ -48,9 +52,12 @@ class PandoraSequencer():
             max_t = 100,
             max_d = 100,
             batch_size = 100,
-            conn = None
+            conn = None,
+            name = None
         ):
         self.fully_decomposed = True
+
+        self.op = PandoraGate(name)
 
         if conn is None:
             conn = pandora_connection    

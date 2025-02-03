@@ -1,6 +1,12 @@
 import pyLIQTR
 from rottnest.pandora.pandora_sequencer import pandora_connection, PandoraSequencer
 
+from pyLIQTR.qubitization.qubitized_gates import QubitizedRotation, QubitizedReflection
+from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU
+from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
+from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
+
+
 
 class PandoraCache:
 
@@ -31,12 +37,22 @@ pandora_cache = PandoraCache()
 lcu = pyLIQTR.BlockEncodings.PauliStringLCU.PauliStringLCU
 string = 'lcu'
 
+def attach_class(db_name, class_obj):
+    class_str = class_obj.__name__ 
+    conn = pandora_connection.spawn(db_name) 
+    seq = PandoraSequencer(conn=conn)
+    pandora_cache.add_class(class_str, seq)
+
+from pyLIQTR.qubitization.qubitized_gates import QubitizedRotation, QubitizedReflection
+from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU
+from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
+from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
+from qualtran._infra.adjoint import Adjoint
 
 # Skip if pandora is not enabled
 if pandora_connection is not None:
-    conn = pandora_connection.spawn('adjoint') 
-    seq = PandoraSequencer(conn=conn)
-    
-    # TODO:
-    # Blame google's properties for the strcmp
-    pandora_cache.add_class('Adjoint', seq)
+
+    attach_class('adjoint', Adjoint)
+    #attach_class('lcu', PauliStringLCU)
+    #attach_class('prepare_lcu', prepare_pauli_lcu)
+    attach_class('qsp', QSP_Prepare)
