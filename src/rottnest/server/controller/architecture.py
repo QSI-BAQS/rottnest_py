@@ -1,5 +1,6 @@
 from bottle import request, abort 
 from geventwebsocket import WebSocketError
+from threading import Semaphore
 from rottnest.region_builder import json_to_region
 from rottnest.server.model import architecture, graph_view 
 
@@ -13,6 +14,7 @@ def register_routes(app):
 # TODO: Register architecture object
 def handle_websocket():
     wsock = request.environ.get('wsgi.websocket')
+    wsock_sem = Semaphore()
     if not wsock:
         abort(400, 'Expected WebSocket request.')
 
@@ -34,10 +36,11 @@ def handle_websocket():
                 resp = cmd_func(message, 
                                 callback=websocket_response_callback(
                                     wsock, message.get('cmd', 'err')),
-                                wsock = wsock)
+                                wsock = wsock, wsock_sem = wsock_sem)
 
                 architecture.log_resp(resp)
-                wsock.send(resp)
+                with wsock_sem:
+                    wsock.send(resp)
             except WebSocketError:
                 break
             except Exception as e:
@@ -84,10 +87,10 @@ def example_arch(*args, **kwargs):
         'payload': json_to_region.example
     }) 
 
-def run_result(message, *args, wsock=None, **kwargs):
+def run_result(message, *args, wsock=None, wsock_sem=None, **kwargs):
     print("Running!", str(message)[:min(200, len(str(message)))])
     arch_id = message['payload']['arch_id']
-    architecture.run_widget_pool(arch_id, wsock)
+    architecture.run_widget_pool(arch_id, wsock, wsock_sem=wsock_sem)
     return json.dumps({
         'message': 'run_result',
         'payload': { 'status': 'pending' },
@@ -120,9 +123,9 @@ def use_arch(message, *args, **kwargs):
         'arch_id': architecture.save_arch(arch_json_obj)
     })
 
-def get_root_graph(message, *args, wsock=None, **kwargs): 
+def get_root_graph(message, *args, wsock=None, wsock_sem=None, **kwargs,): 
     gobj = message['payload']
-    architecture.get_root_graph(wsock)
+    architecture.get_root_graph(wsock, wsock_sem=wsock_sem)
     return json.dumps({
         'message': 'debug',
         'payload': 'get_root_graph pending'

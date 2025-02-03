@@ -45,15 +45,15 @@ def log_resp(resp: Any):
 
 # TODO reorganise this mess and cull unused
 
-def run_widget_pool(arch_id, wsock=None):
+def run_widget_pool(arch_id, wsock=None, wsock_sem=None):
     print("in run_widget_pool")
     # TODO use more than single object here
     cu_executor_pool.run_sequence([arch_id])
-    t = threading.Thread(target=_read_results, name="ResultReaderThread", args=[cu_executor_pool, wsock], daemon=True)
+    t = threading.Thread(target=_read_results, name="ResultReaderThread", args=[cu_executor_pool, wsock, wsock_sem], daemon=True)
     t.start()
 
 
-def _read_results(pool, wsock=None):
+def _read_results(pool, wsock=None, wsock_sem=None):
     with open("stream_output.json", "w") as f:
         while True:
             result = pool.manager_completion_queue.get()
@@ -67,11 +67,11 @@ def _read_results(pool, wsock=None):
             if result.get("cu_id", "") == "TOTAL":
                 json.dump(result, f)
                 print(file=f)
-
-            wsock.send(json.dumps({
-                'message': 'run_result',
-                'payload': result,
-            }))
+            with wsock_sem:
+                wsock.send(json.dumps({
+                    'message': 'run_result',
+                    'payload': result,
+                }))
             # TODO handle results in this thread
 
 
@@ -137,18 +137,19 @@ def save_arch(arch_json_obj):
     cu_executor_pool.save_arch(arch_id, arch_json_obj)
     return arch_id
 
-def _read_root_graph(pool, wsock=None):
+def _read_root_graph(pool, wsock=None, wsock_sem=None):
     graph_object = pool.manager_priority_completion_queue.get()
-    wsock.send(json.dumps({
-            'message': 'get_root_graph',
-            'payload' : {
-                'gid' : 'cg', #super silly
-                'graph_view' : graph_object 
-            }
-        }))
-def get_root_graph(wsock):
+    with wsock_sem:
+        wsock.send(json.dumps({
+                'message': 'get_root_graph',
+                'payload' : {
+                    'gid' : 'cg', #super silly
+                    'graph_view' : graph_object 
+                }
+            }))
+def get_root_graph(wsock, wsock_sem=None):
     cu_executor_pool.get_graph(None)
-    t = threading.Thread(target=_read_root_graph, name="GraphResultReaderThread", args=[cu_executor_pool, wsock], daemon=True)
+    t = threading.Thread(target=_read_root_graph, name="GraphResultReaderThread", args=[cu_executor_pool, wsock, wsock_sem], daemon=True)
     t.start()
 
 def retrieve_graph_segment(gid):
