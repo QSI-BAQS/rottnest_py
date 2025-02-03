@@ -122,16 +122,11 @@ def use_arch(message, *args, **kwargs):
 
 def get_root_graph(message, *args, wsock=None, **kwargs): 
     gobj = message['payload']
-
-    architecture.cu_executor_pool.get_graph(None)
-    graph_object = architecture.cu_executor_pool.manager_priority_completion_queue.get()
+    architecture.get_root_graph(wsock)
     return json.dumps({
-            'message': 'get_root_graph',
-            'payload' : {
-                'gid' : 'cg', #super silly
-                'graph_view' : graph_object 
-            }
-        })
+        'message': 'debug',
+        'payload': 'get_root_graph pending'
+    })
 
 def get_graph(message, *args, **kwargs):
     gobj = message['payload']

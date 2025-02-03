@@ -137,6 +137,20 @@ def save_arch(arch_json_obj):
     cu_executor_pool.save_arch(arch_id, arch_json_obj)
     return arch_id
 
+def _read_root_graph(pool, wsock=None):
+    graph_object = pool.manager_priority_completion_queue.get()
+    wsock.send(json.dumps({
+            'message': 'get_root_graph',
+            'payload' : {
+                'gid' : 'cg', #super silly
+                'graph_view' : graph_object 
+            }
+        }))
+def get_root_graph(wsock):
+    cu_executor_pool.get_graph(None)
+    t = threading.Thread(target=_read_root_graph, name="GraphResultReaderThread", args=[cu_executor_pool, wsock], daemon=True)
+    t.start()
+
 def retrieve_graph_segment(gid):
     #TODO: Please finish this, not sure what you'd want
     # Provided example layout
