@@ -75,11 +75,21 @@ def run_widget(cabaliser_obj=None, region_obj=None, full_output=False, rz_tag_tr
     # Graph State Scheduler
     try:
         graph_state_orchestration(orc, graph_state)  
-    except:
+    except Exception as e:
         import traceback
         import sys
         traceback.print_exc(file=sys.stderr)
         print(cabaliser_obj, file=sys.stderr)
+        try:
+            tb = traceback.format_exception(e)
+            # Debug output exceptions
+            with open('errors.out', 'a') as f:
+                print('=============file===========', file=f)
+                print(cabaliser_obj, file=f)
+                print('=============tb===========', file=f)
+                print(''.join(tb), file=f)
+        except:
+            pass
 
     bell_in = [BellGate(targ) for targ in cabaliser_obj["statenodes"] if targ is not None]
     bell_out = [BellGate(targ, is_input=False) for targ in cabaliser_obj["outputnodes"] if targ is not None]
