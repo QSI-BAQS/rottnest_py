@@ -136,14 +136,20 @@ def execute_compute_unit(args, worker_results_queue: mp.Queue, is_priority):
         except:
             pass
 
-        stats = {
-            'cu_id': str(compute_unit.unit_id), 
-            'err_type': repr(e), 
-            'traceback': tb,
-            'status': 'error',
-            'cache_hash': cache_hash,
-            'np_qubits': np_qubits,
-        }
+        try:
+            stats = {
+                'cu_id': str(getattr(compute_unit, "unit_id", "ERROR")), 
+                'err_type': repr(e), 
+                'traceback': tb,
+                'status': 'error',
+                'cache_hash': cache_hash,
+                'np_qubits': np_qubits,
+            }
+        except:
+            stats = {
+                'cu_id': "MISSING",
+                'status': 'fatal',
+            }
 
         worker_results_queue.put(stats)
     finally:
