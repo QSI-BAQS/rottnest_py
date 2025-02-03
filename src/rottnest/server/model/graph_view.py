@@ -1,29 +1,33 @@
 from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
 from rottnest.executables import current_executable
 from rottnest.input_parsers.interrupt import INTERRUPT, CACHED
+from rottnest.pandora.pandora_sequencer import PandoraSequencer
 
 # TODO:
 # Going back should flush the view cache
 view_cache = {}
 hash_cache = {}
 
+GRAPH_LIMIT = 100
+
 def get_graph(graph_id=None):
    
     if graph_id is None:
         prefix = ''
-        pyliqtr_obj = current_executable.current_executable() 
+        parser = PyliqtrParser(current_executable.current_executable())
+        parser.parse()
     else:
         prefix = graph_id
-        pyliqtr_obj = view_cache[graph_id].parser 
-
-    parser = PyliqtrParser(pyliqtr_obj) 
-    parser.parse()
+        parser = view_cache[graph_id].parser 
 
     graph = []
 
+    count = 0
+
     # TODO: move the view logic to view
     for node in parser.unroll_graph(prefix=prefix):
-
+        count += 1
+        if count > GRAPH_LIMIT: break
         handle_id = node.handle_id
         expands = False
 
@@ -35,7 +39,8 @@ def get_graph(graph_id=None):
             else: # Cache with name triggers cache set
                 # Node triggers cache update
                 hash_cache[node.rottnest_hash] = node 
-            
+        if node.rottnest_hash is None:
+            expands = False
         # Populate the view cache
         view_cache[handle_id] = node
 

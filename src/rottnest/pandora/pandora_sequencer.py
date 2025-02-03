@@ -18,7 +18,7 @@ from rottnest.pandora.proxy_cirq_parser import ProxyCirqParser
 # TODO: Break this out
 default = {
   "database":"postgres",
-  "user":"alan",
+  "user":"jqxcz",
   "host":"localhost",
   "port":"5555",
   "password":"1234"
@@ -31,6 +31,7 @@ try:
               max_time=3600,
               decomposition_window_size=1000000)
 except:
+    pandora_connection = None
     print("Connection to Pandora failed")
 
 
@@ -80,7 +81,7 @@ class PandoraSequencer():
         '''
             Returns proxied cirq parser objects
         '''
-        for compute_unit in sequence_pandora:
+        for compute_unit in self.sequence_pandora():
             yield ProxyCirqParser(compute_unit.op_seq, len(compute_unit))
           
     def parse(self):
