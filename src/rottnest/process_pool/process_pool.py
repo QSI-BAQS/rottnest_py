@@ -143,9 +143,9 @@ class ComputeUnitExecutorPoolManager:
             if not self.manager_task_queue.empty():
                 if self.run_task(): break
 
-    def send_total(self):
+    def send_total(self, cu_id="TOTAL"):
         totals = self.compute_unit_result_cache[None]
-        totals['cu_id'] = "TOTAL"
+        totals['cu_id'] = cu_id
         self.manager_completion_queue.put(totals)
     
     def run_task(self):
@@ -239,6 +239,7 @@ class ComputeUnitExecutorPoolManager:
             print(f"unaccounted items: {self.n_submitted - self.n_received - self.n_error}")
 
         self.send_total()
+        self.send_total("endcomp")
         # print(compute_unit_counts, compute_unit_totals, compute_unit_result_cache)
         self.manager_completion_queue.put('done')
 
