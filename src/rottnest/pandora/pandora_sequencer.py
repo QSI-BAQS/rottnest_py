@@ -14,17 +14,10 @@ from rottnest.pandora.pandora_qubit_label_tracker import PandoraQubitLabelTracke
 
 from rottnest.pandora.proxy_cirq_parser import ProxyCirqParser
 
+from rottnest.pandora.pandora_pg import pandora_pg_config_load, pandora_pg_default_path
 
-# TODO: Break this out
-default = {
-  "database":"postgres",
-  "user":"jqxcz",
-  "host":"localhost",
-  "port":"5555",
-  "password":"1234"
-}
-# TODO make this nicer
-config = PandoraConfig(**default)
+is_from_file, pgcfg = pandora_pg_config_load(pandora_pg_default_path)
+config = PandoraConfig(**pgcfg)
 
 try:
     pandora_connection = Pandora(pandora_config=config,
@@ -32,7 +25,7 @@ try:
               decomposition_window_size=1000000)
 except:
     pandora_connection = None
-    print("Connection to Pandora failed")
+print("Connection to Pandora failed")
 
 
 class PandoraSequencer():
