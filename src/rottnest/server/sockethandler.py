@@ -8,11 +8,6 @@ import json
 
 resp = responder.responder
 
-
-for (k, v) in resp.response_map.items():
-    print(k)
-    print(v)
-
 def register_routes(app):
    app.route("/websocket", callback=handle_websocket)
 
