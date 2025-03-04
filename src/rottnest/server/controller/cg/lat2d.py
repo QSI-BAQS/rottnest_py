@@ -1,0 +1,46 @@
+
+from rottnest.server.model import architecture 
+from rottnest.server.responder import responder
+
+@responder.register('get_root_graph')
+def get_root_graph(app, message, **kwargs): 
+    wsock = app.wsock
+    wsock_sem = app.wsock_sem
+    #gobj = message['payload']
+    architecture.get_root_graph(wsock, wsock_sem=wsock_sem)
+    return { 'payload': 'get_root_graph pending' }
+
+
+@responder.register('get_graph')
+def get_graph(app, message, **kwargs):
+    gobj = message['payload']
+    
+    architecture.cu_executor_pool.get_graph(gobj['gid'])
+    graph_object = architecture.cu_executor_pool \
+        .manager_priority_completion_queue.get()
+    
+    return  {
+                'gid' : gobj['gid'], #super silly
+                'graph_view' : graph_object 
+            }
+
+
+@responder.register('get_status')
+def get_status(app, message, **kwargs):
+    cu_id = message['cu_id']
+    #'message': 'status_response',
+    return architecture.get_status(cu_id),
+
+
+@responder.register("run_graph_node")
+def run_graph_node(app, message, **kwargs):
+    gid = message['payload']['gid']
+    return architecture.run_debug3(gid)
+
+
+@responder.register("run_result")
+def run_result(message, *args, wsock=None, wsock_sem=None, **kwargs):
+    print("Running!", str(message)[:min(200, len(str(message)))])
+    arch_id = message['payload']['arch_id']
+    architecture.run_widget_pool(arch_id, wsock, wsock_sem=wsock_sem)
+    return { 'status': 'pending' },
