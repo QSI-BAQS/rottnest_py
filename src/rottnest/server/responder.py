@@ -2,6 +2,89 @@
 import inspect
 import json
 
+class Result:
+
+    def __init__(self, pkg):
+        """
+           Constructor, initialises the fields to defaults
+           unless pkg contains a value for: result, message and/or obj 
+        """
+        self.result = 'ok' if 'result' not in pkg else pkg['result']
+        self.message = '' if 'message' not in pkg else pkg['message']
+        self.obj = None if 'obj' not in pkg else pkg['obj']
+        
+
+    @staticmethod
+    def Ok(obj):
+        """
+           Labels the result as okay, if
+           an object of this nature is absent,
+           it will use the defaults as part of the
+           constructor
+        """
+        return Result({
+                          'result': 'ok',
+                          'obj' : obj
+                      })
+        
+
+    @staticmethod
+    def Alt(msgkind, obj):
+        """
+           Labels the result as Alt,
+           used for redirecting and sending
+           a different response kind
+        """
+        return Result({
+            'result': 'alt',
+            'message': msgkind,
+            'obj': obj
+        })
+
+    @staticmethod
+    def Err(msg):
+        """
+           Labels the result as Error, if
+           an object of this nature is absent,
+           it will use the defaults as part of the
+           constructor
+        """
+        return Result({
+            'result': 'err',
+            'obj': msg 
+        })
+
+    def is_ok(self):
+        """
+            Checks to see if Ok kind
+        """
+        return self.result == 'ok'
+
+    def is_err(self):
+        """
+            Checks to see if Error kind
+        """
+        return self.result == 'err'
+
+    def is_alt(self):
+        """
+            Checks to see if Alt kind
+        """
+        return self.result == 'alt'
+
+    def get_obj(self):
+        """
+            Getter for the object
+        """
+        return self.obj
+
+    def get_message(self):
+        """
+            Getter for the result message, for
+            Alt types specifically
+        """
+        return self.message
+
 class ResponseValidationException(Exception):
     """
         Exception to outline that the validation on the
@@ -72,6 +155,7 @@ class Responder:
            format
         """
         serfmt_fn = self.serialization_fn
+        modmask = self.namespace_mask
         def _respwrap(responsefn):
             msgkind = messagekind
 
@@ -81,17 +165,38 @@ class Responder:
             full_qualname = '_'.join([modname, msgkind])
             
             def _invoke_wrapper(app, message, **kwargs):
-                result = responsefn(app, message, kwargs)
+                result = responsefn(app, message, **kwargs)
+
                 payload = {}
-                if result is not None:
-                    payload = result
+                alt_message = False
+                
+                if isinstance(result, Result):
+                      if result.is_alt():
+                          alt_message = True
+                if alt_message:
+                    msg = {
+                        'message': result.get_message(),
+                        'payload': result.get_obj()
+                    }
 
-                msg = {
-                    'message': full_qualname,
-                    payload: payload
-                }
+                    return serfmt_fn(msg)
+                else:
+                    if result is not None:
+                        if isinstance(result, Result):
+                            payload = result.get_obj()
+                        else:
+                            payload = result
+                    nfq = full_qualname
+                    if not self.full_namespace:
+                        nfq = nfq.replace(modmask, '')
+                    if self.convert_dots:
+                        nfq = nfq.replace('.', '_')
+                    msg = {
+                        'message': nfq,
+                        'payload': payload
+                    }
 
-                return serfmt_fn(msg)
+                    return serfmt_fn(msg)
                     
             
             self.register_response(modname, msgkind, _invoke_wrapper)

@@ -1,6 +1,6 @@
 
 from rottnest.server.model import architecture 
-from rottnest.server.responder import responder
+from rottnest.server.responder import responder, Result
 
 @responder.register('get_root_graph')
 def get_root_graph(app, message, **kwargs): 
@@ -8,7 +8,7 @@ def get_root_graph(app, message, **kwargs):
     wsock_sem = app.wsock_sem
     #gobj = message['payload']
     architecture.get_root_graph(wsock, wsock_sem=wsock_sem)
-    return { 'payload': 'get_root_graph pending' }
+    return Result.Alt('debug', 'get_root_graph pending')
 
 
 @responder.register('get_graph')

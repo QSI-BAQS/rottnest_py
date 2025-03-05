@@ -4,9 +4,12 @@ from threading import Semaphore
 from rottnest.server.model import architecture 
 from rottnest.server.application import RottApplication
 from rottnest.server.responder import responder
+from rottnest.server.controller.arch import lat2d as archlat2d
+from rottnest.server.controller.cg import lat2d as cglat2d
+
 import json
 
-resp = responder.responder
+resp = responder
 
 def register_routes(app):
    app.route("/websocket", callback=handle_websocket)

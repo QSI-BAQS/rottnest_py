@@ -22,7 +22,7 @@ def get_status(app, message, **kwargs):
 
 @responder.register('get_subtypes')
 def get_subtype(app, message, **kwargs):
-    return { 'subtypes': architecture.get_region_subtypes() }
+    return architecture.get_region_subtypes()
 
 @responder.register('get_result')
 def run_result(app, message, **kwargs):
