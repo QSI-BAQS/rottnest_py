@@ -24,12 +24,11 @@ def get_status(app, message, **kwargs):
 def get_subtype(app, message, **kwargs):
     return architecture.get_region_subtypes()
 
-@responder.register('get_result')
+
+@responder.register("run_result")
 def run_result(app, message, **kwargs):
-    #print("Running!", str(message)[:min(200, len(str(message)))])
-    wsock = app.wsock
-    wsock_sem = app.wsock_sem
+    wsock=app.wsock
+    wsock_sem=app.wsock_sem
     arch_id = message['payload']['arch_id']
     architecture.run_widget_pool(arch_id, wsock, wsock_sem=wsock_sem)
     return { 'status': 'pending' }
-

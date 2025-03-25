@@ -38,9 +38,3 @@ def run_graph_node(app, message, **kwargs):
     return architecture.run_debug3(gid)
 
 
-@responder.register("run_result")
-def run_result(message, *args, wsock=None, wsock_sem=None, **kwargs):
-    print("Running!", str(message)[:min(200, len(str(message)))])
-    arch_id = message['payload']['arch_id']
-    architecture.run_widget_pool(arch_id, wsock, wsock_sem=wsock_sem)
-    return { 'status': 'pending' },

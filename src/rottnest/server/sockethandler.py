@@ -74,7 +74,8 @@ def websocket_response_callback(ws, message_type):
         ws.send(resp)
     return _callback
 
-def err(message, *args, **kwargs):
+def err(app, message, *args, **kwargs):
+    print(str(message))
     return json.dumps({
         'message': 'err',
         'desc': f"Error: {message['message']} not recognised"
