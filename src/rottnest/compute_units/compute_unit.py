@@ -9,7 +9,8 @@ class ComputeUnit():
     '''
         Wrapped object for sending
     '''
-    def __init__(self, architecture, unit_id: str=None):
+    def __init__(self, architecture, *, unit_id: str=None, mem_bound=None):
+
 
         # TODO: mem bounds from architecture 
         global counter
@@ -17,7 +18,7 @@ class ComputeUnit():
         self.unit_id = counter 
         counter += 1
 
-        self.memory_bound = 100 # Should be equal to number of registers
+        self.memory_bound = mem_bound # Should be equal to number of registers
         self.architecture = architecture 
         self.sequences = list()
         

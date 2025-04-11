@@ -18,7 +18,7 @@ from rottnest.pandora.proxy_cirq_parser import ProxyCirqParser
 # TODO: Break this out
 default = {
   "database":"postgres",
-  "user":"jqxcz",
+  "user":"alan",
   "host":"localhost",
   "port":"5555",
   "password":"1234"

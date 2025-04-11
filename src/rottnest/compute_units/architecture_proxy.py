@@ -81,6 +81,12 @@ class ArchitectureProxy(object):
     def num_qubits(self):
         return self.num_registers
 
+    def mem_bound(self): 
+        '''
+            Overridable method
+        '''
+        return self.num_registers
+
     def to_json(self):
         return self.underlying_json
 

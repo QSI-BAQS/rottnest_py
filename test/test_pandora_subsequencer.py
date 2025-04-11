@@ -38,16 +38,9 @@ def arch_constructor(n_qubits):
     saved_architectures[666] = ProxyArch() 
     return 666 
 
-#N=5
-# TODO FIX
-#hsh = b'\xd6\xb6\xd3]\xbfM\x01-\xcc\x80\x96?\xaa\xe7\x1f\xdb'
-#arch = arch_constructor(100) 
-#pandora_cache[hsh] = PandoraSequencer(arch)
-
-
 class SequencerTest(unittest.TestCase):
 
-    def test_fh(self, N=2, debug=True):
+    def test_fh(self, N=70, debug=True):
 
         if debug:
             start = time.time()
@@ -72,7 +65,10 @@ class SequencerTest(unittest.TestCase):
         for compute_unit in seq.sequence_pyliqtr(parser):
 
             if compute_unit != INTERRUPT: 
+                # Graph State compilation
                 widget = compute_unit.compile_graph_state()
+
+                # Full Compilation
                 #run_widget(cabaliser_obj=widget.json(), region_obj=test_region_obj, full_output=False, rz_tag_tracker=shared_rz_tag_tracker)
                 cnt += 1
 
