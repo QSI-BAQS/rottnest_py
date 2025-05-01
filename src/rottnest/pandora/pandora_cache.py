@@ -6,8 +6,6 @@ from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU
 from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
 from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
 
-
-
 class PandoraCache:
 
     def __init__(self):
@@ -31,17 +29,40 @@ class PandoraCache:
     def add_hash(self, hash_obj, obj): 
         self.hash_cache[hash_obj] = obj
 
-
 pandora_cache = PandoraCache() 
 
 lcu = pyLIQTR.BlockEncodings.PauliStringLCU.PauliStringLCU
 string = 'lcu'
 
 def attach_class(db_name, class_obj):
+    '''
+        Attaches a class hook to the cache 
+    '''
     class_str = class_obj.__name__ 
     conn = pandora_connection.spawn(db_name) 
     seq = PandoraSequencer(conn=conn)
     pandora_cache.add_class(class_str, seq)
+
+def architecture_bind(architecture):
+    '''
+        Extract pandora sequence parameters based on the architecture
+    '''
+    n_registers = architecture.mem_bound()
+    max_t = n_registers // 3 
+    max_d = n_registers // 3 
+    batch_size = n_registers 
+    update_sequencer(max_t=max_t, max_d=max_d, batch_size=batch_size)
+
+def update_sequencer(*args, **kwargs):
+    '''
+        Updates parameters for Pandora sequencers
+    '''
+    for seq in pandora_cache.hash_cache.values():
+        seq.set_params(*args, **kwargs)
+
+    for seq in pandora_cache.class_cache.values():
+        seq.set_params(*args, **kwargs)
+
 
 from pyLIQTR.qubitization.qubitized_gates import QubitizedRotation, QubitizedReflection
 from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU
@@ -50,6 +71,7 @@ from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
 from qualtran._infra.adjoint import Adjoint
 
 # Skip if pandora is not enabled
+# This should be promoted to a module for each circuit that is to be constructed and run  
 if pandora_connection is not None:
 
     attach_class('adjoint', Adjoint)

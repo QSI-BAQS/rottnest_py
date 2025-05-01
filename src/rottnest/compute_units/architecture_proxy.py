@@ -1,6 +1,8 @@
 import abc
 import math as maths
 from rottnest.region_builder.json_to_region import json_to_layout
+
+# TODO Turn this dependency into a generic interface 
 from t_scheduler.region.widget_region import RegionStats 
 
 saved_architectures = {}
@@ -71,9 +73,9 @@ class ArchitectureProxy(object):
         stats = sum((region.stats for region in regions), start=RegionStats())
         self.stats = stats
 
-        self.num_registers = stats.num_registers  
-        self.num_t_buffers = stats.num_t_buffers
-        self.num_bell_buffers = stats.num_bell_buffers
+        self.num_registers = stats.num_registers() 
+        self.num_t_buffers = stats.num_t_buffers()
+        self.num_bell_buffers = stats.num_bell_buffers()
 
         # self.bell_rate = bell_rate
         # self.t_rate = t_rate
@@ -83,7 +85,7 @@ class ArchitectureProxy(object):
 
     def mem_bound(self): 
         '''
-            Overridable method
+            Over-rideable method
         '''
         return self.num_registers
 

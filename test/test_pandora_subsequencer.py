@@ -12,35 +12,15 @@ import qualtran
 
 # imports 
 import time
-from rottnest.compute_units.architecture_proxy import ArchitectureProxy, saved_architectures
 
-from rottnest.pandora.pandora_cache import pandora_cache
+from proxy_arch import arch_factory 
+
+from rottnest.pandora.pandora_cache import pandora_cache, architecture_bind
 from rottnest.pandora.pandora_sequencer import PandoraSequencer 
-
-def arch_constructor(n_qubits):
-    class ProxyArch(ArchitectureProxy):
-        def __new__(cls): 
-            return object.__new__(ProxyArch)
-
-        def check_pregenerated(self):
-            return True
-
-        def __init__(self, *args, **kwargs): 
-            pass
-
-        def num_qubits(self):
-            return n_qubits 
-        
-        def underlying_json(self):
-            return ""
-
-    saved_architectures[666] = object()
-    saved_architectures[666] = ProxyArch() 
-    return 666 
 
 class SequencerTest(unittest.TestCase):
 
-    def test_fh(self, N=70, debug=True):
+    def test_fh(self, N=70, arch_qubits=100, debug=True):
 
         if debug:
             start = time.time()
@@ -54,8 +34,11 @@ class SequencerTest(unittest.TestCase):
         parser = PyliqtrParser(fh)
         parser.parse()
 
-        arch = arch_constructor(100) 
-        seq = Sequencer(arch)
+        arch_id = 666
+        arch = arch_factory(n_qubits=arch_qubits, arch_id=arch_id)
+        architecture_bind(arch)
+        
+        seq = Sequencer(arch_id)
 
         if debug:
             start = time.time()

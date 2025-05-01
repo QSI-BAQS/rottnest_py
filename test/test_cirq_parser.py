@@ -32,7 +32,7 @@ class CirqTest(unittest.TestCase):
         wid.decompose()
 
         return wid.get_n_qubits()
-    
+
     def test_ghz(self):
         prev_msg_len = 0
         for i in range(2, 5000, 169):
@@ -47,4 +47,6 @@ class CirqTest(unittest.TestCase):
 if __name__ == '__main__':
     time.sleep(0.1)
     print()
-    unittest.main()
+    tst = CirqTest()
+    tst.test_ghz()
+    #unittest.main()

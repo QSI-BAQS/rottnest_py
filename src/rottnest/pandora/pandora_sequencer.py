@@ -14,25 +14,18 @@ from rottnest.pandora.pandora_qubit_label_tracker import PandoraQubitLabelTracke
 
 from rottnest.pandora.proxy_cirq_parser import ProxyCirqParser
 
+from rottnest.pandora.pandora_pg import pandora_pg_config_load, pandora_pg_default_path
 
-# TODO: Break this out
-default = {
-  "database":"postgres",
-  "user":"alan",
-  "host":"localhost",
-  "port":"5555",
-  "password":"1234"
-}
-# TODO make this nicer
-config = PandoraConfig(**default)
+is_from_file, pgcfg = pandora_pg_config_load(pandora_pg_default_path)
+config = PandoraConfig(**pgcfg)
 
-try:
-    pandora_connection = Pandora(pandora_config=config,
-              max_time=3600,
-              decomposition_window_size=1000000)
-except:
-    pandora_connection = None
-    print("Connection to Pandora failed")
+#try:
+pandora_connection = Pandora(pandora_config=config,
+          max_time=3600,
+          decomposition_window_size=1000000)
+#except:
+#    pandora_connection = None
+#print("Connection to Pandora failed")
 
 
 class PandoraGate:
@@ -76,6 +69,59 @@ class PandoraSequencer():
         self.max_t = max_t
         self.max_d = max_d
         self.batch_size = batch_size
+
+    def set_sequence_length(self, sequence_length: int):
+        '''
+            Setter for sequence length
+        '''
+        self.sequence_length = sequence_length
+
+    def set_max_t(self, max_t: int):
+        '''
+            Setter for max_t 
+        '''
+        self.max_t = max_t
+       
+    def set_max_t(self, max_t: int):
+        '''
+            Setter for max_t 
+        '''
+        self.max_t = max_t
+
+    def set_max_d(self, max_d: int):
+        '''
+            Setter for max_d 
+        '''
+        self.max_d = max_d
+
+    def set_batch_size(self, batch_size: int):
+        '''
+            Setter for batch_size 
+        '''
+        self.batch_size = batch_size
+
+    def set_params(
+        self,
+        *,  # Kwargs only
+        sequence_length: int | None = None,
+        max_t: int | None = None,
+        max_d: int | None = None,
+        batch_size: int | None = None):
+        '''
+            Multi-parameter setter
+        '''
+
+        if sequence_length is not None: 
+            self.sequence_length = sequence_length
+
+        if max_t is not None: 
+            self.max_t = max_t
+
+        if max_d is not None: 
+            self.max_d = max_d
+
+        if batch_size is not None: 
+            self.batch_size = batch_size
 
     def traverse(self):
         '''

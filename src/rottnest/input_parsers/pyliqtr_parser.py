@@ -145,6 +145,7 @@ class PyliqtrParser:
                 yield CACHED(rottnest_hash, request_type=CACHED.START, non_participatory_qubits=non_participatory)
                 op = parser.op
                 if op is not None:
+                    # Use the operation as a key for the pandora cache 
                     op = type(op.gate).__name__
                 pandora_seq = pandora_cache.in_cache(op, hash_obj = parser.rottnest_hash)
                 if pandora_seq is not None:

@@ -11,7 +11,6 @@ class ComputeUnit():
     '''
     def __init__(self, architecture, *, unit_id: str=None, mem_bound=None):
 
-
         # TODO: mem bounds from architecture 
         global counter
         
