@@ -20,7 +20,8 @@ class Sequencer():
         self._architecture_proxies = list(map(ArchitectureProxy, architectures))
         self.priority_shim = []
 
-        self.sequence_length = sequence_length
+        # TODO: Update the length dynamically  
+        self.sequence_length = self._architecture_proxies[0].mem_bound()
 
         if global_context is None:
             global_context = QubitLabelTracker()
@@ -70,8 +71,10 @@ class Sequencer():
                         continue
 
                 gate_count += len(op_seq)
-                # Saturated memory bound 
-                if op_seq.n_rz_operations + 2 * len(cirq_parser) > compute_unit.memory_bound * compactness:
+
+                curr_memory = compute_unit.n_rz_operations + 2 * len(cirq_parser)
+                # This doesn't track additional qubit allocations
+                if curr_memory + op_seq.n_rz_operations > compute_unit.memory_bound * compactness:
                     compute_unit.append(op_seq)
 
                     local_context = cirq_parser.extract_context()

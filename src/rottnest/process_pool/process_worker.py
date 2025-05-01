@@ -52,11 +52,11 @@ def execute_graph_node(node_hash, arch_obj, worker_results_queue: mp.Queue):
     # Yields (compute_unit, rz_tag_tracker, full_output)
     wrapped_it = ((obj, shared_rz_tag_tracker, True, None, None) for obj in it)
 
+    # Should only be one compute unit per obj
+    # Iterator here is for sanity checking  
     for args in wrapped_it:
         print(args)
         execute_compute_unit(args, worker_results_queue, True)
-        # TODO delete after demo: only run first compute unit
-        break
 
     worker_results_queue.put('end')
 

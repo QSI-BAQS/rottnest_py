@@ -52,9 +52,9 @@ def architecture_bind(arch_id: int):
     # TODO move to convex bound model in Pandora
     arch = ArchitectureProxy(arch_id)
     n_registers = arch.mem_bound()
-    max_t = n_registers // 3
-    max_d = n_registers // 3
-    batch_size = n_registers // 3
+    max_t = n_registers 
+    max_d = n_registers
+    batch_size = n_registers
     update_sequencer(max_t=max_t, max_d=max_d, batch_size=batch_size)
 
 def update_sequencer(*args, **kwargs):
