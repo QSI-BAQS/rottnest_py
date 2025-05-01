@@ -1,5 +1,6 @@
 import pyLIQTR
 from rottnest.pandora.pandora_sequencer import pandora_connection, PandoraSequencer
+from rottnest.compute_units.architecture_proxy import ArchitectureProxy
 
 from pyLIQTR.qubitization.qubitized_gates import QubitizedRotation, QubitizedReflection
 from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU
@@ -43,14 +44,17 @@ def attach_class(db_name, class_obj):
     seq = PandoraSequencer(conn=conn)
     pandora_cache.add_class(class_str, seq)
 
-def architecture_bind(architecture):
+def architecture_bind(arch_id: int):
     '''
         Extract pandora sequence parameters based on the architecture
     '''
-    n_registers = architecture.mem_bound()
-    max_t = n_registers // 3 
-    max_d = n_registers // 3 
-    batch_size = n_registers 
+    # Assumes deterministic generation / caching
+    # TODO move to convex bound model in Pandora
+    arch = ArchitectureProxy(arch_id)
+    n_registers = arch.mem_bound()
+    max_t = n_registers // 3
+    max_d = n_registers // 3
+    batch_size = n_registers // 3
     update_sequencer(max_t=max_t, max_d=max_d, batch_size=batch_size)
 
 def update_sequencer(*args, **kwargs):

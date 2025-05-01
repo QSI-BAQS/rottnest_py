@@ -73,9 +73,9 @@ class ArchitectureProxy(object):
         stats = sum((region.stats for region in regions), start=RegionStats())
         self.stats = stats
 
-        self.num_registers = stats.num_registers() 
-        self.num_t_buffers = stats.num_t_buffers()
-        self.num_bell_buffers = stats.num_bell_buffers()
+        self.num_registers = stats.num_registers 
+        self.num_t_buffers = stats.num_t_buffers
+        self.num_bell_buffers = stats.num_bell_buffers
 
         # self.bell_rate = bell_rate
         # self.t_rate = t_rate

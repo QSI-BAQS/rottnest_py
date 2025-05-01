@@ -444,9 +444,9 @@ class ComputeUnitExecutorPool:
 
         # TODO: De-hard code this at some point
         global saved_architectures
-        arch = saved_architestures(arch_ids[0])
+
         # Set the pandora union find based on the architecture
-        pandora_cache.architecture_bind(arch)
+        pandora_cache.architecture_bind(arch_ids[0])
 
         parser = PyliqtrParser(current_executable())
         parser.parse()
