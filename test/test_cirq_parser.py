@@ -32,7 +32,7 @@ class CirqTest(unittest.TestCase):
         wid.decompose()
 
         return wid.get_n_qubits()
-    
+
     def test_ghz(self):
         prev_msg_len = 0
         for i in range(2, 5000, 169):
@@ -44,21 +44,9 @@ class CirqTest(unittest.TestCase):
             prev_msg_len = len(msg)
 
 
-#n_qubits = 100 
-#g = CirqTest() 
-#
-#circ = g.ghz(n_qubits=n_qubits)
-#op = operation_sequence.OperationSequence(n_qubits)
-#qubit_labels = cirq_parser.QubitLabelTracker()
-#rz_tracker = cirq_parser.RzTagTracker() 
-#
-#for moment in circ:
-#    for gate in moment:
-#        gate._parse_cabaliser(op, qubit_labels, rz_tracker) 
-#
-
-
 if __name__ == '__main__':
     time.sleep(0.1)
     print()
-    unittest.main()
+    tst = CirqTest()
+    tst.test_ghz()
+    #unittest.main()

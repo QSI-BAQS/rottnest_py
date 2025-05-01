@@ -115,6 +115,8 @@ class SequencerTest(unittest.TestCase):
                 widget = compute_unit.compile_graph_state()
                 #run_widget(cabaliser_obj=widget.json(), region_obj=test_region_obj, full_output=False, rz_tag_tracker=shared_rz_tag_tracker)
                 cnt += 1
+                print(widget)
+                raise Exception
 
         if debug:
             runtime = time.time() - start

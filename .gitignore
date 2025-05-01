@@ -6,4 +6,4 @@ errors.out
 **/gridsynth/*.hi
 **/gridsynth/*.o
 **/gridsynth/gridsynth
-stream_output.json
+**.json

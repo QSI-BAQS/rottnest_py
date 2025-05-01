@@ -24,11 +24,6 @@ or implied. See the License for the specific language governing permissions and 
 the License.
 '''
 
-from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
-from rottnest.input_parsers.cirq_parser import CirqParser
-from rottnest.compute_units.sequencer import Sequencer
-
-
 # pyLIQTR 1.3.3
 from pyLIQTR.ProblemInstances.getInstance import getInstance
 from pyLIQTR.clam.lattice_definitions import SquareLattice

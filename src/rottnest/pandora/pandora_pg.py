@@ -4,7 +4,7 @@ import json
 pandora_pg_default_path = 'pandora_pg.json'
 default_cfg = {
   "database":"postgres",
-  "user":"postgres",
+  "user":"alan",
   "host":"localhost",
   "port":"5555",
   "password":"1234"
@@ -65,4 +65,4 @@ def pandora_pg_config_load(path):
     except:
         print('Unable to open file, using default')
 
-    return (False, default)
+    return (False, default_cfg)
