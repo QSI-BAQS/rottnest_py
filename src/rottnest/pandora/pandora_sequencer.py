@@ -19,13 +19,19 @@ from rottnest.pandora.pandora_pg import pandora_pg_config_load, pandora_pg_defau
 is_from_file, pgcfg = pandora_pg_config_load(pandora_pg_default_path)
 config = PandoraConfig(**pgcfg)
 
-#try:
-pandora_connection = Pandora(pandora_config=config,
+
+"""
+Try-Except case here is to catch when the config is not available and attempt to use a basic
+    variant before ultimately quitting
+     
+"""
+try:
+    pandora_connection = Pandora(pandora_config=config,
           max_time=3600,
           decomposition_window_size=1000000)
-#except:
-#    pandora_connection = None
-#print("Connection to Pandora failed")
+except:
+    pandora_connection = None
+    print("Connection to Pandora failed")
 
 
 class PandoraGate:
