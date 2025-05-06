@@ -4,6 +4,7 @@ import random
 from typing import Any
 import threading
 
+from rottnest.server.responder import Result
 # Ill advised, but forces the generation and capture of the region types
 from t_scheduler.region import * 
 from t_scheduler.region.region_types import region_types, region_args
@@ -69,7 +70,7 @@ def _read_results(pool, wsock=None, wsock_sem=None):
                 print(file=f)
             with wsock_sem:
                 wsock.send(json.dumps({
-                    'message': 'run_result',
+                    'message': 'arch_lat2d_run_result',
                     'payload': result,
                 }))
             # TODO handle results in this thread
@@ -93,7 +94,7 @@ def run_debug(arch_id, wsock):
     if 'traceback' in result:
         print(''.join(result['traceback']))
     wsock.send(json.dumps({
-        "message": "run_result",
+        "message": "arch_lat2d_run_result",
         "payload": result,
     }))
 
@@ -104,10 +105,11 @@ def run_debug3(node_id, arch_id=None):
         try:
             arch_id = next(iter(saved_architectures.keys()))
         except:
-            return json.dumps({
-                "message": "err",
-                "payload": "No architecture submitted yet!",
-            })
+            #return json.dumps({
+            #    "message": "err",
+            #    "payload": "No architecture submitted yet!",
+            #})
+            return Result.Err("No architecture submitted yet!")
     cu_executor_pool.run_priority_graph_node(node_id, saved_architectures[arch_id])
     last_result = None
     while True:
@@ -119,10 +121,13 @@ def run_debug3(node_id, arch_id=None):
     print("priority test got result", str(result)[:200], "<...truncated>")
     if isinstance(result, dict) and 'traceback' in result:
         print(''.join(result['traceback']))
-    return json.dumps({
-        "message": "run_result",
-        "payload": result,
-    })
+
+    #return json.dumps({
+    #    "message": "arch_lat2d_run_result",
+    #    "payload": result,
+    #})
+    return result
+
 # END mess
 
 def get_router_mapping():
@@ -141,7 +146,7 @@ def _read_root_graph(pool, wsock=None, wsock_sem=None):
     graph_object = pool.manager_priority_completion_queue.get()
     with wsock_sem:
         wsock.send(json.dumps({
-                'message': 'get_root_graph',
+                'message': 'cg_lat2d_get_root_graph',
                 'payload' : {
                     'gid' : 'cg', #super silly
                     'graph_view' : graph_object 
