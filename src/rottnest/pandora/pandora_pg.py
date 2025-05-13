@@ -4,7 +4,7 @@ import json
 pandora_pg_default_path = 'pandora_pg.json'
 default_cfg = {
   "database":"postgres",
-  "user":"alan",
+  "user": os.getlogin(),
   "host":"localhost",
   "port":"5555",
   "password":"1234"
@@ -40,7 +40,6 @@ def pandora_pg_config_load(path):
                ('port', str), ('password', str)]
     
     cfgpath = ''.join([os.getcwd(),'/',path]) 
-    print(cfgpath) 
     try: 
         cfgfile = open(cfgpath, 'r')
         cfglines = ''.join(cfgfile.readlines())
@@ -55,9 +54,9 @@ def pandora_pg_config_load(path):
                     raise PandoraPGValidationError
 
             return (True, pgdata)
-        except PandoraPGKeyMissingError as pgerr:
+        except PandoraPGKeyMissingError as _pgerr:
             print('Key missing in pandora-postgres configuration')
-        except PandoraPGValidationError as pgerr:
+        except PandoraPGValidationError as _pgerr:
             print('Validation on pandora-postgres configuration failed')
         except Exception as err:
             print(err)
