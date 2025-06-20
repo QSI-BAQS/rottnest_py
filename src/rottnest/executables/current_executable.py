@@ -1,4 +1,9 @@
-from rottnest.executables import fermi_hubbard
+from rottnest.executables import executables 
 from functools import partial
 
-current_executable = partial(fermi_hubbard.make_fh_circuit, N=5)
+from ecj.executable import ECJ 
+#current_executable = executables.FermiHubbard(N=20)
+
+current_executable = ECJ(30, 5)
+
+

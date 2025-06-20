@@ -1,54 +1,43 @@
-'''
-This file contains functions that were written by Tyler Wilson are released under and apache license by Rigetti under Apache 2.0. 
+from rottnest.executables.executable import RottnestExecutable
 
-Elements of this file have been changed by the authors of this project. In keeping with the terms of the Apache 2.0 license we retain the original copyright notice with attribution.
+from rottnest.executables import fermi_hubbard_rigetti 
 
-Copyright 2022-2024 Rigetti & Co, LLC
+class FermiHubbard(RottnestExecutable):
+    '''
+        Fermi Hubbard Model
+    '''
+    def __init__(self,
+        N=5,
+        p_algo=0.95,
+        times=1.0
+        ):
+        '''
+            Constructor
+        '''
+        
+        self.N = N
+        self.p_algo = p_algo
+        self.times = times
+                 
+        self.precompute()
 
-This Computer Software is developed under Agreement HR00112230006 between Rigetti & Co, LLC and
-the Defense Advanced Research Projects Agency (DARPA). Use, duplication, or disclosure is subject
-to the restrictions as stated in Agreement HR00112230006 between the Government and the Performer.
-This Computer Software is provided to the U.S. Government with Unlimited Rights; refer to LICENSE
-file for Data Rights Statements. Any opinions, findings, conclusions or recommendations expressed
-in this material are those of the author(s) and do not necessarily reflect the views of the DARPA.
+    @staticmethod
+    def get_parameters():
+        '''
+            Returns the parameters of the executable 
+            This can then be passed to the front-end
+        '''
+        return {'N':int, 'p_algo':float, 'times':float}
 
-Use of this work other than as specifically authorized by the U.S. Government is licensed under
-the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance
-with the License. You may obtain a copy of the License at
+    def precompute(self):
+        pass
+ 
+    def _generate_circuit(self):
+        '''
+            Dispatch via interface
+        '''
+        return self._make_fh_circuit()
 
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software distributed under the License
-is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-or implied. See the License for the specific language governing permissions and limitations under
-the License.
-'''
-
-# pyLIQTR 1.3.3
-from pyLIQTR.ProblemInstances.getInstance import getInstance
-from pyLIQTR.clam.lattice_definitions import SquareLattice
-from pyLIQTR.BlockEncodings.getEncoding import getEncoding, VALID_ENCODINGS
-from pyLIQTR.qubitization.qsvt_dynamics import qsvt_dynamics, simulation_phases
-
-
-def make_qsvt_circuit(
-        model,
-        encoding,
-        times=1.0,
-        p_algo=0.95):
-    """
-    Make a QSVT based circuit from pyLIQTR
-    """
-    eps = (1 - p_algo) / 2
-    scaled_times = times * model.alpha
-    phases = simulation_phases(times=scaled_times, eps=eps, precompute=False, phase_algorithm="random")
-    gate_qsvt = qsvt_dynamics(encoding=encoding, instance=model, phase_sets=phases)
-    return gate_qsvt.circuit
-
-def make_fh_circuit(N=2, times=1.0, p_algo=0.95):
-    """Helper function to build Fermi-Hubbard circuit."""
-    # Create Fermi-Hubbard Instance
-    J = -1.0
-    U = 2.0
-    model = getInstance("FermiHubbard", shape=(N, N), J=J, U=U, cell=SquareLattice)
-    return make_qsvt_circuit(model,encoding=getEncoding(VALID_ENCODINGS.PauliLCU),times=times,p_algo=p_algo)
+# License separation 
+FermiHubbard._make_fh_circuit = fermi_hubbard_rigetti.make_fh_circuit
+FermiHubbard._make_qsvt_circuit = fermi_hubbard_rigetti.make_qsvt_circuit

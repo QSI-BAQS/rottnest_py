@@ -243,6 +243,8 @@ class ComputeUnitExecutorPoolManager:
 
         self.send_total()
         self.send_total("endcomp")
+        print("Totals:")
+        print(self.compute_unit_result_cache)
         # print(compute_unit_counts, compute_unit_totals, compute_unit_result_cache)
         self.manager_completion_queue.put('done')
 
