@@ -1,5 +1,8 @@
 
-
+'''
+   This file is currently unused
+   Reconsidering its purpose for dynamic plugins - ahtoms 
+'''
 from rottnest.server.model import generic_architecture 
 from rottnest.server.responder import responder
 
