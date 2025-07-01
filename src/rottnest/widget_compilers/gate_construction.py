@@ -70,7 +70,6 @@ class PseudoRZGate:
         self.pre = [gate for gate in self.pre if gate.actual]
         self.post = [gate for gate in self.post if gate.actual]
 
-
     def update_dependencies(self):
         for i in range(len(self.actual) - 1):
             self.actual[i].post = [self.actual[i+1]]
@@ -78,19 +77,12 @@ class PseudoRZGate:
         
         self.actual[0].pre = [pre.actual[-1] for pre in self.pre]
         self.actual[-1].post = [post.actual[0] for post in self.post]
-    
-
 
 def make_pseudo_gates(obj, gridsynth, rz_tag_tracker):
-    # with open('debug_obj3.json', 'w') as f:
-    #     print(obj, file=f)
-    #     print('========', file=f)
-    #     print(rz_tag_tracker._tags_to_angles, file=f)
-    #     print(rz_tag_tracker._eps, file=f)
-
-
+    '''
+        Unrolls Rz gates to gridsynth tracker
+    '''
     qubit_tag_pairs = [(q, obj['measurement_tags'][q]) for q in range(obj["n_qubits"])]
-
 
     gates = [PseudoRZGate(q, tag) for q, tag in qubit_tag_pairs]
     for g in gates:

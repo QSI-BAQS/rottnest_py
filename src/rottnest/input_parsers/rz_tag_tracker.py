@@ -1,30 +1,33 @@
+from rottnest.gridsynth.gridsynth import DEFAULT_PRECISION
+
 '''
     Adapter class for mapping Rz gates to tags 
 '''
 
-
 class RzTagTracker():
 
-    #_gs = gridsynth.GridSynth()
     '''
         Maps angles to tags
         TODO: This currently makes some very rough
         assumptions that no two gates will have
         the same angle and differing values of eps 
     '''
-    def __init__(self, default_eps = 10):
+    def __init__(self, default_eps = None):
         # Reserve tag 0 
         self._angles_to_tags = {None: None}
         self._tags_to_angles = [None] 
-        self._eps = [None] 
+        self._eps = [None] # Per tag eps 
         self.n_rz_gates = 0
+    
+        if default_eps is None:
+            default_eps = DEFAULT_PRECISION + 3
     
         self.default_eps = default_eps
 
     def __getitem__(self, tag):
         return self._tags_to_angles[tag]
 
-    def get_gridsynth_params(self, tag):
+    def get_gridsynth_params(self, tag, delta=3):
         '''
             Helper function to turn a tag into a gridsynth input
         '''
@@ -38,10 +41,10 @@ class RzTagTracker():
 
         if eps is None: 
             eps = self.default_eps 
-        denominator = int(10 ** eps) 
+        denominator = int(2 ** eps) 
         numerator = int(angle * denominator)
         
-        return numerator, denominator, eps  
+        return numerator, denominator
 
     def get(self, angle, eps): 
         '''

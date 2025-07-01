@@ -5,6 +5,9 @@ from functools import lru_cache
 # Try a self import 
 from rottnest.gridsynth import gridsynth
 
+# Default precision in bits
+DEFAULT_PRECISION = 38 
+
 X = object()
 Z = object()
 Hadamard = object()
@@ -30,7 +33,7 @@ class Gridsynth:
             'T':T
             }
 
-    def __init__(self, gate_dict=None, default_precision=52):
+    def __init__(self, gate_dict=None, default_precision=DEFAULT_PRECISION):
         # Because these depend on the location of the file they can't be trusted at compile time
         self.proc = subprocess.Popen(self.CMD, stdin=subprocess.PIPE, stdout=subprocess.PIPE) 
         if gate_dict is None:
@@ -41,12 +44,13 @@ class Gridsynth:
         self.precision = default_precision
 
     @lru_cache
-    def z_theta_instruction(self, p, q, precision=None, effort=25, seed=0, **gates):
+    def z_theta_instruction(self, p, q, *, precision=None, effort=25, seed=0, **gates):
         '''
             Returns a series of gates that perform Z(PI * p / q) with some epsilon precision
         '''
         if precision is None:
             precision = self.precision
+        print(precision)
     
         self.proc.stdin.write(f"{p} {q} {precision} {effort} {seed}\n".encode('ascii'))
         self.proc.stdin.flush()
