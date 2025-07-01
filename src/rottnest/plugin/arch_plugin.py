@@ -62,7 +62,7 @@ class ArchPluginMap:
            and extracts the list of plugins
         '''
         archmap = modrep.architectures()
-        return archmap.plugins()
+        return ArchPluginMap(name, archmap.plugins())
 
         
 

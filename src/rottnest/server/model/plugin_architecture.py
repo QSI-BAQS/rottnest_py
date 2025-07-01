@@ -1,11 +1,13 @@
 import json
 import threading
 
-from rottnest.widget_compilers.compiler_flow import run_widget as run_widget
+from rottnest.widget_compilers.plugin_compiler_flow import run_widget as run_widget
 from rottnest.process_pool import process_pool
 from rottnest.compute_units.architecture_proxy import saved_architectures
 from rottnest.process_pool.process_pool import ComputeUnitExecutorPool
 
+# TODO: May want to get a shared unit instead of instantiating it
+# here
 cu_executor_pool = ComputeUnitExecutorPool()   
 
 def log_resp(resp):
@@ -13,6 +15,7 @@ def log_resp(resp):
     if len(resp_log) > 200:
         resp_log = resp_log[:200] + '<... output truncated>'
     print("Resp:", resp_log)
+
 
 # TODO reorganise this mess and cull unused
 def run_widget_pool(arch_id, wsock=None, wsock_sem=None):
@@ -48,15 +51,22 @@ def _read_results(pool, wsock=None, wsock_sem=None):
 
 
 def save_arch(arch_json_obj):
-    # arch_id = random.randint(1000000, 9999999)
-    # while arch_id in saved_architectures: arch_id = random.randint(1000000,
-    #                                                                9999999)
+    """
+       Saves the architecture to be used by the cu_executor_pool
+       in a similar manner to lat2d, however
+       arch_id should be generated:
+       TODO: Revisit the arch_id matter 
+    """
     arch_id = 1000000
     saved_architectures[arch_id] = arch_json_obj
     cu_executor_pool.save_arch(arch_id, arch_json_obj)
     return arch_id
 
 def _read_root_graph(pool, wsock=None, wsock_sem=None):
+    """
+       TODO: We need to remove this or make it cater to
+       a generic architecture infrastructure 
+    """
     graph_object = pool.manager_priority_completion_queue.get()
     with wsock_sem:
         wsock.send(json.dumps({
@@ -67,14 +77,27 @@ def _read_root_graph(pool, wsock=None, wsock_sem=None):
                 }
             }))
     print("Get root graph completed!")
+
 def get_root_graph(wsock, wsock_sem=None):
+    """
+       Gets the root_graph within the call_graph
+       Although, call_graph mechanisms have not been outlined
+       yet for generic_architecture
+
+       TODO: Revise on get_root_graph and the protocol 
+    """
     cu_executor_pool.get_graph(None)
     t = threading.Thread(target=_read_root_graph, name="GraphResultReaderThread", args=[cu_executor_pool, wsock, wsock_sem], daemon=True)
     t.start()
 
 
 def get_status(cu_id):
-    return {'cu_id': cu_id, 'status': 'not_found'}
+    """
+       Designed to return the compute unit id,
+       however the early return makes the rest of the function useless.
+
+       This has been removed for now
+    """
     if cu_id in process_pool.dummy_result_cache:
         return process_pool.dummy_result_cache[cu_id]
     else:

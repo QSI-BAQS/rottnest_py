@@ -8,8 +8,6 @@ from geventwebsocket.handler import WebSocketHandler
 from rottnest.server import sockethandler
 
 app = Bottle()
-
-
 sockethandler.register_routes(app)
 
 # Global lock

@@ -1,7 +1,7 @@
 
 import json
 from enum import Enum
-from arch_plugin import ArchPluginMap
+from arch_plugin import ArchPluginMap, ArchPluginRegistry
 
 class ArchLocationKind(Enum):
     '''
@@ -77,7 +77,6 @@ class ArchRegistryConfig:
         self.path = path
         self.entries = entries
 
-
     def load_arch_map(self, idx):
         '''
            Retrieves a particular arch map from an entry
@@ -105,3 +104,15 @@ class ArchRegistryConfig:
                 
         config = ArchRegistryConfig(path, entries)
         return config    
+
+
+    def to_plugin_registry(self):
+        """
+           Creates a plugin registry and consumes the config
+           registry 
+        """
+        plgmaps = []
+        for e in self.entries:
+            plgmaps.append(e.load_arch())
+
+        return ArchPluginRegistry.from_plugin_maps(plgmaps)
