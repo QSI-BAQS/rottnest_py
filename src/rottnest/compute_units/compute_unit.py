@@ -22,9 +22,9 @@ class ComputeUnit():
         self.sequences = list()
         
         # Context trackers
-        self.n_inputs = None
-        self.n_outputs = None
-        self.n_qubits = None
+        self.n_inputs = 0
+        self.n_outputs = 0
+        self.n_qubits = 0
         
         self.n_rz_operations = 0
         self.n_gates = 0
@@ -33,6 +33,12 @@ class ComputeUnit():
         self.n_inputs = n_inputs
         self.n_outputs = n_outputs
         self.n_qubits = n_qubits
+
+    def curr_mem(self):
+        '''
+            Current widget memory
+        '''
+        return self.n_inputs + self.n_qubits + self.n_rz_operations
 
     def __iter__(self):
         return iter(self.sequences)

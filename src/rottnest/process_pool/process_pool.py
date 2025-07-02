@@ -205,12 +205,6 @@ class ComputeUnitExecutorPoolManager:
         update_counter = 20
 
         for obj in it:
-        # while True:
-        #     seq_start = time.time()
-        #     obj = next(it, StopIteration)
-        #     self.sequencer_time += (time.time() - seq_start)
-        #     if obj == StopIteration:
-        #         break
 
             if obj[0] == INTERRUPT:
                 self.process_elem_cache(obj)
@@ -450,11 +444,15 @@ class ComputeUnitExecutorPool:
         # Set the pandora union find based on the architecture
         pandora_cache.architecture_bind(arch_ids[0])
 
+        # Triggers parsing of pyliqtr
         parser = PyliqtrParser(current_executable())
         parser.parse()
-        
+       
+        # Sequences over the architectures
+        # This should eventually be hooked for more complex sequencers
         seq = Sequencer(*arch_ids)
-
+    
+        # Gate iterator
         it = seq.sequence_pyliqtr(parser)
 
         # Yields (compute_unit, rz_tag_tracker, full_output)

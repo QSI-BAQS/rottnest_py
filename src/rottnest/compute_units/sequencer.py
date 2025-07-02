@@ -37,7 +37,6 @@ class Sequencer():
  
         architecture = next(architectures) 
         compute_unit = ComputeUnit(architecture.to_json(), mem_bound=architecture.mem_bound())
-        print(compute_unit.memory_bound)
 
         cirq_parser = CirqParser(self.sequence_length)
 
@@ -75,8 +74,6 @@ class Sequencer():
                 curr_memory = compute_unit.n_rz_operations + 2 * len(cirq_parser)
                 # This doesn't track additional qubit allocations
                 if curr_memory + op_seq.n_rz_operations > compute_unit.memory_bound * compactness:
-                    compute_unit.append(op_seq)
-
                     local_context = cirq_parser.extract_context()
                     compute_unit.add_context(*local_context)
                     if len(compute_unit) > 0:
