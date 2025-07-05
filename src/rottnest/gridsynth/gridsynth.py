@@ -1,12 +1,14 @@
 import os
+import numpy as np
 import subprocess
+from decimal import Decimal
 from functools import lru_cache
 
 # Try a self import 
 from rottnest.gridsynth import gridsynth
 
 # Default precision in bits
-DEFAULT_PRECISION = 38 
+DEFAULT_PRECISION = 48 
 
 X = object()
 Z = object()
@@ -24,6 +26,12 @@ class Gridsynth:
     GATE_SYNTH_BNR = os.path.join(os.path.dirname(gridsynth.__file__), 'gridsynth')
     CMD = f"{GATE_SYNTH_BNR}".split() 
   
+    DEC_Z = Decimal(1)
+    DEC_S = Decimal(0.5)
+    DEC_T = Decimal(0.5)
+
+
+
     # TODO: IR  
     DEFAULT_GATE_DICT = {
             'X':X,
@@ -42,6 +50,7 @@ class Gridsynth:
             self.gate_dict = gate_dict
 
         self.precision = default_precision
+        self.precision_decimal = Decimal(2) ** Decimal(-1 * self.precision)
 
     @lru_cache
     def z_theta_instruction(self, p, q, *, precision=None, effort=25, seed=0, **gates):
@@ -50,8 +59,18 @@ class Gridsynth:
         '''
         if precision is None:
             precision = self.precision
-        print(precision)
-    
+  
+        approx_angle = Decimal(p) / Decimal(q)
+        if abs(approx_angle) % self.DEC_Z < self.precision_decimal: 
+            return []
+
+        if abs(self.DEC_S - (approx_angle % self.DEC_Z)) < self.precision_decimal:
+            return ['S']
+
+        if abs(self.DEC_T - (approx_angle % self.DEC_S)) < self.precision_decimal:
+            return ['T']
+
+
         self.proc.stdin.write(f"{p} {q} {precision} {effort} {seed}\n".encode('ascii'))
         self.proc.stdin.flush()
         sequence = self.proc.stdout.readline().decode()

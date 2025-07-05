@@ -39,6 +39,8 @@ class RzTagTracker():
             angle = self._tags_to_angles[tag]
             eps = self._eps[tag]
 
+        angle = angle % 2
+
         if eps is None: 
             eps = self.default_eps 
         denominator = int(2 ** eps) 
