@@ -1,7 +1,7 @@
 
 import json
-from circuit import CircuitDescription
-from fermi_hubbard import make_fh_circuit
+from rottnest.executables.circuit import CircuitDescription
+from rottnest.executables.fermi_hubbard import make_fh_circuit
 
 class ExecutableMap:
     '''

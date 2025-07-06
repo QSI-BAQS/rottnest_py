@@ -1,5 +1,5 @@
 
-from app_config import ApplicationConfig
+from rottnest.server.app.app_config import ApplicationConfig
 
 
 class AppExtensions:

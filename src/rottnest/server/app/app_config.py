@@ -79,7 +79,7 @@ class ApplicationConfig:
             
 
     @staticmethod
-    def defualt():
+    def default():
         '''
            Reasonable default static method to load programs
            and architectures that are core plugins 
