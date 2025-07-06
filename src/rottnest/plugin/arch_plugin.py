@@ -90,6 +90,24 @@ class ArchPluginRegistry:
         '''
         return self.arch_map[name]
 
+
+    def get_arch_dtos(self):
+        '''
+           Retrieves a list of dtos of the architectures
+           that the front-end can select from.
+
+           Current it is thin but will be expanded
+        '''
+        dtos = []
+        for k, v in self.arch_map.items():
+            dtos.append({
+                             'arch_name': k,
+                             "arch" : {
+                                 'identifier': v.identifier,
+                             }
+                         })
+        return dtos
+    
     @staticmethod
     def from_plugin_map(plug_map):
         '''

@@ -10,6 +10,7 @@ from rottnest.server.responder import responder
 from rottnest.server.controller.arch import lat2d as archlat2d
 from rottnest.server.controller.cg import lat2d as cglat2d
 from rottnest.server.controller import prgs
+from rottnest.server.controller.arch import meta
 
 import json
 
