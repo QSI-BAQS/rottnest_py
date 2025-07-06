@@ -1,5 +1,18 @@
 
+from app_config import ApplicationConfig
 
+
+class AppExtensions:
+    '''
+       Simple class that can be extended 
+    '''
+    def __init__(self):
+        '''
+           Initialises with no fields set 
+        '''
+        pass
+
+    
 
 class RottApplication:
     """
@@ -8,15 +21,27 @@ class RottApplication:
 
         To have more concrete information provided later
     """
-    def __init__(self, wsock, wsock_sem):
+    def __init__(self, wsock, wsock_sem, apploader=ApplicationConfig.default()):
         """
             Initialises an application
             with simple dictionary that will
             map arbitrary objects
+
+            ApplicationConfig will load defaults or
+            what is specified
         """
         self.wsock = wsock
         self.wsock_sem = wsock_sem
         self.app_state_map = {}
+        self.app_extensions = AppExtensions()
+        apploader.load_and_attach(self.app_extensions)
+
+    def get_extensions(self):
+        '''
+           Gets object that was extended by the loaders 
+        '''
+
+        return self.app_extensions
 
     def setv(self, key, value):
         """

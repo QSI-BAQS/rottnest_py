@@ -1,6 +1,6 @@
 
 import json
-from circuit_desc import CircuitDescription
+from circuit import CircuitDescription
 
 class ExecutableMap:
     '''
@@ -28,17 +28,18 @@ class ExecutableMap:
            a new map will be created but a
            warning will show 
         '''
+        exe_map = ExecutableMap()
         with open(path, 'r') as f:
             data = f.read()
             cfg = json.loads(data)
+            for entry in cfg:
 
-            for (k, v) in cfg:
-                name = k
-
-            #TODO: Continue this tomorrow
-            pass
-            
-        
+                circ_res = CircuitDescription.create_circuit_from(entry)
+                if circ_res is not None:
+                    exe_map.insert_circuit_desc(circ_res)
+                    
+        return exe_map
+    
     
     def insert_circuit_desc(self, circ_desc):
         '''
@@ -50,6 +51,21 @@ class ExecutableMap:
         else:
             print("Unable insert description")
 
+    def get_circuits(self):
+        '''
+           Gets a list of circuits 
+        '''
+        return self.circuit_map.values()
+
+    def get_circuit_dtos(self):
+        '''
+           Gets a list of circuits in DTO form
+        '''
+        prg_descs = []
+        for k, p in self.circuit_map:
+            prg_descs.append(p.to_dto())
+
+        return prg_descs
 
     def get_circuit_desc(self, name):
         '''
@@ -69,6 +85,6 @@ class ExecutableMap:
            Similar to make_instance_from
            but will also hold a reference 
         '''
-        obj = make_instance_from(name)
+        obj = self.make_instance_from(name)
         self.circuit_instances.append(obj)
         return obj
