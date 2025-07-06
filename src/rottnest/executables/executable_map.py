@@ -74,17 +74,17 @@ class ExecutableMap:
         '''
         return self.circuit_map[name]
 
-    def make_instance_from(self, name):
+    def make_instance_from(self, name, args=None):
         '''
            Creates an instance of registered circuit 
         '''
         return self.get_circuit_desc(name).create_instance()
         
-    def make_instance_from_and_ref(self, name):
+    def make_instance_from_and_ref(self, name, args=None):
         '''
            Similar to make_instance_from
            but will also hold a reference 
         '''
-        obj = self.make_instance_from(name)
+        obj = self.make_instance_from(name, args)
         self.circuit_instances.append(obj)
         return obj

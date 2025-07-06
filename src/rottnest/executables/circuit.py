@@ -109,8 +109,11 @@ class CircuitInstance:
             return CircuitReturnObj(None)
         return CircuitReturnObj(self.invfn(self.args))
 
-class CircuitDescDTO:
 
+class CircuitDescDTO:
+    '''
+       DTO of Curcuit 
+    '''
     def __init__(self, name, args):
         self.name = name
         self.args = args
@@ -229,13 +232,15 @@ class CircuitDescription:
 
         return obj
 
-    def create_instance(self):
+    def create_instance(self, input_args=None):
         '''
            Generates a circuit instance
            Will cause a deep copy on the args 
         '''
         name = self.name
-        invfn = self.invfn
-        args = copy.deepcopy(self.args)
-        inst = CircuitInstance(name, invfn, args)
+        invfn = self.invfni
+        inv_args = input_args
+        if input_args is None:
+            inv_args = copy.deepcopy(self.args)
+        inst = CircuitInstance(name, invfn, inv_args)
         return inst

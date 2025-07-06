@@ -86,20 +86,20 @@ class ApplicationConfig:
         '''
         return ApplicationConfig().add_loader(
             AppComponentLoader(
-                               'programs.json',
+                               'cfgs/programs.json',
                                'exe_map',
                                lambda p : ExecutableMap.from_config(p)
                            )
         ).add_loader(
             AppComponentLoader(
-                               'architectures.json',
+                               'cfgs/architectures.json',
                                'arch_map',
-                               lambda p : print("Current unimplemented")
+                               lambda p : print("Currently unimplemented")
                            )
             
         ).add_loader(
             AppComponentLoader(
-                               '',
+                               None,
                                'exe_state',
                                lambda _ : ExecutableState()
                            )

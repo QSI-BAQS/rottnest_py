@@ -32,8 +32,25 @@ class ExecutableState:
             "prg_args": self.args
         }
 
-    def invoke_with(self, exe_map):
+    def invoke_with(self, app):
         '''
            Invokes with the exe_map, makes sure it can be
-           resolved 
+           resolved and invoked
         '''
+        response = {
+            "success": False,
+            "message": "Program was not invoked"
+        }
+        prginst = app.get_extensions().get_exe_map().make_instance_from(self.prg, self.args)
+
+        if prginst is not None:
+
+            #TODO: We need to monitor this object
+            #prginst.invoke()
+            
+            response = {
+                "success": True,
+                "message": "Program was invoked"
+            }
+
+        return response
