@@ -1,6 +1,7 @@
 
 import json
 from circuit import CircuitDescription
+from fermi_hubbard import make_fh_circuit
 
 class ExecutableMap:
     '''
@@ -20,7 +21,7 @@ class ExecutableMap:
 
 
     @staticmethod
-    def from_config(path):
+    def from_config_or_default(path):
         '''
            Constructs a map from json file
            If the path does not exist or
@@ -29,15 +30,30 @@ class ExecutableMap:
            warning will show 
         '''
         exe_map = ExecutableMap()
-        with open(path, 'r') as f:
-            data = f.read()
-            cfg = json.loads(data)
-            for entry in cfg:
+        try:
+            with open(path, 'r') as f:
+                data = f.read()
+                cfg = json.loads(data)
+                for entry in cfg:
 
-                circ_res = CircuitDescription.create_circuit_from(entry)
-                if circ_res is not None:
-                    exe_map.insert_circuit_desc(circ_res)
-                    
+                    circ_res = CircuitDescription.create_circuit_from(entry)
+                    if circ_res is not None:
+                        exe_map.insert_circuit_desc(circ_res)
+        except Exception:
+        
+            print("Unable to open file, likely missing, using defaults")
+            
+            # TODO: Hold this in a list in another module
+            circ_dict = {
+                'name': "fermi_hubbard",
+                'invoke_fn': make_fh_circuit,
+                'args' : [2, 1.0, 0.95],
+                'params': ['N', 'times', 'p_algo']
+                
+            }
+            circ_res = CircuitDescription.create_circuit_from_dict(circ_dict)
+            exe_map.insert_circuit_desc(circ_res)
+            
         return exe_map
     
     

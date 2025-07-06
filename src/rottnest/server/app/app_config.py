@@ -88,7 +88,7 @@ class ApplicationConfig:
             AppComponentLoader(
                                'cfgs/programs.json',
                                'exe_map',
-                               lambda p : ExecutableMap.from_config(p)
+                               lambda p : ExecutableMap.from_config_or_default(p)
                            )
         ).add_loader(
             AppComponentLoader(
