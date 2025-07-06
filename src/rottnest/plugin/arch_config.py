@@ -85,23 +85,28 @@ class ArchRegistryConfig:
         return entry.load_arch()
     
     @staticmethod
-    def load_config(path):
+    def load_config_or_default(path):
         '''
           Loads a configuration file which will contain entries
           for the architecture to be used by the register
         '''
         entries = []
-        with open(path, 'r') as file:
-            contents = file.read()
-            parsed_entries = json.loads(contents)
-            for e in parsed_entries:
-                name = e['identifier']
-                description = e['description']
-                kind = description['kind']
-                location = description['location']
+        try:
+            with open(path, 'r') as file:
+                contents = file.read()
+                parsed_entries = json.loads(contents)
+                for e in parsed_entries:
+                    name = e['identifier']
+                    description = e['description']
+                    kind = description['kind']
+                    location = description['location']
 
-                entries.append(ArchConfigEntry(name, location, kind))
-                
+                    entries.append(ArchConfigEntry(name, location, kind))
+        except Exception:
+            print("Unable to load plugins, using defaults")
+            path = None
+            # TODO: Load in lat2d and dummyarch here
+            
         config = ArchRegistryConfig(path, entries)
         return config    
 

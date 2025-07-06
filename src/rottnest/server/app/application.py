@@ -1,5 +1,5 @@
-from rottnest.plugin.arch_config import ArchRegistryConfig
-from rottnest.plugin.arch_plugin import ArchPluginRegistry
+from rottnest.server.app.app_config import ApplicationConfig, AppExtensions
+
 
 
 class RottApplication:
@@ -9,31 +9,25 @@ class RottApplication:
 
         To have more concrete information provided later
     """
-    def __init__(self, wsock, wsock_sem, arch_config=None):
+    def __init__(self, wsock, wsock_sem, apploader=ApplicationConfig.default()):
         """
             Initialises an application
             with simple dictionary that will
             map arbitrary objects
-
-            This will also load architectures as outlined by a config
-            and manage a registry for them
+            ApplicationConfig will load defaults or
+            what is specified
         """
         self.wsock = wsock
         self.wsock_sem = wsock_sem
-        if arch_config is None:
-            self.arch_registry = ArchPluginRegistry()
-        else:
-            self.arch_registry = ArchRegistryConfig.load_config(arch_config).to_plugin_registry()
-
         self.app_state_map = {}
+        self.app_extensions = AppExtensions()
+        apploader.load_and_attach(self.app_extensions)
 
-    
-
-    def get_arch_registry(self):
-        """
-           Retrieves the architecture registry 
-        """
-        return self.arch_registry
+    def get_extensions(self):
+        '''
+           Gets object that was extended by the loaders 
+        '''
+        return self.app_extensions
 
     def setv(self, key, value):
         """
