@@ -4,7 +4,7 @@ import copy
 import importlib
 import sys
 from enum import Enum
-
+from functools import partial
 
 
 class CircuitLocationKind(Enum):
@@ -108,6 +108,13 @@ class CircuitInstance:
             print('Unable to invoke instance')
             return CircuitReturnObj(None)
         return CircuitReturnObj(self.invfn(self.args))
+
+    def get_partial(self):
+        '''
+           Generates a partial based on the invoke_fn
+           field and args associated supplied
+        '''
+        return partial(self.invfn, self.args)
 
 
 class CircuitDescDTO:
