@@ -6,7 +6,7 @@ from functools import lru_cache
 from rottnest.gridsynth import gridsynth
 
 # Default precision in bits
-DEFAULT_PRECISION = 38 
+DEFAULT_PRECISION = 54 
 
 X = object()
 Z = object()

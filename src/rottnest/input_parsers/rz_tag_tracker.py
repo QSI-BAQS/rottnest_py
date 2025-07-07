@@ -1,3 +1,4 @@
+from typing import Union
 from rottnest.gridsynth.gridsynth import DEFAULT_PRECISION
 
 '''
@@ -27,7 +28,7 @@ class RzTagTracker():
     def __getitem__(self, tag):
         return self._tags_to_angles[tag]
 
-    def get_gridsynth_params(self, tag, delta=3):
+    def get_gridsynth_params(self, tag):
         '''
             Helper function to turn a tag into a gridsynth input
         '''
@@ -41,9 +42,39 @@ class RzTagTracker():
 
         if eps is None: 
             eps = self.default_eps 
+
+        return self.angle_to_rational(self, angle, precision=eps)
+
+
+    def angle_to_rational(self, angle: float, *, precision: int = None, delta: int = 3) -> (int, int): 
+        '''
+            Converts an angle to a rational
+        '''
+        if precision is None:
+            precision = self.default_eps 
+
+        # In testing, increasing the precision by 2 ** 3 bounded the error on the conversion to rational   
+        precision = precision + delta 
+
         denominator = int(2 ** eps) 
         numerator = int(angle * denominator)
         
+        return numerator, denominator
+
+    def trivial_angle_filters(self, numerator, denominator, eps) -> Union[tuple[int, int] | tuple[None, list]]:
+        '''
+            Skips trivial angles
+        '''
+        approx_angle = (numerator / denominator) % 2 
+        if approx_angle < eps:
+            return None, [] 
+
+        if np.abs((approx_angle % 1) - 0.5) < eps:
+            return None, ['S'] 
+
+        if np.abs((approx_angle % 0.5) - 0.25) < eps:
+            return None, ['T'] 
+
         return numerator, denominator
 
     def get(self, angle, eps): 
