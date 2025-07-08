@@ -1,5 +1,7 @@
 from typing import Union
 from rottnest.gridsynth.gridsynth import DEFAULT_PRECISION
+from rottnest.gridsynth.angle_to_rational import angle_to_rational 
+
 
 '''
     Adapter class for mapping Rz gates to tags 
@@ -45,7 +47,7 @@ class RzTagTracker():
         if eps is None: 
             eps = self.default_eps 
 
-        return self.angle_to_rational(self, angle, precision=eps)
+        return angle_to_rational(angle, precision=eps)
 
     def get(self, angle, eps): 
         '''
