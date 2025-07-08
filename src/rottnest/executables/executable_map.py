@@ -3,6 +3,7 @@ import json
 from rottnest.executables.circuit import CircuitDescription
 from rottnest.executables.fermi_hubbard import make_fh_circuit
 
+
 class ExecutableMap:
     '''
        Executable map that will hold onto references
@@ -19,6 +20,49 @@ class ExecutableMap:
         self.circuit_map = {}
         self.circuit_instances = []
 
+
+    def to_config(self):
+        '''
+           We need to communicate the configuration
+           over to the user, and allow it to be updated 
+        '''
+        prgs = []
+        for k, v in self.circuit_map.items():
+            prgs.append(v.to_config_entry())
+            
+        return json.dumps(prgs)
+
+    def from_dict_interior_update(self, cfg):
+        '''
+           Since the instance is live, we need to
+           mutate the instance and replace components
+
+           NOTE: This will run the risk of triggering a poor reference
+           of objects that are to be replaced
+
+           TODO: Allow for maintaining currently running plugins
+           while the config is rebuilt
+
+           will return False if the operation failed
+           will return True if the change occurred
+        '''
+        success = True
+        oldMap = self.circuit_map
+        newMap = []
+        
+        for k, v in cfg:
+            desc = CircuitDescription.create_circuit_from_dict(v)
+            if desc is not None:
+                newMap.append(desc)
+            else:
+                print("Reverting, configuration contains malformed or unrecognisable plugin information")
+                newMap = oldMap
+                success = False
+                break
+
+        self.circuit_map = newMap
+
+        return success
 
     @staticmethod
     def from_config_or_default(path):
@@ -78,7 +122,7 @@ class ExecutableMap:
            Gets a list of circuits in DTO form
         '''
         prg_descs = []
-        for k, p in self.circuit_map:
+        for k, p in self.circuit_map.items():
             prg_descs.append(p.to_dto())
 
         return prg_descs

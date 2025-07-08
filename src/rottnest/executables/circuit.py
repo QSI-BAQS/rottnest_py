@@ -117,13 +117,6 @@ class CircuitInstance:
         return partial(self.invfn, self.args)
 
 
-class CircuitDescDTO:
-    '''
-       DTO of Curcuit 
-    '''
-    def __init__(self, name, args):
-        self.name = name
-        self.args = args
 
         
 class CircuitDescription:
@@ -140,7 +133,7 @@ class CircuitDescription:
            any self-referential objects
     '''
 
-    def __init__(self, name, invoke_fn, fn_args, fn_params=None):
+    def __init__(self, name, invoke_fn, fn_args, fn_params=None, module_key=None):
         '''
            Initialises and constructs a circuit description
            that can be used to construct an instance 
@@ -148,12 +141,24 @@ class CircuitDescription:
         self.name = name
         self.invoke_fn = invoke_fn
         self.fn_args = fn_args
-        if self.fn_params is None:
+        self.module_key = module_key
+        if fn_params is None:
             self.fn_params = self.derive_params()
         else:
             self.fn_params = fn_params
 
     def to_dto(self):
+        '''
+           Serialisable DTO that can be used by
+           a front-end 
+        '''
+        return {
+            "name": self.name,
+            "args": self.fn_args,
+            "params": self.fn_params
+        }
+    
+    def to_config_entry(self):
         '''
            Serialisable DTO that can be used by
            a front-end 
@@ -174,6 +179,17 @@ class CircuitDescription:
         for i in range(len(self.args)):
             params.append('{}'.format(i))
         return params
+
+    @staticmethod
+    def create_circuit_from_dict(circ_obj):
+        '''
+           Creates a circuit from a dictionary 
+        '''
+        return CircuitDescription(circ_obj['name'],
+                                  circ_obj['invoke_fn'],
+                                  circ_obj['args'],
+                                  circ_obj['params'])
+        
 
     @staticmethod
     def create_circuit_from(circ_obj):

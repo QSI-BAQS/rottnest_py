@@ -17,6 +17,29 @@ def arch_load_list(app, message, **kwargs):
     }
 
 
+@responder.register('arch_get_config')
+def arch_get_config(app, message, **kwargs):
+    '''
+       Gets the current configuration that was successfully loaded 
+    '''
+    archmap = app.get_extensions().get_arch_map()
+    cfg = archmap.to_config()
+
+    return { 'config' : cfg }
+
+@responder.register('arch_set_config')
+def arch_set_config(app, message, **kwargs):
+    '''
+        Takes the current architecture config from
+        the frontend and attempts to update the configuratio
+    '''
+    cfg = message['payload']
+    archmap = app.get_extensions().get_arch_map()
+    res = archmap.from_dict_interior_update(cfg)
+    
+    return {
+        "success": res
+    }
 
 @responder.register('arch_get')
 def program_get(app, message, **kwargs):
@@ -36,8 +59,6 @@ def program_get(app, message, **kwargs):
     arch_name = message['payload']['arch_name']
     archmap = app.get_extensions().get_arch_map()
     arch = archmap.get_arch_desc(arch_name)
-
-    # TODO: Error if the program can't be accessed
 
     return {
         "arch": arch

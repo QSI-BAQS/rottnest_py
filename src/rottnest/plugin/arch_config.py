@@ -1,18 +1,7 @@
 
 import json
-from enum import Enum
-from arch_plugin import ArchPluginMap, ArchPluginRegistry
-
-class ArchLocationKind(Enum):
-    '''
-       Location Kind, it outlines what kind of
-       plugin it is and how that it is held within rottnest 
-    '''
-    FilePath = 1
-    ModuleKey = 2
-
-    def equals(self, a):
-        return self.name == a
+from rottnest.plugin.arch_plugin import ArchPluginMap, ArchPluginRegistry
+from rottnest.plugin.arch_location import ArchLocationKind
 
 
 class ArchConfigEntry:
@@ -62,7 +51,8 @@ class ArchConfigEntry:
         elif ArchLocationKind.ModuleKey.equals(self.kind):
             return ArchPluginMap.load_plugin_map_from_module(self.name, self.location)
         else:
-            None
+            return None
+
 
 class ArchRegistryConfig:
     '''
@@ -83,6 +73,7 @@ class ArchRegistryConfig:
         '''
         entry = self.entries[idx]
         return entry.load_arch()
+
     
     @staticmethod
     def load_config_or_default(path):

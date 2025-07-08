@@ -13,6 +13,27 @@ def process_load_list(app, message, **kwargs):
         'err': 'currently not implemented'
     }
 
+@responder.register('program_get_config')
+def program_get_config(app, message, **kwargs):
+    '''
+       Constructs the configuration file
+       that the executable_map has formed
+    '''
+    prgmap = app.get_extensions().get_exe_map()
+    config = prgmap.to_config()
+    return { 'config' : config }
+    
+@responder.register('program_set_config')
+def program_set_config(app, message, **kwargs):
+    '''
+        Constructs and updates the current executable map
+        from a configuration object
+    '''
+    cfg = message['payload']
+    prgmap = app.get_extensions().get_exe_map()
+    res = prgmap.from_dict_interior_update(cfg)
+    return { 'success' : res }
+
     
 @responder.register('program_list')
 def program_load_list(app, message, **kwargs):

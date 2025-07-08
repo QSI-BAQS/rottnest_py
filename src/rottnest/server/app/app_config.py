@@ -39,11 +39,11 @@ class AppComponentLoader:
 
         ref_obj = self.lfn(self.path)
 
-        def getter_fn(s):
+        def getter_fn():
             '''
                Getter for extended object 
             '''
-            return getattr(s, self.attr_name)
+            return getattr(target, self.attr_name)
 
         
         getter_name = 'get_{}'.format(self.attr_name)
