@@ -4,6 +4,7 @@ import cirq
 from rottnest.gridsynth.angle_to_rational import angle_to_rational
 from rottnest.gridsynth.gridsynth import gs_instance 
 
+
 class RottnestExecutable(abc.ABC):
     '''
         Interface for Rottnest Executable objects 
@@ -11,10 +12,26 @@ class RottnestExecutable(abc.ABC):
 
     _prec_rz = None
 
+    def __init__(self, **kwargs):
+        '''
+        Default constructor for RottnestExecutables
+        Loads all parameters from all child classes and sets them to their default value
+        '''
+                
+        params = self.__class__.get_params() 
+        
+        for param_name in params:
+            param_type, param_value = params[param_name]
+            
+            if param_name in kwargs:
+                param_value = kwargs[param_name]
+
+            # Bind the parameters by name to the class instance
+            self.__setattr__(param_name, param_type(param_value))
+
     def precompute(self, *args, **kwargs):
         '''
-            Precomputation of elements of
-            the circuit 
+            Precomputation of elements of the circuit
         '''
         pass
 
@@ -29,30 +46,67 @@ class RottnestExecutable(abc.ABC):
            Abstract circuit generation method
         '''
 
-    def get_parameters(self):
+    @classmethod
+    def get_parameters(cls):
         '''
-            Abstract method for returning tunable parameters  
+        Class dispatch method to recursively collect parameters and default arguments 
+        To set parameters for a given executable the default behaviour is to use the
+        _parameters method
+        Parameter priority is in order of a BFS over the bases of each object in the 
+        inheritence hierachy 
         '''
+        params = {}
+        # Collect parameters from subclasses
+        for base in cls.__bases__:
+            if issubclass(base, RottnestExecutable) and base is not RottnestExecutable:
+                # Recurse
+                params |= base.get_parameters() 
 
-    def precision_rz(self) -> int:
+        # Set this classes params last
+        params |= cls._parameters()
+        return params
+
+    @staticmethod
+    def _parameters():
         '''
-            Precision of Rz gates in bits
+            Abstract method for returning tunable parameters 
+            This is invoked through the class dispatch method get_parameters
+            The default behaviour for the dispatch method is to aggregate parameters
+            through inherited classes
+            { <name> : (type, None),
+              <name> : (type, default_value)}
         '''
-        if self._prec_rz is None:
-            n_rz = self.n_rz()
-            self._prec_rz = int(np.ceil(-1 * np.log2(self.target_prec_rz() / n_rz)))
-        return self._prec_rz
 
     def n_rz(self) -> int:
         '''
             Number of Rz gates
         '''
 
+    def bound_rz(self) -> int:
+        '''
+            Upper bounds the number of Rz gates
+        '''
+        return self.n_rz()
+
+    def precision_rz(self) -> int:
+        '''
+            Precision of Rz gates in bits
+        '''
+        if self._prec_rz is None:
+            n_rz = self.bound_rz()
+            self._prec_rz = int(np.ceil(-1 * np.log2(self.target_prec_rz() / n_rz)))
+        return self._prec_rz
+
+    def bound_T(self):
+        '''
+            Upper bounds the number of T gates
+        '''
+        return self.n_T()
+
     def n_T(self):
         '''
             Dipatch method for T counting
         '''
-
 
     @staticmethod
     def count_t_cirq(qc: cirq.Circuit, precision: int = None) -> int:
