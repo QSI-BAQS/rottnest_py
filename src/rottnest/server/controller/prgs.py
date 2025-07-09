@@ -1,4 +1,4 @@
-
+import json
 from rottnest.server.responder import responder
 
 @responder.register('process_list')
@@ -29,7 +29,8 @@ def program_set_config(app, message, **kwargs):
         Constructs and updates the current executable map
         from a configuration object
     '''
-    cfg = message['payload']
+    cfg = json.loads(message['payload']['config'])
+    print(str(cfg))
     prgmap = app.get_extensions().get_exe_map()
     res = prgmap.from_dict_interior_update(cfg)
     return { 'success' : res }

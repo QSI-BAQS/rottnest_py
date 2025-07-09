@@ -1,4 +1,4 @@
-
+import json
 from rottnest.server.responder import responder
 
     
@@ -33,7 +33,7 @@ def arch_set_config(app, message, **kwargs):
         Takes the current architecture config from
         the frontend and attempts to update the configuratio
     '''
-    cfg = message['payload']
+    cfg = json.loads(message['payload']['config'])
     archmap = app.get_extensions().get_arch_map()
     res = archmap.from_dict_interior_update(cfg)
     

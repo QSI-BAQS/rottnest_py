@@ -50,8 +50,8 @@ class ExecutableMap:
         oldMap = self.circuit_map
         newMap = []
         
-        for k, v in cfg:
-            desc = CircuitDescription.create_circuit_from_dict(v)
+        for e in cfg:
+            desc = CircuitDescription.create_circuit_from_dict(e)
             if desc is not None:
                 newMap.append(desc)
             else:

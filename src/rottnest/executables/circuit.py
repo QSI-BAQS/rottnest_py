@@ -166,6 +166,7 @@ class CircuitDescription:
         return {
             "name": self.name,
             "args": self.fn_args,
+            "invoke_fn": self.invoke_fn.__name__,
             "params": self.fn_params
         }
 
