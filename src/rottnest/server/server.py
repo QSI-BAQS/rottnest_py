@@ -5,12 +5,12 @@ from gevent.pywsgi import WSGIServer
 from bottle import Bottle
 from geventwebsocket.handler import WebSocketHandler
 
+from rottnest.server import sockethandler
 
 app = Bottle()
 
-from rottnest.server.controller import architecture
 
-architecture.register_routes(app)
+sockethandler.register_routes(app)
 
 # Global lock
 compilation_lock = False

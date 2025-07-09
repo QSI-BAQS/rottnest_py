@@ -115,7 +115,6 @@ def execute_compute_unit(args, worker_results_queue: mp.Queue, is_priority):
 
         stats['tocks']['total'] = sum(stats['tocks'].values())
         
-        print(stats)
 
         if full_output:
             stats['vis_obj'] = orch.json
