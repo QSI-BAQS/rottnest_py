@@ -6,20 +6,10 @@ class FermiHubbard(RottnestExecutable):
     '''
         Fermi Hubbard Model
     '''
-    def __init__(self,
-        N=5,
-        p_algo=0.95,
-        times=1.0
-        ):
-        '''
-            Constructor
-        '''
-        
-        self.N = N
-        self.p_algo = p_algo
-        self.times = times
-                 
-        self.precompute()
+
+    DEFAULT_N = 5
+    DEFAULT_p_algo = 0.95
+    DEFAULT_times = 1.0
 
     @staticmethod
     def get_parameters():
@@ -27,11 +17,8 @@ class FermiHubbard(RottnestExecutable):
             Returns the parameters of the executable 
             This can then be passed to the front-end
         '''
-        return {'N':int, 'p_algo':float, 'times':float}
+        return {'N':(int, DEFAULT_N), 'p_algo':(float, DEFAULT_p_algo), 'times':(float, DEFAULT_times)}
 
-    def precompute(self):
-        pass
- 
     def _generate_circuit(self):
         '''
             Dispatch via interface
