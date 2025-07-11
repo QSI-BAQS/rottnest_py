@@ -17,8 +17,10 @@ class RottnestExecutable(abc.ABC):
         Default constructor for RottnestExecutables
         Loads all parameters from all child classes and sets them to their default value
         '''
-                
-        params = self.__class__.get_params() 
+        params = (
+            self.__class__.get_private_parameters()
+            | self.__class__.get_parameters()
+        )
         
         for param_name in params:
             param_type, param_value = params[param_name]
@@ -66,6 +68,29 @@ class RottnestExecutable(abc.ABC):
         params |= cls._parameters()
         return params
 
+
+    @classmethod
+    def get_private_parameters(cls):
+        '''
+        Class dispatch method to recursively collect private parameters and default arguments 
+        To set parameters for a given executable the default behaviour is to use the
+        _parameters method
+        Parameter priority is in order of a BFS over the bases of each object in the 
+        inheritence hierachy 
+        '''
+        params = {}
+        # Collect parameters from subclasses
+        for base in cls.__bases__:
+            if issubclass(base, RottnestExecutable) and base is not RottnestExecutable:
+                # Recurse
+                params |= base.get_private_parameters() 
+
+        # Set this classes params last
+        params |= cls._private_parameters()
+        return params
+
+
+
     @staticmethod
     def _parameters():
         '''
@@ -76,6 +101,23 @@ class RottnestExecutable(abc.ABC):
             { <name> : (type, None),
               <name> : (type, default_value)}
         '''
+
+    @staticmethod
+    def _private_parameters():
+        '''
+            Abstract method for returning tunable parameters 
+            Private parameters are not exposed to the 
+            front end
+            
+            These parameters bind in the constructor
+            and are typically used for internal methods
+            without needing to rewrite __init__
+            unless more complex logic is needed 
+
+            { <name> : (type, None),
+              <name> : (type, default_value)}
+        '''
+        return {}
 
     def n_rz(self) -> int:
         '''
@@ -90,12 +132,21 @@ class RottnestExecutable(abc.ABC):
 
     def precision_rz(self) -> int:
         '''
-            Precision of Rz gates in bits
+            Baseline precision of Rz gates in bits
+            Certain circuits may need to override this
+            on either a per-gate or global scope
         '''
         if self._prec_rz is None:
             n_rz = self.bound_rz()
             self._prec_rz = int(np.ceil(-1 * np.log2(self.target_prec_rz() / n_rz)))
         return self._prec_rz
+
+    def magic_states_supported(self) -> str:
+        '''
+            What magic states this circuit requires
+            Default to 'T', as CCZ can be decomposed
+        '''
+        return ('T')
 
     def bound_T(self):
         '''
@@ -103,10 +154,12 @@ class RottnestExecutable(abc.ABC):
         '''
         return self.n_T()
 
-    def n_T(self):
+    def n_MSF(self):
         '''
-            Dipatch method for T counting
+            Dipatch method for magic state counting
         '''
+
+    
 
     @staticmethod
     def count_t_cirq(qc: cirq.Circuit, precision: int = None) -> int:

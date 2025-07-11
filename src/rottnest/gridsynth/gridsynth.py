@@ -30,8 +30,6 @@ class Gridsynth:
     DEC_S = Decimal(0.5)
     DEC_T = Decimal(0.5)
 
-
-
     # TODO: IR  
     DEFAULT_GATE_DICT = {
             'X':X,
@@ -81,6 +79,5 @@ class Gridsynth:
 
     def __del__(self):
         self.proc.terminate()
-
 
 gs_instance = Gridsynth() 

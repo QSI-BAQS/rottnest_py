@@ -17,7 +17,7 @@ class FermiHubbard(RottnestExecutable):
             Returns the parameters of the executable 
             This can then be passed to the front-end
         '''
-        return {'N':(int, DEFAULT_N), 'p_algo':(float, DEFAULT_p_algo), 'times':(float, DEFAULT_times)}
+        return {'N':(int, FermiHubbard.DEFAULT_N), 'p_algo':(float, FermiHubbard.DEFAULT_p_algo), 'times':(float, FermiHubbard.DEFAULT_times)}
 
     def _generate_circuit(self):
         '''
