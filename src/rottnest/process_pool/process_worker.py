@@ -4,6 +4,54 @@ import multiprocessing as mp
 import traceback
 import time
 
+
+
+from rottnest.server.model.graph_view import get_graph
+from rottnest.server.model.graph_view import view_cache
+from rottnest.compute_units.sequencer import Sequencer
+from rottnest.input_parsers.cirq_parser import shared_rz_tag_tracker
+from rottnest.compute_units.architecture_proxy import saved_architectures
+from rottnest.input_parsers import pyliqtr_parser
+
+
+
+def worker_ping(worker_results_queue, *args, is_priority:bool = False):
+    worker_results_queue.put('pong') 
+
+def worker_exec_compute_unit(worker_results_queue, *args, is_priority: bool = False):
+    execute_compute_unit(args, worker_results_queue, is_priority)
+
+def worker_get_graph(worker_results_queue, *args):
+    try:
+        worker_results_queue.put(get_graph(args[0]))
+    except:
+        traceback.print_exc()
+        worker_results_queue.put('ERROR')
+
+def worker_exec_graph_node(worker_results_queue, *args, is_priority: bool = False):
+    try:
+        execute_graph_node(args[0], args[1], worker_results_queue)
+    except:
+        traceback.print_exc()
+        worker_results_queue.put('ERROR')
+
+def worker_set_precision(worker_results_queue, *args, is_priority: bool = False):
+    '''
+        # TODO
+    '''
+    pass
+
+
+
+
+worker_tasks = {
+    'ping': worker_ping,
+    'set_precision': worker_set_precision,
+    'exec_cu': worker_exec_compute_unit,
+    'get_graph': worker_get_graph,
+    'exec_graph_node': worker_exec_graph_node
+}
+
 def pool_worker_main(task_queue: mp.Queue, worker_results_queue: mp.Queue, is_priority: bool = False):
     '''
     execute_compute_unit should not throw
@@ -11,35 +59,11 @@ def pool_worker_main(task_queue: mp.Queue, worker_results_queue: mp.Queue, is_pr
     print("Worker started:", mp.current_process().name, flush=True)
     while True:
         task, *args = task_queue.get()
-        if task == 'ping':
-            print("Worker received ping")
-            worker_results_queue.put('pong')
-            continue
-        elif task == 'exc_cu':
-            execute_compute_unit(args, worker_results_queue, is_priority)
-        elif task == 'get_graph':
-            from rottnest.server.model.graph_view import get_graph
-            try:
-                worker_results_queue.put(get_graph(args[0]))
-            except:
-                import traceback
-                traceback.print_exc()
-                worker_results_queue.put('ERROR')
-        elif task == 'exc_graph_node':
-            try:
-                execute_graph_node(args[0], args[1], worker_results_queue)
-            except:
-                import traceback
-                traceback.print_exc()
-                worker_results_queue.put('ERROR')
-
+        worker_tasks[task](worker_results_queue, *args)
+    return       
+ 
 def execute_graph_node(node_hash, arch_obj, worker_results_queue: mp.Queue):
-    from rottnest.server.model.graph_view import view_cache
-    from rottnest.compute_units.sequencer import Sequencer
-    from rottnest.input_parsers.cirq_parser import shared_rz_tag_tracker
-    from rottnest.compute_units.architecture_proxy import saved_architectures
-    from rottnest.input_parsers import pyliqtr_parser
-    
+   
     saved_architectures[-666666] = arch_obj
     node = view_cache[node_hash]
     parser = node.parser
