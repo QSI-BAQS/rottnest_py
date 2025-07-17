@@ -33,11 +33,6 @@ except:
     pandora_connection = None
     print("Connection to Pandora failed")
 
-
-class PandoraGate:
-    def __init__(self, name):
-        self.gate = name
-
 class PandoraSequencer():
     '''
         Pandora based widget sequencer
@@ -76,6 +71,9 @@ class PandoraSequencer():
         self.max_d = max_d
         self.batch_size = batch_size
 
+    def close(self):
+        self.conn.connection.close()
+
     def set_sequence_length(self, sequence_length: int):
         '''
             Setter for sequence length
@@ -88,12 +86,6 @@ class PandoraSequencer():
         '''
         self.max_t = max_t
        
-    def set_max_t(self, max_t: int):
-        '''
-            Setter for max_t 
-        '''
-        self.max_t = max_t
-
     def set_max_d(self, max_d: int):
         '''
             Setter for max_d 

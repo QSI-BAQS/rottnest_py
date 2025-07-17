@@ -30,6 +30,7 @@ class RottnestExecutable(abc.ABC):
 
             # Bind the parameters by name to the class instance
             self.__setattr__(param_name, param_type(param_value))
+        self.precompute()
 
     def precompute(self, *args, **kwargs):
         '''

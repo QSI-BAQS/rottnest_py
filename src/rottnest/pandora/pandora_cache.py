@@ -11,6 +11,20 @@ from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
 
 from pandora.targeted_decomposition import add_cache_db
 
+class PandoraCacheOp:
+    '''
+        Blank intercepting operation for caching objects
+    '''
+    def __init__(self, hsh):
+        self.hsh = hsh
+
+    def _rottnest_hash(self):
+        return self.hsh
+
+    def __iter__(self):
+        return [].__iter__() 
+
+    gate = None
 
 class PandoraCache:
 
@@ -18,7 +32,7 @@ class PandoraCache:
         self.hash_cache = {}
         self.class_cache = {}
 
-    def in_cache(self, op):
+    def in_cache(self, op, spawn=False):
         hsh = op._rottnest_hash()
 
         # Try the hash cache
@@ -27,8 +41,13 @@ class PandoraCache:
         # Fallback to class cache 
         if obj is None:
             obj = self.class_cache.get(type(op.gate), None)
-        return obj
 
+        # Create connection
+        if spawn and obj is not None:
+            conn = pandora_connection.spawn(obj) 
+            obj = PandoraSequencer(conn=conn)
+
+        return obj
 
     def _pre_populate(self):
         # Load all existing entries
@@ -40,20 +59,25 @@ class PandoraCache:
 
         # Add the operation to the pandora database
         conn = add_cache_db(pandora_connection, op, table_name)
+        conn.connection.close()
 
-        self.class_cache[type(op.gate)] = conn 
+        self.class_cache[type(op.gate)] = table_name 
 
        
-    def bind_hash(self, op): 
+    def bind_hash(self, op, *, hsh=None):
 
-        table_name = self.db_table_name(op, hash_postfix=True)  
-        hsh = op._rottnest_hash()
+
+        if hsh is None:
+            table_name = self.db_table_name(op, hash_postfix=True)  
+            hsh = op._rottnest_hash()
+        else:
+            table_name = hsh
 
         # Add the operation to the pandora database
         conn = add_cache_db(pandora_connection, op, table_name)
+        conn.connection.close()
 
-        self.hash_cache[hsh] = conn 
-
+        self.hash_cache[hsh] = table_name 
 
     @staticmethod
     def db_table_name(op, *, hash_postfix=True):
@@ -77,7 +101,7 @@ def attach_class(db_name, class_obj):
     pandora_cache.add_class(class_str, seq)
 
 
-def architecture_bind(arch_id: int):
+def architecture_bind(seq, arch_id: int):
     '''
         Extract pandora sequence parameters based on the architecture
     '''
@@ -88,17 +112,13 @@ def architecture_bind(arch_id: int):
     max_t = n_registers 
     max_d = n_registers
     batch_size = n_registers
-    update_sequencer(max_t=max_t, max_d=max_d, batch_size=batch_size)
+    update_sequencer(seq, max_t=max_t, max_d=max_d, batch_size=batch_size)
 
-def update_sequencer(*args, **kwargs):
+def update_sequencer(seq, *args, **kwargs):
     '''
         Updates parameters for Pandora sequencers
     '''
-    for seq in pandora_cache.hash_cache.values():
-        seq.set_params(*args, **kwargs)
-
-    for seq in pandora_cache.class_cache.values():
-        seq.set_params(*args, **kwargs)
+    seq.set_params(*args, **kwargs)
 
 
 from pyLIQTR.qubitization.qubitized_gates import QubitizedRotation, QubitizedReflection

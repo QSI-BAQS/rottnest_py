@@ -13,7 +13,7 @@ class T_RZ_RottnestExecutable(RottnestExecutable):
 
     _n_rz = None
     _n_T = None
-    _cache_layer = 2
+    _cache_layer = 1
 
     def n_T(self) -> int:
         '''

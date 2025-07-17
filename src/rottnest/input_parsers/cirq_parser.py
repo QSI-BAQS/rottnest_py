@@ -72,7 +72,7 @@ class CirqParser:
             return circ_iter.to_operation_sequence()
 
         op = OperationSequence(self.sequence_length)
-        for moment in circ_iter.decompose():
+        for moment in circ_iter:
             for operation in moment:
 
                 # TODO: Clean up the shim interface

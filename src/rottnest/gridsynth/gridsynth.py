@@ -46,9 +46,16 @@ class Gridsynth:
             self.gate_dict = self.DEFAULT_GATE_DICT
         else:
             self.gate_dict = gate_dict
+        self.precision = None
+        self.precision_decimal = None
+        self.set_precision(default_precision)
 
-        self.precision = default_precision
-        self.precision_decimal = Decimal(2) ** Decimal(-1 * self.precision)
+    def set_precision(self, precision):
+        '''
+            Sets the precision
+        '''
+        self.precision = precision
+        self.precision_decimal = Decimal(2) ** Decimal(-1 * precision)
 
     @lru_cache
     def z_theta_instruction(self, p, q, *, precision=None, effort=25, seed=0, **gates):
