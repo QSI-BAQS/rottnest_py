@@ -1,10 +1,13 @@
+'''
+    Rottnest Worker Interface
+'''
+
+import abc
+
 from rottnest.compute_units.compute_unit import ComputeUnit
-from rottnest.widget_compilers.compiler_flow import run_widget as run_widget
 import multiprocessing as mp
 import traceback
 import time
-
-
 
 from rottnest.server.model.graph_view import get_graph
 from rottnest.server.model.graph_view import view_cache
@@ -13,92 +16,99 @@ from rottnest.input_parsers.cirq_parser import shared_rz_tag_tracker
 from rottnest.compute_units.architecture_proxy import saved_architectures
 from rottnest.input_parsers import pyliqtr_parser
 
+# TODO: Replace with more generic decomposition manager
+from rottnest.gridsynth.gridsynth import gs_instance
 
-
-def worker_ping(worker_results_queue, *args, is_priority:bool = False):
-    worker_results_queue.put('pong') 
-
-def worker_exec_compute_unit(worker_results_queue, *args, is_priority: bool = False):
-    execute_compute_unit(args, worker_results_queue, is_priority)
-
-def worker_get_graph(worker_results_queue, *args):
-    try:
-        worker_results_queue.put(get_graph(args[0]))
-    except:
-        traceback.print_exc()
-        worker_results_queue.put('ERROR')
-
-def worker_exec_graph_node(worker_results_queue, *args, is_priority: bool = False):
-    try:
-        execute_graph_node(args[0], args[1], worker_results_queue)
-    except:
-        traceback.print_exc()
-        worker_results_queue.put('ERROR')
-
-def worker_set_precision(worker_results_queue, *args, is_priority: bool = False):
+class RottnestWorker(abc.ABC):
     '''
-        # TODO
+        RottnestWorker
+        Abstract base class defining an interface
+        for Rottnest worker units
     '''
-    pass
+    def __init__(self, debug=None, priority=False):
+
+        self.running = True
+        self._debug = debug
+
+        self.worker_tasks = {
+            'ping': self.ping,
+            'set_precision': self.set_precision,
+            'exec_cu': self.exec_compute_unit,
+            'get_graph': self.get_graph,
+            'exec_graph_node': self.exec_graph_node
+        }
+
+    def __call__(
+            self,
+            task_queue: mp.Queue,
+            worker_results_queue: mp.Queue,
+            is_priority: bool = False
+            ):
+        '''
+            Dispatch method for the main worker loop 
+        '''
+        return self.main(task_queue, worker_results_queue, is_priority=is_priority)
+
+    def main(self, task_queue: mp.Queue, worker_results_queue: mp.Queue, is_priority: bool = False):
+        '''
+            Worker loop - queries 
+        '''
+        print("Worker started:", mp.current_process().name, flush=True)
+        self.running = True
+        while self.running:
+            task, *args = task_queue.get()
+            worker_tasks[task](worker_results_queue, *args)
+        return       
+
+    def halt(
+            self,
+            worker_results_queue,
+            *args, 
+            is_priority:bool = False
+        ):
+        '''
+           Halts the worker 
+        '''
+        self.running = False
+
+    def ping(
+            self,
+            worker_results_queue,
+            *args, 
+            is_priority:bool = False
+        ):
+        '''
+            Ping function for worker alive status checking 
+        '''
+        worker_results_queue.put('pong') 
 
 
+    def set_debug(self, is_priority):
+        if not is_priority:
+            stdout = open('/dev/null', 'w')
+            sys.stdout = f
+            old_stdout = sys.stdout # Disable printing
+        else:
+            old_stdout = sys.stdout
 
-
-worker_tasks = {
-    'ping': worker_ping,
-    'set_precision': worker_set_precision,
-    'exec_cu': worker_exec_compute_unit,
-    'get_graph': worker_get_graph,
-    'exec_graph_node': worker_exec_graph_node
-}
-
-def pool_worker_main(task_queue: mp.Queue, worker_results_queue: mp.Queue, is_priority: bool = False):
+    def set_precision(
+        self,
+        worker_results_queue,
+        *args,
+        is_priority: bool = False):
     '''
-    execute_compute_unit should not throw
+        Set the precision for the workers
     '''
-    print("Worker started:", mp.current_process().name, flush=True)
-    while True:
-        task, *args = task_queue.get()
-        worker_tasks[task](worker_results_queue, *args)
-    return       
- 
-def execute_graph_node(node_hash, arch_obj, worker_results_queue: mp.Queue):
-   
-    saved_architectures[-666666] = arch_obj
-    node = view_cache[node_hash]
-    parser = node.parser
-    print(parser)
-    pyliqtr_parser.local_cache = set()
-    seq = Sequencer(-666666)
+    precision = int(args[0])
+    gs_instance.set_precision(precision)
 
-    it = seq.sequence_pyliqtr(parser)
+    @staticmethod
+    def exec_compute_unit(
+            worker_results_queue,
+            *args,
+            is_priority: bool = False
+        ):
 
-    # Yields (compute_unit, rz_tag_tracker, full_output)
-    wrapped_it = ((obj, shared_rz_tag_tracker, True, None, None) for obj in it)
-
-    # Should only be one compute unit per obj
-    # Iterator here is for sanity checking  
-    for args in wrapped_it:
-        print(args)
-        execute_compute_unit(args, worker_results_queue, True)
-
-    worker_results_queue.put('end')
-
-
-def execute_compute_unit(args, worker_results_queue: mp.Queue, is_priority):
-    # print("got", args, flush=True)
-
-    if not is_priority:
-        import sys
-        # old_stdout = sys.stdout # Enable printing
-        f = open('/dev/null', 'w')
-        sys.stdout = f
-        old_stdout = sys.stdout # Disable printing
-    else:
-        import sys
-        old_stdout = sys.stdout
-
-    print("running elem", flush=True)
     try:
         compute_unit, rz_tag_tracker, full_output, cache_hash, np_qubits = args
         compute_unit: ComputeUnit
@@ -122,9 +132,12 @@ def execute_compute_unit(args, worker_results_queue: mp.Queue, is_priority):
             with open('debug_obj.json', 'w') as f:
                 print(widget.json(), file=f)
 
-        orch = run_widget(cabaliser_obj=widget.json(), region_obj=arch_json_obj, full_output=full_output, rz_tag_tracker=rz_tag_tracker)
-        
-        print("execution done", flush=True, file=old_stdout)
+        orch = run_widget(
+             cabaliser_obj=widget.json(),
+             region_obj=arch_json_obj,
+             full_output=full_output,
+             rz_tag_tracker=rz_tag_tracker
+        )
         
         stats = {
             'volumes': orch.get_space_time_volume(),
@@ -160,6 +173,7 @@ def execute_compute_unit(args, worker_results_queue: mp.Queue, is_priority):
             pass
 
         try:
+            composer.get_stats()
             stats = {
                 'cu_id': str(getattr(compute_unit, "unit_id", "ERROR")), 
                 'err_type': repr(e), 
@@ -177,3 +191,72 @@ def execute_compute_unit(args, worker_results_queue: mp.Queue, is_priority):
         worker_results_queue.put(stats)
     finally:
         sys.stdout = old_stdout
+
+    @staticmethod
+    def worker_get_graph(
+            worker_results_queue,
+            *args,
+            is_priority: bool = False
+        ):
+        '''
+            Synchronises back end graph object unrolling with front end objects
+            TODO: Replace
+        '''
+        try:
+            worker_results_queue.put(get_graph(args[0]))
+        except:
+            traceback.print_exc()
+            worker_results_queue.put('ERROR')
+
+    @staticmethod
+    def run_widget(
+        cabaliser_obj,
+        region_obj,
+        rz_tag_tracker,
+        full_output: bool=False
+        ):
+        '''
+            Abstract base method 
+        '''
+
+    @staticmethod
+    def get_stats(compiled_unit, compute_unit) -> dict:
+        '''
+            Abstract base method for extracting
+            relevant statistics from a compiled
+            widget 
+        '''
+        pass
+
+    @staticmethod
+    def __MISSING -> dict:
+
+                    stats = {
+                    'cu_id': "MISSING",
+                    'status': 'fatal',
+                }
+
+    @staticmethod
+    def __FAILED(
+            error,
+            traceback,
+            compute_unit,
+            cache_hash,
+            np_qubits,
+            ) -> dict:
+        stats = {
+                'cu_id': str(
+                    getattr(
+                        compute_unit,
+                        "unit_id",
+                         "ERROR"
+                    )
+                ), 
+                'err_type': repr(error), 
+                'traceback': traceback,
+                'status': 'error',
+                'cache_hash': cache_hash,
+                'np_qubits': np_qubits,
+                }
+            except:
+

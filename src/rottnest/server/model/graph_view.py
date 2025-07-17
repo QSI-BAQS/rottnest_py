@@ -11,6 +11,9 @@ hash_cache = {}
 GRAPH_LIMIT = 100
 
 def get_graph(graph_id=None):
+    '''
+        Gets a pylitrq parser object from a graph_id
+    '''
    
     if graph_id is None:
         prefix = ''
