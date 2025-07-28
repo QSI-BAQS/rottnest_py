@@ -28,6 +28,7 @@ class CirqTest(unittest.TestCase):
 
         wid = widget.Widget(n_qubits, n_qubits * 2 + 1);
         for op in parser.parse(circ):
+            print(op)
             wid(op)
         wid.decompose()
 

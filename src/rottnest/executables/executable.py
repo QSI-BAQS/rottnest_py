@@ -90,8 +90,6 @@ class RottnestExecutable(abc.ABC):
         params |= cls._private_parameters()
         return params
 
-
-
     @staticmethod
     def _parameters():
         '''
@@ -160,8 +158,6 @@ class RottnestExecutable(abc.ABC):
             Dipatch method for magic state counting
         '''
 
-    
-
     @staticmethod
     def count_t_cirq(qc: cirq.Circuit, precision: int = None) -> int:
         '''
@@ -214,3 +210,4 @@ class RottnestExecutable(abc.ABC):
                    ):
                     rz_count += 1
         return rz_count
+
