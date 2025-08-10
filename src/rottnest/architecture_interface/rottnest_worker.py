@@ -11,8 +11,9 @@ import time
 
 from rottnest.server.model.graph_view import get_graph
 from rottnest.server.model.graph_view import view_cache
-from rottnest.compute_units.sequencer import Sequencer
+
 from rottnest.input_parsers.cirq_parser import shared_rz_tag_tracker
+
 from rottnest.compute_units.architecture_proxy import saved_architectures
 from rottnest.input_parsers import pyliqtr_parser
 
@@ -136,7 +137,7 @@ class RottnestWorker(abc.ABC):
              cabaliser_obj=widget.json(),
              region_obj=arch_json_obj,
              full_output=full_output,
-             rz_tag_tracker=rz_tag_tracker
+             rz_tag_tracker=shared_rz_tag_tracker
         )
         
         stats = {
@@ -219,8 +220,14 @@ class RottnestWorker(abc.ABC):
             Abstract base method 
         '''
 
-    @staticmethod
-    def get_stats(compiled_unit, compute_unit) -> dict:
+
+    def get_stats(
+            self,
+            compiled_widget,
+            compute_unit,
+            cache_hash,
+            np_qubits
+            ) -> dict: 
         '''
             Abstract base method for extracting
             relevant statistics from a compiled

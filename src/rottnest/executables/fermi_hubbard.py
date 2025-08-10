@@ -3,7 +3,6 @@ from rottnest.executables.t_rz_executable import T_RZ_RottnestExecutable
 from rottnest.executables import fermi_hubbard_rigetti 
 
 
-
 class FermiHubbard(T_RZ_RottnestExecutable):
     '''
         Fermi Hubbard Model

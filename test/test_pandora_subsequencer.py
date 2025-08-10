@@ -4,7 +4,10 @@ from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
 from rottnest.input_parsers.interrupt import INTERRUPT
 from rottnest.input_parsers.cirq_parser import CirqParser, shared_rz_tag_tracker
 from rottnest.compute_units.sequencer import Sequencer
-from rottnest.executables.fermi_hubbard import make_fh_circuit
+from rottnest.executables.fermi_hubbard import FermiHubbard 
+
+from factoring.rottnest_adder import Adder
+
 from rottnest.widget_compilers.compiler_flow import run_widget
 
 import pyLIQTR
@@ -20,12 +23,12 @@ from rottnest.pandora.pandora_sequencer import PandoraSequencer
 
 class SequencerTest(unittest.TestCase):
 
-    def test_fh(self, N=70, arch_qubits=100, debug=True):
+    def test_fh(self, N=50, arch_qubits=100, debug=True):
 
         if debug:
             start = time.time()
             print(f"Creating Fermi Hubbard {N}x{N} from PyLIQTR")
-        fh = make_fh_circuit(N=N,p_algo=0.9999999904,times=0.01)
+        fh = FermiHubbard(N=N)
 
         if debug:
             runtime = time.time() - start
