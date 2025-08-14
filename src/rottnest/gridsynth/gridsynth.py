@@ -5,6 +5,7 @@ from decimal import Decimal
 from functools import lru_cache
 
 # Try a self import 
+from rottnest.gridsynth import rz_decomposer 
 from rottnest.gridsynth import gridsynth
 
 # Default precision in bits
@@ -16,7 +17,7 @@ Hadamard = object()
 Phase = object()
 T = object()
 
-class Gridsynth:
+class Gridsynth(rz_decomposer.RzDecomposer):
     '''
         Gridsynth management
         Main concern with set-up is setting the default precision 
@@ -58,7 +59,7 @@ class Gridsynth:
         self.precision_decimal = Decimal(2) ** Decimal(-1 * precision)
 
     @lru_cache
-    def z_theta_instruction(self, p, q, *, precision=None, effort=25, seed=0, **gates):
+    def z_theta_instruction(self, p, q, *, precision=None, effort=25, seed=0):
         '''
             Returns a series of gates that perform Z(PI * p / q) with some epsilon precision
         '''
@@ -86,5 +87,3 @@ class Gridsynth:
 
     def __del__(self):
         self.proc.terminate()
-
-gs_instance = Gridsynth() 
