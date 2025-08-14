@@ -1,13 +1,16 @@
 from typing import Union
-from rottnest.gridsynth.gridsynth import DEFAULT_PRECISION
+
 from rottnest.gridsynth.angle_to_rational import angle_to_rational 
 
+DEFAULT_PRECISION = 10
+
+from cabaliser.gate_constructors import MEASUREMENT_GATE_TAG 
 
 '''
     Adapter class for mapping Rz gates to tags 
 '''
 
-class RzTagTracker():
+class RzTagTracker:
 
     '''
         Maps angles to tags
@@ -30,17 +33,38 @@ class RzTagTracker():
     def __getitem__(self, tag):
         return self._tags_to_angles[tag]
 
+    def to_dict(self) -> dict:
+        '''
+            Serialisation function for passing over the network
+        '''
+        return {
+            'default_eps': self.default_eps,
+            'eps': self._eps,
+            'tags_to_angles':self._tags_to_angles,
+        }
+
+    @staticmethod
+    def from_dict(serialised: dict):
+        '''
+            Deserialisation function 
+        '''
+        tracker = RzTagTracker(serialised['default_eps'])
+        tracker._tags_to_angles = serialised['tags_to_angles'] 
+        tracker._eps = serialised['eps']
+        return tracker
+         
+
     def get_gridsynth_params(self, tag):
         '''
             Helper function to turn a tag into a gridsynth input
         '''
-        if tag == 268435455:
+        if tag == MEASUREMENT_GATE_TAG:
             # Measurement gate tag
             angle = 0
             eps = 10
         else:
             angle = self._tags_to_angles[tag]
-            eps = self._eps[tag]
+            eps = max(self._eps[tag], self.default_eps)
 
         angle = angle % 2
 
