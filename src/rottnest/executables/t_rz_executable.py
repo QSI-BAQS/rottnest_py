@@ -42,11 +42,12 @@ class T_RZ_RottnestExecutable(RottnestExecutable):
         '''
             Collects all hashed operations and injects them into Pandora
         '''
-        circuit = self._generate_circuit()
-        for layer in circuit_decompose_multi(circuit, self._cache_layer):
-            for op in layer:
-                if type(op.gate) in pyliqtr_patcher.hash_function_patchers: 
-                    
-                    if not pandora_cache.in_cache(op):
-                        hsh = op._rottnest_hash()
-                        pandora_cache.bind_hash(op) 
+        if self.pandora:
+            circuit = self._generate_circuit()
+            for layer in circuit_decompose_multi(circuit, self._cache_layer):
+                for op in layer:
+                    if type(op.gate) in pyliqtr_patcher.hash_function_patchers: 
+                        
+                        if not pandora_cache.in_cache(op):
+                            hsh = op._rottnest_hash()
+                            pandora_cache.bind_hash(op) 
