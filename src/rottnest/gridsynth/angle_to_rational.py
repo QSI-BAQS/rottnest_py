@@ -44,6 +44,7 @@ def angle_to_rational(
     ) -> (int, int): 
     '''
         Converts an angle to a rational
+        TODO: This also requires increasing the precision of the initial rotation by 1 
     '''
 
     angle = Decimal(angle) % I_ANGLE 

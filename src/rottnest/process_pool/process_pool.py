@@ -14,13 +14,15 @@ from copy import deepcopy
 
 from collections import defaultdict, deque
 
-from rottnest.process_pool.process_worker import pool_worker_main
+#from rottnest.process_pool.process_worker import pool_worker_main
+
 from rottnest.executables.current_executable import current_executable
+
 
 from rottnest.input_parsers.cirq_parser import shared_rz_tag_tracker
 from rottnest.compute_units.architecture_proxy import saved_architectures
 
-from rottnest.pandora import pandora_cache 
+from rottnest.architecture_interface.rottnest_worker import RottnestWorker
 
 # TODO: Move these to an appropriate config
 N_PROCESSES = 8
@@ -76,13 +78,19 @@ def iadd_result_dicts(res1, res2):
     _iadd_dict(res1['t_source'], res2.get('t_source', {}))
     _iadd_dict(res1['tocks'], res2.get('tocks', {}))
 
+
+
 class ComputeUnitExecutorPoolManager:
     def __init__(self, 
                  manager_task_queue: mp.Queue, 
                  manager_completion_queue: mp.Queue,
                  manager_priority_task_queue: mp.Queue,
-                 manager_priority_completion_queue: mp.Queue):
-
+                 manager_priority_completion_queue: mp.Queue,
+                 *,
+                 worker = None):
+        '''
+            Manager class for the process pool
+        '''
         self.manager_task_queue = manager_task_queue
         self.manager_completion_queue = manager_completion_queue
         self.manager_priority_task_queue = manager_priority_task_queue
@@ -93,13 +101,11 @@ class ComputeUnitExecutorPoolManager:
         self.worker_task_queue = self.ctx.Queue(maxsize=4 * N_PROCESSES)
         self.worker_result_queue = self.ctx.Queue()
 
-        self.pool = [
-            self.ctx.Process(target=pool_worker_main, 
-                        name=f"PoolWorker{i}", 
-                        args=(self.worker_task_queue, self.worker_result_queue), 
-                        daemon=True)
-            for i in range(N_PROCESSES)
-        ]
+        self._worker_entrypoint = worker
+        self.pool = list()
+        self.priority_process = None
+        self.pool_running = False
+        
 
         #############################
         # Priority data structures + setup
@@ -111,15 +117,6 @@ class ComputeUnitExecutorPoolManager:
         self.priority_received_count = 0
         self.priority_error_count = 0
 
-        self.priority_process = self.ctx.Process(target=pool_worker_main, 
-                                       name="PoolWorker(Priority)", 
-                                       args=(self.priority_task_queue, self.priority_result_queue, True), 
-                                       daemon=True)
-        self.priority_process.start()
-
-        for proc in self.pool:
-            proc.start()
-
         self.manager_task_fds = [self.manager_task_queue._reader, 
                                  self.manager_priority_task_queue._reader, 
                                  self.priority_result_queue._reader]
@@ -130,6 +127,38 @@ class ComputeUnitExecutorPoolManager:
     def entrypoint(*args, **kwargs):
         manager = ComputeUnitExecutorPoolManager(*args, **kwargs)
         manager.main_loop()
+
+    def set_worker(self, worker_entrypoint: RottnestWorker):
+        '''
+            Setter for the worker 
+        '''
+        self._worker_entrypoint = worker_entrypoint
+
+    def start_pool(self):
+        '''
+            Starts the pool
+            This is decoupled from initialisation to allow for worker swapping 
+        '''
+        self.pool_running = True
+        self.priority_process = self.ctx.Process(
+            target=pool_worker_main, 
+            name="PoolWorker(Priority)", 
+            args=(self.priority_task_queue, self.priority_result_queue, True), 
+            daemon=True
+        )
+
+        self.pool = [
+            self.ctx.Process(target=worker, 
+                        name=f"PoolWorker{i}", 
+                        args=(self.worker_task_queue, self.worker_result_queue), 
+                        daemon=True)
+            for i in range(N_PROCESSES)
+        ]
+
+        self.priority_process.start()
+
+        for proc in self.pool:
+            proc.start()
 
     def main_loop(self):
         

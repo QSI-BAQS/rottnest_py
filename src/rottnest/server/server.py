@@ -1,6 +1,5 @@
 from rottnest.server.model.architecture import cu_executor_pool
 
-
 from gevent.pywsgi import WSGIServer
 from bottle import Bottle
 from geventwebsocket.handler import WebSocketHandler
@@ -27,7 +26,7 @@ def run(hostname="localhost", port=8080):
     server.serve_forever()
 
 if __name__ == '__main__':
-    cu_executor_pool.start()
-    cu_executor_pool.ping()
+    #cu_executor_pool.start()
+    #cu_executor_pool.ping()
     print("Running!")
     run()
