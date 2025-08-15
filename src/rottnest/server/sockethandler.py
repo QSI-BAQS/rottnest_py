@@ -2,10 +2,15 @@ from bottle import request, abort
 from geventwebsocket import WebSocketError
 from threading import Semaphore
 from rottnest.server.model import architecture 
-from rottnest.server.application import RottApplication
+from rottnest.server.app.application import RottApplication
 from rottnest.server.responder import responder
+
+# These are used register routes which are core
+# TODO: We need to revise this component
 from rottnest.server.controller.arch import lat2d as archlat2d
 from rottnest.server.controller.cg import lat2d as cglat2d
+from rottnest.server.controller import prgs
+from rottnest.server.controller.arch import meta
 
 import json
 
