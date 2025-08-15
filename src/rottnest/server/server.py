@@ -1,6 +1,4 @@
 from rottnest.server.model.architecture import cu_executor_pool
-
-
 from gevent.pywsgi import WSGIServer
 from bottle import Bottle
 from geventwebsocket.handler import WebSocketHandler
@@ -8,8 +6,6 @@ from geventwebsocket.handler import WebSocketHandler
 from rottnest.server import sockethandler
 
 app = Bottle()
-
-
 sockethandler.register_routes(app)
 
 # Global lock
