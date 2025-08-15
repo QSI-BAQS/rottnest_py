@@ -1,7 +1,11 @@
-
+'''
+    Architecture plugin management
+    
+    This is slightly convoluted only to allow for loading architectures from module names 
+'''
 import json
-from rottnest.plugin.arch_plugin import ArchPluginMap, ArchPluginRegistry
-from rottnest.plugin.arch_location import ArchLocationKind
+from .arch_plugin import ArchPluginMap, ArchPluginRegistry
+from .arch_location import ArchLocationKind
 
 
 class ArchConfigEntry:
@@ -54,7 +58,7 @@ class ArchConfigEntry:
             return None
 
 
-class ArchRegistryConfig:
+class ArchitectureRegistry:
     '''
        Configuration for an arch registry
     '''
@@ -74,7 +78,6 @@ class ArchRegistryConfig:
         entry = self.entries[idx]
         return entry.load_arch()
 
-    
     @staticmethod
     def load_config_or_default(path):
         '''
@@ -86,9 +89,9 @@ class ArchRegistryConfig:
             with open(path, 'r') as file:
                 contents = file.read()
                 parsed_entries = json.loads(contents)
-                for e in parsed_entries:
-                    name = e['identifier']
-                    description = e['description']
+                for entry in parsed_entries:
+                    name = entry['identifier']
+                    description = entry['description']
                     kind = description['kind']
                     location = description['location']
 
@@ -100,7 +103,6 @@ class ArchRegistryConfig:
             
         config = ArchRegistryConfig(path, entries)
         return config    
-
 
     def to_plugin_registry(self):
         """

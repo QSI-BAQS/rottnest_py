@@ -1,53 +1,81 @@
-
-
 import sys
 import importlib.util
 import json
+
+from ..architecture_interface.rottnest_architecture import ROTTNEST_ARCHITECTURE_MODULE_TAG
 from rottnest.plugin.arch_location import ArchLocationKind
 
-class ArchPluginMap:
+class ArchitecturePlugins:
     '''
-       Architecture Plugin, holds an interface for
-       operations  
+       Architecture Plugin manager 
     '''
 
-    def __init__(self, identifier, plugin_map, location):
+    def __init__(self):
         '''
            Creates a new Plugin that can be used by
            rottnest, this plugin  
         '''
-        self.identifier = identifier
-        self.api_map = {}
-        #self.api_map = default_api_map(identifier)
-        self.plugin_map = plugin_map
-        self.location = location
 
-    def get_plugin_map(self):
-        '''
-           Gets its own plugin map which is typically just
-           1 architecture but many can be included so, it
-           can handle many being attached and returned 
-        '''
-        self.plugin_map
-
-    def to_config_entry(self):
-        '''
-           Moves the object into a config entry
-           dictionary 
-        '''
-        return {
-            "name": self.identifier,
-            "location": self.location,
-            "kind": ArchLocationKind.ModuleKey.to_name()
-        }
+        # Load from config
+        self._modules = load_modules_from_config()
+        self._architectures = self._load_architectures(self._modules)
 
     @staticmethod
-    def load_debug_lat2d():
+    def _load_architectures(modules) -> dict:
         '''
-           Currently a debugging variant of the lat2d for trialing with
-           built in plugin/archs 
+            Loads architecture constructors
         '''
-        return ArchPluginMap('lat2d', {}, 'arch.lat2d')
+        loaded_architectures = {} 
+        for module in modules:
+            architectures = getattr(module, ROTTNEST_ARCHITECTURE_MODULE_TAG, None)
+
+            # Module has no architectures exposed
+            if architectures is None:
+                print(f"Module {module} does not contain any rottnest architectures")
+                print(f'To expose an architecture at the module level, please set a "{ROTTNEST_ARCHITECTURE_MODULE_TAG}" variable in the module\'s main __init__.py')
+                continue
+
+            for architecture in architectures:
+                try:
+                    key = architecture.get_name()
+                    loaded_architectures[key] = architecture
+                except AttributeError:
+                    print(f"Architecture {architecture} in module {module} does not implement the RottnestArchitecture interface")
+
+        return loaded_architectures
+
+    def __getitem__(self, key):
+        '''
+            Getter based on keys
+            This is useful for hooking architecture selection with the front-end using a string based map
+        '''
+        return self._architectures.get(key, None)
+
+    def set_current_architecture(self, key):
+        '''
+            Setter method for the current architecture
+            Treats this class as the sole interface for passing architecture information to the front end
+        '''
+        arch = self[key]
+        if arch is None:
+            print(f"Unknown architecture {arch}")
+        else:
+            current_architecture = self[key] 
+
+    def get_architecture_names(self):
+        '''
+           Retrieves a list of dtos of the architectures
+           that the front-end can select from.
+
+           Current it is thin but will be expanded
+        '''
+        return list(self._architectures.keys())
+        
+        #for k, v in self.:
+        #    dtos.append(
+        #             'arch_name': name,
+        #     })
+        #return dtos
 
     @staticmethod
     def load_plugin_map_from_file(plugin_name, filepath):
@@ -66,26 +94,16 @@ class ArchPluginMap:
 
 
     @staticmethod
-    def load_plugin_map_from_module(plugin_name, location):
+    def load_plugin_map_from_module(module_name):
         '''
            Loads a python module from module space
            Calls `all_architectures()` and registers them
         '''
-        plugin_obj = importlib.import_module(location)
-        # It is not known what function to call
+        module = importlib.import_module(module_name)
         
-        return ArchPluginMap.retrieve_plugin_map(plugin_name, plugin_obj, location)
 
-    @staticmethod
-    def retrieve_plugin_map(name, modrep, location):
-        '''
-           Retrieves the architecture map object
-           and extracts the list of plugins
-        '''
-        archmap = modrep.architectures()
-        return ArchPluginMap(name, archmap.plugins(), location)
 
-        
+
 
 
 class ArchPluginRegistry:
@@ -134,44 +152,4 @@ class ArchPluginRegistry:
         '''
         return False
 
-    def get_arch_dtos(self):
-        '''
-           Retrieves a list of dtos of the architectures
-           that the front-end can select from.
-
-           Current it is thin but will be expanded
-        '''
-        dtos = []
-        for k, v in self.arch_map.items():
-            dtos.append({
-                             'arch_name': k,
-                             "arch" : {
-                                 'identifier': v.identifier,
-                             }
-                         })
-        return dtos
     
-    @staticmethod
-    def from_plugin_map(plug_map):
-        '''
-           Constructs a plugin registry with a plugin map 
-        '''
-        reg = ArchPluginRegistry()
-        for p in plug_map:
-            reg.register_plugin(p)
-
-        return reg
-
-
-    @staticmethod
-    def from_plugin_maps(plug_maps):
-        '''
-           Constructs a plugin registry with many plugin maps 
-        '''
-        reg = ArchPluginRegistry()
-        for pm in plug_maps:
-            for p in pm:
-                reg.register_plugin(p)
-
-        return reg
-        

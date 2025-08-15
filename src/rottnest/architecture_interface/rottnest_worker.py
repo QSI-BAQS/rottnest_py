@@ -167,8 +167,6 @@ class RottnestWorker(abc.ABC):
         '''
         raise NotImplementedError
 
-
-
     @staticmethod
     def get_graph(
             *args,
@@ -179,7 +177,6 @@ class RottnestWorker(abc.ABC):
             TODO: Replace
         '''
         raise NotImplementedError
-
 
     @staticmethod
     def run_widget(

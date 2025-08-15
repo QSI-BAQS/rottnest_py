@@ -5,6 +5,8 @@
 import abc
 from .rottnest_composer import RottnestComposer
 
+ROTTNEST_ARCHITECTURE_MODULE_TAG = 'rottnest_architectures'
+
 class RottnestArchitecture(abc.ABC):
     '''
         Rottnest architecture interface
@@ -44,7 +46,7 @@ class RottnestArchitecture(abc.ABC):
     @staticmethod
     def designer(*args, **kwargs):  
         '''
-            Generates any hooks needed for indicating what front-end designer is required   
+            Generates any hooks needed for indicating what front-end designer is required 
         '''
         raise NotImplementedError
 

@@ -1,4 +1,3 @@
-
 from rottnest.server.model import architecture 
 from rottnest.server.responder import responder, Result
 
@@ -36,5 +35,3 @@ def get_status(app, message, **kwargs):
 def run_graph_node(app, message, **kwargs):
     gid = message['payload']['gid']
     return architecture.run_debug3(gid)
-
-
