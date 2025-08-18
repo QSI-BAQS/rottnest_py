@@ -1,10 +1,15 @@
+'''
+    Manages loading of executables
+'''
 import sys
 import importlib.util
 import json
 
+from .. import config
+from ..executables.executable import ROTTNEST_EXECUTABLE_MODULE_TAG
+
 from .plugin_manager import PluginManager
 
-from ..executables.executable import ROTTNEST_EXECUTABLE_MODULE_TAG
 
 class ExecutablePlugins(PluginManager):
     '''
@@ -59,3 +64,10 @@ class ExecutablePlugins(PluginManager):
         #             'arch_name': name,
         #     })
         #return dtos
+
+
+
+
+
+
+

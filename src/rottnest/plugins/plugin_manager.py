@@ -8,6 +8,7 @@ import sys
 import types
 import importlib
 
+
 # Used for unique namespaces for dynamically loaded plugins
 glb_counter = 0
 
@@ -15,6 +16,7 @@ class PluginManager:
     '''
        Architecture Plugin manager 
     '''
+    _config_file_name = None
 
     def __init__(self, *, module_tag: str, modules: list, config_path=None):
         '''
@@ -47,6 +49,16 @@ class PluginManager:
             Getter based on keys
         '''
         return self._options.get(key, None)
+
+    @classmethod
+    def default_loader(cls) -> 'cls':
+        '''
+            Wrapper to load from a default configuration  
+        '''
+        return default_loader(
+            cls._config_file_name,
+            cls
+        )
 
     def load_config(self, filepath: str):
         '''
@@ -88,10 +100,10 @@ class PluginManager:
                 None
             )
 
-            # Module has no architectures exposed
+            # Module has no targets exposed
             if plugin_targets is None:
                 print(f"Module {module} does not contain any valid plugin targets")
-                print(f'To expose an architecture at the module level, please set a "{self._module_tag}" variable in the module\'s main namespace (e.g. __init__.py)')
+                print(f'To expose a target at the module level, please set an iterable "{self._module_tag}" variable in the module\'s main namespace (e.g. __init__.py)')
                 continue
 
             for target in plugin_targets:
@@ -147,11 +159,10 @@ class PluginManager:
     def _load_module_from_file_path(filepath: str) -> types.ModuleType:
         '''
            Loads a python module from file 
-           Calls `all_architectures()` and registers them
         '''
         # Load counter for unique namespacing
         global glb_counter
-        plugin_name = f'dynamically_loaded_arch_{glb_counter}'
+        plugin_name = f'dynamically_loaded_module_{glb_counter}'
         glb_counter += 1
 
         spec = importlib.util.spec_from_file_location(plugin_name, filepath)
@@ -167,7 +178,6 @@ class PluginManager:
     def _load_module_from_module_string(module_name: str) -> types.ModuleType:
         '''
            Loads a python module from module space
-           Calls `all_architectures()` and registers them
         '''
         module = importlib.import_module(module_name)
         return module
@@ -178,6 +188,8 @@ class PluginManager:
         '''
         option = self[key]
         if option is None:
-            print(f"Unknown option {arch}")
+            print(f"Unknown option {key}")
         else:
             self._current_option = option 
+
+

@@ -1,16 +1,20 @@
+'''
+    Manages loading of architectures
+'''
 import sys
 import importlib.util
 import json
 
-from .plugin_manager import PluginManager
-
+from ..config import architectures_file_name
 from ..architecture_interface.rottnest_architecture import ROTTNEST_ARCHITECTURE_MODULE_TAG
+
+from .plugin_manager import PluginManager
 
 class ArchitecturePlugins(PluginManager):
     '''
        Architecture Plugin manager 
     '''
-
+    _config_file_name = architectures_file_name 
     def __init__(self, modules=None, config_path=None):
         '''
            Creates a new Plugin that can be used by
@@ -25,6 +29,7 @@ class ArchitecturePlugins(PluginManager):
             module_tag = ROTTNEST_ARCHITECTURE_MODULE_TAG,
             modules = modules
         )
+
        
     def get_current_architecture(self):
         '''
