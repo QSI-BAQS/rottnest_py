@@ -1,11 +1,7 @@
 '''
     Manages loading of executables
 '''
-import sys
-import importlib.util
-import json
-
-from .. import config
+from ..config import executables_file_name
 from ..executables.executable import ROTTNEST_EXECUTABLE_MODULE_TAG
 
 from .plugin_manager import PluginManager
@@ -13,13 +9,14 @@ from .plugin_manager import PluginManager
 
 class ExecutablePlugins(PluginManager):
     '''
-       Executable Plugin manager 
+       Executable Plugin manager
     '''
+    _config_file_name = executables_file_name
 
     def __init__(self, modules=None, config_path=None):
         '''
            Creates a new Plugin that can be used by
-           rottnest, this plugin  
+           rottnest, this plugin
         '''
 
         if modules is None:
@@ -28,9 +25,10 @@ class ExecutablePlugins(PluginManager):
         # Load from config
         super().__init__(
             module_tag = ROTTNEST_EXECUTABLE_MODULE_TAG,
-            modules = modules
+            modules = modules,
+            config_path = config_path
         )
-       
+
     def get_current_executable(self):
         '''
             Getter for the current executable
@@ -46,8 +44,8 @@ class ExecutablePlugins(PluginManager):
     def set_current_executable(self, key):
         '''
             Setter method for the current executable
-            Treats this class as the sole interface for 
-            passing executable information to the 
+            Treats this class as the sole interface for
+            passing executable information to the
             front end
         '''
         self._set_current_option(key)
@@ -58,16 +56,9 @@ class ExecutablePlugins(PluginManager):
            that the front-end can select from.
         '''
         return list(self._options.keys())
-        
+
         #for k, v in self.:
         #    dtos.append(
         #             'arch_name': name,
         #     })
         #return dtos
-
-
-
-
-
-
-
