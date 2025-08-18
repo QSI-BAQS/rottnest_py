@@ -1,9 +1,11 @@
 import abc
 import cirq
+import numpy as np
 
 from rottnest.gridsynth.angle_to_rational import angle_to_rational
 from rottnest.gridsynth.gridsynth import Gridsynth 
 
+ROTTNEST_EXECUTABLE_MODULE_TAG = "rottnest_executables"
 
 class RottnestExecutable(abc.ABC):
     '''
@@ -38,6 +40,13 @@ class RottnestExecutable(abc.ABC):
             self.__setattr__(param_name, param_type(param_value))
         self.precompute()
 
+    @staticmethod
+    def get_name():
+        '''
+            Used to load names to the front end  
+        '''
+        raise NotImplementedError
+
     def precompute(self, *args, **kwargs):
         '''
             Precomputation of elements of the circuit
@@ -54,6 +63,7 @@ class RottnestExecutable(abc.ABC):
         '''
            Abstract circuit generation method
         '''
+        raise NotImplementedError
 
     @classmethod
     def get_parameters(cls):
@@ -206,8 +216,8 @@ class RottnestExecutable(abc.ABC):
 
         for s in qc:
             for gate in s:
-                # Can do exact matching on these values as they are powers of two
-                # Should really replace this with a bound by delta
+                # Bound by delta of a T rotation
+                # T gates are caught elsewhere 
                 if (
                         (type(gate.gate) is cirq.ops.common_gates.Rz) 
                         and 

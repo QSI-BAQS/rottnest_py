@@ -4,11 +4,11 @@ import json
 
 from .plugin_manager import PluginManager
 
-from ..architecture_interface.rottnest_architecture import ROTTNEST_ARCHITECTURE_MODULE_TAG
+from ..executables.executable import ROTTNEST_EXECUTABLE_MODULE_TAG
 
-class ArchitecturePlugins(PluginManager):
+class ExecutablePlugins(PluginManager):
     '''
-       Architecture Plugin manager 
+       Executable Plugin manager 
     '''
 
     def __init__(self, modules=None, config_path=None):
@@ -22,34 +22,34 @@ class ArchitecturePlugins(PluginManager):
 
         # Load from config
         super().__init__(
-            module_tag = ROTTNEST_ARCHITECTURE_MODULE_TAG,
+            module_tag = ROTTNEST_EXECUTABLE_MODULE_TAG,
             modules = modules
         )
        
-    def get_current_architecture(self):
+    def get_current_executable(self):
         '''
-            Getter for the current architecture
+            Getter for the current executable
         '''
         return self._current_option
 
-    def get_architectures(self):
+    def get_executables(self):
         '''
-            Getter for architecture objects
+            Getter for executable objects
         '''
         return self._options
 
-    def set_current_architecture(self, key):
+    def set_current_executable(self, key):
         '''
-            Setter method for the current architecture
+            Setter method for the current executable
             Treats this class as the sole interface for 
-            passing architecture information to the 
+            passing executable information to the 
             front end
         '''
         self._set_current_option(key)
 
-    def get_architecture_names(self):
+    def get_executable_names(self):
         '''
-           Retrieves a list of dtos of the architectures
+           Retrieves a list of dtos of the executables
            that the front-end can select from.
         '''
         return list(self._options.keys())
