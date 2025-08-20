@@ -115,6 +115,10 @@ class PluginManager:
             for target in plugin_targets:
                 try:
                     key = target.get_name()
+                    if not isinstance(key, str):
+                        raise NotImplementedError(
+f"Target {target} in module {module} does not return a string when calling static or class method get_name()"
+                        )
                     loaded_options[key] = target
                 except AttributeError:
                     print(f"Object {target} in module {module} does not implement the required plugin interface")
