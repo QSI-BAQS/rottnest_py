@@ -36,6 +36,14 @@ class RottnestArchitecture(abc.ABC):
         raise NotImplementedError
 
     @staticmethod
+    def worker(*args, **kwargs) -> RottnestWorker:
+        '''
+        Optional for testing
+        Returns a RottnestWorker object
+        '''
+        pass
+
+    @staticmethod
     def composer(*args, **kwargs) -> RottnestComposer: 
         '''
             Gets a composer type

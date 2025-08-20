@@ -14,6 +14,13 @@ from ..input_parsers.rz_tag_tracker import RzTagTracker
 from rottnest.compute_units.compute_unit import ComputeUnit
 from rottnest.compute_units.architecture_proxy import saved_architectures
 
+PING = 'ping'
+PONG = 'pong'
+SET_PRECISION = 'set_precision' 
+EXEC_COMPUTE_UNIT  = 'exec_compute_unit'
+EXEC_GRAPH_STATE = 'exec_widget'
+GET_GRAPH = 'get_graph'
+LOAD_ARCHITECTURE = 'load_architecture'
 
 # TODO: Replace with more generic decomposition manager
 
@@ -31,19 +38,18 @@ class RottnestWorker(abc.ABC):
         self._architecture_cache_table = {}
 
         self.worker_tasks = {
-            'ping': self.ping,
-            'set_precision': self.set_precision,
-            'exec_compute_unit': self.execute_compute_unit,
-            'exec_widget': self.execute_graph_node,
-            'get_graph': self.get_graph,
-            'load_architecture': self.load_architecture
+            PING: self.ping,
+            SET_PRECISION: self.set_precision,
+            EXEC_COMPUTE_UNIT: self.execute_compute_unit,
+            EXEC_GRAPH_STATE: self.execute_graph_state,
+            GET_GRAPH: self.get_graph,
+            LOAD_ARCHITECTURE: self.load_architecture,
         }
 
         # Workers enabled blinding
         # Architecture details are contained to workers
         if blind:
-            self.worker_tasks['get_graph'] = self.not_supported 
-
+            self.worker_tasks[GET_GRAPH] = self.not_supported 
 
     def __call__(
             self,
@@ -96,7 +102,7 @@ class RottnestWorker(abc.ABC):
         '''
             Ping function for worker alive status checking 
         '''
-        return 'pong'
+        return PONG
 
     def set_precision(
         self,
@@ -151,19 +157,24 @@ class RottnestWorker(abc.ABC):
         ):
         '''
             Executes compute unit
+            This performs the graph state compilation
+             on the worker 
         '''
         raise NotImplementedError
 
     @staticmethod
-    def execute_graph_node(
-            compute_unit: ComputeUnit,
+    def execute_graph_state(
+            widget: Widget,
             rz_tag_tracker: RzTagTracker,
             full_output: bool,
             cache_hash: str,
             is_priority: bool = False
         ):
         '''
-            Executes compute unit
+            Executes a graph node 
+            This performs the graph state
+             compilation on the process pool, 
+             blinding the worker to the computation
         '''
         raise NotImplementedError
 
@@ -189,8 +200,6 @@ class RottnestWorker(abc.ABC):
             Abstract base method 
         '''
         raise NotImplementedError
-
-
 
     def get_stats(
             self,
