@@ -1,9 +1,11 @@
 import abc
 import cirq
+import numpy as np
 
 from rottnest.gridsynth.angle_to_rational import angle_to_rational
-from rottnest.gridsynth.gridsynth import gs_instance 
+from rottnest.gridsynth.gridsynth import Gridsynth 
 
+ROTTNEST_EXECUTABLE_MODULE_TAG = "rottnest_executables"
 
 class RottnestExecutable(abc.ABC):
     '''
@@ -11,12 +13,18 @@ class RottnestExecutable(abc.ABC):
     '''
 
     _prec_rz = None
+    # FEATURE: RzDecomposition
+    # Move this to a module that can be shared with workers 
+    _rz_decomposer = Gridsynth()
 
-    def __init__(self, **kwargs):
+    def __init__(self, pandora=True, **kwargs):
         '''
         Default constructor for RottnestExecutables
         Loads all parameters from all child classes and sets them to their default value
+        :: pandora : bool :: Enables or disables pandora caching 
         '''
+        self.pandora = pandora
+
         params = (
             self.__class__.get_private_parameters()
             | self.__class__.get_parameters()
@@ -31,6 +39,13 @@ class RottnestExecutable(abc.ABC):
             # Bind the parameters by name to the class instance
             self.__setattr__(param_name, param_type(param_value))
         self.precompute()
+
+    @staticmethod
+    def get_name():
+        '''
+            Used to load names to the front end  
+        '''
+        raise NotImplementedError
 
     def precompute(self, *args, **kwargs):
         '''
@@ -48,6 +63,7 @@ class RottnestExecutable(abc.ABC):
         '''
            Abstract circuit generation method
         '''
+        raise NotImplementedError
 
     @classmethod
     def get_parameters(cls):
@@ -158,8 +174,7 @@ class RottnestExecutable(abc.ABC):
             Dipatch method for magic state counting
         '''
 
-    @staticmethod
-    def count_t_cirq(qc: cirq.Circuit, precision: int = None) -> int:
+    def count_t_cirq(self, qc: cirq.Circuit, precision: int = None) -> int:
         '''
             Naive T counting
             :: qc : cirq.Circuit :: Cirq circuit to perform T counting over 
@@ -175,7 +190,7 @@ class RottnestExecutable(abc.ABC):
                 if type(gate.gate) is cirq.ops.common_gates.Rz:
                     angle = gate.gate._rads
                     p, q = angle_to_rational(angle, precision=precision)
-                    sequence = gs_instance.z_theta_instruction(p, q, precision=precision)
+                    sequence = self._rz_decomposer.z_theta_instruction(p, q, precision=precision)
                     for i in sequence:
                         if i == 'T':
                             t_count += 1
@@ -201,8 +216,8 @@ class RottnestExecutable(abc.ABC):
 
         for s in qc:
             for gate in s:
-                # Can do exact matching on these values as they are powers of two
-                # Should really replace this with a bound by delta
+                # Bound by delta of a T rotation
+                # T gates are caught elsewhere 
                 if (
                         (type(gate.gate) is cirq.ops.common_gates.Rz) 
                         and 

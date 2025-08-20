@@ -5,14 +5,18 @@ from typing import Any
 import threading
 
 from rottnest.server.responder import Result
+
 # Ill advised, but forces the generation and capture of the region types
+# TODO: Push this into the t_scheduler
+# These should be hooked by the visualiser
 from t_scheduler.region import * 
 from t_scheduler.region.region_types import region_types, region_args
 
 from t_scheduler.router import *
 from t_scheduler.router import region_router_exports
 
-from rottnest.widget_compilers.compiler_flow import run_widget as run_widget
+
+
 from rottnest.process_pool import process_pool
 
 # TODO: Unbind references from here
@@ -25,6 +29,8 @@ from rottnest.input_parsers.cirq_parser import shared_rz_tag_tracker
 
 from rottnest.process_pool.process_pool import ComputeUnitExecutorPool
 cu_executor_pool = ComputeUnitExecutorPool()
+
+
 
 @lru_cache
 def get_region_subtypes() -> str: 
@@ -100,6 +106,7 @@ def run_debug(arch_id, wsock):
 
 def run_debug2(arch_id):
     return run_debug3(arch_id=arch_id, node_id='0s_0s')
+
 def run_debug3(node_id, arch_id=None):
     if arch_id is None:
         try:
@@ -131,6 +138,9 @@ def run_debug3(node_id, arch_id=None):
 # END mess
 
 def get_router_mapping():
+    '''
+        TODO: Move this to the visualiser object
+    '''
     return region_router_exports
 
 def save_arch(arch_json_obj):

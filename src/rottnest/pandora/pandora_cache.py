@@ -121,16 +121,16 @@ def update_sequencer(seq, *args, **kwargs):
     seq.set_params(*args, **kwargs)
 
 
-from pyLIQTR.qubitization.qubitized_gates import QubitizedRotation, QubitizedReflection
-from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU
-from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
-from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
-from qualtran._infra.adjoint import Adjoint
+#from pyLIQTR.qubitization.qubitized_gates import QubitizedRotation, QubitizedReflection
+#from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU
+#from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
+#from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
+#from qualtran._infra.adjoint import Adjoint
 
 # Skip if pandora is not enabled
 # This should be promoted to a module for each circuit that is to be constructed and run  
-if pandora_connection is not None:
-    pass
+#if pandora_connection is not None:
+#    pass
     #attach_class('adjoint', Adjoint)
     #attach_class('lcu', PauliStringLCU)
     #attach_class('prepare_lcu', prepare_pauli_lcu)
