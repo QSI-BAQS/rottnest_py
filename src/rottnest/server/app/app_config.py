@@ -1,7 +1,10 @@
 from rottnest.executables.executable_map import ExecutableMap
 from rottnest.executables.executable_state import ExecutableState
-from rottnest.plugin.arch_config import ArchRegistryConfig
+from rottnest.plugins.architecture_plugins import ArchitecturePlugins
 
+
+ARCHITECTURE_REGISTRY_CFG = 'cfgs/architectures.json'
+PROGRAM_REGISTRY_CFG = 'cfgs/programs.json'
 
 class AppExtensions:
     '''
@@ -15,6 +18,10 @@ class AppExtensions:
 
 
 class AppComponentLoader:
+    '''
+       AppComponentLoader allows for components to be attached
+       to the application that will be invoked on initialisation 
+    '''
 
     def __init__(self, path, attr_name, lfn):
         '''
@@ -99,15 +106,18 @@ class ApplicationConfig:
         '''
         return ApplicationConfig().add_loader(
             AppComponentLoader(
-                               'cfgs/programs.json',
+                               PROGRAM_REGISTRY_CFG,
                                'exe_map',
-                               lambda p : ExecutableMap.from_config_or_default(p)
+                               lambda p : ExecutableMap
+                               .from_config_or_default(p)
                            )
         ).add_loader(
             AppComponentLoader(
-                               'cfgs/architectures.json',
+                               ARCHITECTURE_REGISTRY_CFG,
                                'arch_map',
-                               lambda p : ArchRegistryConfig.load_config_or_default(p).to_plugin_registry()
+                               lambda p : ArchitecturePlugins
+                                .load_config_or_default()
+                               
                            )
         ).add_loader(
             AppComponentLoader(

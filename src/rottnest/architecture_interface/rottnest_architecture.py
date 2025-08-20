@@ -4,6 +4,7 @@
 '''
 import abc
 from .rottnest_composer import RottnestComposer
+from .rottnest_worker import RottnestWorker
 
 ROTTNEST_ARCHITECTURE_MODULE_TAG = 'rottnest_architectures'
 

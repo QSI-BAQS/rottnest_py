@@ -1,10 +1,9 @@
 
 
-import copy
 import importlib
 import sys
 from enum import Enum
-from functools import partial
+from rottnest.executables.executable import RottnestExecutable
 
 
 class CircuitLocationKind(Enum):
@@ -77,75 +76,42 @@ class CircuitInstance:
         interface
     '''
 
-    def __init__(self, desc_name, invfn, args):
+    def __init__(self, desc_name, executable: RottnestExecutable, args):
         '''
            Initialises the instance 
         '''
         self.desc_name = desc_name
-        self.invfn = invfn
+        self.executable = executable
         self.args = args
-
-
-    def invoke_and_consume(self):
-        '''
-           Invokes the instance
-           and deletes the invfn and args to None
-           - Note: Not sure if this is useful but I guess
-                   it is something 
-        '''
-        ret = CircuitReturnObj(self.invoke())
-        self.inkfn = None
-        self.args = None
-        return ret
-        
 
     def invoke(self):
         '''
            Invokes the circuit 
            returns a CircuitReturnObj
         '''
-        if self.invfn is None:
+        if self.executable is None:
             print('Unable to invoke instance')
             return CircuitReturnObj(None)
         return CircuitReturnObj(self.invfn(self.args))
 
-    def get_partial(self):
-        '''
-           Generates a partial based on the invoke_fn
-           field and args associated supplied
-        '''
-        return partial(self.invfn, self.args)
 
 
 
         
 class CircuitDescription:
     '''
-        TODO: Add a params list
-       Circuit description,
-       has:
-           name: str
-           invoker: fn(args)
-           fn_args: Dict
-           fn_params: (Optional) List<string>, default: None
-           
-           Please make sure that args does not contain
-           any self-referential objects
+        CircuitDescription that is used to provide
+        a basic description of the input circuit
     '''
 
-    def __init__(self, name, invoke_fn, fn_args, fn_params=None, module_key=None):
+    def __init__(self, executable, module_key=None):
         '''
            Initialises and constructs a circuit description
            that can be used to construct an instance 
         '''
-        self.name = name
-        self.invoke_fn = invoke_fn
-        self.fn_args = fn_args
+        self.name = executable.__name__
+        self.executable = executable
         self.module_key = module_key
-        if fn_params is None:
-            self.fn_params = self.derive_params()
-        else:
-            self.fn_params = fn_params
 
     def to_dto(self):
         '''
@@ -154,8 +120,7 @@ class CircuitDescription:
         '''
         return {
             "name": self.name,
-            "args": self.fn_args,
-            "params": self.fn_params
+            "params": self.executable.get_parameters()
         }
     
     def to_config_entry(self):
@@ -165,31 +130,17 @@ class CircuitDescription:
         '''
         return {
             "name": self.name,
-            "args": self.fn_args,
-            "invoke_fn": self.invoke_fn.__name__,
-            "params": self.fn_params
+            "executable": self.executable,
+            "params": self.executable.get_parameters()
         }
 
-    def derive_params(self):
-        '''
-           Will simply derive the parameters names
-           as numbers, provide fn_params if you want names
-           specify a list of the name parameters
-        '''
-        params = []
-        for i in range(len(self.args)):
-            params.append('{}'.format(i))
-        return params
 
     @staticmethod
     def create_circuit_from_dict(circ_obj):
         '''
            Creates a circuit from a dictionary 
         '''
-        return CircuitDescription(circ_obj['name'],
-                                  circ_obj['invoke_fn'],
-                                  circ_obj['args'],
-                                  circ_obj['params'])
+        return CircuitDescription(circ_obj['executable'])
         
 
     @staticmethod
@@ -216,15 +167,14 @@ class CircuitDescription:
            Constructs a new circuit from a module
            name 
         '''
-        
+
+        exe_name = circ_obj['executable']
         path = circ_obj['path']
-        invfn = circ_obj['invoke_fn']
-        args = circ_obj['args']
         program_obj = importlib.import_module(path)
 
-        invoke_fn = program_obj[invfn]
-        if invoke_fn is not None:
-            return CircuitDescription(name, invoke_fn, args)
+        executable = program_obj[exe_name]
+        if executable is not None:
+            return CircuitDescription(executable)
         else:
             return None
 
@@ -235,10 +185,9 @@ class CircuitDescription:
            Constructs a new circuit from a file path 
         '''
 
-        path = circ_obj['path']
-        invfn = circ_obj['invoke_fn']
-        args = circ_obj['args']
         
+        exe_name = circ_obj['executable']
+        path = circ_obj['path']
         spec = importlib.util.spec_from_file_location(name, path)
         program_obj = importlib.util.module_from_spec(spec)
         sys.modules[name] = program_obj
@@ -246,9 +195,9 @@ class CircuitDescription:
         obj = None
         try:
             spec.loader.exec_module(program_obj)
-            invoke_fn = program_obj[invfn]
-            if invoke_fn is not None:
-                obj = CircuitDescription(name, invoke_fn, args)
+            executable = program_obj[exe_name]
+            if executable is not None:
+                obj = CircuitDescription(executable)
             else:
                 obj = None
         except Exception:
@@ -256,15 +205,12 @@ class CircuitDescription:
 
         return obj
 
-    def create_instance(self, input_args=None):
+    def create_instance(self, input_args):
         '''
            Generates a circuit instance
            Will cause a deep copy on the args 
         '''
-        name = self.name
-        invfn = self.invfni
+        executable = self.executable
         inv_args = input_args
-        if input_args is None:
-            inv_args = copy.deepcopy(self.args)
-        inst = CircuitInstance(name, invfn, inv_args)
+        inst = CircuitInstance(executable, inv_args)
         return inst

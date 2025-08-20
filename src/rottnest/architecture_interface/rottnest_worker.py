@@ -10,7 +10,7 @@ import time
 
 from ..input_parsers.rz_tag_tracker import RzTagTracker
 
-
+from cabaliser.widget import Widget
 from rottnest.compute_units.compute_unit import ComputeUnit
 from rottnest.compute_units.architecture_proxy import saved_architectures
 

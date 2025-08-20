@@ -13,6 +13,12 @@ from .config_loader import default_loader
 # Used for unique namespaces for dynamically loaded plugins
 GLB_COUNTER = 0
 
+'''
+   Format string as part of a not implemented exception 
+'''
+PLUGIN_NOT_IMPL_ERROR = "Target {} in module {} does not return a string when calling static or class method get_name()"
+
+
 class PluginManager:
     '''
        Architecture Plugin manager
@@ -66,6 +72,16 @@ class PluginManager:
             cls
         )
 
+    @classmethod
+    def load_config_or_default(cls, filepath: str):
+        '''
+           Loads the configuration or will attempt to
+           load the defaults 
+        '''
+        plugin = cls.default_loader()
+        plugin.load_config(filepath)
+        
+
     def load_config(self, filepath: str):
         '''
             Short name wrapper
@@ -116,9 +132,7 @@ class PluginManager:
                 try:
                     key = target.get_name()
                     if not isinstance(key, str):
-                        raise NotImplementedError(
-f"Target {target} in module {module} does not return a string when calling static or class method get_name()"
-                        )
+                        raise NotImplementedError(PLUGIN_NOT_IMPL_ERROR.format(target, module))
                     loaded_options[key] = target
                 except AttributeError:
                     print(f"Object {target} in module {module} does not implement the required plugin interface")
@@ -151,12 +165,12 @@ f"Target {target} in module {module} does not return a string when calling stati
                 module = None
                 try:
                     module = PluginManager._load_module_from_module_string(entry)
-                except:
+                except Exception as _e:
                     pass
 
                 try:
                     module = PluginManager._load_module_from_file_path(entry)
-                except:
+                except Exception as _e:
                     pass
 
                 if module is None:

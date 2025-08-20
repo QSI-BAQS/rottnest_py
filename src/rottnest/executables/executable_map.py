@@ -1,7 +1,7 @@
 
 import json
 from rottnest.executables.circuit import CircuitDescription
-from rottnest.executables.fermi_hubbard import make_fh_circuit
+from rottnest.executables.fermi_hubbard import FermiHubbard
 
 
 class ExecutableMap:
@@ -86,13 +86,12 @@ class ExecutableMap:
         except Exception:
         
             print("Unable to open file, likely missing, using defaults")
-            
             # TODO: Hold this in a list in another module
             circ_dict = {
-                'name': "fermi_hubbard",
-                'invoke_fn': make_fh_circuit,
-                'args' : [2, 1.0, 0.95],
-                'params': ['N', 'times', 'p_algo']
+                'name': FermiHubbard.__name__,
+                'executable': FermiHubbard,
+                'args' : [2, 1.0, 0.95], # remove?
+                'params': FermiHubbard.get_parameters()
                 
             }
             circ_res = CircuitDescription.create_circuit_from_dict(circ_dict)
