@@ -19,6 +19,8 @@ class ExecutablePlugins(PluginManager):
            rottnest, this plugin
         '''
 
+        self._params = {}
+
         if modules is None:
             modules = tuple()
 
@@ -28,12 +30,43 @@ class ExecutablePlugins(PluginManager):
             modules = modules,
             config_path = config_path
         )
+    
+    def get_executable_params(self):
+        '''
+            Parameters for executable
+        '''
+        return self._params
+
+    def set_executable_params(self, **params):
+        '''
+           Sets executable parameters 
+        '''
+        self._params = params
+
+    def set_executable_params_from_dict(self, params: dict):
+        '''
+           Sets executable parameters 
+           This method only exists to skip unpacking and repacking
+        '''
+        self._params = params
+
+
+    def __process_default_params(self, params:dict):
+        '''
+            Strips type information from default param dicts
+        '''
+        stripped_params = {}
+        for key, val in params.items():
+            type_info, value = val 
+            stripped_params[key] = value
+
+        return stripped_params
 
     def get_current_executable(self):
         '''
             Getter for the current executable
         '''
-        return self._current_option
+        return self._current_option(**self.get_executable_params())
 
     def get_executables(self):
         '''
@@ -49,6 +82,13 @@ class ExecutablePlugins(PluginManager):
             front end
         '''
         self._set_current_option(key)
+
+        # Sets default params
+        self.set_executable_params_from_dict(
+            self.__process_default_params(
+                self._current_option.get_parameters()
+            )
+        )
 
     def get_executable_names(self):
         '''
