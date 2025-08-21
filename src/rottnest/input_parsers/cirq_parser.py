@@ -15,6 +15,7 @@ from rottnest.input_parsers.interrupt import INTERRUPT, NON_CACHING
 
 from rottnest.pandora.pandora_sequencer import PandoraSequencer
 
+# TODO: remove
 shared_rz_tag_tracker = RzTagTracker()
 
 class CirqParser:
@@ -51,6 +52,9 @@ class CirqParser:
         self._rz_tracker.reset()
         return prev_context
 
+    def curr_mem(self):
+        return len(self._qubit_labels) * 2 + self._rz_tracker.n_rz_gates
+
     def extract_context(self): 
         '''
         TODO: Tighten this 
@@ -59,7 +63,15 @@ class CirqParser:
         n_rz_gates = self._rz_tracker.n_rz_gates 
         n_qubits = 2 * n_inputs + n_rz_gates 
         n_outputs = n_inputs 
-        return n_inputs, n_qubits, n_outputs
+        rz_tracker = self._rz_tracker.to_dict()
+        return n_inputs, n_qubits, n_outputs, rz_tracker
+
+    def extract_rz_tracker(self) -> dict:
+        '''
+            Extracts terms from the Rz tracker for 
+            serialisation
+        '''
+        return self._rz_tracker.to_dict()
 
     def parse(
         self,
@@ -71,7 +83,8 @@ class CirqParser:
         if isinstance(circ_iter, PandoraSequencer):
             return circ_iter.to_operation_sequence()
 
-        op = OperationSequence(self.sequence_length)
+        op = OperationSequence(max(self.sequence_length, cirq_patcher.MIN_SEQUENCE_LEN))
+
         for moment in circ_iter:
             for operation in moment:
 
@@ -85,7 +98,7 @@ class CirqParser:
                         continue 
                     # Non Caching, immediately interrupt
                     yield op 
-                    op = OperationSequence(self.sequence_length)
+                    op = OperationSequence(max(self.sequence_length, cirq_patcher.MIN_SEQUENCE_LEN))
                     continue
 
                 # Classically controlled gate
@@ -94,7 +107,7 @@ class CirqParser:
 
                 if operation.gate._n_cabaliser_ops + len(op) > self.sequence_length:  
                     yield op
-                    op = OperationSequence(self.sequence_length)
+                    op = OperationSequence(max(self.sequence_length, cirq_patcher.MIN_SEQUENCE_LEN))
                 operation.gate._parse_cabaliser(operation, op, self._qubit_labels, self._rz_tracker) 
         if len(op) > 0:
             yield op

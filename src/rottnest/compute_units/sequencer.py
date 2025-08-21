@@ -6,6 +6,8 @@ from rottnest.input_parsers.interrupt import INTERRUPT, NON_CACHING
 from rottnest.compute_units.compute_unit import ComputeUnit
 from rottnest.compute_units.architecture_proxy import ArchitectureProxy
 
+from rottnest.monkey_patchers.cirq_patcher import MIN_SEQUENCE_LEN
+
 class Sequencer():
     '''
         Widget Sequencer
@@ -20,8 +22,10 @@ class Sequencer():
         self._architecture_proxies = list(map(ArchitectureProxy, architectures))
         self.priority_shim = []
 
-        # TODO: Update the length dynamically  
-        self.sequence_length = self._architecture_proxies[0].mem_bound()
+        # Worst case: Rz operation on a new qubit induces an input, graph state and
+        # teleported qubit 
+        self.sequence_length = self._architecture_proxies[0].mem_bound() // 3
+        
 
         if global_context is None:
             global_context = QubitLabelTracker()
@@ -29,18 +33,16 @@ class Sequencer():
     def priority(self, gate, architecture):
         pass
 
-    def sequence_pyliqtr(self, parser, compactness = 0.9):
+    def sequence_pyliqtr(self, parser):
 
         architecture_idx = 0
 
-        architectures = cycle(self._architecture_proxies)    
+        architectures = cycle(self._architecture_proxies)
  
         architecture = next(architectures) 
         compute_unit = ComputeUnit(architecture.to_json(), mem_bound=architecture.mem_bound())
 
         cirq_parser = CirqParser(self.sequence_length)
-
-        gate_count = 0
 
         for cirq_obj in parser.traverse():
             # Interrupt between cirq objects
@@ -49,6 +51,7 @@ class Sequencer():
                 # This ensures that pyliqtr level objects compile to distinct  
                 #  sequences of widgets
                 # TODO: Option to skip interrupts to reduce widget count  
+
                 if op_seq == INTERRUPT:
                     # Cache interrupt
                     if op_seq.cache_hash() is not NON_CACHING:
@@ -62,20 +65,28 @@ class Sequencer():
 
                         architecture = next(architectures)
                         # Create a new compute unit
-                        compute_unit = ComputeUnit(architecture.to_json(), mem_bound=architecture.mem_bound())
+                        compute_unit = ComputeUnit(
+                            architecture.to_json(),
+                            mem_bound=architecture.mem_bound()
+                        )
 
                         # Reset the context of the parser
                         cirq_parser.reset_context(op_seq)
                         cirq_parser.sequence_length = self.sequence_length 
                         continue
 
-                gate_count += len(op_seq)
-
-                curr_memory = compute_unit.n_rz_operations + 2 * len(cirq_parser)
+                curr_memory = cirq_parser.curr_mem()
                 # This doesn't track additional qubit allocations
-                if curr_memory + op_seq.n_rz_operations > compute_unit.memory_bound * compactness:
+
+                # Caution that the next sequence doesn't push us over
+                # this should be replaced with a lookahead rather than a bound
+                if (cirq_parser.sequence_length == 0) or (cirq_parser.curr_mem() + 3 * op_seq.n_rz_operations + len(op_seq) > 0.8 * compute_unit.memory_bound - MIN_SEQUENCE_LEN):
+
                     local_context = cirq_parser.extract_context()
                     compute_unit.add_context(*local_context)
+                   
+                    #assert False
+
                     if len(compute_unit) > 0:
                         yield compute_unit
 
@@ -88,15 +99,16 @@ class Sequencer():
 
                     # Reset the context of the parser
                     cirq_parser.reset_context(op_seq)
-                    cirq_parser.sequence_length = self.sequence_length 
+                    cirq_parser.sequence_length = self.sequence_length
                     continue
 
                 # Add the  sequence
                 compute_unit.append(op_seq)
+
                
                 # Reduce sequence length 
-                # This guarantees that hitting the compactness threshold doesn't run over the memory bound 
-                cirq_parser.sequence_length = int(compactness * (compute_unit.memory_bound - (op_seq.n_rz_operations) + 2 * len(cirq_parser))) 
+                # Worst case is the creation of a new teleported gate 
+                cirq_parser.sequence_length = (self.sequence_length * 3 - cirq_parser.curr_mem()) // 3 
 
         if len(compute_unit) > 0:
             local_context = cirq_parser.extract_context()
