@@ -2,7 +2,7 @@
 import json
 from rottnest.executables.circuit import CircuitDescription
 from rottnest.executables.fermi_hubbard import FermiHubbard
-
+from rottnest.debug.monitor import DebugMonitor
 
 class ExecutableMap:
     '''
@@ -55,7 +55,7 @@ class ExecutableMap:
             if desc is not None:
                 newMap.append(desc)
             else:
-                print("Reverting, configuration contains malformed or unrecognisable plugin information")
+                DebugMonitor.with_obj("Reverting, configuration contains malformed or unrecognisable plugin information", "ExecutableMap")
                 newMap = oldMap
                 success = False
                 break
@@ -85,7 +85,7 @@ class ExecutableMap:
                         exe_map.insert_circuit_desc(circ_res)
         except Exception:
         
-            print("Unable to open file, likely missing, using defaults")
+            DebugMonitor.with_obj("Unable to open file, likely missing, using defaults", "ExecutableMap")
             # TODO: Hold this in a list in another module
             circ_dict = {
                 'name': FermiHubbard.__name__,

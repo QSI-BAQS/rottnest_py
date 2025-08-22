@@ -1,5 +1,7 @@
 import sys
 from time import time
+from .interactive.console import DebugConsoleSystem
+
 
 class DebugMonitorMessage:
     '''
@@ -7,23 +9,56 @@ class DebugMonitorMessage:
        and the data associated 
     '''
 
-    def __init__(self, message, kind=''):
+    def __init__(self, message, kind='', tabsize=4, charcount=56):
         '''
            message itself along with generating the timestamp 
         '''
         self.kind = kind
         self.message = message
-        self.timestamp = time.time()
+        self.timestamp = time()
+        self.tabsize = tabsize
+        self.charcount = charcount
+
 
     def fmtstr(self):
 
         '''
-           String representation of the message itself 
+           String representation of the message itself
+           Formats it as a debug message
         '''
         kind = self.kind
         timestamp = self.timestamp
         message = self.message
-        return f"(DEBUG:{kind}) {timestamp}: ${message}"
+        msglen = len(message)
+
+        parts = msglen / self.charcount
+        start = 0
+        end = self.charcount
+        message_comp = ''
+        spaced_tab = ' ' * (self.tabsize * 4)
+        
+        if parts >= 1:
+            i = 0
+            while(i < parts):
+                segment = message[start:end]
+                start = end
+                end += self.charcount
+                if i >= 1:
+                    message_comp += f"{spaced_tab}{segment}\n"
+                else:
+                    message_comp += f"{segment}\n"
+                i += 1
+        else:
+            message_comp = message
+        
+        return f"(DEBUG:{int(timestamp)}, {kind}): {message_comp}"
+
+    @staticmethod
+    def make(kind, message):
+        '''
+           Gets events that occur and planted within the codebase 
+        '''
+        return DebugMonitorMessage(message, kind)  
 
     def __repr__(self):
         '''
@@ -46,7 +81,7 @@ class DebugMonitor:
       extract meaningful information  
     '''
 
-    def __init__(self, use_stdin=False, stdout_output=True, to_file=None):
+    def __init__(self, use_stdin=True, stdout_output=True, to_file=None):
         '''
            Initialises the debug monitor to ensure we can
            interaction and retrieve the log or dump it to a file 
@@ -55,7 +90,8 @@ class DebugMonitor:
         self.stdout_output = stdout_output
         self.to_file = to_file
         self.disabled = False
-        self.log = []
+        self.logs = []
+        self.console = DebugConsoleSystem.default()
 
 
     @staticmethod
@@ -63,7 +99,7 @@ class DebugMonitor:
         '''
            Gets the global singleton instance 
         '''
-        return __debug_monitor
+        return sys.modules[__name__].__dict__['__debug_monitor']
 
     @staticmethod
     def default():
@@ -73,9 +109,11 @@ class DebugMonitor:
         '''
         modvar = sys.modules[__name__]
         if '__debug_monitor' not in modvar.__dict__:
-            return DebugMonitor()
+            mon = DebugMonitor()
+            mon.log(DebugMonitorMessage.make('Startup', 'Monitor constructed'))
+            return mon
         else:
-            return __debug_monitor
+            return sys.modules[__name__].__dict__['__debug_monitor']
 
     @staticmethod
     def with_obj(obj, kind=''):
@@ -84,7 +122,8 @@ class DebugMonitor:
         '''
         sfmt = repr(obj)
         dbmsg = DebugMonitorMessage(sfmt, kind)
-        __debug_monitor.log(dbmsg)
+        mon = DebugMonitor.current() 
+        mon.log(dbmsg)
 
 
     @staticmethod
@@ -101,12 +140,23 @@ class DebugMonitor:
         '''
         __debug_monitor.disaled = False
 
+    def stdin_enabled(self):
+        '''
+           Checks to see if stdin is enabled 
+        '''
+        return self.use_stdin
+
     def disable(self):
         '''
            Disables logging that is occurring 
         '''
         self.disabled = True
 
+    def get_console(self):
+        '''
+           Gets the console for debugging purposes 
+        '''
+        return self.console
 
     def enable(self):
         '''
@@ -122,8 +172,7 @@ class DebugMonitor:
         if self.stdout_output and not self.disabled:
             print(message)
         if not self.disabled:
-            self.log.append(message)
-
+            self.logs.append(message)
 
     def all_logs(self):
         '''
@@ -131,7 +180,6 @@ class DebugMonitor:
         '''
         for log in self.logs:
             print(str(log))
-
 
     def write_to_file(self):
         '''
@@ -145,14 +193,11 @@ class DebugMonitor:
         else:
             print("path has not been set")
 
-
-
     def set_filepath(self, path: str):
         '''
            Sets the path where it will write out the data 
         '''
         self.to_file = path
-
 
     def clear(self):
         '''

@@ -56,8 +56,3 @@ class ArchitecturePlugins(PluginManager):
         '''
         return list(self._options.keys())
 
-        #for k, v in self.:
-        #    dtos.append(
-        #             'arch_name': name,
-        #     })
-        #return dtos

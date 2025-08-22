@@ -5,6 +5,7 @@
 import os
 
 import typing
+from rottnest.debug.monitor import DebugMonitor
 
 from .. import config
 
@@ -35,7 +36,6 @@ def default_loader(
             return constructor(
                 config_path=config_path
             )
-
-    print("No configuration files found")
+    DebugMonitor.with_obj('No configuration files found', 'ConfigLoader')
     # No configuration files found
     return constructor()
