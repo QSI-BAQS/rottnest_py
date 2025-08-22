@@ -9,9 +9,7 @@ import traceback
 import time
 
 from ..input_parsers.rz_tag_tracker import RzTagTracker
-
-
-from rottnest.compute_units.compute_unit import ComputeUnit
+from ..compute_units.compute_unit import ComputeUnit
 
 # TODO Wrap this in a context? 
 from rottnest.compute_units.architecture_proxy import saved_architectures
