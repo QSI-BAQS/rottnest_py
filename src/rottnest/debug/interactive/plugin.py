@@ -1,17 +1,18 @@
 
 
-from rottnest.debug.handlers import DebugConsoleHandler, DebugCommand, DebugHandler
+from rottnest.debug.handlers import DebugCommand, DebugHandler
 
 def plugin_load_cfg(app, args):
-
+    print("Loading config")
     return True
 
 def plugin_load(app, args):
 
+    print("Loading module")
     return True
 
 def plugin_dumps(app, args):
-
+    print(dir(app))
     return True
 
 
@@ -25,10 +26,10 @@ class DebugPluginHandler:
            the rest of the system 
         '''
         handler = DebugHandler('plugin')\
-        .add_command('plugin', DebugPluginHandler.cmd(['loadcfg', ], \
+        .add_command('plugin-loadcfg', DebugPluginHandler.cmd(['loadcfg', ], \
                                                       plugin_load_cfg))\
-        .add_command('plugin', DebugPluginHandler.cmd(['load'], plugin_load))\
-        .add_command('plugin', DebugPluginHandler.cmd(['dump'], plugin_dumps))
+        .add_command('plugin-loadmodule', DebugPluginHandler.cmd(['loadmodule'], plugin_load))\
+        .add_command('plugin-dumps', DebugPluginHandler.cmd(['dumps'], plugin_dumps))
         return handler
         
         
@@ -37,7 +38,7 @@ class DebugPluginHandler:
         '''
            Makes the command
         '''
-        cmd = DebugCommand(str(DebugCommand.__name__), params, hook, suffix,\
+        cmd = DebugCommand('plugin-'+params[0], params, hook, suffix,\
                            description)
 
         return cmd
