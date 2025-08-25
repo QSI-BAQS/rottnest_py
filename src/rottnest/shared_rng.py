@@ -1,3 +1,4 @@
+# TODO Deprecate
 # Used for annotating classes that take themselves as arguments
 from __future__ import annotations
 

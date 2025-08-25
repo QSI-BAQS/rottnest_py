@@ -46,6 +46,7 @@ def set_cache_tag(architecture_ids):
         # TODO: Update this cache to use the id as
         a handle
     '''
+    global local_cache_tag
     if local_cache_tag != architecture_ids:
         local_cache_tag = architecture_ids
         local_cache = set()

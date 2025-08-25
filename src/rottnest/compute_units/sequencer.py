@@ -4,8 +4,7 @@ from rottnest.input_parsers.qubit_label_tracker import QubitLabelTracker
 from rottnest.input_parsers.cirq_parser import CirqParser
 from rottnest.input_parsers.interrupt import INTERRUPT, NON_CACHING
 from rottnest.compute_units.compute_unit import ComputeUnit
-from rottnest.compute_units.architecture_proxy import ArchitectureProxy
-
+from rottnest.compute_units.layout_proxy import LayoutProxy 
 from rottnest.monkey_patchers.cirq_patcher import MIN_SEQUENCE_LEN
 
 class Sequencer():
@@ -13,34 +12,33 @@ class Sequencer():
         Widget Sequencer
     '''
     def __init__(self,
-            *architectures,
+            *layouts,
             sequence_length = 100,
             global_context = None
             ):
 
-        # Map architectures to proxies
-        self._architecture_proxies = list(map(ArchitectureProxy, architectures))
+        # Map layouts to proxies
+        # TODO: determine ownership of this vs ids 
+        self._layout_proxies = list(map(LayoutProxy, layouts))
         self.priority_shim = []
 
         # Worst case: Rz operation on a new qubit induces an input, graph state and
         # teleported qubit 
-        self.sequence_length = self._architecture_proxies[0].mem_bound() // 3
+        self.sequence_length = self._layout_proxies[0].mem_bound() // 3
         
 
         if global_context is None:
             global_context = QubitLabelTracker()
 
-    def priority(self, gate, architecture):
+    def priority(self, gate, layout):
         pass
 
     def sequence_pyliqtr(self, parser):
 
-        architecture_idx = 0
-
-        architectures = cycle(self._architecture_proxies)
+        layouts = cycle(self._layout_proxies)
  
-        architecture = next(architectures) 
-        compute_unit = ComputeUnit(architecture.to_json(), mem_bound=architecture.mem_bound())
+        layout = next(layouts) 
+        compute_unit = ComputeUnit(layout.to_json(), mem_bound=layout.mem_bound())
 
         cirq_parser = CirqParser(self.sequence_length)
 
@@ -63,11 +61,11 @@ class Sequencer():
                         compute_unit.add_context(*local_context)
                         yield compute_unit
 
-                        architecture = next(architectures)
+                        layout = next(layouts)
                         # Create a new compute unit
                         compute_unit = ComputeUnit(
-                            architecture.to_json(),
-                            mem_bound=architecture.mem_bound()
+                            layout.to_json(),
+                            mem_bound=layout.mem_bound()
                         )
 
                         # Reset the context of the parser
@@ -90,12 +88,13 @@ class Sequencer():
                     if len(compute_unit) > 0:
                         yield compute_unit
 
-                    # Grab next architecture
+                    # Grab next layout
                     # Eventually replace this with another scheduler
-                    architecture = next(architectures)
+                    # TODO: Investigate composer hooks
+                    layout = next(layouts)
 
                     # Create a new compute unit
-                    compute_unit = ComputeUnit(architecture.to_json(), mem_bound=architecture.mem_bound())
+                    compute_unit = ComputeUnit(layout.to_json(), mem_bound=layout.mem_bound())
 
                     # Reset the context of the parser
                     cirq_parser.reset_context(op_seq)

@@ -35,16 +35,11 @@ class ResultsComposer:
          addition 
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self, result_obj: dict):
         '''
             Constructor
         '''
-        self._obj = kwargs
-
-        # Recurse for nested dictionaries
-        for key, val in self.items():
-            if isinstance(val, dict):
-                self._obj[key] = ResultsComposer(**val)
+        self._obj = result_obj 
     
     def __iadd__(self, other):
         for key, val in other.items():

@@ -42,7 +42,7 @@ class RottnestArchitecture(abc.ABC):
         Optional for testing
         Returns a RottnestWorker object
         '''
-        pass
+        raise NotImplementedError 
 
     @staticmethod
     def composer(*args, **kwargs) -> Type["RottnestComposer"]: 

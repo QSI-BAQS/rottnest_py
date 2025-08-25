@@ -12,7 +12,7 @@ from ..input_parsers.rz_tag_tracker import RzTagTracker
 from ..compute_units.compute_unit import ComputeUnit
 
 # TODO Wrap this in a context? 
-from rottnest.compute_units.architecture_proxy import saved_architectures
+from rottnest.compute_units.layout_proxy import LayoutProxy
 
 PING = 'ping'
 PONG = 'pong'
@@ -20,7 +20,7 @@ SET_PRECISION = 'set_precision'
 EXEC_COMPUTE_UNIT  = 'exec_compute_unit'
 EXEC_GRAPH_STATE = 'exec_widget'
 GET_GRAPH = 'get_graph'
-LOAD_ARCHITECTURE = 'load_architecture'
+LOAD_LAYOUT = 'load_architecture'
 
 # TODO: Replace with more generic decomposition manager
 
@@ -30,7 +30,7 @@ class RottnestWorker(abc.ABC):
         Abstract base class defining an interface
         for Rottnest worker units
     '''
-    def __init__(self, debug=None, priority=False, blind=False):
+    def __init__(self, debug=None, priority=False, blind=False, layouts=None):
 
         self.running = True
         self._debug = debug
@@ -43,13 +43,17 @@ class RottnestWorker(abc.ABC):
             EXEC_COMPUTE_UNIT: self.execute_compute_unit,
             EXEC_GRAPH_STATE: self.execute_graph_state,
             GET_GRAPH: self.get_graph,
-            LOAD_ARCHITECTURE: self.load_architecture,
+            LOAD_LAYOUT: self.load_layout,
         }
 
         # Workers enabled blinding
         # Architecture details are contained to workers
         if blind:
             self.worker_tasks[GET_GRAPH] = self.not_supported 
+        
+        if layouts is not None:
+            for layout_id, layout in layouts:
+                self.worker_tasks[LOAD_LAYOUT](layout_id, layout)
 
     def __call__(
             self,
@@ -79,7 +83,7 @@ class RottnestWorker(abc.ABC):
         self.running = True
         while self.running:
             task, *args = task_queue.get()
-            response = worker_tasks[task](*args)
+            response = self.worker_tasks[task](*args)
             if response is not None:
                 worker_results_queue.put(response) 
         return       
@@ -114,21 +118,20 @@ class RottnestWorker(abc.ABC):
         '''
         self.get_rz_decomposition_manager().set_precision(precision)
 
-    def load_architecture(self, architecture_id: int, architecture_json: dict):
+    def load_layout(self, layout_id: int, layout_json: dict):
         '''
             Loads an architecture to the cache table
+            This intentionally does not expose the non-id loads to the worker
         '''
-        saved_architectures[architecture_id] = architecture_json 
-        self._architecture_cache_table[architecture_id] = architecture_json 
+        LayoutProxy.add_layout_with_id(layout_id, layout_json)
 
-    def get_architecture(self, architecture_id: int) -> dict | None:
+    def get_layout(self, layout_id: int) -> dict | None:
         '''
             Loads an architecture from the cache table 
             :: architecture_id : int :: Key for architecture
             Returns either an architecture object (or builder), or None if the key is invalid
         '''
-        return self._architecture_cache_table.get(architecture_id, None)
-
+        return LayoutProxy.get_layout(layout_id)
 
     def set_rz_decomposer(self, manager):   
         '''
