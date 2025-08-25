@@ -24,12 +24,11 @@ def server_start(hostname="localhost", port=8080):
         (hostname, port),
         app,
         handler_class=WebSocketHandler)
-    #server.start()
-    #server.serve_forever()
     return server
 
 if __name__ == '__main__':
     DebugMonitor.with_obj('Server started', 'Server')
+
     #cu_executor_pool.start()
     #cu_executor_pool.ping()
     

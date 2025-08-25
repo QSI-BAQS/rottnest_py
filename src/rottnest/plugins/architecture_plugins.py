@@ -5,6 +5,8 @@ from ..config import architectures_file_name
 from ..architecture_interface.rottnest_architecture import ROTTNEST_ARCHITECTURE_MODULE_TAG
 
 from .plugin_manager import PluginManager
+import json
+
 
 class ArchitecturePlugins(PluginManager):
     '''
@@ -27,6 +29,17 @@ class ArchitecturePlugins(PluginManager):
             modules = modules,
             config_path=config_path
         )
+
+    @staticmethod
+    def load_config_or_default(path: str):
+        '''
+           This has been re-introduced as it is useful for sensible
+           default to be included to ensure loading
+        '''
+        plugins = ArchitecturePlugins(config_path=path)        
+        return plugins
+
+    
 
     def get_current_architecture(self):
         '''

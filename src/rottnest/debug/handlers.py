@@ -5,7 +5,7 @@ class DebugConsoleHandler:
     '''
         Used as part of stdin interaction
     '''
-    def __init__(self, app):
+    def __init__(self, app=None):
         self.handlers = {}
         self.app = app
         self.stdin = sys.stdin
@@ -26,6 +26,12 @@ class DebugConsoleHandler:
            Gets the application it is hooked with 
         '''
         return self.app
+
+    def set_app(self, app):
+        '''
+           Sets the application if it is initialised late 
+        '''
+        self.app = app
 
     def get_handler(self, key):
         '''

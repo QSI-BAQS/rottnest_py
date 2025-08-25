@@ -36,6 +36,6 @@ def default_loader(
             return constructor(
                 config_path=config_path
             )
-    DebugMonitor.with_obj('No configuration files found', 'ConfigLoader')
+    DebugMonitor.with_obj('No configuration files found', 'default_loader')
     # No configuration files found
     return constructor()

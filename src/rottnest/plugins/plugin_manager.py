@@ -70,17 +70,7 @@ class PluginManager:
         return default_loader(
             cls._config_file_name,
             cls
-        )
-
-    @classmethod
-    def load_config_or_default(cls, filepath: str):
-        '''
-           Loads the configuration or will attempt to
-           load the defaults 
-        '''
-        plugin = cls.default_loader()
-        plugin.load_config(filepath)
-        
+        )        
 
     def load_config(self, filepath: str):
         '''
@@ -116,18 +106,19 @@ class PluginManager:
 
         loaded_options = {}
         for module in modules:
-            plugin_targets = getattr(
+            plugin_targets_fn = getattr(
                 module,
                 self._module_tag,
                 None
             )
 
             # Module has no targets exposed
-            if plugin_targets is None:
+            if plugin_targets_fn is None:
                 print(f"Module {module} does not contain any valid plugin targets")
                 print(f'To expose a target at the module level, please set an iterable "{self._module_tag}" variable in the module\'s main namespace (e.g. __init__.py)')
                 continue
 
+            plugin_targets = plugin_targets_fn()
             for target in plugin_targets:
                 try:
                     key = target.get_name()

@@ -1,5 +1,5 @@
 from rottnest.server.app.app_config import ApplicationConfig, AppExtensions
-
+from rottnest.debug.monitor import DebugMonitor
 
 
 class RottApplication:
@@ -22,6 +22,7 @@ class RottApplication:
         self.app_state_map = {}
         self.app_extensions = AppExtensions()
         apploader.load_and_attach(self.app_extensions)
+        DebugMonitor.current().get_console().set_app(self)
 
     def get_extensions(self):
         '''
