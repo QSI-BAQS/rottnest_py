@@ -1,8 +1,7 @@
-from rottnest.executables.current_executable import current_executable
 
 class ExecutableState:
 
-    def __init__(self, name='fermi_hubbard', prg=current_executable, args=[10, 1.0, 0.95], params=["N", 'times', 'palgo']):
+    def __init__(self, name=None, prg=None, args=[], params=[]):
         '''
            Designed to replace the executable state instead of
            current_executable module  
@@ -23,7 +22,7 @@ class ExecutableState:
         self.name = name
         self.prg = prg
         self.args = args
-        self.params = params;
+        self.params = params
 
     def get_program(self):
         '''

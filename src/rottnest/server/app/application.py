@@ -23,6 +23,12 @@ class RottnestApplication:
         apploader.load_and_attach(self.app_extensions)
         DebugMonitor.current().get_console().set_app(self)
 
+    def set_wsock(self, wsock):
+        '''
+           Sets the websocket connection 
+        '''
+        self.wsock = wsock
+
     def get_extensions(self):
         '''
            Gets object that was extended by the loaders 
