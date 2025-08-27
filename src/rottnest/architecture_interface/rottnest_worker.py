@@ -30,10 +30,17 @@ class RottnestWorker(abc.ABC):
         Abstract base class defining an interface
         for Rottnest worker units
     '''
-    def __init__(self, debug=None, priority=False, blind=False, layouts=None):
+    def __init__(
+            self,
+            layouts=None,
+            priority=False,
+            blind=False,
+            debug=None,
+    ):
 
         self.running = True
         self._debug = debug
+        self._priority = priority
 
         self._architecture_cache_table = {}
 
@@ -50,7 +57,7 @@ class RottnestWorker(abc.ABC):
         # Architecture details are contained to workers
         if blind:
             self.worker_tasks[GET_GRAPH] = self.not_supported 
-        
+       
         if layouts is not None:
             for layout_id, layout in layouts:
                 self.worker_tasks[LOAD_LAYOUT](layout_id, layout)
@@ -59,23 +66,31 @@ class RottnestWorker(abc.ABC):
             self,
             task_queue: mp.Queue,
             worker_results_queue: mp.Queue,
-            is_priority: bool = False
             ):
         '''
             Dispatch method for the main worker loop 
         '''
-        return self.main(task_queue, worker_results_queue, is_priority=is_priority)
+        return self.main(task_queue, worker_results_queue)
 
     @classmethod
-    def entrypoint(cls, *args, **kwargs):
+    def entrypoint(
+            cls,
+            task_queue: mp.Queue,
+            worker_results_queue: mp.Queue,
+            layouts=None,
+            priority=False,
+            blind=False,
+            debug=None,
+        ):
         '''
             Default entrypoint function
             Invokes the dispatch call 
         '''
-        worker = cls()
-        worker(*args, **kwargs)
 
-    def main(self, task_queue: mp.Queue, worker_results_queue: mp.Queue, is_priority: bool = False):
+        worker = cls(layouts=layouts, priority=priority, blind=blind, debug=debug)
+        worker(task_queue, worker_results_queue)
+
+    def main(self, task_queue: mp.Queue, worker_results_queue: mp.Queue):
         '''
             Worker loop - queries 
         '''
@@ -83,6 +98,7 @@ class RottnestWorker(abc.ABC):
         self.running = True
         while self.running:
             task, *args = task_queue.get()
+            print(task, "ARGS: ", args)
             response = self.worker_tasks[task](*args)
             if response is not None:
                 worker_results_queue.put(response) 
@@ -91,7 +107,6 @@ class RottnestWorker(abc.ABC):
     def halt(
             self,
             *args, 
-            is_priority:bool = False
         ):
         '''
            Halts the worker 
@@ -101,7 +116,6 @@ class RottnestWorker(abc.ABC):
     def ping(
             self,
             *args, 
-            is_priority:bool = False
         ) -> str:
         '''
             Ping function for worker alive status checking 
@@ -109,9 +123,9 @@ class RottnestWorker(abc.ABC):
         return PONG
 
     def set_precision(
-        self,
-        precision: int,
-        is_priority: bool = False):
+            self,
+            precision: int,
+        ):
         '''
             Set the Rz decomposition precision for the workers
             :: precision : int :: Precision in bits
@@ -121,9 +135,15 @@ class RottnestWorker(abc.ABC):
     def load_layout(self, layout_id: int, layout_json: dict):
         '''
             Loads an architecture to the cache table
-            This intentionally does not expose the non-id loads to the worker
+            This intentionally does not expose the non-id 
+             loads to the worker
+            Not marked as a task so that it can be
+             called in single threaded mode
         '''
-        LayoutProxy.add_layout_with_id(layout_id, layout_json)
+        LayoutProxy.add_layout_with_id(
+            layout_id,
+            layout_json
+        )
 
     def get_layout(self, layout_id: int) -> dict | None:
         '''
@@ -153,14 +173,13 @@ class RottnestWorker(abc.ABC):
  
     @staticmethod
     def execute_compute_unit(
-            compute_unit: ComputeUnit,
+            unit_id: int,
+            layout_id: int,
+            instruction_sequence: "InstructionSequence",
             rz_tag_tracker: RzTagTracker,
-            full_output: bool,
-            cache_hash: str,
-            is_priority: bool = False
         ):
         '''
-            Executes compute unit
+            Executes a sequence of instructions 
             This performs the graph state compilation
              on the worker 
         '''
@@ -168,11 +187,10 @@ class RottnestWorker(abc.ABC):
 
     @staticmethod
     def execute_graph_state(
+            unit_id: int,
+            layout_id: int,
             widget: "Widget",
             rz_tag_tracker: RzTagTracker,
-            full_output: bool,
-            cache_hash: str,
-            is_priority: bool = False
         ):
         '''
             Executes a graph node 
@@ -185,7 +203,6 @@ class RottnestWorker(abc.ABC):
     @staticmethod
     def get_graph(
             *args,
-            is_priority: bool = False
         ):
         '''
             Synchronises back end graph object unrolling with front end objects
@@ -195,10 +212,10 @@ class RottnestWorker(abc.ABC):
 
     @staticmethod
     def run_widget(
-        cabaliser_obj,
-        region_obj,
-        rz_tag_tracker,
-        full_output: bool=False
+            cabaliser_obj,
+            region_obj,
+            rz_tag_tracker,
+            full_output: bool=False
         ):
         '''
             Abstract base method 

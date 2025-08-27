@@ -4,7 +4,7 @@ from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
 from rottnest.input_parsers.interrupt import INTERRUPT
 from rottnest.input_parsers.cirq_parser import CirqParser, shared_rz_tag_tracker
 from rottnest.compute_units.sequencer import Sequencer
-from rottnest.widget_compilers.compiler_flow import run_widget
+#from rottnest.widget_compilers.compiler_flow import run_widget
 
 import pyLIQTR
 import qualtran

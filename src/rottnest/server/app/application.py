@@ -1,8 +1,6 @@
 from rottnest.server.app.app_config import ApplicationConfig, AppExtensions
 
-
-
-class RottApplication:
+class RottnestApplication:
     """
         Application class that will can be used
         as a simple map right now.

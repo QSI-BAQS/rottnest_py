@@ -11,11 +11,11 @@ def arch_load_list(app, message, **kwargs):
        No data is required to be sent
     '''
     archmap = app.get_extensions().get_arch_map()
+    architectures =  
     archlist = archmap.get_arch_dtos()
     return {
         "arch_list": archlist
     }
-
 
 @responder.register('arch_get_config')
 def arch_get_config(app, message, **kwargs):

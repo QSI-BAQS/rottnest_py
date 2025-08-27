@@ -168,10 +168,10 @@ f"Target {target} in module {module} does not return a string when calling stati
             for entry in config:
                 entry = entry.strip('\n')
                 module = None
-                #try:
-                module = PluginManager._load_module_from_module_string(entry)
-                #except:
-                #    pass
+                try:
+                    module = PluginManager._load_module_from_module_string(entry)
+                except:
+                    pass
 
                 try:
                     module = PluginManager._load_module_from_file_path(entry)
