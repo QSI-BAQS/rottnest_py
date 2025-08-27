@@ -95,7 +95,8 @@ class ApplicationConfig:
         '''
         for e in self.entries:
             e.load_component(attach_target)
-            
+
+        
 
     @staticmethod
     def default():
