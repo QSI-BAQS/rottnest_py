@@ -12,9 +12,11 @@ def plugin_loadcfg(app, args):
     amap.load_config('archconfig.txt')
     return True
 
-def plugin_load(app, args):
-
-    print("Loading module")
+def plugin_load_tscheduler(app, args):
+    extensions = app.get_extensions()
+    amap = extensions.get_arch_map()
+    amap.load_config('arch.cfg')
+    print(str(amap.get_architectures()['Four Stage Superconducting'].designer.get_designer_metadata()))
     return True
 
 def plugin_dumps(app, all_args):
@@ -49,19 +51,19 @@ class DebugPluginHandler:
            the rest of the system 
         '''
         handler = DebugHandler('plugin')\
-        .add_command('plugin-loadcfg', DebugPluginHandler.cmd(['loadcfg'], \
+        .add_command('plugin-loadcfg', DebugPluginHandler.cmd('loadcfg', ['loadcfg'], \
                                                       plugin_loadcfg))\
-        .add_command('plugin-loadmodule', DebugPluginHandler.cmd(['loadmodule'], plugin_load))\
-        .add_command('plugin-dumps', DebugPluginHandler.cmd(['dumps'], plugin_dumps))
+        .add_command('plugin-tsched', DebugPluginHandler.cmd('tsched', ['Y'], plugin_load_tscheduler))\
+        .add_command('plugin-dumps', DebugPluginHandler.cmd('dumps', ['dumps'], plugin_dumps))
         return handler
         
         
     @staticmethod
-    def cmd(params, hook, suffix='', description=''):
+    def cmd(name, params, hook, suffix='', description=''):
         '''
            Makes the command
         '''
-        cmd = DebugCommand('plugin-'+params[0], params, hook, suffix,\
+        cmd = DebugCommand('plugin-'+name, params, hook, suffix,\
                            description)
 
         return cmd

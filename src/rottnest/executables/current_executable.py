@@ -2,9 +2,9 @@ from rottnest.executables import executables
 
 from functools import partial
 
-from ..plugins.executables import default_loader 
+from ..plugins.executable_plugins import ExecutablePlugins
 
-executable_manager = default_loader()
+executable_manager = ExecutablePlugins()
 
 
 ##from ejc.executable import EJC 

@@ -22,7 +22,7 @@ class ExecutableState:
         self.name = name
         self.prg = prg
         self.args = args
-        self.params = params;
+        self.params = params
 
     def get_program(self):
         '''

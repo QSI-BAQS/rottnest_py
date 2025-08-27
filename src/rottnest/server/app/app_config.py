@@ -1,7 +1,7 @@
 from rottnest.executables.executable_map import ExecutableMap
 from rottnest.executables.executable_state import ExecutableState
 from rottnest.plugins.architecture_plugins import ArchitecturePlugins
-from rottnest.debug.monitor import DebugMonitor
+# from rottnest.debug.monitor import DebugMonitor
 
 ARCHITECTURE_REGISTRY_CFG = 'cfgs/architectures.json'
 PROGRAM_REGISTRY_CFG = 'cfgs/programs.json'
@@ -58,8 +58,8 @@ class AppComponentLoader:
         if ref_obj is not None:
             setattr(target, self.attr_name, ref_obj)
             setattr(target, getter_name, getter_fn)
-        else:
-            DebugMonitor.with_obj('Unable to load component', 'AppComponentLoader')
+        # else:
+        #     DebugMonitor.with_obj('Unable to load component', 'AppComponentLoader')
 
 class ApplicationConfig:
     '''
@@ -83,8 +83,8 @@ class ApplicationConfig:
 
         if isinstance(loader, AppComponentLoader):
             self.entries.append(loader)
-        else:
-            DebugMonitor.with_obj('Unable to add loader', 'AppComponentConfig')
+        # else:
+        #     DebugMonitor.with_obj('Unable to add loader', 'AppComponentConfig')
         return self
 
 
