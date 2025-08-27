@@ -3,12 +3,11 @@
     All architecture plugins should expose an object of this type 
 '''
 import abc
+
 from .rottnest_worker import RottnestWorker
 from .rottnest_composer import RottnestComposer
 from types import FunctionType
 from typing import Type
-
-ROTTNEST_ARCHITECTURE_MODULE_TAG = 'rottnest_architectures'
 
 class RottnestArchitecture(abc.ABC):
     '''
