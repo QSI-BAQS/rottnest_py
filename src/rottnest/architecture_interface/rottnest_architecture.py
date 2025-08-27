@@ -3,8 +3,10 @@
     All architecture plugins should expose an object of this type 
 '''
 import abc
-from .rottnest_composer import RottnestComposer
 from .rottnest_worker import RottnestWorker
+from .rottnest_composer import RottnestComposer
+from types import FunctionType
+from typing import Type
 
 ROTTNEST_ARCHITECTURE_MODULE_TAG = 'rottnest_architectures'
 
@@ -26,18 +28,18 @@ class RottnestArchitecture(abc.ABC):
         '''
         raise NotImplementedError
 
-    @staticmethod
-    def worker_entrypoint(*args, **kwargs):
+    @classmethod
+    def worker_entrypoint(cls, *args, **kwargs) -> FunctionType:
         '''
         Returns an entrypoint function for a worker  
         Workers are worker pool members that injest 
         widgets and emit serialisable objects that 
         composers may ingest  
         '''
-        raise NotImplementedError
+        return cls.worker.entrypoint 
 
     @staticmethod
-    def worker(*args, **kwargs) -> RottnestWorker:
+    def worker(*args, **kwargs) -> Type["RottnestWorker"]:
         '''
         Optional for testing
         Returns a RottnestWorker object
@@ -45,7 +47,7 @@ class RottnestArchitecture(abc.ABC):
         pass
 
     @staticmethod
-    def composer(*args, **kwargs) -> RottnestComposer: 
+    def composer(*args, **kwargs) -> Type["RottnestComposer"]: 
         '''
             Gets a composer type
             Composers define logic to combine the outputs of workers 
@@ -53,7 +55,7 @@ class RottnestArchitecture(abc.ABC):
         raise NotImplementedError
 
     @staticmethod
-    def designer(*args, **kwargs):  
+    def designer(*args, **kwargs) -> Type["RottnestDesigner"]:
         '''
             Generates any hooks needed for indicating what front-end designer is required 
         '''

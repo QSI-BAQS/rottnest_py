@@ -9,6 +9,7 @@ import traceback
 import time
 
 from ..input_parsers.rz_tag_tracker import RzTagTracker
+from ..compute_units.compute_unit import ComputeUnit
 
 from cabaliser.widget import Widget
 from rottnest.compute_units.compute_unit import ComputeUnit
@@ -118,6 +119,7 @@ class RottnestWorker(abc.ABC):
         '''
             Loads an architecture to the cache table
         '''
+        saved_architectures[architecture_id] = architecture_json 
         self._architecture_cache_table[architecture_id] = architecture_json 
 
     def get_architecture(self, architecture_id: int) -> dict | None:
@@ -164,7 +166,7 @@ class RottnestWorker(abc.ABC):
 
     @staticmethod
     def execute_graph_state(
-            widget: Widget,
+            widget: "Widget",
             rz_tag_tracker: RzTagTracker,
             full_output: bool,
             cache_hash: str,

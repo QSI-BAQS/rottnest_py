@@ -40,6 +40,17 @@ known_gates = dict(cirq_parser.known_gates)
 local_cache = set() 
 local_cache_tag = None
 
+def set_cache_tag(architecture_ids):
+    '''
+        Sets the current cache tag
+        # TODO: Update this cache to use the id as
+        a handle
+    '''
+    if local_cache_tag != architecture_ids:
+        local_cache_tag = architecture_ids
+        local_cache = set()
+        
+
 # Todo: move this to a pandora module
 
 from rottnest.input_parsers.interrupt import INTERRUPT, CACHED, NON_CACHING
