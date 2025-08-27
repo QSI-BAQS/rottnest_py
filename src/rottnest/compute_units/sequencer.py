@@ -19,6 +19,9 @@ class Sequencer():
 
         # Map layouts to proxies
         # TODO: determine ownership of this vs ids 
+
+        print("Layouts: ", layouts)
+        print("", )
         self._layout_proxies = list(map(LayoutProxy, layouts))
         self.priority_shim = []
 

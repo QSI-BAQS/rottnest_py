@@ -19,12 +19,7 @@ from rottnest.input_parsers.interrupt import INTERRUPT, CACHED
 from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
 from rottnest.input_parsers import pyliqtr_parser
 
-
 from rottnest.plugins import architectures, executables
-
-#from rottnest.process_pool.process_worker import pool_worker_main
-#from rottnest.executables.current_executable import current_executable
-
 
 from rottnest.input_parsers.cirq_parser import shared_rz_tag_tracker
  
@@ -38,6 +33,8 @@ from rottnest.config import N_PROCESSES, SEGFAULT_SENTINEL_TIMEOUT_SECS
 
 from .symbols import TOTAL, SPAWN_CONTEXT
 from rottnest.process_pool import commands, symbols
+
+from rottnest.compute_units.layout_proxy import LayoutProxy
 
 # result_manager = mp.Manager()
 # dummy_result_cache = result_manager.dict()
@@ -141,6 +138,13 @@ class ComputeUnitExecutorPool:
         self.manager.start()
         self.synchronise_modules()
 
+    def synchronise(self):
+        '''
+            Calls synchronisation functions 
+        '''
+        self.synchronise_modules()
+        self.synchronise_layouts()
+
     def synchronise_modules(self):
         '''
             Attempts to synchronise all architecure and 
@@ -159,6 +163,20 @@ class ComputeUnitExecutorPool:
             architecture_strings,
             executable_strings)
         )
+
+    def synchronise_layouts(self):
+        '''
+            Synchronises all loaded layouts with the
+            manager
+        '''
+        layout_payload = list(LayoutProxy.get_layouts())
+        self.manager_task_queue.put(
+            (
+                commands.SYNCHRONISE_LAYOUTS,
+                layout_payload
+            )
+        )
+         
 
     def start_workers(self):
         '''
@@ -250,6 +268,8 @@ class ComputeUnitExecutorPool:
         resp = self.manager_completion_queue.get() 
         assert resp == symbols.PONG 
 
+
+    #######
  
     def run_priority(self, compute_unit, rz_tag_tracker, full_output=True):
         self.manager_priority_task_queue.put(("run_priority", ('exc_cu', compute_unit, rz_tag_tracker, full_output, [None], 0)))
