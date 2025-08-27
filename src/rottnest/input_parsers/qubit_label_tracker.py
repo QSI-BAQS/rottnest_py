@@ -1,6 +1,7 @@
 '''
     Qubit Label Tracker
     Adapter class for mapping qubits to indices  
+    TODO: Most of the context tracking is unused and should be passed to the composer
 '''
 
 class RegisterContext:

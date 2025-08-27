@@ -40,7 +40,7 @@ class RzTagTracker:
         return {
             'default_eps': self.default_eps,
             'eps': self._eps,
-            'tags_to_angles':self._tags_to_angles,
+            'tags_to_angles': list(self._tags_to_angles),
         }
 
     @staticmethod
@@ -63,8 +63,13 @@ class RzTagTracker:
             angle = 0
             eps = 10
         else:
+            eps = self._eps[tag]
+            if eps is None:
+                eps = self.default_eps
+            else:
+                eps = max(eps, self.default_eps)
+
             angle = self._tags_to_angles[tag]
-            eps = max(self._eps[tag], self.default_eps)
 
         angle = angle % 2
 
