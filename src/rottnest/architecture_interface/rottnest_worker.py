@@ -13,7 +13,6 @@ from ..compute_units.compute_unit import ComputeUnit
 
 from cabaliser.widget import Widget
 from rottnest.compute_units.compute_unit import ComputeUnit
-from rottnest.compute_units.architecture_proxy import saved_architectures
 from rottnest.compute_units.layout_proxy import LayoutProxy
 
 PING = 'ping'
