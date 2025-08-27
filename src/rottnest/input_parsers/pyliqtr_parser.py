@@ -37,15 +37,17 @@ from rottnest.pandora.pandora_cache import pandora_cache
 known_gates = dict(cirq_parser.known_gates) 
 
 # Used to cache results 
+# This is a singleton
 local_cache = set() 
 local_cache_tag = None
 
 def set_cache_tag(architecture_ids):
     '''
         Sets the current cache tag
-        # TODO: Update this cache to use the id as
+        # TODO: Update this cache to use the id
         a handle
     '''
+    global local_cache_tag
     if local_cache_tag != architecture_ids:
         local_cache_tag = architecture_ids
         local_cache = set()

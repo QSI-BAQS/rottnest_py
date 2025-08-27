@@ -34,6 +34,8 @@ from cabaliser.operation_sequence import OperationSequence
 from rottnest.input_parsers.qubit_label_tracker import QubitLabelTracker
 from rottnest.input_parsers.rz_tag_tracker import RzTagTracker
 
+MIN_SEQUENCE_LEN = 5
+
 '''
 Format for monkey patching:
     # gate parsing operation
