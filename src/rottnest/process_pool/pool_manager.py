@@ -280,8 +280,8 @@ class ComputeUnitExecutorPoolManager:
 
     def distribute_compilation(self, it: typing.Iterator):
         '''
-            Consumes the iterator and distributes compilation
-            among the workers 
+            Consumes the iterator and distributes 
+            compilation among the workers 
         '''
 
         update_counter = REPORT_INTERVAL 
@@ -294,10 +294,11 @@ class ComputeUnitExecutorPoolManager:
             else:
                 # Non interrupts trigger compilation 
                 self.process_elem_obj(obj)
-                                                      
+
             # Update reports after each interval
             update_counter -= 1
             if update_counter < 0:
+                self.post_result_queue()
                 update_counter = REPORT_INTERVAL
                 self.send_total()
 
@@ -371,20 +372,25 @@ class ComputeUnitExecutorPoolManager:
                 self.check_run_priority()
                 self.check_priority_result()
 
-                self.process_result_elem(timeout=SEGFAULT_SENTINEL_TIMEOUT_SECS)
+                self.process_result_elem(
+                    timeout=SEGFAULT_SENTINEL_TIMEOUT_SECS
+                )
 
-        except queue.Empty:
+        except:
             print(f"Aborting, sentinel secs reached at {self.n_received}/{self.n_submitted} received ({self.n_error} errors)")
             print(f"Unaccounted items: {self.n_submitted - self.n_received - self.n_error}")
 
         # Send totals
         self.send_total()
-        self.send_total(END_COMPUTATION)
+        self.send_total(symbols.END_COMPUTATION)
 
         print("Totals:")
+
         print(self.compute_unit_result_cache)
+
         # print(compute_unit_counts, compute_unit_totals, compute_unit_result_cache)
-        self.manager_completion_queue.put('done')
+
+        self.manager_completion_queue.put(symbols.DONE)
 
         print("All Received")
         print("time:", time.time() - self.run_seq_start)
@@ -398,6 +404,14 @@ class ComputeUnitExecutorPoolManager:
         result = self.worker_result_queue.get(
             timeout=timeout
         )
+
+        # TODO 
+        # Composer takes result to reportable 
+        self.manager_completion_queue.put(result)
+        self.n_received += 1
+
+        return
+        #return result
 
         # Probably an error, dump to stdout
         if result.get('status', 'error') == 'error':
@@ -445,6 +459,7 @@ class ComputeUnitExecutorPoolManager:
         '''
             Asynch sending of totals
         '''
+        print("Sending Total!")
         totals = self.compute_unit_result_cache[None]
         totals['cu_id'] = cu_id
         self.manager_completion_queue.put(totals)
@@ -524,12 +539,13 @@ class ComputeUnitExecutorPoolManager:
         Drain the result queue and post
         '''
         while not self.worker_result_queue.empty():
+            print("RECEIVED RESULT")
             # Drain result queue
             self.process_result_elem()
 
     def process_elem_obj(self, obj: "ComputeUnit"):
         '''
-            Triggers computation
+            Triggers compilation of a compute unit
         '''
         self.submit_time = time.time()
 
@@ -550,9 +566,11 @@ class ComputeUnitExecutorPoolManager:
         # TODO
         #self.restart_dead_processes()
             
-        print("Submitting", self.n_submitted)
+        #print("Submitting", self.n_submitted)
 
-        while True:
+
+        submitted = False
+        while not submitted:
             # Spin until either we get a priority task or we are unblocked on the worker task
 
             self.check_run_priority()
@@ -560,15 +578,15 @@ class ComputeUnitExecutorPoolManager:
 
             print(type(obj))
 
+            # This may block, so check
             if not self.worker_task_queue.full():
                 self.worker_task_queue.put(
-                    (rottnest_worker.EXEC_COMPUTE_UNIT,
-                     obj,
-                     self.cache_hash_stack.copy(),
-                     self.non_participatory_stack.copy()
+                    (
+                        rottnest_worker.EXEC_COMPUTE_UNIT,
+                        obj,
                     )
-                ) # This may block, so check
-                break
+                ) 
+                submitted = True
             else:
                 time.sleep(0.1) # Wait for space in worker task queue
         

@@ -41,7 +41,7 @@ class Sequencer():
         layouts = cycle(self._layout_proxies)
  
         layout = next(layouts) 
-        compute_unit = ComputeUnit(layout.to_json(), mem_bound=layout.mem_bound())
+        compute_unit = ComputeUnit(layout.layout_id, mem_bound=layout.mem_bound())
 
         cirq_parser = CirqParser(self.sequence_length)
 
@@ -67,7 +67,7 @@ class Sequencer():
                         layout = next(layouts)
                         # Create a new compute unit
                         compute_unit = ComputeUnit(
-                            layout.to_json(),
+                            layout.layout_id,
                             mem_bound=layout.mem_bound()
                         )
 
@@ -79,9 +79,12 @@ class Sequencer():
                 curr_memory = cirq_parser.curr_mem()
                 # This doesn't track additional qubit allocations
 
-                # Caution that the next sequence doesn't push us over
-                # this should be replaced with a lookahead rather than a bound
-                if (cirq_parser.sequence_length == 0) or (cirq_parser.curr_mem() + 3 * op_seq.n_rz_operations + len(op_seq) > 0.8 * compute_unit.memory_bound - MIN_SEQUENCE_LEN):
+                # Caution that the next sequence doesn't 
+                # push us over
+                # this should be replaced with a lookahead 
+                # rather than a bound
+                if ((cirq_parser.sequence_length == 0) 
+                    or (cirq_parser.curr_mem() + 3 * op_seq.n_rz_operations + len(op_seq) > 0.8 * compute_unit.memory_bound - MIN_SEQUENCE_LEN)):
 
                     local_context = cirq_parser.extract_context()
                     compute_unit.add_context(*local_context)
@@ -97,7 +100,10 @@ class Sequencer():
                     layout = next(layouts)
 
                     # Create a new compute unit
-                    compute_unit = ComputeUnit(layout.to_json(), mem_bound=layout.mem_bound())
+                    compute_unit = ComputeUnit(
+                        layout.layout_id,
+                        mem_bound=layout.mem_bound()
+                    )
 
                     # Reset the context of the parser
                     cirq_parser.reset_context(op_seq)

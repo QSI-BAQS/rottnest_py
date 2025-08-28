@@ -87,7 +87,13 @@ class RottnestWorker(abc.ABC):
             Invokes the dispatch call 
         '''
 
-        worker = cls(layouts=layouts, priority=priority, blind=blind, debug=debug)
+        worker = cls(
+            layouts=layouts,
+            priority=priority,
+            blind=blind,
+            debug=debug
+        )
+
         worker(task_queue, worker_results_queue)
 
     def main(self, task_queue: mp.Queue, worker_results_queue: mp.Queue):
@@ -98,7 +104,6 @@ class RottnestWorker(abc.ABC):
         self.running = True
         while self.running:
             task, *args = task_queue.get()
-            print(task, "ARGS: ", args)
             response = self.worker_tasks[task](*args)
             if response is not None:
                 worker_results_queue.put(response) 
@@ -145,7 +150,8 @@ class RottnestWorker(abc.ABC):
             layout_json
         )
 
-    def get_layout(self, layout_id: int) -> dict | None:
+    @staticmethod
+    def get_layout(layout_id: int) -> dict | None:
         '''
             Loads an architecture from the cache table 
             :: architecture_id : int :: Key for architecture
@@ -164,29 +170,39 @@ class RottnestWorker(abc.ABC):
         '''
         raise NotImplementedError
  
-    def get_rz_decomposer(self):
+    def get_rz_decomposer():
         '''
             Gets the current decomposition manager
             As this may be executed in a subprocess the import is inlined 
+            Within the worker this is intended to be a 
+            singleton method
         '''
         raise NotImplementedError
  
-    @staticmethod
     def execute_compute_unit(
-            unit_id: int,
-            layout_id: int,
-            instruction_sequence: "InstructionSequence",
-            rz_tag_tracker: RzTagTracker,
+            self,
+            compute_unit: "ComputeUnit",
         ):
         '''
             Executes a sequence of instructions 
             This performs the graph state compilation
              on the worker 
         '''
-        raise NotImplementedError
+        unit_id = compute_unit.unit_id
+        layout_id = compute_unit.layout_id
+        widget = compute_unit.compile_graph_state()
+        
+        rz_tag_tracker = compute_unit.extract_rz_tracker()
 
-    @staticmethod
+        return self.execute_graph_state(
+            unit_id,
+            layout_id,
+            widget.json(),
+            rz_tag_tracker.to_dict()
+        )
+
     def execute_graph_state(
+            self,
             unit_id: int,
             layout_id: int,
             widget: "Widget",
@@ -200,8 +216,8 @@ class RottnestWorker(abc.ABC):
         '''
         raise NotImplementedError
 
-    @staticmethod
     def get_graph(
+            self,
             *args,
         ):
         '''
@@ -210,8 +226,8 @@ class RottnestWorker(abc.ABC):
         '''
         raise NotImplementedError
 
-    @staticmethod
     def run_widget(
+            self,
             cabaliser_obj,
             region_obj,
             rz_tag_tracker,
