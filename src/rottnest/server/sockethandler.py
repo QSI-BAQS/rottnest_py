@@ -39,7 +39,8 @@ def handle_websocket():
 
     try:
         while True:
-            # TODO: RPC this whole thing
+
+            DebugMonitor.with_obj('Listening and waiting for messages', __name__)
             try:
                 message_raw = wsock.receive()
                 if message_raw is None:

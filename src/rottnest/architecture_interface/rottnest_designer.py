@@ -9,7 +9,8 @@ import abc
 
 class RottnestDesigner(abc.ABC):
     '''
-        
+        RottnestDesigner, the designer_metadata will need to
+        ensure you have designer metadata that is usable for the frontend 
     '''
 
     @staticmethod
@@ -25,5 +26,13 @@ class RottnestDesigner(abc.ABC):
         '''
             Calculates an approximate T state generation rate
             Currently unused
+        '''
+        raise NotImplementedError
+
+    @staticmethod
+    def get_designer_metadata():
+        '''
+           Gets the designer metadata for the frontend that will
+           outline the position of the frontend files to be loaded
         '''
         raise NotImplementedError

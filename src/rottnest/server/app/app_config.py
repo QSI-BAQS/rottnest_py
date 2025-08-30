@@ -3,8 +3,8 @@ from rottnest.executables.executable_state import ExecutableState
 from rottnest.plugins.architecture_plugins import ArchitecturePlugins
 # from rottnest.debug.monitor import DebugMonitor
 
-ARCHITECTURE_REGISTRY_CFG = 'cfgs/architectures.json'
-PROGRAM_REGISTRY_CFG = 'cfgs/programs.json'
+ARCHITECTURE_REGISTRY_CFG = 'architectures'
+PROGRAM_REGISTRY_CFG = 'programs'
 
 class AppExtensions:
     '''

@@ -13,8 +13,11 @@ def arch_load_list(app, message, **kwargs):
     archmap = app.get_extensions().get_arch_map()
     
     #archlist = archmap.get_arch_dtos()
-    archs = archmap.get_architectures()
     archlist = []
+    archs = archmap.get_architectures()
+    
+    for k, a in archs.items():
+        archlist.append([k, a.designer().get_designer_metadata()])
     
     return {
         "arch_list": archlist
