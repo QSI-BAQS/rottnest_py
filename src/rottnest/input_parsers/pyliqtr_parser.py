@@ -37,8 +37,21 @@ from rottnest.pandora.pandora_cache import pandora_cache
 known_gates = dict(cirq_parser.known_gates) 
 
 # Used to cache results 
+# This is a singleton
 local_cache = set() 
 local_cache_tag = None
+
+def set_cache_tag(architecture_ids):
+    '''
+        Sets the current cache tag
+        # TODO: Update this cache to use the id
+        a handle
+    '''
+    global local_cache_tag
+    if local_cache_tag != architecture_ids:
+        local_cache_tag = architecture_ids
+        local_cache = set()
+        
 
 # Todo: move this to a pandora module
 
@@ -113,6 +126,9 @@ class PyliqtrParser:
         # Sequence is a valid ordering of the operations 
         for shim, gate in zip(self.shims, self.sequence):
 
+            # TODO: Intercept trivial shims
+            # Or flag them during construction
+
             # Yield shim
             if len(shim) > 0: 
                 yield shim
@@ -144,14 +160,13 @@ class PyliqtrParser:
                 )
                 yield CACHED(rottnest_hash, request_type=CACHED.START, non_participatory_qubits=non_participatory)
                 op = parser.op
-                if op is not None:
-                    # Use the operation as a key for the pandora cache 
-                    op = type(op.gate).__name__
-                pandora_seq = pandora_cache.in_cache(op, hash_obj = parser.rottnest_hash)
+                pandora_seq = pandora_cache.in_cache(op, spawn=True)
+
                 if pandora_seq is not None:
                     yield pandora_seq
                 else:
                     yield parser
+
                 yield CACHED(rottnest_hash, request_type=CACHED.END)
             else:
                 yield parser
@@ -252,6 +267,9 @@ class PyliqtrParser:
                 continue
 
             if isinstance(r, PandoraSequencer):
+                # Set the pandora union find based on the architecture
+                pandora_cache.architecture_bind(r, arch_ids[0])
+
                 shim_id = f"{prefix}{handle_idx}p" 
                 yield GraphWrapper(shim_id, str(r), parser=r)
                 continue

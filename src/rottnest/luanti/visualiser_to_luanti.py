@@ -117,7 +117,7 @@ class LuantiVisualiser:
        return LuantiVisualiser.reg(obj) 
 
     @staticmethod
-    def luanti_node(patch_type, activity=None, text="", left="None", right="None", bottom="None", top="None"):
+    def luanti_node(patch_type, activity=none, text="", left="none", right="none", bottom="none", top="none"):
      return {
         "activity": {
             "activity_type": activity  

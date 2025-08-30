@@ -1,3 +1,4 @@
+from rottnest.plugin.arch_plugin import ArchPluginRegistry
 from rottnest.compute_units.compute_unit import ComputeUnit
 from rottnest.widget_compilers.compiler_flow import run_widget as run_widget
 import multiprocessing as mp
@@ -61,6 +62,21 @@ def execute_graph_node(node_hash, arch_obj, worker_results_queue: mp.Queue):
     worker_results_queue.put('end')
 
 
+def get_first_arch(app, arch_name):
+    """
+       Assumes the app is accessible in this context
+       Retrieves the first architecture in the plugin map
+    """
+    archreg = app.get_arch_registry()
+    archmap = archreg.get_plugin("arch_name")
+    arch = archmap.get_plugin_map()[0]
+
+    return arch
+    
+    
+    
+        
+
 def execute_compute_unit(args, worker_results_queue: mp.Queue, is_priority):
     # print("got", args, flush=True)
 
@@ -87,7 +103,6 @@ def execute_compute_unit(args, worker_results_queue: mp.Queue, is_priority):
 
         arch_json_obj = compute_unit.get_architecture_json()
 
-        # worker_results_queue.put(stats.copy())
 
         widget = compute_unit.compile_graph_state()
 
@@ -98,10 +113,23 @@ def execute_compute_unit(args, worker_results_queue: mp.Queue, is_priority):
             with open('debug_obj.json', 'w') as f:
                 print(widget.json(), file=f)
 
-        orch = run_widget(cabaliser_obj=widget.json(), region_obj=arch_json_obj, full_output=full_output, rz_tag_tracker=rz_tag_tracker)
+        widget_package = {
+            "cablobj": widget.json(),
+            "rztracker": None,
+            "gridsynth": None,
+            "arch_description": arch_json_obj,
+            "extra": {}
+        }
+
+        # !!!!!!!
+        # TODO: The way we are accessing this does not make sense
+        # This needs to be standardised
+        # !!!!!!!
+        archobj = get_first_arch(arch_json_obj['name'])
+        orch = run_widget(archobj, widget_package)
+
         
         print("execution done", flush=True, file=old_stdout)
-        
         stats = {
             'volumes': orch.get_space_time_volume(),
             't_source': orch.get_T_stats(),

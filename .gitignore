@@ -7,3 +7,4 @@ errors.out
 **/gridsynth/*.o
 **/gridsynth/gridsynth
 **.json
+pandora_pg.json

@@ -1,49 +1,63 @@
 from bottle import request, abort 
 from geventwebsocket import WebSocketError
 from threading import Semaphore
-from rottnest.server.model import architecture 
-from rottnest.server.application import RottApplication
+
+from rottnest.debug.monitor import DebugMonitor
+from rottnest.server.app.application import RottnestApplication
 from rottnest.server.responder import responder
+
+# These are used register routes which are core
+# TODO: We need to revise this component
 from rottnest.server.controller.arch import lat2d as archlat2d
-from rottnest.server.controller.cg import lat2d as cglat2d
+from rottnest.server.controller import prgs
+from rottnest.server.controller.arch import meta
 
 import json
 
 resp = responder
 
 def register_routes(app):
-   app.route("/websocket", callback=handle_websocket)
+    
+    DebugMonitor.with_obj('Registering routes', __name__)
+    app.route("/websocket", callback=handle_websocket)
 
 # TODO: Register architecture object
 def handle_websocket():
+
+    DebugMonitor.with_obj('handle_websocket started', __name__)
     wsock = request.environ.get('wsgi.websocket')
     wsock_sem = Semaphore()
     if not wsock:
         abort(400, 'Expected WebSocket request.')
 
     
-    app = RottApplication(wsock, wsock_sem)
+    app = RottnestApplication(wsock, wsock_sem)
+    DebugMonitor.current().get_console().set_app(app)
+    DebugMonitor.with_obj('Assigning a new app context', __name__)
+
     socket_binds = responder.fullqual_map()
 
     try:
         while True:
-            # TODO: RPC this whole thing
+
+            DebugMonitor.with_obj('Listening and waiting for messages', __name__)
             try:
                 message_raw = wsock.receive()
                 if message_raw is None:
                     continue
-                print(message_raw)
+                DebugMonitor.with_obj(message_raw, __name__)
                 message = json.loads(message_raw)
                 # Expect: {'message': <cmd here>, 'payload': 
                 # <arguments here>}
 
                 cmd_func = socket_binds.get(message['message'], err)
+                DebugMonitor.with_obj(cmd_func, 'SocketHandler::cmd_func')
                 print("Dispatch", cmd_func)
+                DebugMonitor.with_obj(message, 'Dispatch')
                 resp = cmd_func(app, message,
                                 callback=websocket_response_callback(
                                     wsock, message.get('message', 'err')))
 
-                architecture.log_resp(resp)
                 with wsock_sem:
                     wsock.send(resp)
             except WebSocketError:
@@ -70,7 +84,6 @@ def websocket_response_callback(ws, message_type):
                 'payload': payload
             })
         print("In callback: ", end='')
-        architecture.log_resp(resp)
         ws.send(resp)
     return _callback
 

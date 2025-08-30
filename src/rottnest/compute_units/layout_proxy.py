@@ -1,37 +1,84 @@
+'''
+    Proxy class for managing layouts 
+'''
+
 import abc
+from typing import Generator
+
 import math as maths
-from rottnest.region_builder.json_to_region import json_to_layout
 
-# TODO Turn this dependency into a generic interface 
-from t_scheduler.region.widget_region import RegionStats 
+class LayoutProxy:
+    '''
+        This class does an interesting double shift
+        The first is as an interface for a singleton cache
+        of saved layouts 
+        The second is as an interface wrapper for the json
+        object stored in the cache, with a particular 
+        emphasis in providing a translation layer for
+        the composer 
 
-saved_architectures = {}
+        Architecture load will trigger a monkeypatch
+         on the instance of this class in the current
+         process
 
-'''
-    Base class describing an arbitrary collection of computation units
-    For example superconducting architectures, ion traps etc 
-    A compute unit is a fixed layout that is executed against 
+        This generic form is exposed to the workers
+    '''
 
-    Supports benchmarking, full compilation and simulation for probabalistic structures
-'''
+    # Singleton layout cache
+    curr_layout_id = 0
 
-class ArchitectureProxy(object):
+    # Singleton json cache 
+    saved_layouts = {}
+
+    # Singleton proxy cache 
+    saved_proxies = {}
+
     @classmethod
-    def check_pregenerated(cls, architecture_id):
-        if architecture_id not in saved_architectures:
-            raise ValueError(f"Unknown architecture with id {architecture_id}")
- 
-        return isinstance(saved_architectures[architecture_id], cls)
+    def add_layout(cls, layout):
+        '''
+            Adds a layout, id is incremented
+            Should be used as a single source of truth, then ids 
+             passed to subprocesses
+            `curr_layout_id` is not guaranteed to be synchronous 
+             between processes
+        '''
+        cls.saved_layouts[cls.curr_layout_id] = layout
+        cls.curr_layout_id += 1
 
-    def __new__(cls, architecture_id):
-        if cls.check_pregenerated(architecture_id):
-            return saved_architectures[architecture_id]
+    @classmethod
+    def add_layout_with_id(cls, layout_id, layout):
+        '''
+            Binds a layout to a given id
+            Should be used for 
+        '''
+        cls.saved_layouts[layout_id] = layout
+
+    @classmethod
+    def get_layouts(cls) -> Generator:
+        '''
+            Gets all layouts
+        '''
+        return cls.saved_layouts.items()
+
+    @classmethod
+    def get_layout(cls, layout_id) -> dict:
+        return cls.saved_layouts.get(layout_id, None)
+
+    @classmethod
+    def check_pregenerated(cls, layout_id):
+        if layout_id not in cls.saved_layouts:
+            raise ValueError(f"Unknown layout with id {layout_id}")
+        return layout_id in cls.saved_proxies
+
+    def __new__(cls, layout_id):
+        if cls.check_pregenerated(layout_id):
+            return cls.saved_proxies[layout_id]
         else:
-            return object.__new__(ArchitectureProxy)
+            return object.__new__(LayoutProxy)
 
     def __init__(
         self,
-        architecture_id 
+        layout_id 
         ):
         '''
             Compute Unit Constructor
@@ -49,33 +96,28 @@ class ArchitectureProxy(object):
             gates generated during stage 3 
         '''
 
-        if self.check_pregenerated(architecture_id):
+        if self.check_pregenerated(layout_id):
             # Skip __init__, we returned an past generated object in __new__
             return
 
-        self.architecture_id = architecture_id 
+        # TODO: replace arch_id with layout_id
 
-        self.underlying_json = saved_architectures[architecture_id]
+        self.layout_id = layout_id 
+           
+        from rottnest.plugins import architectures 
+        arch_module = architectures.get_current_architecture()       
 
-        # We checked in __new__ whether we're pregenerated, so this is the path otherwise
-        # Hence saved_architectures contains the raw json under architecture_id
-        layout = json_to_layout(self.underlying_json)
+        self.stats = arch_module.designer().get_stats(
+            self.to_json() 
+        ) 
 
         # Now that we've stolen the layout, save ourselves to the mapping
-        saved_architectures[architecture_id] = self
+        LayoutProxy.saved_proxies[layout_id] = self
 
-        # Generate the layout
-        regions, routers = layout.create()
-
-        self.regions = regions
-        # self.routers = routers
-        
-        stats = sum((region.stats for region in regions), start=RegionStats())
-        self.stats = stats
-
-        self.num_registers = stats.num_registers 
-        self.num_t_buffers = stats.num_t_buffers
-        self.num_bell_buffers = stats.num_bell_buffers
+        # TODO: Fix this
+        self.num_registers = self.stats.num_registers 
+        #self.num_t_buffers =  self.stats.num_t_buffers
+        #self.num_bell_buffers = self.stats.num_bell_buffers
 
         # self.bell_rate = bell_rate
         # self.t_rate = t_rate
@@ -85,15 +127,12 @@ class ArchitectureProxy(object):
 
     def mem_bound(self): 
         '''
-            Over-rideable method
+            Maximum number of elements in the graph
         '''
         return self.num_registers
 
     def to_json(self):
-        return self.underlying_json
-
-    def benchmark(self, computation): 
-        pass
+        return LayoutProxy.get_layout(self.layout_id)
 
     def set_t_rate(self, t_rate):
         self.t_rate = t_rate
@@ -104,6 +143,9 @@ class ArchitectureProxy(object):
         '''
         return maths.ceil(10 + 4 * maths.log2(1 / eps))
 
+
+    # TODO:
+    # Move these to the composer or delete them
     def stage_1(self, n_registers: int = None):
         '''
         Time required for stage 1 of the pipeline
@@ -140,6 +182,8 @@ class ArchitectureProxy(object):
             Whereas the calc function runs a simulation to evaluate a reasonable RZ rate, 
             this function instead performs a speculative guess as to the number of T gates 
             based on factories and pre-warm 
+
+            UNUSED
         '''
         pass
 
@@ -155,6 +199,8 @@ class ArchitectureProxy(object):
             Whereas the calc function runs a simulation to evaluate a reasonable RZ rate, 
             this function instead performs a speculative guess as to the number of T gates 
             based on factories and pre-warm 
+
+            UNUSED
         '''
         pass
 
@@ -165,19 +211,19 @@ class ArchitectureProxy(object):
         overclock_rate: float = 1,
         pre_warm = 0):
         '''
-    Calculates the cap on rz gates for this 
-    computation unit. 
+            Calculates the cap on rz gates for this 
+            computation unit. 
 
-    This is to ensure bounded pre-warming, and consistent pipelining 
+            This is to ensure bounded pre-warming, and consistent pipelining 
 
-    :: n_reg : int :: Number of registers
-    :: eps : float :: Accuracy of Rz gates  
-    :: overclock_rate : float :: Leeway on  
+            :: n_reg : int :: Number of registers
+            :: eps : float :: Accuracy of Rz gates  
+            :: overclock_rate : float :: Leeway on  
 
-    TODO: This should be parameterised 
+            TODO: This should be parameterised 
 
-    TODO: Forcing order of inputs may provide speedups   
-    TODO: Dequeue inputs from register block, double up with teleported bells    
+            TODO: Forcing order of inputs may provide speedups   
+            TODO: Dequeue inputs from register block, double up with teleported bells    
         ''' 
         # Number of T gates expected in first two stages
         t_gen = self.t_rate * (

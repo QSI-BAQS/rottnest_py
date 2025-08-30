@@ -1,11 +1,30 @@
+import base64
+
 import pyLIQTR
 from rottnest.pandora.pandora_sequencer import pandora_connection, PandoraSequencer
-from rottnest.compute_units.architecture_proxy import ArchitectureProxy
+from rottnest.compute_units.layout_proxy import LayoutProxy
 
 from pyLIQTR.qubitization.qubitized_gates import QubitizedRotation, QubitizedReflection
 from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU
 from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
 from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
+
+from pandora.targeted_decomposition import add_cache_db
+
+class PandoraCacheOp:
+    '''
+        Blank intercepting operation for caching objects
+    '''
+    def __init__(self, hsh):
+        self.hsh = hsh
+
+    def _rottnest_hash(self):
+        return self.hsh
+
+    def __iter__(self):
+        return [].__iter__() 
+
+    gate = None
 
 class PandoraCache:
 
@@ -13,27 +32,64 @@ class PandoraCache:
         self.hash_cache = {}
         self.class_cache = {}
 
-    def in_cache(self, other, hash_obj=None): 
-        obj = None
-        if hash_obj is not None:
-            obj = self.hash_cache.get(hash_obj, None)
+    def in_cache(self, op, spawn=False):
+        hsh = op._rottnest_hash()
+
+        # Try the hash cache
+        obj = self.hash_cache.get(hsh, None)
 
         # Fallback to class cache 
         if obj is None:
-            obj = self.class_cache.get(other, None)
-        print(obj, other, hash_obj)
+            obj = self.class_cache.get(type(op.gate), None)
+
+        # Create connection
+        if spawn and obj is not None:
+            conn = pandora_connection.spawn(obj) 
+            obj = PandoraSequencer(conn=conn)
+
         return obj
 
-    def add_class(self, class_obj, obj):
-        self.class_cache[class_obj] = obj
+    def _pre_populate(self):
+        # Load all existing entries
+        pass
+
+    def bind_class(self, op):
+
+        table_name = self.db_table_name(op, hash_postfix=False)  
+
+        # Add the operation to the pandora database
+        conn = add_cache_db(pandora_connection, op, table_name)
+        conn.connection.close()
+
+        self.class_cache[type(op.gate)] = table_name 
+
        
-    def add_hash(self, hash_obj, obj): 
-        self.hash_cache[hash_obj] = obj
+    def bind_hash(self, op, *, hsh=None):
+
+
+        if hsh is None:
+            table_name = self.db_table_name(op, hash_postfix=True)  
+            hsh = op._rottnest_hash()
+        else:
+            table_name = hsh
+
+        # Add the operation to the pandora database
+        conn = add_cache_db(pandora_connection, op, table_name)
+        conn.connection.close()
+
+        self.hash_cache[hsh] = table_name 
+
+    @staticmethod
+    def db_table_name(op, *, hash_postfix=True):
+        base_name = str(op.gate.__class__).split("'")[1].replace('.', '_')[:10]
+        
+        # Is the hash appended as a postfix? 
+        if hash_postfix: 
+            hsh = op._rottnest_hash()
+            base_name += '_' + base64.b32encode(hsh).decode()[:-6]
+        return base_name.lower() 
 
 pandora_cache = PandoraCache() 
-
-lcu = pyLIQTR.BlockEncodings.PauliStringLCU.PauliStringLCU
-string = 'lcu'
 
 def attach_class(db_name, class_obj):
     '''
@@ -44,41 +100,38 @@ def attach_class(db_name, class_obj):
     seq = PandoraSequencer(conn=conn)
     pandora_cache.add_class(class_str, seq)
 
-def architecture_bind(arch_id: int):
+
+def layout_bind(seq, layout_id: int):
     '''
         Extract pandora sequence parameters based on the architecture
     '''
     # Assumes deterministic generation / caching
     # TODO move to convex bound model in Pandora
-    arch = ArchitectureProxy(arch_id)
+    arch = LayoutProxy(layout_id)
     n_registers = arch.mem_bound()
     max_t = n_registers 
     max_d = n_registers
     batch_size = n_registers
-    update_sequencer(max_t=max_t, max_d=max_d, batch_size=batch_size)
+    update_sequencer(seq, max_t=max_t, max_d=max_d, batch_size=batch_size)
 
-def update_sequencer(*args, **kwargs):
+def update_sequencer(seq, *args, **kwargs):
     '''
         Updates parameters for Pandora sequencers
     '''
-    for seq in pandora_cache.hash_cache.values():
-        seq.set_params(*args, **kwargs)
-
-    for seq in pandora_cache.class_cache.values():
-        seq.set_params(*args, **kwargs)
+    seq.set_params(*args, **kwargs)
 
 
-from pyLIQTR.qubitization.qubitized_gates import QubitizedRotation, QubitizedReflection
-from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU
-from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
-from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
-from qualtran._infra.adjoint import Adjoint
+#from pyLIQTR.qubitization.qubitized_gates import QubitizedRotation, QubitizedReflection
+#from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU
+#from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
+#from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
+#from qualtran._infra.adjoint import Adjoint
 
 # Skip if pandora is not enabled
 # This should be promoted to a module for each circuit that is to be constructed and run  
-if pandora_connection is not None:
-
-    attach_class('adjoint', Adjoint)
+#if pandora_connection is not None:
+#    pass
+    #attach_class('adjoint', Adjoint)
     #attach_class('lcu', PauliStringLCU)
     #attach_class('prepare_lcu', prepare_pauli_lcu)
-    attach_class('qsp', QSP_Prepare)
+    #attach_class('qsp', QSP_Prepare)

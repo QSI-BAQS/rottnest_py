@@ -34,6 +34,8 @@ from cabaliser.operation_sequence import OperationSequence
 from rottnest.input_parsers.qubit_label_tracker import QubitLabelTracker
 from rottnest.input_parsers.rz_tag_tracker import RzTagTracker
 
+MIN_SEQUENCE_LEN = 5
+
 '''
 Format for monkey patching:
     # gate parsing operation
@@ -85,8 +87,12 @@ def h_pow():
                 *qubit_labels.gets(*self.qubits)
             )
         else:
+            operation_sequence.append(
+                            cabaliser_gates.H,
+                            *qubit_labels.gets(*self.qubits)
+            )
             # TODO
-            raise Exception("Not Implemented")
+            #raise Exception("Not Implemented")
     return _wrap, 1
 
 
@@ -304,22 +310,22 @@ def rx():
         qubit_labels: QubitLabelTracker,
         rz_tags: RzTagTracker):
 
-        tag = rz_tags(self.gate.angle, self.gate.eps)
+        tag = rz_tags.get(self.gate.exponent, None)
         target = qubit_labels.gets(*self.qubits)[0]
 
         operation_sequence.append(
             cabaliser_gates.H,
-            (target,)
+            target
         )
 
         operation_sequence.append(
             cabaliser_gates.RZ,
-            (target, tag)
+            target, tag
         )
 
         operation_sequence.append(
             cabaliser_gates.H,
-            (target,)
+            target
         )
 
     return _wrap, 3

@@ -1,47 +1,82 @@
+from typing import Union
+
+from rottnest.gridsynth.angle_to_rational import angle_to_rational 
+
+DEFAULT_PRECISION = 10
+
+from cabaliser.gate_constructors import MEASUREMENT_GATE_TAG 
+
 '''
     Adapter class for mapping Rz gates to tags 
 '''
 
+class RzTagTracker:
 
-class RzTagTracker():
-
-    #_gs = gridsynth.GridSynth()
     '''
         Maps angles to tags
         TODO: This currently makes some very rough
         assumptions that no two gates will have
         the same angle and differing values of eps 
     '''
-    def __init__(self, default_eps = 10):
+    def __init__(self, default_eps = None):
         # Reserve tag 0 
         self._angles_to_tags = {None: None}
         self._tags_to_angles = [None] 
-        self._eps = [None] 
+        self._eps = [None] # Per tag eps 
         self.n_rz_gates = 0
+    
+        if default_eps is None:
+            default_eps = DEFAULT_PRECISION + 3
     
         self.default_eps = default_eps
 
     def __getitem__(self, tag):
         return self._tags_to_angles[tag]
 
+    def to_dict(self) -> dict:
+        '''
+            Serialisation function for passing over the network
+        '''
+        return {
+            'default_eps': self.default_eps,
+            'eps': self._eps,
+            'tags_to_angles': list(self._tags_to_angles),
+        }
+
+    @staticmethod
+    def from_dict(serialised: dict):
+        '''
+            Deserialisation function 
+        '''
+        tracker = RzTagTracker(serialised['default_eps'])
+        tracker._tags_to_angles = serialised['tags_to_angles'] 
+        tracker._eps = serialised['eps']
+        return tracker
+         
+
     def get_gridsynth_params(self, tag):
         '''
             Helper function to turn a tag into a gridsynth input
         '''
-        if tag == 268435455:
+        if tag == MEASUREMENT_GATE_TAG:
             # Measurement gate tag
             angle = 0
             eps = 10
         else:
-            angle = self._tags_to_angles[tag]
             eps = self._eps[tag]
+            if eps is None:
+                eps = self.default_eps
+            else:
+                eps = max(eps, self.default_eps)
+
+            angle = self._tags_to_angles[tag]
+
+        angle = angle % 2
 
         if eps is None: 
             eps = self.default_eps 
-        denominator = int(10 ** eps) 
-        numerator = int(angle * denominator)
-        
-        return numerator, denominator, eps  
+
+        return angle_to_rational(angle, precision=eps)
 
     def get(self, angle, eps): 
         '''

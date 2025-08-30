@@ -1,22 +1,39 @@
+from rottnest.server.app.app_config import ApplicationConfig, AppExtensions
+from rottnest.debug.monitor import DebugMonitor
 
-
-
-class RottApplication:
+class RottnestApplication:
     """
         Application class that will can be used
         as a simple map right now.
 
         To have more concrete information provided later
     """
-    def __init__(self, wsock, wsock_sem):
+    def __init__(self, wsock, wsock_sem, apploader=ApplicationConfig.default()):
         """
             Initialises an application
             with simple dictionary that will
             map arbitrary objects
+            ApplicationConfig will load defaults or
+            what is specified
         """
         self.wsock = wsock
         self.wsock_sem = wsock_sem
         self.app_state_map = {}
+        self.app_extensions = AppExtensions()
+        apploader.load_and_attach(self.app_extensions)
+        DebugMonitor.current().get_console().set_app(self)
+
+    def set_wsock(self, wsock):
+        '''
+           Sets the websocket connection 
+        '''
+        self.wsock = wsock
+
+    def get_extensions(self):
+        '''
+           Gets object that was extended by the loaders 
+        '''
+        return self.app_extensions
 
     def setv(self, key, value):
         """
