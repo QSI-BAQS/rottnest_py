@@ -8,10 +8,9 @@ HIFILES := $(patsubst ${SRCDIR}/%.hs, ${SRCDIR}/%.hi, ${SRCFILES})
 EXES := $(patsubst ${SRCDIR}/%.hs, ${SRCDIR}/%, ${SRCFILES})
 
 
-.PHONY: package
+.PHONY: all package test clean gridsynth
 
 all: package 
-
 
 package: gridsynth
 	pip install -e .
@@ -24,7 +23,11 @@ build : ${OBJFILES}
 ${SRCDIR}/%.o : ${SRCDIR}/%.hs
 	$(CC) $^
 
+test:
+	pytest
+
 clean : 
 	rm $(OBJFILES)
 	rm $(EXES)
 	rm $(HIFILES)
+	pip uninstall rottnest
