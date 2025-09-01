@@ -9,6 +9,9 @@ def process_load_list(app, message, **kwargs):
 
        No data is required to be sent
     '''
+    #exemap = app.get_extensions().get_exe_map()
+    #prgslist = exemap.get_circuits()
+    
     return {
         'err': 'currently not implemented'
     }
