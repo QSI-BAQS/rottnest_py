@@ -16,7 +16,6 @@ def plugin_load_tscheduler(app, args):
     extensions = app.get_extensions()
     amap = extensions.get_arch_map()
     amap.load_config('arch.cfg')
-    print(str(amap.get_architectures()['Four Stage Superconducting'].designer.get_designer_metadata()))
     return True
 
 def plugin_dumps(app, all_args):
