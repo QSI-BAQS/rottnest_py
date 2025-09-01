@@ -1,6 +1,7 @@
 from rottnest.executables.executable_map import ExecutableMap
 from rottnest.executables.executable_state import ExecutableState
 from rottnest.plugins.architecture_plugins import ArchitecturePlugins
+from rottnest.server.responder import responder
 # from rottnest.debug.monitor import DebugMonitor
 
 ARCHITECTURE_REGISTRY_CFG = 'architectures'
@@ -115,8 +116,7 @@ class ApplicationConfig:
             AppComponentLoader(
                                ARCHITECTURE_REGISTRY_CFG,
                                'arch_map',
-                               lambda p : ArchitecturePlugins
-                                .load_config_or_default(p)
+                               arch_plugin_loader
                                
                            )
         ).add_loader(
@@ -126,3 +126,27 @@ class ApplicationConfig:
                                lambda _ : ExecutableState()
                            )
         )
+
+
+def arch_plugin_loader(pth: str):
+    '''
+       Loads the plugins but also ensures the mapping
+       for the api exist 
+    '''
+    plugins = ArchitecturePlugins.load_config_or_default(pth)
+    for k, p in plugins.get_architectures().items():
+        desobj = p.designer.get_designer_data()
+        apimap = desobj['api']
+        # TODO: Finish this function
+        mask = apimap['mask']
+        spec = apimap['spec']
+
+        
+        for sp in spec:
+            sk = sp[0]
+            sr = sp[1]
+            fullname = f"{mask}.{sk}"
+            sfn = sr
+            responder.register_directly(fullname, sfn)
+        
+    return plugins

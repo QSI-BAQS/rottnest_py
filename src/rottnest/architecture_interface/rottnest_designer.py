@@ -36,3 +36,12 @@ class RottnestDesigner(abc.ABC):
            outline the position of the frontend files to be loaded
         '''
         raise NotImplementedError
+
+    @staticmethod
+    def get_designer_data():
+        '''
+           Gets the designer data for the backend that will
+           outline functions that will be callable by when
+           messages map to the websocket protocol
+        '''
+        raise NotImplementedError

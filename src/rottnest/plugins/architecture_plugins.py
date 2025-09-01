@@ -35,7 +35,7 @@ class ArchitecturePlugins(PluginManager):
            This has been re-introduced as it is useful for sensible
            default to be included to ensure loading
         '''
-        plugins = ArchitecturePlugins(config_path=path)        
+        plugins = ArchitecturePlugins(config_path=path)
         return plugins
 
     

@@ -227,6 +227,7 @@ class Responder:
         self.fullqual_resp_map[full_qualname] = responsefn
         resp_map[messagekind] = responsefn
 
+
     def retrieve_response(self, module_name, messagekind):
         """
             Retrieves a specific response based on the module_name
@@ -240,6 +241,13 @@ class Responder:
                  bindingfn = self.response_map[module_name][messagekind]
         return bindingfn 
 
+    def register_directly(self, fullname, respfn):
+        '''
+           Allows the direct mapping of a full qualified name
+           and the function 
+        '''
+        self.response_map[fullname] = respfn
+        self.fullqual_resp_map[fullname] = respfn
 
     def retrive_with_fullqual(self, mapkey):
         """
