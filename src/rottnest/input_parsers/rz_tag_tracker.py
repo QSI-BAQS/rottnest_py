@@ -1,6 +1,6 @@
 from typing import Union
 
-from rottnest.gridsynth.angle_to_rational import angle_to_rational 
+from rottnest.rz_decomposer.angle_to_rational import angle_to_rational 
 
 DEFAULT_PRECISION = 10
 
@@ -48,15 +48,15 @@ class RzTagTracker:
         '''
             Deserialisation function 
         '''
-        tracker = RzTagTracker(serialised['default_eps'])
+        tracker = RzTagTracker(default_eps=serialised['default_eps'])
         tracker._tags_to_angles = serialised['tags_to_angles'] 
         tracker._eps = serialised['eps']
         return tracker
          
 
-    def get_gridsynth_params(self, tag):
+    def get_rz_decomposer_params(self, tag):
         '''
-            Helper function to turn a tag into a gridsynth input
+            Helper function to turn a tag into a rz_decomposer input
         '''
         if tag == MEASUREMENT_GATE_TAG:
             # Measurement gate tag

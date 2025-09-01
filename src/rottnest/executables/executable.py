@@ -2,8 +2,8 @@ import abc
 import cirq
 import numpy as np
 
-from rottnest.gridsynth.angle_to_rational import angle_to_rational
-from rottnest.gridsynth.gridsynth import Gridsynth 
+from rottnest.rz_decomposer.angle_to_rational import angle_to_rational
+from rottnest.rz_decomposer.gridsynth import Gridsynth 
 
 ROTTNEST_EXECUTABLE_MODULE_TAG = "rottnest_executables"
 
