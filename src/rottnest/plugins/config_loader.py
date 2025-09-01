@@ -26,7 +26,7 @@ def default_loader(
     for loc in config.configuration_locations:
         # TODO: Consider composing multiple configs
         # rather than just using the first
-        config_path = f'{loc}/{config_file_name}'
+        config_path = os.path.expanduser(f'{loc}/{config_file_name}')
 
         # Check if file exists
         # File error handling is managed in the

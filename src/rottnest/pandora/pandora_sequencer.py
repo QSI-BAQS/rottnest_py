@@ -7,7 +7,7 @@ from rottnest.input_parsers.qubit_label_tracker import QubitLabelTracker
 from rottnest.input_parsers.rz_tag_tracker import RzTagTracker 
 from rottnest.input_parsers.interrupt import INTERRUPT, NON_CACHING
 from rottnest.compute_units.compute_unit import ComputeUnit
-from rottnest.compute_units.architecture_proxy import ArchitectureProxy
+from rottnest.compute_units.layout_proxy import LayoutProxy
 
 from rottnest.pandora.pandora_translator import PandoraTranslator
 from rottnest.pandora.pandora_qubit_label_tracker import PandoraQubitLabelTracker
@@ -40,7 +40,7 @@ class PandoraSequencer():
 
     def __init__(
             self,
-            *architectures,
+            *layouts,
             sequence_length = 100,
             global_context = None,
             rz_tags = None,
@@ -58,10 +58,11 @@ class PandoraSequencer():
             conn = pandora_connection    
         self.pandora_connection = conn 
 
-        if len(architectures) == 0:
-            self._architecture_proxies = [None]
+        if len(layouts) == 0:
+            self._layout_proxies = [None]
         else:
-            self._architecture_proxies = list(map(ArchitectureProxy, architectures))
+            self._layout_proxies = list(map(ArchitectureProxy, layouts))
+
         self.sequence_length = sequence_length 
         if rz_tags is None:
             rz_tags = RzTagTracker() 
@@ -145,12 +146,12 @@ class PandoraSequencer():
         return
 
     def sequence_pandora(self):
-        architectures = cycle(self._architecture_proxies)
+        layouts = cycle(self._layout_proxies)
 
         # Execution context
-        architecture = next(architectures)
-        if architecture is not None:
-            compute_unit = ComputeUnit(architecture.to_json())       
+        layout = next(layouts)
+        if layout is not None:
+            compute_unit = ComputeUnit(layout.to_json())       
         else:
             compute_unit = ComputeUnit(None)       
         qubit_labels = PandoraQubitLabelTracker()
@@ -192,7 +193,7 @@ class PandoraSequencer():
 
             # Reset context
             compute_unit = ComputeUnit(
-                next(architectures).to_json()
+                next(layouts).to_json()
             ) 
             qubit_labels = PandoraQubitLabelTracker()
             rz_tags.reset()

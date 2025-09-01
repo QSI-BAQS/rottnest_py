@@ -2,13 +2,13 @@
     Simple architecture stats object
 '''
 
-class ArchitectureStats(dict):
+class LayoutStats(dict):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self['num_registers'] = self.get('num_registers', 0)
 
     def __add__(self, other):
-        res = ArchitectureStats(self)
+        res = LayoutStats(self)
         for key, val in other.items():
             res[key] = res.get(key, 0) + val
         return res

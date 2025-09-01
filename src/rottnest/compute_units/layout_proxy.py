@@ -1,39 +1,84 @@
+'''
+    Proxy class for managing layouts 
+'''
+
 import abc
+from typing import Generator
+
 import math as maths
 
-from ..plugins import architectures 
+class LayoutProxy:
+    '''
+        This class does an interesting double shift
+        The first is as an interface for a singleton cache
+        of saved layouts 
+        The second is as an interface wrapper for the json
+        object stored in the cache, with a particular 
+        emphasis in providing a translation layer for
+        the composer 
 
-saved_architectures = {}
+        Architecture load will trigger a monkeypatch
+         on the instance of this class in the current
+         process
 
-# TODO Turn this dependency into a generic interface 
-# This will become the composer, lol
+        This generic form is exposed to the workers
+    '''
 
-'''
-    Base class describing an arbitrary collection of computation units
-    For example superconducting architectures, ion traps etc 
-    A compute unit is a fixed layout that is executed against 
+    # Singleton layout cache
+    curr_layout_id = 0
 
-    Supports benchmarking, full compilation and simulation for probabalistic structures
-'''
+    # Singleton json cache 
+    saved_layouts = {}
 
-class ArchitectureProxy(object):
+    # Singleton proxy cache 
+    saved_proxies = {}
 
     @classmethod
-    def check_pregenerated(cls, architecture_id):
-        if architecture_id not in saved_architectures:
-            raise ValueError(f"Unknown architecture with id {architecture_id}")
- 
-        return isinstance(saved_architectures[architecture_id], cls)
+    def add_layout(cls, layout):
+        '''
+            Adds a layout, id is incremented
+            Should be used as a single source of truth, then ids 
+             passed to subprocesses
+            `curr_layout_id` is not guaranteed to be synchronous 
+             between processes
+        '''
+        cls.saved_layouts[cls.curr_layout_id] = layout
+        cls.curr_layout_id += 1
 
-    def __new__(cls, architecture_id):
-        if cls.check_pregenerated(architecture_id):
-            return saved_architectures[architecture_id]
+    @classmethod
+    def add_layout_with_id(cls, layout_id, layout):
+        '''
+            Binds a layout to a given id
+            Should be used for 
+        '''
+        cls.saved_layouts[layout_id] = layout
+
+    @classmethod
+    def get_layouts(cls) -> Generator:
+        '''
+            Gets all layouts
+        '''
+        return cls.saved_layouts.items()
+
+    @classmethod
+    def get_layout(cls, layout_id) -> dict:
+        return cls.saved_layouts.get(layout_id, None)
+
+    @classmethod
+    def check_pregenerated(cls, layout_id):
+        if layout_id not in cls.saved_layouts:
+            raise ValueError(f"Unknown layout with id {layout_id}")
+        return layout_id in cls.saved_proxies
+
+    def __new__(cls, layout_id):
+        if cls.check_pregenerated(layout_id):
+            return cls.saved_proxies[layout_id]
         else:
-            return object.__new__(ArchitectureProxy)
+            return object.__new__(LayoutProxy)
 
     def __init__(
         self,
-        architecture_id 
+        layout_id 
         ):
         '''
             Compute Unit Constructor
@@ -51,20 +96,23 @@ class ArchitectureProxy(object):
             gates generated during stage 3 
         '''
 
-        if self.check_pregenerated(architecture_id):
+        if self.check_pregenerated(layout_id):
             # Skip __init__, we returned an past generated object in __new__
             return
 
-        self.architecture_id = architecture_id 
+        # TODO: replace arch_id with layout_id
 
-        self.underlying_json = saved_architectures[architecture_id]
+        self.layout_id = layout_id 
            
+        from rottnest.plugins import architectures 
         arch_module = architectures.get_current_architecture()       
 
-        self.stats = arch_module.designer().get_stats(self.underlying_json) 
+        self.stats = arch_module.designer().get_stats(
+            self.to_json() 
+        ) 
 
         # Now that we've stolen the layout, save ourselves to the mapping
-        saved_architectures[architecture_id] = self
+        LayoutProxy.saved_proxies[layout_id] = self
 
         # TODO: Fix this
         self.num_registers = self.stats.num_registers 
@@ -84,7 +132,7 @@ class ArchitectureProxy(object):
         return self.num_registers
 
     def to_json(self):
-        return self.underlying_json
+        return LayoutProxy.get_layout(self.layout_id)
 
     def set_t_rate(self, t_rate):
         self.t_rate = t_rate

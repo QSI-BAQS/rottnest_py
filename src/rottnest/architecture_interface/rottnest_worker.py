@@ -12,7 +12,7 @@ from ..input_parsers.rz_tag_tracker import RzTagTracker
 from ..compute_units.compute_unit import ComputeUnit
 
 # TODO Wrap this in a context? 
-from rottnest.compute_units.architecture_proxy import saved_architectures
+from rottnest.compute_units.layout_proxy import LayoutProxy
 
 PING = 'ping'
 PONG = 'pong'
@@ -20,7 +20,7 @@ SET_PRECISION = 'set_precision'
 EXEC_COMPUTE_UNIT  = 'exec_compute_unit'
 EXEC_GRAPH_STATE = 'exec_widget'
 GET_GRAPH = 'get_graph'
-LOAD_ARCHITECTURE = 'load_architecture'
+LOAD_LAYOUT = 'load_architecture'
 
 # TODO: Replace with more generic decomposition manager
 
@@ -30,10 +30,17 @@ class RottnestWorker(abc.ABC):
         Abstract base class defining an interface
         for Rottnest worker units
     '''
-    def __init__(self, debug=None, priority=False, blind=False):
+    def __init__(
+            self,
+            layouts=None,
+            priority=False,
+            blind=False,
+            debug=None,
+    ):
 
         self.running = True
         self._debug = debug
+        self._priority = priority
 
         self._architecture_cache_table = {}
 
@@ -43,35 +50,53 @@ class RottnestWorker(abc.ABC):
             EXEC_COMPUTE_UNIT: self.execute_compute_unit,
             EXEC_GRAPH_STATE: self.execute_graph_state,
             GET_GRAPH: self.get_graph,
-            LOAD_ARCHITECTURE: self.load_architecture,
+            LOAD_LAYOUT: self.load_layout,
         }
 
         # Workers enabled blinding
         # Architecture details are contained to workers
         if blind:
             self.worker_tasks[GET_GRAPH] = self.not_supported 
+       
+        if layouts is not None:
+            for layout_id, layout in layouts:
+                self.worker_tasks[LOAD_LAYOUT](layout_id, layout)
 
     def __call__(
             self,
             task_queue: mp.Queue,
             worker_results_queue: mp.Queue,
-            is_priority: bool = False
             ):
         '''
             Dispatch method for the main worker loop 
         '''
-        return self.main(task_queue, worker_results_queue, is_priority=is_priority)
+        return self.main(task_queue, worker_results_queue)
 
     @classmethod
-    def entrypoint(cls, *args, **kwargs):
+    def entrypoint(
+            cls,
+            task_queue: mp.Queue,
+            worker_results_queue: mp.Queue,
+            layouts=None,
+            priority=False,
+            blind=False,
+            debug=None,
+        ):
         '''
             Default entrypoint function
             Invokes the dispatch call 
         '''
-        worker = cls()
-        worker(*args, **kwargs)
 
-    def main(self, task_queue: mp.Queue, worker_results_queue: mp.Queue, is_priority: bool = False):
+        worker = cls(
+            layouts=layouts,
+            priority=priority,
+            blind=blind,
+            debug=debug
+        )
+
+        worker(task_queue, worker_results_queue)
+
+    def main(self, task_queue: mp.Queue, worker_results_queue: mp.Queue):
         '''
             Worker loop - queries 
         '''
@@ -79,7 +104,7 @@ class RottnestWorker(abc.ABC):
         self.running = True
         while self.running:
             task, *args = task_queue.get()
-            response = worker_tasks[task](*args)
+            response = self.worker_tasks[task](*args)
             if response is not None:
                 worker_results_queue.put(response) 
         return       
@@ -87,7 +112,6 @@ class RottnestWorker(abc.ABC):
     def halt(
             self,
             *args, 
-            is_priority:bool = False
         ):
         '''
            Halts the worker 
@@ -97,7 +121,6 @@ class RottnestWorker(abc.ABC):
     def ping(
             self,
             *args, 
-            is_priority:bool = False
         ) -> str:
         '''
             Ping function for worker alive status checking 
@@ -105,30 +128,36 @@ class RottnestWorker(abc.ABC):
         return PONG
 
     def set_precision(
-        self,
-        precision: int,
-        is_priority: bool = False):
+            self,
+            precision: int,
+        ):
         '''
             Set the Rz decomposition precision for the workers
             :: precision : int :: Precision in bits
         '''
         self.get_rz_decomposition_manager().set_precision(precision)
 
-    def load_architecture(self, architecture_id: int, architecture_json: dict):
+    def load_layout(self, layout_id: int, layout_json: dict):
         '''
             Loads an architecture to the cache table
+            This intentionally does not expose the non-id 
+             loads to the worker
+            Not marked as a task so that it can be
+             called in single threaded mode
         '''
-        saved_architectures[architecture_id] = architecture_json 
-        self._architecture_cache_table[architecture_id] = architecture_json 
+        LayoutProxy.add_layout_with_id(
+            layout_id,
+            layout_json
+        )
 
-    def get_architecture(self, architecture_id: int) -> dict | None:
+    @staticmethod
+    def get_layout(layout_id: int) -> dict | None:
         '''
             Loads an architecture from the cache table 
             :: architecture_id : int :: Key for architecture
             Returns either an architecture object (or builder), or None if the key is invalid
         '''
-        return self._architecture_cache_table.get(architecture_id, None)
-
+        return LayoutProxy.get_layout(layout_id)
 
     def set_rz_decomposer(self, manager):   
         '''
@@ -141,35 +170,43 @@ class RottnestWorker(abc.ABC):
         '''
         raise NotImplementedError
  
-    def get_rz_decomposer(self):
+    def get_rz_decomposer():
         '''
             Gets the current decomposition manager
             As this may be executed in a subprocess the import is inlined 
+            Within the worker this is intended to be a 
+            singleton method
         '''
         raise NotImplementedError
  
-    @staticmethod
     def execute_compute_unit(
-            compute_unit: ComputeUnit,
-            rz_tag_tracker: RzTagTracker,
-            full_output: bool,
-            cache_hash: str,
-            is_priority: bool = False
+            self,
+            compute_unit: "ComputeUnit",
         ):
         '''
-            Executes compute unit
+            Executes a sequence of instructions 
             This performs the graph state compilation
              on the worker 
         '''
-        raise NotImplementedError
+        unit_id = compute_unit.unit_id
+        layout_id = compute_unit.layout_id
+        widget = compute_unit.compile_graph_state()
+        
+        rz_tag_tracker = compute_unit.extract_rz_tracker()
 
-    @staticmethod
+        return self.execute_graph_state(
+            unit_id,
+            layout_id,
+            widget.json(),
+            rz_tag_tracker.to_dict()
+        )
+
     def execute_graph_state(
+            self,
+            unit_id: int,
+            layout_id: int,
             widget: "Widget",
             rz_tag_tracker: RzTagTracker,
-            full_output: bool,
-            cache_hash: str,
-            is_priority: bool = False
         ):
         '''
             Executes a graph node 
@@ -179,10 +216,9 @@ class RottnestWorker(abc.ABC):
         '''
         raise NotImplementedError
 
-    @staticmethod
     def get_graph(
+            self,
             *args,
-            is_priority: bool = False
         ):
         '''
             Synchronises back end graph object unrolling with front end objects
@@ -190,12 +226,12 @@ class RottnestWorker(abc.ABC):
         '''
         raise NotImplementedError
 
-    @staticmethod
     def run_widget(
-        cabaliser_obj,
-        region_obj,
-        rz_tag_tracker,
-        full_output: bool=False
+            self,
+            cabaliser_obj,
+            region_obj,
+            rz_tag_tracker,
+            full_output: bool=False
         ):
         '''
             Abstract base method 

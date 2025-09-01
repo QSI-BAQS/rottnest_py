@@ -1,32 +1,41 @@
 from cabaliser.widget import Widget
 from rottnest.input_parsers.rz_tag_tracker import RzTagTracker
+from .layout_proxy import LayoutProxy
 
 '''
 Wrapper object for cabaliser sequences 
 '''
 
-counter = 0
 
 class ComputeUnit(): 
+
+    counter = 0
+
+    @classmethod
+    def get_unit_id(cls): 
+        unit_id = cls.counter
+        cls.counter += 1
+        return unit_id
+
     '''
         Wrapped object for sending
     '''
     def __init__(
                 self,
-                architecture,
+                layout_id,
                 *,
                 unit_id: str=None,
                 mem_bound=None
             ):
 
-        # TODO: mem bounds from architecture 
-        global counter
-        
-        self.unit_id = counter 
-        counter += 1
+        if unit_id is None: 
+            unit_id = ComputeUnit.get_unit_id() 
+        self.unit_id = unit_id
 
-        self.memory_bound = mem_bound # Should be equal to number of registers
-        self.architecture = architecture 
+        # Should be equal to number of registers
+        self.memory_bound = mem_bound 
+
+        self.layout_id = layout_id
         self.sequences = list()
         
         # Context trackers
@@ -76,16 +85,18 @@ class ComputeUnit():
         self.n_rz_operations += sequence.n_rz_operations 
         self.sequences.append(sequence)
 
-    def apply(self, widget): 
-        # TODO remove
-        for seq in self.sequences: 
-            widget(seq)
-
     def compile_graph_state(self):
         '''
+            Compiles a graph state from the currently
+             loaded sequences 
+
             TODO: Setup context extraction decorator
         '''
-        widget = Widget(self.n_inputs, self.n_qubits * 2 + 1)
+        widget = Widget(
+            self.n_inputs,
+            self.n_qubits * 2 + 1
+        )
+
         for op in self.sequences:
             widget(op)
         widget.decompose()
@@ -98,5 +109,5 @@ class ComputeUnit():
             'n_qubits': self.n_qubits,
         }
 
-    def get_architecture_json(self):
-        return self.architecture
+    def get_layout_json(self):
+        return LayoutProxy.get_layout(self.layout_id)

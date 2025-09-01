@@ -48,7 +48,7 @@ For more details see the quipper docs: (https://www.mathstat.dal.ca/~selinger/qu
 
 Once that's installed we can compile the relevant Haskell files 
 ```
-make all
+make gridsynth 
 ```
 
 Once this is done now we can install the package

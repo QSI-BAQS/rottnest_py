@@ -22,11 +22,13 @@ def run_widget_pool(arch_id, wsock=None, wsock_sem=None):
     print("in run_widget_pool")
     # TODO use more than single object here
     cu_executor_pool.run_sequence([arch_id])
+
     t = threading.Thread(target=_read_results, name="ResultReaderThread", args=[cu_executor_pool, wsock, wsock_sem], daemon=True)
     t.start()
 
 
 def _read_results(pool, wsock=None, wsock_sem=None):
+    # TODO: remove this file, use a pipe
     with open("stream_output.json", "w") as f:
         while True:
             result = pool.manager_completion_queue.get()
