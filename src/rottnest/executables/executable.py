@@ -2,6 +2,8 @@ import abc
 import cirq
 import numpy as np
 
+from functools import reduce
+
 from rottnest.rz_decomposer.angle_to_rational import angle_to_rational
 from rottnest.rz_decomposer.gridsynth import Gridsynth 
 
@@ -226,3 +228,38 @@ class RottnestExecutable(abc.ABC):
                     rz_count += 1
         return rz_count
 
+    def get_qubits(self):
+        '''
+            Top level getter for qubits
+            Override this as appropriate to skip computation of the circuit   
+        '''
+        return self._generate_circuit().all_qubits()
+  
+    def _get_qubits_from_pyliqtr_object(self):
+        '''
+            Helper method for pyliqtr iterable objects
+        '''
+
+    def _get_qubits_from_qualtran_object(self):
+        '''
+            Helper method for pyliqtr iterable objects
+        '''
+
+    def _get_qubits_from_cirq_object(self):
+        '''
+            Helper method for pyliqtr iterable objects
+        '''
+ 
+    def _get_qubits_from_list_of_gates(self):
+        '''
+            Helper method for non-circ iterables
+            Composes qubits via union of sets 
+        '''
+        qubits = set()
+        for gate in self._generate_circuit():
+            if not isinstance(gate, list):
+                qubits |= set(gate.qubits)
+            else:
+                for g in gate:
+                    qubits |= set(g.qubits)
+        return qubits

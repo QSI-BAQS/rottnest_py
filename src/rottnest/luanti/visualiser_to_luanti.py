@@ -1,19 +1,19 @@
 import json
 from functools import partial
 
-class LuantiVisualiser: 
+class LuantiVisualiser:
     '''
         LuantiVisualiser
-        Visualiser object for Luanti from Rottnest 
-        The visualiser json should be passed as an input  
-        Layers may then be peeled using get_layer 
-        The vtable object is constructed on first instantiation 
+        Visualiser object for Luanti from Rottnest
+        The visualiser json should be passed as an input
+        Layers may then be peeled using get_layer
+        The vtable object is constructed on first instantiation
     '''
 
     _vtable = None
     ANCILLAE = 'Ancillae'
     DISTILL = 'DistllationQubit'
-    REGISTER = 'Qubit'    
+    REGISTER = 'Qubit'
 
     DASHED = 'Dashed'
     SOLID = 'Solid'
@@ -22,12 +22,12 @@ class LuantiVisualiser:
 
     def __init__(self, vis_json):
         self.json_obj = vis_json
-      
-        # Binding at first instantiation of the class  
-        # This avoids 
-        if self._vtable is None: 
+
+        # Binding at first instantiation of the class
+        # This avoids
+        if self._vtable is None:
             # Inject the vtable
-            LuantiVisualiser._vtable = { 
+            LuantiVisualiser._vtable = {
                 'route': LuantiVisualiser.route,
                 'reg': LuantiVisualiser.reg,
                 'route_buffer': LuantiVisualiser.route_buffer,
@@ -47,13 +47,14 @@ class LuantiVisualiser:
             Gets a layer for the visualiser
         '''
         layer = self.json_obj['layers'][idx]['board']
-    
-        # I will probably not apologise for the following code 
+
+        # I will probably not apologise for the following code
         mapped_layer = list(
             map(
                 list, map(
                     partial(
-                        map, self.obj_to_luanti
+                        map,
+                        self.obj_to_luanti
                     ),
                     layer
                 )
@@ -61,31 +62,39 @@ class LuantiVisualiser:
         )
         return mapped_layer
 
-    def dump(self, fp): 
+    def dump(self, fp):
         '''
             TODO; Replace this with a generator
         '''
         layers = [self.get_layer(i) for i in range(len(self))]
         json.dump(layers, fp)
 
-    @staticmethod 
+    @staticmethod
     def obj_to_luanti(obj):
         '''
             Dispatch method to the class vtable
-        ''' 
+        '''
         return LuantiVisualiser._vtable[obj['type']](obj)
-       
+
     @staticmethod
     def route(obj):
         if 'locked_by' in obj:
-            return LuantiVisualiser.luanti_node(LuantiVisualiser.ANCILLAE, activity=None, text="", 
-                top=LuantiVisualiser.JOIN, bottom=LuantiVisualiser.JOIN, left=LuantiVisualiser.JOIN, right=LuantiVisualiser.JOIN)
+            return LuantiVisualiser.luanti_node(
+                LuantiVisualiser.ANCILLAE,
+                activity=None,
+                text="",
+                top=LuantiVisualiser.JOIN,
+                bottom=LuantiVisualiser.JOIN,
+                left=LuantiVisualiser.JOIN,
+                right=LuantiVisualiser.JOIN
+            )
         else:
-            return None #LuantiVisualiser.luanti_node(LuantiVisualiser.ANCILLAE, activity=None, text="")
+            #LuantiVisualiser.luanti_node(LuantiVisualiser.ANCILLAE, activity=None, text="")
+            return None
 
     @staticmethod
     def reg(obj):
-        return LuantiVisualiser.luanti_node(LuantiVisualiser.ANCILLAE, activity=None, text="", 
+        return LuantiVisualiser.luanti_node(LuantiVisualiser.ANCILLAE, activity=None, text="",
             top=LuantiVisualiser.SOLID, bottom=LuantiVisualiser.SOLID, left=LuantiVisualiser.DASHED, right=LuantiVisualiser.DASHED)
 
     @staticmethod
@@ -114,20 +123,20 @@ class LuantiVisualiser:
 
     @staticmethod
     def magic_state(obj):
-       return LuantiVisualiser.reg(obj) 
+       return LuantiVisualiser.reg(obj)
 
     @staticmethod
     def luanti_node(patch_type, activity=none, text="", left="none", right="none", bottom="none", top="none"):
      return {
         "activity": {
-            "activity_type": activity  
+            "activity_type": activity
         },
         "edges": {
             "Bottom": bottom,
             "Left": left,
             "Right": right,
-            "Top": top 
+            "Top": top
          },
-        "patch_type": patch_type, 
+        "patch_type": patch_type,
         "text": text
     }

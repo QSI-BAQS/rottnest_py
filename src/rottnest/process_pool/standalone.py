@@ -31,8 +31,13 @@ def compile(
         layouts = [layouts]
 
     worker = architecture.worker()
+    composer = architecture.composer(layouts, executable.get_qubits())
+
     for layout_id, layout in zip(layout_ids, layouts):
         worker.load_layout(layout_id, layout)
+
+
+    results_composer = composer.results_composer(layouts, executable.get_qubits())
 
     parser = PyliqtrParser(executable())
     parser.parse()
@@ -53,6 +58,7 @@ def compile(
         # TODO: pass context to composer
         rz_tag_tracker = compute_unit.extract_rz_tracker().to_dict() 
         widget_json = compute_unit.compile_graph_state().json()
+
         # TODO: total res
         res = worker.execute_graph_state(
             unit_id,
@@ -60,8 +66,8 @@ def compile(
             widget_json,
             rz_tag_tracker,
         )
-        yield res
-
+        composed_result = composer.compose_result(unit_id, res)
+        yield composed_result 
 
 def compile_from_sequences(
     layouts,
