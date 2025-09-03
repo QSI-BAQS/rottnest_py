@@ -3,9 +3,8 @@
 '''
 from ..config import executables_file_name
 from ..executables.executable import ROTTNEST_EXECUTABLE_MODULE_TAG
-
 from .plugin_manager import PluginManager
-
+from ..executables import executables
 
 class ExecutablePlugins(PluginManager):
     '''
@@ -20,6 +19,7 @@ class ExecutablePlugins(PluginManager):
         '''
 
         self._params = {}
+        self._prg_args = {}
 
         if modules is None:
             modules = tuple()
@@ -30,7 +30,16 @@ class ExecutablePlugins(PluginManager):
             modules = modules,
             config_path = config_path
         )
-    
+
+    @staticmethod
+    def from_config_or_default(pth):
+
+        modules = [executables]
+        plugins = ExecutablePlugins(modules=modules, config_path=pth)
+        
+        return plugins
+        
+        
     def get_executable_params(self):
         '''
             Parameters for executable
@@ -73,6 +82,19 @@ class ExecutablePlugins(PluginManager):
             Getter for executable objects
         '''
         return self._options
+
+    def set_current_executable_args(self, args):
+        '''
+           Set the current arguments for the executable 
+        '''
+        self._prg_args = args
+
+
+    def get_current_executable_args(self):
+        '''
+           Gets the arguments for the executable 
+        '''
+        return self._prg_args
 
     def set_current_executable(self, key):
         '''

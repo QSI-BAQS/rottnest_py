@@ -54,6 +54,7 @@ def handle_websocket():
                 DebugMonitor.with_obj(cmd_func, 'SocketHandler::cmd_func')
                 print("Dispatch", cmd_func)
                 DebugMonitor.with_obj(message, 'Dispatch')
+
                 resp = cmd_func(app, message,
                                 callback=websocket_response_callback(
                                     wsock, message.get('message', 'err')))

@@ -15,6 +15,7 @@
 from pyLIQTR.utils.circuit_decomposition import circuit_decompose_multi
 
 import networkx as nx
+
 import pyLIQTR
 import qualtran
 import qualtran.bloqs
@@ -36,27 +37,12 @@ from rottnest.pandora.pandora_cache import pandora_cache
 # pyLIQTR gates include cirq gates
 known_gates = dict(cirq_parser.known_gates) 
 
-# Used to cache results 
-# This is a singleton
-local_cache = set() 
-local_cache_tag = None
-
-def set_cache_tag(architecture_ids):
-    '''
-        Sets the current cache tag
-        # TODO: Update this cache to use the id
-        a handle
-    '''
-    global local_cache_tag
-    if local_cache_tag != architecture_ids:
-        local_cache_tag = architecture_ids
-        local_cache = set()
-        
 
 # Todo: move this to a pandora module
 
 from rottnest.input_parsers.interrupt import INTERRUPT, CACHED, NON_CACHING
 
+# TODO ???
 # Difficult to assert uniqueness of hash function
 def cmp_qsvt(self, other):
    return (self._phis == other._phis
@@ -81,6 +67,23 @@ class PyliqtrParser:
         qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU,
     _InverseCompositeGate,
     ))
+
+
+    # Used to cache results 
+    # This is a singleton
+    local_cache = set() 
+    local_cache_tag = None
+
+    @classmethod
+    def set_cache_tag(cls, layout_ids):
+        '''
+            Sets the current cache tag
+            This should reset on layout update 
+            This is a class method as the cache can be shared by all parsers
+        '''
+        if cls.local_cache_tag != layout_ids:
+            cls.local_cache_tag = layout_ids
+            cls.local_cache = set()
 
     # Targets to decompose on the spot 
     cirq_decomposing_targets = frozenset((
@@ -139,14 +142,20 @@ class PyliqtrParser:
             # Cache check
             rottnest_hash = gate._rottnest_hash()
             if rottnest_hash is not None and self._caching:
-                if rottnest_hash in local_cache:  
+                if rottnest_hash in self.local_cache:  
                     non_participatory = len(
                         self.circuit.all_qubits().difference(gate._qubits)
                     )
-                    yield CACHED(rottnest_hash, request_type=CACHED.REQUEST, non_participatory_qubits=non_participatory)
+                    # Need a mapping here
+                    yield CACHED(
+                        rottnest_hash,
+                        request_type=CACHED.REQUEST,
+                        op=gate,
+                        non_participatory_qubits=non_participatory
+                    )
                     continue
                 else:
-                    local_cache.add(rottnest_hash)
+                    self.local_cache.add(rottnest_hash)
 
             # Wrap the gate as a cirq cirquit
             tmp = cirq.Circuit()
@@ -233,7 +242,6 @@ class PyliqtrParser:
         
         # Terminal none on the sequence
         self.sequence.append(None)
-
 
     def unroll_graph(self, prefix=''):
         '''

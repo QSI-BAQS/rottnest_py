@@ -62,6 +62,6 @@ def pandora_pg_config_load(path):
             print(err)
             print('Unable to parse pandora-postgres config')
     except:
-        print('Unable to open file, using default')
+        print('Unable to open pandora configuration file, using default')
 
     return (False, default_cfg)

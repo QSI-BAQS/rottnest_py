@@ -10,10 +10,10 @@ import time
 
 from ..input_parsers.rz_tag_tracker import RzTagTracker
 from ..compute_units.compute_unit import ComputeUnit
-
+from ..compute_units.layout_proxy import LayoutProxy
 from cabaliser.widget import Widget
-from rottnest.compute_units.compute_unit import ComputeUnit
-from rottnest.compute_units.layout_proxy import LayoutProxy
+# Commands as constants
+# Load from this location to prevent duplication
 
 PING = 'ping'
 PONG = 'pong'
@@ -21,7 +21,7 @@ SET_PRECISION = 'set_precision'
 EXEC_COMPUTE_UNIT  = 'exec_compute_unit'
 EXEC_GRAPH_STATE = 'exec_widget'
 GET_GRAPH = 'get_graph'
-LOAD_LAYOUT = 'load_architecture'
+LOAD_LAYOUT = 'load_layout'
 
 # TODO: Replace with more generic decomposition manager
 

@@ -39,6 +39,17 @@ def plugin_dumps(app, all_args):
         print(dir(current))
     return True
 
+def plugin_execs(app, args):
+    '''
+        Gets the plugins  
+    '''
+
+    extensions = app.get_extensions()
+    emap = extensions.get_exe_map()
+    print(str(emap.get_executables().items()))
+    
+
+    return True
 
 class DebugPluginHandler:
 
@@ -53,7 +64,8 @@ class DebugPluginHandler:
         .add_command('plugin-loadcfg', DebugPluginHandler.cmd('loadcfg', ['loadcfg'], \
                                                       plugin_loadcfg))\
         .add_command('plugin-tsched', DebugPluginHandler.cmd('tsched', ['Y'], plugin_load_tscheduler))\
-        .add_command('plugin-dumps', DebugPluginHandler.cmd('dumps', ['dumps'], plugin_dumps))
+        .add_command('plugin-dumps', DebugPluginHandler.cmd('dumps', ['dumps'], plugin_dumps))\
+        .add_command('plugin-execs', DebugPluginHandler.cmd('execs', ['execs'], plugin_execs))
         return handler
         
         

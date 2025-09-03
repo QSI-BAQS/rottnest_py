@@ -5,10 +5,6 @@ import typing
 import select
 from collections import defaultdict, deque
 
-from rottnest.plugins import architectures
-from rottnest.plugins import executables
-
-
 from rottnest.input_parsers.interrupt import INTERRUPT, CACHED
 from rottnest.config import REPORT_INTERVAL, RESULT_INTERVAL
 from rottnest.architecture_interface import rottnest_worker
@@ -22,7 +18,6 @@ from rottnest.process_pool import commands, symbols
 from rottnest.config import N_PROCESSES, SEGFAULT_SENTINEL_TIMEOUT_SECS
 
 from rottnest.compute_units.layout_proxy import LayoutProxy
-
 
 class ComputeUnitExecutorPoolManager:
     '''
@@ -43,6 +38,8 @@ class ComputeUnitExecutorPoolManager:
         from rottnest.plugins import architectures, executables 
         self._architectures = architectures
         self._executables = executables
+
+        self.composer = None
 
         # Cache management
         # TODO: Move this into the composer 
@@ -152,6 +149,10 @@ class ComputeUnitExecutorPoolManager:
             LayoutProxy.add_layout_with_id(
                 layout_id, layout_json
             )
+
+    def initialise_composer(self, layouts, executable):
+        arch = self._architectures.get_current_architecture()
+        self.composer = arch.composer(layouts, list(executable.get_qubits()))
 
     def _task_start_workers(self, *args):
         '''
@@ -352,7 +353,11 @@ class ComputeUnitExecutorPoolManager:
         arch_ids = args[0]
 
         architecture = self._architectures.get_current_architecture() 
-        executable = executables.get_current_executable() 
+        executable = self._executables.get_current_executable() 
+
+        # Pass layouts to composer
+        layouts = list(LayoutProxy.get_layouts())
+        self.initialise_composer(layouts, executable)
 
         it = generate_compute_units(arch_ids, architecture, executable)
 
@@ -476,7 +481,11 @@ class ComputeUnitExecutorPoolManager:
 
         elif cache_obj.request_type == CACHED.END:
             if self.cache_hash_stack[-1] != cache_obj.cache_hash():
-                raise Exception("Received unmatched cache_end in stream", cache_obj.cache_hash(), self.cache_hash_stack)
+                raise Exception(
+                    "Received unmatched cache_end in stream",
+                    cache_obj.cache_hash(),
+                    self.cache_hash_stack
+                )
             
             cache_hash = self.cache_hash_stack.pop()
             non_participatory = self.non_participatory_stack.pop()
@@ -568,15 +577,12 @@ class ComputeUnitExecutorPoolManager:
             
         #print("Submitting", self.n_submitted)
 
-
         submitted = False
         while not submitted:
             # Spin until either we get a priority task or we are unblocked on the worker task
 
             self.check_run_priority()
             self.check_priority_result()
-
-            print(type(obj))
 
             # This may block, so check
             if not self.worker_task_queue.full():

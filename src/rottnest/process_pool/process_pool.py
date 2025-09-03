@@ -19,8 +19,6 @@ from rottnest.input_parsers.interrupt import INTERRUPT, CACHED
 from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
 from rottnest.input_parsers import pyliqtr_parser
 
-from rottnest.plugins import architectures, executables
-
 from rottnest.input_parsers.cirq_parser import shared_rz_tag_tracker
  
 from rottnest.architecture_interface.rottnest_worker import RottnestWorker
@@ -65,7 +63,7 @@ class ComputeUnitExecutorPool:
             This forms a producer / consumer pattern 
         '''
         # Drops cache if the architecture changes
-        pyliqtr_parser.set_cache_tag(layout_ids)
+        pyliqtr_parser.PyliqtrParser.set_cache_tag(layout_ids)
 
         parser = PyliqtrParser(executable())
         parser.parse()
@@ -150,6 +148,8 @@ class ComputeUnitExecutorPool:
             Attempts to synchronise all architecure and 
             executable modules with the manager
         '''
+        from rottnest.plugins import architectures, executables
+
         architecture_strings = (
             architectures.get_module_names()
             + architectures.get_loaded_filepaths()

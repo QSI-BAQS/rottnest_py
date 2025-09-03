@@ -24,11 +24,21 @@ class FermiHubbard(T_RZ_RottnestExecutable):
                 'times':(float, FermiHubbard.DEFAULT_times)
         }
 
+    @staticmethod
+    def get_name():
+        '''
+           Name of the type 
+        '''
+        derived = str(__class__.__name__)
+        return derived
+
     def _generate_circuit(self):
         '''
             Dispatch via interface
         '''
         return self._make_fh_circuit()
+
+    
 
 # License separation 
 FermiHubbard._make_fh_circuit = fermi_hubbard_rigetti.make_fh_circuit

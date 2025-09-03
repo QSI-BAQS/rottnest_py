@@ -53,7 +53,7 @@ class CompilationManager:
             )
         
         cache_hash = self.cache_hash_stack.pop()
-        non_participatory = self.np_stack.pop()
+        non_participatory = self.non_participatory_stack.pop()
 
 
     def _cache_request(self, obj):
@@ -84,6 +84,4 @@ class CompilationManager:
             self._cache_end(obj)
 
         elif cache_obj.request_type is CACHED.REQUEST:
-            
-
-
+            self._cache_request(obj) 

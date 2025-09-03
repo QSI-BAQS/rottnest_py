@@ -22,9 +22,12 @@ def program_get_config(app, message, **kwargs):
        Constructs the configuration file
        that the executable_map has formed
     '''
-    prgmap = app.get_extensions().get_exe_map()
-    config = prgmap.to_config()
-    return { 'config' : config }
+    #prgmap = app.get_extensions().get_exe_map()
+    #config = prgmap.to_config()
+    #return { 'config' : config }
+    return {
+        'err': 'currently not implemented'
+    }
     
 @responder.register('program_set_config')
 def program_set_config(app, message, **kwargs):
@@ -32,25 +35,36 @@ def program_set_config(app, message, **kwargs):
         Constructs and updates the current executable map
         from a configuration object
     '''
-    cfg = json.loads(message['payload']['config'])
-    print(str(cfg))
-    prgmap = app.get_extensions().get_exe_map()
-    res = prgmap.from_dict_interior_update(cfg)
-    return { 'success' : res }
+    #cfg = json.loads(message['payload']['config'])
+    #print(str(cfg))
+    #prgmap = app.get_extensions().get_exe_map()
+    #res = prgmap.from_dict_interior_update(cfg)
+    #return { 'success' : res }
+    return {
+        'err': 'currently not implemented'
+    }
 
     
 @responder.register('program_list')
 def program_load_list(app, message, **kwargs):
     '''
        Retrieves the list of programs that have been registered
-       with the application
-
-       No data is required to be sent
+       with the application, this also includes parameters
     '''
     prgmap = app.get_extensions().get_exe_map()
-    prglist = prgmap.get_circuit_dtos()
+    prglist = []
+    for k, e in prgmap.get_executables().items():
+
+        newparams = list(map(lambda f: (f[0], str(f[1][0].__name__), f[1][1]), e.get_parameters().items()))
+        print(newparams)
+        obj = {
+            'prgname': k,
+            'prgparams': newparams
+        }
+        prglist.append(obj)
+    
     return {
-        "prg_list": prglist
+        "prglist": prglist
     }
 
 
@@ -63,31 +77,14 @@ def program_get_current(app, message, **kwargs):
        Does not require any data to be sent 
     '''
     exestate = app.get_extensions().get_exe_state()
-    prg = exestate.get_program()
-
+    prgname = exestate.get_current_executable().get_name()
+    params = exestate.get_executable_params()
+    
     return {
-        "prg": prg
+        "prgname": prgname,
+        "prgparams": params
     }
 
-@responder.register('program_get')
-def program_get(app, message, **kwargs):
-    '''
-       Gets a program from the exe_map
-
-        {
-            prg_name : <string> 
-        }
-       
-    '''
-    prg_name = message['payload']['prg_name']
-    prgmap = app.get_extensions().get_exe_map()
-    prg = prgmap.get_circuit_desc(prg_name)
-
-    # TODO: Error if the program can't be accessed
-
-    return {
-        "prg_desc": prg
-    }
 
 @responder.register('program_set_current')
 def program_set(app, message, **kwargs):
@@ -96,32 +93,27 @@ def program_set(app, message, **kwargs):
         Will return a confirmed object back to the frontend
         to outline if it was successful or not
         {
-             prg_name: <string>,
-             prg_args: [<number>,...]
+             prgname: <string>,
+             prgargs: <dict> - Key is param, value is arg
         }
         
     '''
     
-    prg_name = message['payload']['prg_name']
-    prg_args = message['payload']['prg_args']
+    prg_name = message['payload']['prgname']
+    prg_args = message['payload']['prgargs']
     
     prgmap = app.get_extensions().get_exe_map()
 
-    prg = prgmap.get_circuit(prg_name)
-    
-    ret_obj = {
-        'success': False,
-        'message': 'Unable to set Program, it does not exist'
-    }
-    if prg is not None:
-        prgstate = app.get_extensions().get_exe_state()
-        prgstate.set_program(prg, prg_args)
-        ret_obj = {
-            'success': True,
-            'message': "Program has been set"
-        }
+    prgmap.set_current_executable(prg_name)
+    prgmap.set_current_executable_args(prg_args)
         
-    else:
-        print("Unable to set Program, it does not exist")
+    prgname = prgmap.get_current_executable().get_name()
+    params = prgmap.get_executable_params()
+    
 
+    ret_obj = {
+        'prgname': prgname,
+        'prgparams': params
+    }
+        
     return ret_obj

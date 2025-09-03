@@ -4,7 +4,7 @@
 
 from types import GeneratorType
 
-from rottnest.input_parsers.pyliqtr_parser import set_cache_tag, PyliqtrParser
+from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
 from rottnest.compute_units.sequencer import Sequencer
 from rottnest.compute_units.compute_unit import ComputeUnit 
 
@@ -18,7 +18,7 @@ def generate_compute_units(
         This forms a producer / consumer pattern 
     '''
     # Drops cache if the architecture changes
-    set_cache_tag(layout_ids)
+    PyliqtrParser.set_cache_tag(layout_ids)
 
     parser = PyliqtrParser(executable())
     parser.parse()
