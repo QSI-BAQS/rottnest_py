@@ -124,19 +124,19 @@ class PluginManager:
 
         loaded_options = {}
         for module in modules:
-            plugin_targets_fn = getattr(
+            plugin_targets = getattr(
                 module,
                 self._module_tag,
                 None
             )
 
             # Module has no targets exposed
-            if plugin_targets_fn is None:
+            if plugin_targets is None:
                 print(f"Module {module} does not contain any valid plugin targets")
                 print(f'To expose a target at the module level, please set an iterable "{self._module_tag}" variable in the module\'s main namespace (e.g. __init__.py)')
                 continue
 
-            plugin_targets = plugin_targets_fn()
+            plugin_targets = plugin_targets
             for target in plugin_targets:
                 try:
                     key = target.get_name()

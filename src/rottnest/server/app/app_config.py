@@ -153,10 +153,8 @@ def arch_plugin_loader(pth: str):
     for k, p in plugins.get_architectures().items():
         desobj = p.designer.get_designer_data()
         apimap = desobj['api']
-        # TODO: Finish this function
         mask = apimap['mask']
         spec = apimap['spec']
-
         
         for sp in spec:
             sk = sp[0]

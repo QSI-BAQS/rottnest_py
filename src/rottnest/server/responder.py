@@ -154,6 +154,7 @@ class Responder:
            also wrapping the response object as based on the serialization
            format
         """
+
         serfmt_fn = self.serialization_fn
         modmask = self.namespace_mask
         def _respwrap(responsefn):

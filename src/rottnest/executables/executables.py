@@ -1,4 +1,3 @@
 from rottnest.executables.fermi_hubbard import FermiHubbard
 
-def rottnest_executables():
-    return [FermiHubbard]
+rottnest_executables = [FermiHubbard]

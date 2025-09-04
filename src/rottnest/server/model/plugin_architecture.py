@@ -1,14 +1,17 @@
 import json
 import threading
 
-from rottnest.widget_compilers.plugin_compiler_flow import run_widget as run_widget
+#from rottnest.widget_compilers.plugin_compiler_flow import run_widget as run_widget
 from rottnest.process_pool import process_pool
-from rottnest.compute_units.architecture_proxy import saved_architectures
+#from rottnest.compute_units.architecture_proxy import saved_architectures
 from rottnest.process_pool.process_pool import ComputeUnitExecutorPool
 
 # TODO: May want to get a shared unit instead of instantiating it
 # here
 cu_executor_pool = ComputeUnitExecutorPool()   
+
+#WHERE IS THIS?
+saved_architectures = dict()
 
 def log_resp(resp):
     resp_log = str(resp)
@@ -44,7 +47,7 @@ def _read_results(pool, wsock=None, wsock_sem=None):
                 print(file=f)
             with wsock_sem:
                 wsock.send(json.dumps({
-                    'message': 'arch_lat2d_run_result',
+                    'message': 'data_run_result',
                     'payload': result,
                 }))
             # TODO handle results in this thread
@@ -72,7 +75,7 @@ def _read_root_graph(pool, wsock=None, wsock_sem=None):
     graph_object = pool.manager_priority_completion_queue.get()
     with wsock_sem:
         wsock.send(json.dumps({
-                'message': 'cg_lat2d_get_root_graph',
+                'message': 'data_get_root_graph',
                 'payload' : {
                     'gid' : 'cg', #super silly
                     'graph_view' : graph_object 
