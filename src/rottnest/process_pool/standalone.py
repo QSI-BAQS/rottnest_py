@@ -37,7 +37,7 @@ def compile(
         worker.load_layout(layout_id, layout)
 
 
-    results_composer = composer.results_composer(layouts, executable.get_qubits())
+    results_composer = composer.results_composer()
 
     parser = PyliqtrParser(executable())
     parser.parse()
@@ -52,22 +52,58 @@ def compile(
         assert False
     it = seq.sequence_pyliqtr(parser)
 
-    for unit_id, compute_unit in enumerate(it):
+    for unit_id, obj in enumerate(it): 
+        if obj == INTERRUPT:
+            process_elem_cache(obj, composer)
+        else:
+            process_elem_obj(unit_id, obj, composer)
 
-        # Emulating serialisation 
-        # TODO: pass context to composer
-        rz_tag_tracker = compute_unit.extract_rz_tracker().to_dict() 
-        widget_json = compute_unit.compile_graph_state().json()
+def process_cache_obj(
+    cache_obj,
+    composer
+):
+    '''
+        Sends control signals to the composer
+    '''
 
-        # TODO: total res
-        res = worker.execute_graph_state(
-            unit_id,
-            layout_id,
-            widget_json,
-            rz_tag_tracker,
-        )
-        composed_result = composer.compose_result(unit_id, res)
-        yield composed_result 
+    # Process cache command
+    if cache_obj.request_type == CACHED.START:
+        composer.cache_entry_start(cache_obj)
+
+    elif cache_obj.request_type == CACHED.END:
+        composer.cache_entry_end(cache_obj)
+
+    elif cache_obj.request_type == CACHED.REQUEST:
+        # For single proc we have a guarantee
+        # That non-recursive cache obj are finished
+        # Before calling
+        composer.cache_request(cache_obj)
+
+def process_elem_obj(
+    unit_id,
+    compute_unit,
+    composer
+):
+    '''
+        Triggers a compilation
+    '''
+
+    # Emulating serialisation 
+    # TODO: pass context to composer
+    rz_tag_tracker = compute_unit.extract_rz_tracker().to_dict() 
+    widget_json = compute_unit.compile_graph_state().json()
+
+    # TODO: total res
+    res = worker.execute_graph_state(
+        unit_id,
+        layout_id,
+        widget_json,
+        rz_tag_tracker,
+    )
+    composed_result = composer.compose_result(
+        unit_id,
+        res
+    )
 
 def compile_from_sequences(
     layouts,

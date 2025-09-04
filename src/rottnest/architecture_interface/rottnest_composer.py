@@ -43,31 +43,30 @@ class RottnestComposer(abc.ABC):
         # Tracks qubits irrespective of renaming
         self.qubit_map = {qubit:i for i, qubit in enumerate(qubits)}
 
+        # Set dynamic constructors
         self.ResultsComposer = self.results_composer_constructor()
         self.StackFrame = self.stack_frame_constructor()
 
+        # Memory management system
         self.memory_manager = self.memory_manager_constructor()(self.ResultsComposer)
 
-        #context_stack = [self.context_manager()]
-
+        # Layouts
         self.layouts = layouts 
 
-        # Traces ownership of qubits through the stack 
-        self.qubit_map_stack = []
+        # Initial stack frames
+        # Top level frame has a cache hash of None
+        self.stack_frames = [self.StackFrame(None, self.ResultsComposer, qubit_map={})]
 
-        # Current stack frames 
-        self.stack_frames = []
-
-        # Maps active ids to compute units 
-        active_compute_units = {} 
+        # Maps active ids to stack frames 
+        self.active_compute_units = {} 
 
         # Map of hashes to result objects
-        self.result_cache = {}
+        self.result_cache = {None: self.stack_frames[0]}
 
         # Tracks non-participatory qubits for a given stack frame 
-        self.non_participatory_stack = [0]
-        self.cache_hash_stack = [None]
-        self.compute_unit_result_cache = defaultdict(dict)
+        #self.non_participatory_stack = [0]
+        #self.cache_hash_stack = [None]
+        #self.compute_unit_result_cache = defaultdict(dict)
 
         # Global Result
         #current_result = self.ResultsComposer()
@@ -75,12 +74,10 @@ class RottnestComposer(abc.ABC):
     def cache_entry_start(self, cache_obj):
         '''
             Creates a new stack frame
-            This is used for both caching  
         '''
       
         operation = cache_obj.op
         input_qubits = operation.qubits
-        internal_scope = operation.gate.all_qubits()
 
         qubit_map = {self.stack_frame[-1].qubit_map[qubit] for qubit in input_qubits}
         self.mem_load(input_qubits)
@@ -95,7 +92,7 @@ class RottnestComposer(abc.ABC):
             cache_obj.non_participatory_qubits
         )
 
-    def cache_entry_end(self, cache_ob):
+    def cache_entry_end(self, cache_obj):
         if self.cache_hash_stack[-1] != cache_obj.cache_hash():
             raise Exception(
                 "Received unmatched cache_end in stream",
@@ -106,6 +103,11 @@ class RottnestComposer(abc.ABC):
         cache_hash = self.cache_hash_stack.pop()
         non_participatory = self.non_participatory_stack.pop()
 
+    def update_qubit_state(self, unit_id, qubits_start, qubits_end):
+        if len(qubits_start) == len(qubits_end):
+           return 
+        # TODO: Update current mapping 
+        pass
 
     def get_layout(self) -> int | object:
         '''
@@ -133,12 +135,13 @@ class RottnestComposer(abc.ABC):
             Default implementation reduces
             More complex implementations may do active management of these IDs and layouts 
         '''
-        stack_frame = self.active_compute_units[unit_id]
-        result = self.results_composer_constructor(result)
+        #stack_frame = self.active_compute_units[unit_id]
+        result = self.results_composer_constructor()(result)
 
         # Pass to both the stack frame, and the global total 
-        self.stack_frames[stack_frame].compose_result(result)
-        self.active_compute_units.pop(unit_id)
+        #self.stack_frames[stack_frame].compose_result(result)
+        #self.active_compute_units.pop(unit_id)
+        return result
 
 
     def cache_request(self, cache_obj) -> bool:
@@ -196,8 +199,57 @@ class ComposerStackFrame:
         self.rottnest_hash = rottnest_hash
         self.ResultsComposer = results_composer_constructor
 
-        self.result = self.ResultsComposer() 
+        self.result = self.ResultsComposer()
 
+        self.all_submitted = False
+        self.compilation_complete = False
+
+
+    def compose_stack_frames(self, other: "ComposerStackFrame"):
+        '''
+            Composes stack frames
+        '''
+        
+
+    def idle(self, n_cycles):
+        # Triggers idling at this point in computation 
+        # TODO: Trigger idling in the result composer 
+        pass
+    
+    def submit(self, n_submitted=1):
+        '''
+            Compute units submitted that are part of this stack frame
+        '''
+        self.submitted += n_submitted
+
+    def receive(self, result):
+        '''
+            Compute units received that are part of this stack frame
+        '''
+        self.result += result
+        self.received += result.get_n_compute_units()
+
+    def last_submitted(self):
+        '''
+            Last submitted
+        '''
+        self.all_submitted = True
+
+    def complete(self) -> bool:
+        '''
+            Checks if the compilation of this stack frame is complete
+            At that point it can be used as a cache element
+        '''
+        if self.compilation_complete: 
+            return True
+        if not self.all_submitted:
+            # This lock works to prevent a situation where not all are 
+            # submitted but recv == submitted
+            # It also blocks recursion
+            return False
+        if self.submitted == self.received:
+            self.compilation_complete = True
+        return True
 
 class MemoryManager:
     '''
@@ -247,21 +299,47 @@ class ResultsComposer:
          addition 
     '''
 
-    def __init__(self, result_obj: dict):
+    def __init__(self, result_obj: dict, n_obj=1, compute_unit=None):
         '''
             Constructor
         '''
         self._obj = result_obj 
-    
+
+        # Used for tracking batching of results
+        self._compute_units = []
+        if compute_unit is not None:
+            self._compute_units.append(compute_unit)
+        self._n_obj = n_obj 
+   
+    def items(self):
+        return self._obj.items()
+ 
     def __iadd__(self, other):
+        self._unit_ids += other._unit_ids
+        self._n_obj += other._n_obj
+
         for key, val in other.items():
-            res._obj[key] = res._obj.get(key, 0) + val 
+            self._obj[key] = self._obj.get(key, 0) + val 
 
     def __add__(self, other):
         res = ResultsComposer(**self._obj)
         for key, val in other.items():
             res._obj[key] = res._obj.get(key, 0) + val 
+
+        res._unit_ids = self._unit_ids + other._unit_ids
+        res._n_obj = self._n_obj + other._n_obj
         return res
+
+    def compose(self, other): 
+        tmp_ids = self._unit_ids
+        tmp_recv = self._n_obj
+
+        self.__iadd__(other)  
+        self._unit_ids = tmp_ids
+        self._n_obj = _n_obj
+
+    def get_n_compute_units(self): 
+        return max(len(self._compute_units), self._n_obj)
 
     def serialise(self):
         '''

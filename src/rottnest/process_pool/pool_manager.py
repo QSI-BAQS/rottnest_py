@@ -257,8 +257,8 @@ class ComputeUnitExecutorPoolManager:
         print("Synching: ", args)
         architectures = args[0]
         executables = args[1]
-        self._architectures.load_modules_from_strings(architectures) 
-        self._executables.load_modules_from_strings(executables) 
+        self._architectures.load_modules_from_strings(*architectures) 
+        self._executables.load_modules_from_strings(*executables) 
 
     def _task_set_architecture_module(self, *args):
         '''
