@@ -42,8 +42,10 @@ class LayoutProxy:
             `curr_layout_id` is not guaranteed to be synchronous 
              between processes
         '''
-        cls.saved_layouts[cls.curr_layout_id] = layout
+        layout_id = cls.curr_layout_id
+        cls.saved_layouts[layout_id] = layout
         cls.curr_layout_id += 1
+        return layout_id 
 
     @classmethod
     def add_layout_with_id(cls, layout_id, layout):

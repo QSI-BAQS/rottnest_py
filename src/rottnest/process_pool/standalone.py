@@ -1,6 +1,7 @@
 '''
     Standalone execution without a process pool
 '''
+from rottnest.input_parsers.interrupt import INTERRUPT, CACHED
 from rottnest.plugins import executables, architectures 
 
 from rottnest.compute_units.sequencer import Sequencer
@@ -36,9 +37,6 @@ def compile(
     for layout_id, layout in zip(layout_ids, layouts):
         worker.load_layout(layout_id, layout)
 
-
-    results_composer = composer.results_composer()
-
     parser = PyliqtrParser(executable())
     parser.parse()
 
@@ -52,11 +50,14 @@ def compile(
         assert False
     it = seq.sequence_pyliqtr(parser)
 
-    for unit_id, obj in enumerate(it): 
+    for obj in enumerate(it): 
         if obj == INTERRUPT:
             process_elem_cache(obj, composer)
         else:
-            process_elem_obj(unit_id, obj, composer)
+            process_elem_obj(obj, worker, composer)
+
+    return composer
+
 
 def process_cache_obj(
     cache_obj,
@@ -80,8 +81,8 @@ def process_cache_obj(
         composer.cache_request(cache_obj)
 
 def process_elem_obj(
-    unit_id,
     compute_unit,
+    worker,
     composer
 ):
     '''
@@ -95,8 +96,8 @@ def process_elem_obj(
 
     # TODO: total res
     res = worker.execute_graph_state(
-        unit_id,
-        layout_id,
+        compute_unit.unit_id,
+        compute_unit.layout_id,
         widget_json,
         rz_tag_tracker,
     )

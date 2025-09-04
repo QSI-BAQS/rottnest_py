@@ -1,9 +1,8 @@
 import json
 import threading
 
-from rottnest.widget_compilers.plugin_compiler_flow import run_widget as run_widget
 from rottnest.process_pool import process_pool
-from rottnest.compute_units.architecture_proxy import saved_architectures
+from rottnest.compute_units.layout_proxy import LayoutProxy 
 from rottnest.process_pool.process_pool import ComputeUnitExecutorPool
 
 # TODO: May want to get a shared unit instead of instantiating it
@@ -50,19 +49,12 @@ def _read_results(pool, wsock=None, wsock_sem=None):
             # TODO handle results in this thread
 
 
-
-
-def save_arch(arch_json_obj):
+def save_arch(layout_obj):
     """
-       Saves the architecture to be used by the cu_executor_pool
-       in a similar manner to lat2d, however
-       arch_id should be generated:
-       TODO: Revisit the arch_id matter 
+        Hook to the layout proxy singleton
     """
-    arch_id = 1000000
-    saved_architectures[arch_id] = arch_json_obj
-    cu_executor_pool.save_arch(arch_id, arch_json_obj)
-    return arch_id
+    layout_id = LayoutProxy.add_layout(layout_obj)
+    return layout_id 
 
 def _read_root_graph(pool, wsock=None, wsock_sem=None):
     """
