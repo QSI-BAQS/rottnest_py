@@ -19,8 +19,6 @@ class RottnestExecutable(abc.ABC):
     # Move this to a module that can be shared with workers 
     _rz_decomposer = Gridsynth()
 
-    
-
     def __init__(self, pandora=True, **kwargs):
         '''
         Default constructor for RottnestExecutables
@@ -42,7 +40,6 @@ class RottnestExecutable(abc.ABC):
 
             # Bind the parameters by name to the class instance
             self.__setattr__(param_name, param_type(param_value))
-        self.precompute()
 
     @staticmethod
     def get_name():
