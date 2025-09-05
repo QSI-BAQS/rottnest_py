@@ -5,6 +5,8 @@ from ..config import executables_file_name
 from ..executables.executable import ROTTNEST_EXECUTABLE_MODULE_TAG, RottnestExecutable
 from .plugin_manager import PluginManager
 
+DEFAULT_PRECISION = 10
+
 class ExecutablePlugins(PluginManager):
     '''
        Executable Plugin manager
@@ -45,7 +47,7 @@ class ExecutablePlugins(PluginManager):
         return self._params
 
     def get_precision(self):
-        return self._params[RottnestExecutable.RZ_PREC]
+        self._params.get(RottnestExecutable.RZ_PREC, DEFAULT_PRECISION)
 
     def set_executable_params(self, **params):
         '''
