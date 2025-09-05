@@ -15,6 +15,9 @@ class RottnestExecutable(abc.ABC):
         Interface for Rottnest Executable objects 
     '''
 
+    RZ_PREC = 'prec_rz'
+    base_params = {RZ_PREC: (int, DEFAULT_PRECISION)}
+
     # FEATURE: RzDecomposition
     # Move this to a module that can be shared with workers 
     _rz_decomposer = Gridsynth()
@@ -54,7 +57,8 @@ class RottnestExecutable(abc.ABC):
 
     def precompute(self, *args, **kwargs):
         '''
-            Precomputation of elements of the circuit
+            Precomputation of elements 
+            of the circuit
         '''
         pass
 
@@ -84,10 +88,11 @@ class RottnestExecutable(abc.ABC):
         Parameter priority is in order of a BFS over the bases of each object in the 
         inheritence hierachy 
         '''
-        params = {'prec_rz': (int, DEFAULT_PRECISION)}
+        params = {}
         # Collect parameters from subclasses
         for base in cls.__bases__:
-            if issubclass(base, RottnestExecutable) and base is not RottnestExecutable:
+            print(base, base.get_parameters())
+            if issubclass(base, RottnestExecutable) and base is not object:
                 # Recurse
                 params |= base.get_parameters() 
 

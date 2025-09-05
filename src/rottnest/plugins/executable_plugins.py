@@ -2,7 +2,7 @@
     Manages loading of executables
 '''
 from ..config import executables_file_name
-from ..executables.executable import ROTTNEST_EXECUTABLE_MODULE_TAG
+from ..executables.executable import ROTTNEST_EXECUTABLE_MODULE_TAG, RottnestExecutable
 from .plugin_manager import PluginManager
 from ..executables import executables
 
@@ -45,6 +45,9 @@ class ExecutablePlugins(PluginManager):
             Parameters for executable
         '''
         return self._params
+
+    def get_precision(self):
+        return self._params[RottnestExecutable.RZ_PREC] 
 
     def set_executable_params(self, **params):
         '''

@@ -136,10 +136,13 @@ class ComputeUnitExecutorPool:
     def synchronise_precision(self):  
         '''
         '''
+        from rottnest.plugins import executables
+        prec = executables.get_precision()
+
         self.manager_task_queue.put(
             (
-                commands.SYNCHRONISE_LAYOUTS,
-                layout_payload
+                commands.SET_PRECISION,
+                prec 
             )
         )
 
@@ -254,7 +257,6 @@ class ComputeUnitExecutorPool:
     def run_priority(self, compute_unit, rz_tag_tracker, full_output=True):
         self.manager_priority_task_queue.put(("run_priority", ('exc_cu', compute_unit, rz_tag_tracker, full_output, [None], 0)))
 
-    
     def run_priority_graph_node(self, node_name, arch_obj):
         self.manager_priority_task_queue.put(("run_priority", ('exc_graph_node', node_name, arch_obj)))
 
