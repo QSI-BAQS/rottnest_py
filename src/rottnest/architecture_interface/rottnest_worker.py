@@ -171,7 +171,7 @@ class RottnestWorker(abc.ABC):
         '''
         raise NotImplementedError
  
-    def get_rz_decomposer():
+    def get_rz_decomposer(self):
         '''
             Gets the current decomposition manager
             As this may be executed in a subprocess the import is inlined 

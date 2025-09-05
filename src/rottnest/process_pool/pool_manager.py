@@ -9,6 +9,8 @@ from rottnest.input_parsers.interrupt import INTERRUPT, CACHED
 from rottnest.config import REPORT_INTERVAL, RESULT_INTERVAL
 from rottnest.architecture_interface import rottnest_worker
 
+from rottnest.rz_decomposer.rz_decomposer import DEFAULT_PRECISION
+
 from rottnest.compute_units.compilation_producers import generate_compute_units
 
 from .symbols import TOTAL, SPAWN_CONTEXT, PONG 
@@ -40,7 +42,7 @@ class ComputeUnitExecutorPoolManager:
         self._executables = executables
 
         self.composer = None
-        self._precision = DEFAULT_PRECISION 
+        self._rz_precision = DEFAULT_PRECISION 
 
         # Cache management
         # TODO: Move this into the composer 
@@ -184,7 +186,7 @@ class ComputeUnitExecutorPoolManager:
                 self.priority_task_queue,
                 self.priority_result_queue,
                 layouts,
-                self.default_precision
+                self._rz_precision
                 ), 
             daemon=True
         )
@@ -207,7 +209,6 @@ class ComputeUnitExecutorPoolManager:
 
         self.pool_running = True
         print("Pool Started")
-
    
     def run_task(self):
         '''
