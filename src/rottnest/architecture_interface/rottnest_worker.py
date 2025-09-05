@@ -23,6 +23,8 @@ EXEC_GRAPH_STATE = 'exec_widget'
 GET_GRAPH = 'get_graph'
 LOAD_LAYOUT = 'load_layout'
 
+from rottnest.rz_decomposer.rz_decomposer import DEFAULT_PRECISION
+
 # TODO: Replace with more generic decomposition manager
 
 class RottnestWorker(abc.ABC):
@@ -79,6 +81,7 @@ class RottnestWorker(abc.ABC):
             task_queue: mp.Queue,
             worker_results_queue: mp.Queue,
             layouts=None,
+            rz_precision=DEFAULT_PRECISION,
             priority=False,
             blind=False,
             debug=None,
