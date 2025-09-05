@@ -4,7 +4,6 @@
 from ..config import executables_file_name
 from ..executables.executable import ROTTNEST_EXECUTABLE_MODULE_TAG, RottnestExecutable
 from .plugin_manager import PluginManager
-from ..executables import executables
 
 class ExecutablePlugins(PluginManager):
     '''
@@ -32,13 +31,12 @@ class ExecutablePlugins(PluginManager):
         )
 
     @staticmethod
-    def from_config_or_default(pth):
+    def from_config_or_default(path):
 
-        modules = [executables]
-        plugins = ExecutablePlugins(modules=modules, config_path=pth)
+        modules = []
+        plugins = ExecutablePlugins(modules=modules, config_path=path)
         
         return plugins
-        
         
     def get_executable_params(self):
         '''
@@ -61,7 +59,6 @@ class ExecutablePlugins(PluginManager):
            This method only exists to skip unpacking and repacking
         '''
         self._params = params
-
 
     def __process_default_params(self, params:dict):
         '''
@@ -92,7 +89,6 @@ class ExecutablePlugins(PluginManager):
         '''
         self._prg_args = args
 
-
     def get_current_executable_args(self):
         '''
            Gets the arguments for the executable 
@@ -121,9 +117,3 @@ class ExecutablePlugins(PluginManager):
            that the front-end can select from.
         '''
         return list(self._options.keys())
-
-        #for k, v in self.:
-        #    dtos.append(
-        #             'arch_name': name,
-        #     })
-        #return dtos
