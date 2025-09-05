@@ -390,16 +390,18 @@ class ResultsComposer:
          addition 
     '''
 
-    def __init__(self, result_obj: dict = None, n_obj=1, compute_unit=None):
+    def __init__(self, result_obj: dict = None, n_obj=1, unit_id=None):
         '''
             Constructor
         '''
+        if result_obj is None:
+            result_obj = {}
         self._obj = result_obj 
 
         # Used for tracking batching of results
-        self._compute_units = []
-        if compute_unit is not None:
-            self._compute_units.append(compute_unit)
+        self._unit_ids = []
+        if unit_id is not None:
+            self._unit_ids.append(unit_id)
         self._n_obj = n_obj 
    
     def items(self):
@@ -411,6 +413,7 @@ class ResultsComposer:
 
         for key, val in other.items():
             self._obj[key] = self._obj.get(key, 0) + val 
+        return self 
 
     def __add__(self, other):
         res = ResultsComposer(**self._obj)
@@ -435,7 +438,7 @@ class ResultsComposer:
         self._n_obj = _n_obj
 
     def get_n_compute_units(self): 
-        return max(len(self._compute_units), self._n_obj)
+        return max(len(self._unit_ids), self._n_obj)
 
     def serialise(self):
         '''

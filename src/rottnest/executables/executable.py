@@ -6,6 +6,7 @@ from functools import reduce
 
 from rottnest.rz_decomposer.angle_to_rational import angle_to_rational
 from rottnest.rz_decomposer.gridsynth import Gridsynth 
+from rottnest.rz_decomposer.rz_decomposer import DEFAULT_PRECISION 
 
 ROTTNEST_EXECUTABLE_MODULE_TAG = "rottnest_executables"
 
@@ -19,13 +20,17 @@ class RottnestExecutable(abc.ABC):
     # Move this to a module that can be shared with workers 
     _rz_decomposer = Gridsynth()
 
-    def __init__(self, pandora=True, **kwargs):
+    def __init__(self, pandora=True, prec_rz=None, **kwargs):
         '''
         Default constructor for RottnestExecutables
         Loads all parameters from all child classes and sets them to their default value
         :: pandora : bool :: Enables or disables pandora caching 
         '''
         self.pandora = pandora
+
+        if prec_rz is None:
+             prec_rz = DEFAULT_PRECISION
+        self.prec_rz = prec_rz
 
         params = (
             self.__class__.get_private_parameters()
@@ -53,6 +58,11 @@ class RottnestExecutable(abc.ABC):
             Precomputation of elements of the circuit
         '''
         pass
+
+    def get_rz_precision(self):
+        '''
+        '''
+        return self.prec_rz
 
     def  __call__(self, *args, **kwargs): 
         '''
@@ -96,7 +106,7 @@ class RottnestExecutable(abc.ABC):
         Parameter priority is in order of a BFS over the bases of each object in the 
         inheritence hierachy 
         '''
-        params = {}
+        params = {prec_rz: (int, DEFAULT_PRECISION)}
         # Collect parameters from subclasses
         for base in cls.__bases__:
             if issubclass(base, RottnestExecutable) and base is not RottnestExecutable:

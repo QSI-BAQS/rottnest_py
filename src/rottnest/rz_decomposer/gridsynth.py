@@ -5,11 +5,10 @@ from decimal import Decimal
 from functools import lru_cache
 
 # Try a self import 
-from rottnest.rz_decomposer import rz_decomposer 
+from rottnest.rz_decomposer import rz_decomposer
 from rottnest.rz_decomposer import gridsynth
 
 # Default precision in bits
-DEFAULT_PRECISION = 48 
 
 X = object()
 Z = object()
@@ -40,7 +39,7 @@ class Gridsynth(rz_decomposer.RzDecomposer):
             'T':T
             }
 
-    def __init__(self, gate_dict=None, default_precision=DEFAULT_PRECISION):
+    def __init__(self, gate_dict=None, default_precision=rz_decomposer.DEFAULT_PRECISION):
         # Because these depend on the location of the file they can't be trusted at compile time
         self.proc = subprocess.Popen(self.CMD, stdin=subprocess.PIPE, stdout=subprocess.PIPE) 
         if gate_dict is None:
@@ -57,6 +56,12 @@ class Gridsynth(rz_decomposer.RzDecomposer):
         '''
         self.precision = precision
         self.precision_decimal = Decimal(2) ** Decimal(-1 * precision)
+
+    def get_precision(self, precision):
+        '''
+            Gets the current precision
+        '''
+        return self.precision
 
     @lru_cache
     def z_theta_instruction(self, p, q, *, precision=None, effort=25, seed=0):

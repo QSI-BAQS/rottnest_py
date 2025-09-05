@@ -83,37 +83,6 @@ class ComputeUnitExecutorPool:
             '''
             ...
 
-#    @staticmethod
-#    def _run_sequence(
-#            arch_ids: list[int],
-#            architecture: 'RottnestArchitecture',
-#            executable: 'RottnestExecutable'
-#        ) -> GeneratorType:
-#
-#        # Drops cache if the architecture changes
-#        pyliqtr_parser.set_cache_tag(arch_ids)
-#
-#        # TODO: De-hard code this at some point
-#        global saved_architectures
-#
-#        # Triggers parsing of pyliqtr
-#        parser = PyliqtrParser(executable)
-#        parser.parse()
-#       
-#        # Sequences over the architectures
-#        # This should eventually be hooked for more complex sequencers
-#        seq = Sequencer(*arch_ids)
-#    
-#        # Gate iterator
-#        it = seq.sequence_pyliqtr(parser)
-#
-#        # Yields (compute_unit, rz_tag_tracker, full_output)
-#        wrapped_it = ((obj, shared_rz_tag_tracker, False) for obj in it)
-#
-#        print("iterator generation done")
-#
-#        return wrapped_it
-
     def __init__(self):
         self.ctx = mp.get_context(SPAWN_CONTEXT)
         self.manager_task_queue = self.ctx.Queue()
@@ -141,6 +110,7 @@ class ComputeUnitExecutorPool:
         '''
         self.synchronise_modules()
         self.synchronise_layouts()
+        self.synchronise_precision()
 
     def synchronise_modules(self):
         '''
@@ -162,6 +132,17 @@ class ComputeUnitExecutorPool:
             architecture_strings,
             executable_strings)
         )
+
+    def synchronise_precision(self):  
+        '''
+        '''
+        self.manager_task_queue.put(
+            (
+                commands.SYNCHRONISE_LAYOUTS,
+                layout_payload
+            )
+        )
+
 
     def synchronise_layouts(self):
         '''

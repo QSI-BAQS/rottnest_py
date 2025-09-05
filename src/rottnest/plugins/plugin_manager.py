@@ -57,11 +57,17 @@ class PluginManager:
         if config_path is not None:
             self.load_options_from_config(config_path)
 
+    def __len__(self):
+        return len(self._options)
+
     def __getitem__(self, key):
         '''
             Getter based on keys
         '''
         return self._options.get(key, None)
+
+    def __iter__(self):
+        return self._options.__iter__()
 
     def get_module_names(self) -> list[str]:
         '''

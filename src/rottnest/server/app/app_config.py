@@ -1,7 +1,6 @@
 from rottnest.executables.executable_state import ExecutableState
-from rottnest.plugins.executable_plugins import ExecutablePlugins
-from rottnest.plugins.architecture_plugins import ArchitecturePlugins
-from rottnest.server.responder import responder
+
+
 # from rottnest.debug.monitor import DebugMonitor
 
 ARCHITECTURE_REGISTRY_CFG = 'architectures'
@@ -131,36 +130,34 @@ def exec_plugin_loader(pth: str):
        Loads the executable plugin, ensures that a
        current executable has been constructed 
     '''
-    plugins = ExecutablePlugins.from_config_or_default(pth)
-    current_exe = None
-    
+    from rottnest.plugins import executables
 
-    for k, p in plugins.get_executables().items():
-        if current_exe is None:
-            current_exe = k
-
-    if current_exe:
-        plugins.set_current_executable(current_exe)
+    current_executable = None
+    if len(executables) > 0: 
+        current_executable = next(iter(executables)) 
+ 
+    if current_executable is not None:
+        executables.set_current_executable(current_executable)
     
-    return plugins
+    return executables 
 
 def arch_plugin_loader(pth: str):
     '''
        Loads the plugins but also ensures the mapping
        for the api exist 
     '''
-    plugins = ArchitecturePlugins.load_config_or_default(pth)
-    for k, p in plugins.get_architectures().items():
-        desobj = p.designer.get_designer_data()
+
+    from rottnest.plugins import architectures
+    for key, arch in architectures.get_architectures().items():
+        desobj = arch.designer.get_designer_data()
         apimap = desobj['api']
         mask = apimap['mask']
         spec = apimap['spec']
         
         for sp in spec:
-            sk = sp[0]
-            sr = sp[1]
+            sk, sr = sp
             fullname = f"{mask}.{sk}"
             sfn = sr
             responder.register_directly(fullname, sfn)
         
-    return plugins
+    return architectures

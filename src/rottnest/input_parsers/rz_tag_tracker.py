@@ -1,8 +1,7 @@
 from typing import Union
 
 from rottnest.rz_decomposer.angle_to_rational import angle_to_rational 
-
-DEFAULT_PRECISION = 10
+from rottnest.rz_decomposer.rz_decomposer import DEFAULT_PRECISION 
 
 from cabaliser.gate_constructors import MEASUREMENT_GATE_TAG 
 

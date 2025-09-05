@@ -40,6 +40,7 @@ class ComputeUnitExecutorPoolManager:
         self._executables = executables
 
         self.composer = None
+        self._precision = DEFAULT_PRECISION 
 
         # Cache management
         # TODO: Move this into the composer 
@@ -81,6 +82,9 @@ class ComputeUnitExecutorPoolManager:
         self.priority_submitted_count = 0
         self.priority_received_count = 0
         self.priority_error_count = 0
+
+        # Default precision
+        self.precision_bits = 10
         
         # File desciptors
         self.manager_task_fds = [
@@ -102,7 +106,8 @@ class ComputeUnitExecutorPoolManager:
 
             commands.SET_ARCHITECTURE_MODULE: self._task_set_architecture_module,
             commands.SET_EXECUTABLE: self._task_set_executable,
-            commands.SET_EXECUTABLE_PARAMS: self._task_set_executable_params
+            commands.SET_EXECUTABLE_PARAMS: self._task_set_executable_params,
+            commands.SET_PRECISION: self._task_set_precision
         }
 
     @staticmethod
@@ -137,7 +142,6 @@ class ComputeUnitExecutorPoolManager:
             if not self.manager_task_queue.empty():
                 self.run_task()
         return
-
 
     def _task_synchronise_layouts(self, *args):
         '''
@@ -180,6 +184,7 @@ class ComputeUnitExecutorPoolManager:
                 self.priority_task_queue,
                 self.priority_result_queue,
                 layouts,
+                self.default_precision
                 ), 
             daemon=True
         )
@@ -274,6 +279,18 @@ class ComputeUnitExecutorPoolManager:
         key = args[0] 
         self._executables.set_current_executable(key)
 
+    def _task_set_precision(self, *args):
+        '''
+            Sets the precision of the manager
+        '''
+        self._precision = args[0]
+
+    def _task_set_executable(self, *args):
+        '''
+            Sets an executable from a key
+        '''
+        precision_bits = args[0] 
+        self.precision_bits = precision_bits
 
     def _task_set_executable_params(self, *args):
         params = args[0]

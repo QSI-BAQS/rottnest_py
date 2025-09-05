@@ -2,10 +2,10 @@
     Manages loading of architectures
 '''
 from ..config import architectures_file_name
-from ..architecture_interface.rottnest_tags import ROTTNEST_ARCHITECTURE_MODULE_TAG
 
 from .plugin_manager import PluginManager
 
+ROTTNEST_ARCHITECTURE_MODULE_TAG = 'rottnest_architectures'
 
 class ArchitecturePlugins(PluginManager):
     '''
