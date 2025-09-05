@@ -308,7 +308,7 @@ class ComputeUnitExecutorPoolManager:
             # Update reports after each interval
             update_counter -= 1
             if update_counter < 0:
-                self.post_result_queue()
+                self.post_result_queue(composer)
                 update_counter = REPORT_INTERVAL
                 self.send_total()
 
@@ -411,7 +411,7 @@ class ComputeUnitExecutorPoolManager:
         print("time:", time.time() - self.run_seq_start)
 
 
-    def process_result_elem(self, timeout=None):
+    def process_result_elem(self, composer, timeout=None):
         '''
         Blocking read from worker_result_queue and 
             process result
@@ -511,7 +511,7 @@ class ComputeUnitExecutorPoolManager:
             ):
                 # Barrier until we can resolve this 
                 # cache request
-                self.process_result_elem()
+                self.process_result_elem(composer)
 
         self.cache_time += time.time() - cache_start
 
@@ -559,14 +559,14 @@ class ComputeUnitExecutorPoolManager:
             )
             self.pool[i].start()
 
-    def post_result_queue(self):
+    def post_result_queue(self, composer):
         '''
         Drain the result queue and post
         '''
         while not self.worker_result_queue.empty():
             print("RECEIVED RESULT")
             # Drain result queue
-            self.process_result_elem()
+            self.process_result_elem(composer)
 
     def process_elem_obj(
         self,
@@ -589,7 +589,7 @@ class ComputeUnitExecutorPoolManager:
             self.worker_result_queue.qsize() 
                 > RESULT_INTERVAL
             ):
-            self.post_result_queue()
+            self.post_result_queue(composer)
         
         # Restart dead processes and tally errors
         # TODO
