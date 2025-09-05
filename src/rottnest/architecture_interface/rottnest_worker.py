@@ -136,7 +136,7 @@ class RottnestWorker(abc.ABC):
             Set the Rz decomposition precision for the workers
             :: precision : int :: Precision in bits
         '''
-        self.get_rz_decomposition_manager().set_precision(precision)
+        self.get_rz_decomposer().set_precision(precision)
 
     def load_layout(self, layout_id: int, layout_json: dict):
         '''

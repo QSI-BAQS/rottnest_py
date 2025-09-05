@@ -36,6 +36,7 @@ def compile(
 
     for layout_id, layout in zip(layout_ids, layouts):
         worker.load_layout(layout_id, layout)
+    worker.set_precision(executable.get_rz_precision())
 
     parser = PyliqtrParser(executable())
 

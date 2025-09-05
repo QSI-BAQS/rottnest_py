@@ -15,7 +15,6 @@ class RottnestExecutable(abc.ABC):
         Interface for Rottnest Executable objects 
     '''
 
-    _prec_rz = None
     # FEATURE: RzDecomposition
     # Move this to a module that can be shared with workers 
     _rz_decomposer = Gridsynth()
@@ -85,7 +84,7 @@ class RottnestExecutable(abc.ABC):
         Parameter priority is in order of a BFS over the bases of each object in the 
         inheritence hierachy 
         '''
-        params = {}
+        params = {'prec_rz': (int, DEFAULT_PRECISION)}
         # Collect parameters from subclasses
         for base in cls.__bases__:
             if issubclass(base, RottnestExecutable) and base is not RottnestExecutable:
@@ -106,7 +105,7 @@ class RottnestExecutable(abc.ABC):
         Parameter priority is in order of a BFS over the bases of each object in the 
         inheritence hierachy 
         '''
-        params = {prec_rz: (int, DEFAULT_PRECISION)}
+        params = {}
         # Collect parameters from subclasses
         for base in cls.__bases__:
             if issubclass(base, RottnestExecutable) and base is not RottnestExecutable:
