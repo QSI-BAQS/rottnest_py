@@ -12,6 +12,8 @@ Depends on:
 - t_scheduler for Simulation  
 - Gridsynth for Rz Decomposition 
 
+Gridsynth is run as a subprocess to ensure license separation.
+There are hooks set up to swap it for other Rz decomposers.
 
 ## Installation 
 

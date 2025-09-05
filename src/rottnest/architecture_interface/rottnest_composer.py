@@ -78,10 +78,6 @@ class RottnestComposer(abc.ABC):
         # Map of hashes to result objects
         self.result_cache = {RottnestComposer.__START: self.stack_frames[0]}
 
-        # Tracks non-participatory qubits for a given stack frame 
-        #self.non_participatory_stack = [0]
-        #self.cache_hash_stack = [None]
-        #self.compute_unit_result_cache = defaultdict(dict)
 
     def submit(self, compute_unit):
         '''
@@ -123,12 +119,16 @@ class RottnestComposer(abc.ABC):
             qubit_map=qubit_map
         )
    
+        # Prev Frame
+        prev_frame = self.stack_frames[-1]
+        prev_frame.non_participatory_qubits += cache_obj.non_participatory_qubits 
+    
         # Stack frame goes on the bottom 
         self.stack_frames.append(stack_frame)
 
         # Add it to the cache
         self.result_cache[cache_obj.cache_hash()] =  stack_frame
-
+        
 
     def cache_entry_end(self, cache_obj):
         '''
@@ -276,6 +276,7 @@ class ComposerStackFrame:
 
         # Qubits that are not passed to a called function 
         self.non_participatory_qubits = 0
+        self.idle_volume = 0
 
     def cache_hash(self):
         return self.rottnest_hash
@@ -287,12 +288,22 @@ class ComposerStackFrame:
         '''
             Composes stack frames
         '''
+        self.idle(other.get_tocks())
+        self.non_participatory_qubits = 0
+        self.get_result().compose(other.get_result())
 
     def idle(self, n_cycles):
-        # Triggers idling at this point in computation 
-        # TODO: Trigger idling in the result composer 
-        pass
-    
+        '''
+            Adds idle volume to this stack frame
+        '''
+        self.idle_volume = n_cycles * self.non_participatory_qubits   
+
+    def get_tocks(self):
+        '''
+            Gets the runtime of this stack frame
+        '''
+        return self.get_result().get_tocks()
+ 
     def submit(self, compute_unit, n_submitted=1):
         '''
             Compute units submitted that are part of this stack frame
@@ -435,7 +446,7 @@ class ResultsComposer:
 
         self.__iadd__(other)  
         self._unit_ids = tmp_ids
-        self._n_obj = _n_obj
+        self._n_obj = other._n_obj
 
     def get_n_compute_units(self): 
         return max(len(self._unit_ids), self._n_obj)
