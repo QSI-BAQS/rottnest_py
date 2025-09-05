@@ -14,7 +14,8 @@ class Sequencer():
     def __init__(self,
             *layouts,
             sequence_length = 100,
-            global_context = None
+            global_context = None,
+            composer = None
             ):
 
         # Map layouts to proxies
@@ -29,18 +30,23 @@ class Sequencer():
         # teleported qubit 
         self.sequence_length = self._layout_proxies[0].mem_bound() // 3
         
-
         if global_context is None:
             global_context = QubitLabelTracker()
+
+        self.composer = composer
 
     def priority(self, gate, layout):
         pass
 
     def sequence_pyliqtr(self, parser):
 
-        layouts = cycle(self._layout_proxies)
- 
-        layout = next(layouts) 
+        if self.composer is None:
+            layout_generator = cycle(self._layout_proxies)
+        else:
+            layout_generator = self.composer.layout_sequence_generator() 
+
+        layout = next(layout_generator) 
+
         compute_unit = ComputeUnit(layout.layout_id, mem_bound=layout.mem_bound())
 
         cirq_parser = CirqParser(self.sequence_length)
@@ -64,7 +70,7 @@ class Sequencer():
                         compute_unit.add_context(*local_context)
                         yield compute_unit
 
-                        layout = next(layouts)
+                        layout = next(layout_generator)
                         # Create a new compute unit
                         compute_unit = ComputeUnit(
                             layout.layout_id,
@@ -97,7 +103,7 @@ class Sequencer():
                     # Grab next layout
                     # Eventually replace this with another scheduler
                     # TODO: Investigate composer hooks
-                    layout = next(layouts)
+                    layout = next(layout_generator)
 
                     # Create a new compute unit
                     compute_unit = ComputeUnit(
@@ -112,7 +118,6 @@ class Sequencer():
 
                 # Add the  sequence
                 compute_unit.append(op_seq)
-
                
                 # Reduce sequence length 
                 # Worst case is the creation of a new teleported gate 

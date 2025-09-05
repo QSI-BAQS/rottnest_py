@@ -38,28 +38,23 @@ def compile(
         worker.load_layout(layout_id, layout)
 
     parser = PyliqtrParser(executable())
+
+    seq = Sequencer(*layout_ids, composer=composer)
+
     parser.parse()
 
-    seq = Sequencer(*layout_ids)
     it = seq.sequence_pyliqtr(parser)
 
-    # Check that the iterator is not empty 
-    try:
-        next(it)
-    except StopIteration:
-        assert False
-    it = seq.sequence_pyliqtr(parser)
-
-    for obj in enumerate(it): 
+    for obj in it: 
         if obj == INTERRUPT:
             process_elem_cache(obj, composer)
         else:
             process_elem_obj(obj, worker, composer)
 
-    return composer
+    return composer.get_result()
 
 
-def process_cache_obj(
+def process_elem_cache(
     cache_obj,
     composer
 ):
@@ -72,13 +67,14 @@ def process_cache_obj(
         composer.cache_entry_start(cache_obj)
 
     elif cache_obj.request_type == CACHED.END:
-        composer.cache_entry_end(cache_obj)
+         composer.cache_entry_end(cache_obj)
 
     elif cache_obj.request_type == CACHED.REQUEST:
+
         # For single proc we have a guarantee
         # That non-recursive cache obj are finished
         # Before calling
-        composer.cache_request(cache_obj)
+         composer.cache_request(cache_obj)
 
 def process_elem_obj(
     compute_unit,
@@ -90,19 +86,23 @@ def process_elem_obj(
     '''
 
     # Emulating serialisation 
-    # TODO: pass context to composer
     rz_tag_tracker = compute_unit.extract_rz_tracker().to_dict() 
     widget_json = compute_unit.compile_graph_state().json()
 
-    # TODO: total res
+    # Register compute unit with composer
+    composer.submit(compute_unit)
+
     res = worker.execute_graph_state(
         compute_unit.unit_id,
         compute_unit.layout_id,
         widget_json,
         rz_tag_tracker,
     )
-    composed_result = composer.compose_result(
-        unit_id,
+
+    # Unregister
+    # This makes more sense when using the process pool
+    composer.receive(
+        compute_unit.unit_id,
         res
     )
 
@@ -124,24 +124,17 @@ def compile_from_sequences(
         worker.load_layout(layout_id, layout)
 
     parser = PyliqtrParser(executable())
-    parser.parse()
 
     seq = Sequencer(*layout_ids)
-    it = seq.sequence_pyliqtr(parser)
-
-    # Check that the iterator is not empty 
-    try:
-        next(it)
-    except StopIteration:
-        assert False
     it = seq.sequence_pyliqtr(parser)
 
     for unit_id, compute_unit in enumerate(it):
 
         # Emulating serialisation 
         # TODO: pass context to composer
-        rz_tag_tracker = compute_unit.extract_rz_tracker().to_dict() 
+        rz_tag_tracker = compute_unit.extract_rz_tracker().to_dict()
         widget_json = compute_unit.compile_graph_state().json()
+
         # TODO: total res
         res = worker.execute_instruction_sequence(
             unit_id,
@@ -151,4 +144,3 @@ def compile_from_sequences(
             False,
         )
         yield res
-

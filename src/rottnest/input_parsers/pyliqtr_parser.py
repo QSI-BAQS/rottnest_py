@@ -129,9 +129,6 @@ class PyliqtrParser:
         # Sequence is a valid ordering of the operations 
         for shim, gate in zip(self.shims, self.sequence):
 
-            # TODO: Intercept trivial shims
-            # Or flag them during construction
-
             # Yield shim
             if len(shim) > 0: 
                 yield shim
@@ -167,7 +164,13 @@ class PyliqtrParser:
                 non_participatory = len(
                     self.circuit.all_qubits().difference(tmp.all_qubits())
                 )
-                yield CACHED(rottnest_hash, request_type=CACHED.START, non_participatory_qubits=non_participatory)
+                yield CACHED(
+                    rottnest_hash,
+                    request_type=CACHED.START,
+                    op=gate,
+                    non_participatory_qubits=non_participatory
+                )
+
                 op = parser.op
                 pandora_seq = pandora_cache.in_cache(op, spawn=True)
 
@@ -222,7 +225,11 @@ class PyliqtrParser:
                     # TODO: Flatten this into a regular decomposition
                     # Force cirq decomposition to shim
                     # For now just hope that these aren't nested
+                    self.fully_decomposed = False
+
                     for g in cirq.decompose(operation):
+
+                        # In case the gate decomposes into tracking targets
                         if g.gate.__class__ in self.tracking_targets:
                             self.sequence.append(g)
 
@@ -230,8 +237,8 @@ class PyliqtrParser:
                             self.shims.append(_curr_shim)
                             _curr_shim = cirq_parser.CirqShim() 
                                                     
-                            self.fully_decomposed = False
                         else:
+                            # Native gate
                             _curr_shim.append(g)
 
                 else:
@@ -291,11 +298,10 @@ class PyliqtrParser:
         '''
         for r in self.decompose():
             r.parse()
-
             if r.fully_decomposed:
                 yield r
                 yield INTERRUPT
-
+            
             else:
                 it = r.traverse()
                 while True:

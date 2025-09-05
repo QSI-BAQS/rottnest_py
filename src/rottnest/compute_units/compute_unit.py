@@ -42,7 +42,8 @@ class ComputeUnit():
         self.n_inputs = 0
         self.n_outputs = 0
         self.n_qubits = 0
-        
+       
+        self._qubit_lables = None 
         self._rz_tracker_dict = None
          
         self.n_rz_operations = 0
@@ -53,7 +54,8 @@ class ComputeUnit():
             n_inputs: int,
             n_qubits: int,
             n_outputs: int,
-            rz_tracker_dict: dict):
+            rz_tracker_dict: dict,
+            qubit_labels: dict):
         '''
             Adds contextual information to the compute unit object
         '''
@@ -61,6 +63,7 @@ class ComputeUnit():
         self.n_outputs = n_outputs
         self.n_qubits = n_qubits
         self._rz_tracker_dict = rz_tracker_dict
+        self._qubit_labels = qubit_labels
 
     def extract_rz_tracker(self):
         '''
@@ -110,4 +113,8 @@ class ComputeUnit():
         }
 
     def get_layout_json(self):
+        '''
+            Calls through the layout proxy singleton
+            This is just a nice wrapper function
+        '''
         return LayoutProxy.get_layout(self.layout_id)

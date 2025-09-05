@@ -66,9 +66,6 @@ class QubitLabelTracker:
         # Qubit has not yet been encountered
         if index is None: 
             # Index was teleported from the context
-            # Increase Bell state overhead
-            # TODO Integrate the context here
-            #if index in self._context:
             self.n_inputs += 1
             index = len(self._labels)
             self._labels[qubit_label] = index
@@ -76,6 +73,12 @@ class QubitLabelTracker:
 
     def gets(self, *labels):
         return tuple(map(self.get, labels))
+    
+    def to_dict(self):
+        '''
+            Force copy dict
+        '''
+        return dict(self._labels)
 
     def __len__(self):
         return len(self._labels)
