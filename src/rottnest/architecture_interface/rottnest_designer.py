@@ -9,7 +9,7 @@ import abc
 
 class RottnestDesigner(abc.ABC):
     '''
-        
+        Handles the designer for Rottnest        
     '''
 
     @staticmethod

@@ -439,12 +439,12 @@ class ResultsComposer:
 
     def serialise(self):
         '''
-            Returns a representation for display on the 
-              front end
+            Returns a representation for display 
+            on the front end
         '''
         return str(self._obj)
 
-    def get_tocks():
+    def get_tocks(self):
         '''
             Gets the number of tocks for this result object
         '''
