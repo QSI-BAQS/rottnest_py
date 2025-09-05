@@ -118,7 +118,6 @@ class ComputeUnitExecutorPoolManager:
             Entrypoint function for the manager
         '''
         manager = ComputeUnitExecutorPoolManager(*args, **kwargs)
-        print("Started Manager")
         manager.main_loop()
 
     def main_loop(self):
@@ -175,10 +174,8 @@ class ComputeUnitExecutorPoolManager:
 
         layouts = list(LayoutProxy.get_layouts())
 
-        print("Starting Pool")
         self.pool_running = True
 
-        print("Layout: ", layouts)
         self.priority_process = self.ctx.Process(
             target=arch.worker.entrypoint, 
             name="PoolWorker(Priority)", 
@@ -219,6 +216,7 @@ class ComputeUnitExecutorPoolManager:
              completion queue.
         '''
         task_name, *args = self.manager_task_queue.get()
+        print("Running: ", task_name, args)
         task = self._tasks.get(task_name, None)
         if task is None: 
             raise Exception(f"Unknown task: {task_name}")
@@ -285,13 +283,6 @@ class ComputeUnitExecutorPoolManager:
             Sets the precision of the manager
         '''
         self._precision = args[0]
-
-    def _task_set_executable(self, *args):
-        '''
-            Sets an executable from a key
-        '''
-        precision_bits = args[0] 
-        self.precision_bits = precision_bits
 
     def _task_set_executable_params(self, *args):
         params = args[0]

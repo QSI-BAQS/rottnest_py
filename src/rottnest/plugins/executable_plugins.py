@@ -47,7 +47,7 @@ class ExecutablePlugins(PluginManager):
         return self._params
 
     def get_precision(self):
-        self._params.get(RottnestExecutable.RZ_PREC, DEFAULT_PRECISION)
+        return self._params.get(RottnestExecutable.RZ_PREC, DEFAULT_PRECISION)
 
     def set_executable_params(self, **params):
         '''

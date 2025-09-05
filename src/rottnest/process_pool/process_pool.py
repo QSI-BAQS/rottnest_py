@@ -110,7 +110,6 @@ class ComputeUnitExecutorPool:
         '''
         self.synchronise_modules()
         self.synchronise_layouts()
-        self.synchronise_precision()
 
     def synchronise_modules(self):
         '''
@@ -145,7 +144,6 @@ class ComputeUnitExecutorPool:
                 prec 
             )
         )
-
 
     def synchronise_layouts(self):
         '''
@@ -203,6 +201,7 @@ class ComputeUnitExecutorPool:
                 executable 
             )
         )
+        self.synchronise_precision()
 
     def set_executable_params(self, params: dict):
         '''
