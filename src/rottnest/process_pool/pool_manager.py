@@ -608,7 +608,7 @@ class ComputeUnitExecutorPoolManager:
             if not self.worker_task_queue.full():
 
                 # Inform the composer
-                composer.submit(compute_unit)
+                composer.submit(obj)
 
                 # Send job to worker
                 self.worker_task_queue.put(
