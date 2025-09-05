@@ -42,8 +42,10 @@ class LayoutProxy:
             `curr_layout_id` is not guaranteed to be synchronous 
              between processes
         '''
-        cls.saved_layouts[cls.curr_layout_id] = layout
+        layout_id = cls.curr_layout_id
+        cls.saved_layouts[layout_id] = layout
         cls.curr_layout_id += 1
+        return layout_id 
 
     @classmethod
     def add_layout_with_id(cls, layout_id, layout):
@@ -107,23 +109,12 @@ class LayoutProxy:
         from rottnest.plugins import architectures 
         arch_module = architectures.get_current_architecture()       
 
-        self.stats = arch_module.designer().get_stats(
+        self.num_registers = arch_module.designer().get_mem_bound(
             self.to_json() 
         ) 
 
         # Now that we've stolen the layout, save ourselves to the mapping
         LayoutProxy.saved_proxies[layout_id] = self
-
-        # TODO: Fix this
-        self.num_registers = self.stats.num_registers 
-        #self.num_t_buffers =  self.stats.num_t_buffers
-        #self.num_bell_buffers = self.stats.num_bell_buffers
-
-        # self.bell_rate = bell_rate
-        # self.t_rate = t_rate
-
-    def num_qubits(self):
-        return self.num_registers
 
     def mem_bound(self): 
         '''
@@ -133,103 +124,3 @@ class LayoutProxy:
 
     def to_json(self):
         return LayoutProxy.get_layout(self.layout_id)
-
-    def set_t_rate(self, t_rate):
-        self.t_rate = t_rate
-
-    def _eps_to_t_count(self, eps):
-        '''
-        Simple heuristic for t count for fixed epsilon 
-        '''
-        return maths.ceil(10 + 4 * maths.log2(1 / eps))
-
-
-    # TODO:
-    # Move these to the composer or delete them
-    def stage_1(self, n_registers: int = None):
-        '''
-        Time required for stage 1 of the pipeline
-        During this stage we perform: 
-            Graph state construction to completion 
-            Input Bell state Generation to completion
-        Simultaneously:
-            T factories are run and buffered 
-
-            If the Bell state has a buffer max then we need to swap into on the fly generation
-            for the second stage
-        '''
-        if n_registers is None:
-            n_registers = self.num_registers
-        return max(2 * n_registers, maths.ceil(n_registers / self.bell_rate)) 
-
-    def stage_2(self, n_registers: int = None): 
-        '''
-            Completes when IO written in 
-        '''
-        if n_registers is None:
-            n_registers = self.num_registers
-        return 2 * n_registers 
-
-    @abc.abstractmethod
-    def approx_rz_limit(
-        self,
-        eps,
-        n_registers: int = None,
-        overclock_rate: float = 1,
-        pre_warm = 0):
-        '''
-            Approximates the RZ limit
-            Whereas the calc function runs a simulation to evaluate a reasonable RZ rate, 
-            this function instead performs a speculative guess as to the number of T gates 
-            based on factories and pre-warm 
-
-            UNUSED
-        '''
-        pass
-
-    @abc.abstractmethod
-    def simulate_rz_limit(
-        self,
-        eps,
-        n_registers: int = None,
-        overclock_rate: float = 1,
-        pre_warm = 0):
-        '''
-            Simulates the RZ limit
-            Whereas the calc function runs a simulation to evaluate a reasonable RZ rate, 
-            this function instead performs a speculative guess as to the number of T gates 
-            based on factories and pre-warm 
-
-            UNUSED
-        '''
-        pass
-
-    def calc_rz_limit(
-        self,
-        eps: float,
-        n_registers: int = None,
-        overclock_rate: float = 1,
-        pre_warm = 0):
-        '''
-            Calculates the cap on rz gates for this 
-            computation unit. 
-
-            This is to ensure bounded pre-warming, and consistent pipelining 
-
-            :: n_reg : int :: Number of registers
-            :: eps : float :: Accuracy of Rz gates  
-            :: overclock_rate : float :: Leeway on  
-
-            TODO: This should be parameterised 
-
-            TODO: Forcing order of inputs may provide speedups   
-            TODO: Dequeue inputs from register block, double up with teleported bells    
-        ''' 
-        # Number of T gates expected in first two stages
-        t_gen = self.t_rate * (
-            self.stage_1(n_registers=n_registers) + 
-            self.stage_2(n_registers=n_registers))
-
-        # Ceil rather than floor as if this is zero then we're in trouble
-        n_rz_gates = maths.ceil(overclock_rate * t_gen / self._eps_to_t_count(eps))
-        return n_rz_gates

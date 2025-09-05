@@ -195,7 +195,7 @@ class RottnestWorker(abc.ABC):
         
         rz_tag_tracker = compute_unit.extract_rz_tracker()
 
-        return self.execute_graph_state(
+        return unit_id, self.execute_graph_state(
             unit_id,
             layout_id,
             widget.json(),

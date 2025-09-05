@@ -64,7 +64,9 @@ class CirqParser:
         n_qubits = 2 * n_inputs + n_rz_gates 
         n_outputs = n_inputs 
         rz_tracker = self._rz_tracker.to_dict()
-        return n_inputs, n_qubits, n_outputs, rz_tracker
+        label_tracker = self._qubit_labels.to_dict()
+
+        return n_inputs, n_qubits, n_outputs, rz_tracker, label_tracker
 
     def extract_rz_tracker(self) -> dict:
         '''
@@ -105,6 +107,7 @@ class CirqParser:
                 if operation.gate is None:
                     operation = operation.without_classical_controls() 
 
+                # Append operation to next sequence
                 if operation.gate._n_cabaliser_ops + len(op) > self.sequence_length:  
                     yield op
                     op = OperationSequence(max(self.sequence_length, cirq_patcher.MIN_SEQUENCE_LEN))

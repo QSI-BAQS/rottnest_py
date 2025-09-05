@@ -83,7 +83,6 @@ class ComputeUnitExecutorPool:
             '''
             ...
 
-
 #    @staticmethod
 #    def _run_sequence(
 #            arch_ids: list[int],
