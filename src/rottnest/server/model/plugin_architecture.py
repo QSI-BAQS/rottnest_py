@@ -11,9 +11,6 @@ from rottnest.process_pool.process_pool import ComputeUnitExecutorPool
 # here
 cu_executor_pool = ComputeUnitExecutorPool()   
 
-#WHERE IS THIS?
-saved_architectures = dict()
-
 def log_resp(resp):
     resp_log = str(resp)
     if len(resp_log) > 200:

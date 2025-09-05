@@ -8,7 +8,6 @@ from rottnest.server.responder import responder
 
 # These are used register routes which are core
 # TODO: We need to revise this component
-from rottnest.server.controller.arch import lat2d as archlat2d
 from rottnest.server.controller import prgs
 from rottnest.server.controller.arch import meta
 from rottnest.server.controller import data
@@ -95,14 +94,4 @@ def err(app, message, *args, **kwargs):
         'message': 'err',
         'desc': f"Error: {message['message']} not recognised"
     })
-
-
-
-#def debug_send(message, *args, wsock=None, **kwargs):
-    # Debug:
-    # architecture.run_debug(next(iter(saved_architectures.keys())), wsock)
-    # return get_status({'cu_id': 'debug'})
-    
-#    return architecture.run_debug2(next(iter(saved_architectures.keys())))
-
 
