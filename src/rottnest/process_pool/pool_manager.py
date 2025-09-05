@@ -1,6 +1,7 @@
 import time
 import multiprocessing as mp
 
+import queue
 import typing
 import select
 from collections import defaultdict, deque
@@ -20,6 +21,39 @@ from rottnest.process_pool import commands, symbols
 from rottnest.config import N_PROCESSES, SEGFAULT_SENTINEL_TIMEOUT_SECS
 
 from rottnest.compute_units.layout_proxy import LayoutProxy
+
+
+from copy import deepcopy
+
+def _add_dict(d1, d2):
+    return {
+        k: d1.get(k, 0) + d2.get(k, 0)
+        for k in d1.keys() | d2.keys()
+    }
+
+def add_result_dicts(res1, res2):
+    return {
+        'volumes': _add_dict(res1.get('volumes', {}), res2.get('volumes', {})),
+        't_source': _add_dict(res1.get('t_source', {}), res2.get('t_source', {})),
+        'tocks': _add_dict(res1.get('tocks', {}), res2.get('tocks', {})),
+    }
+
+
+def _iadd_dict(d1, d2):
+    for k in d2:
+        d1[k] = d1.get(k, 0) + d2[k]
+
+def iadd_result_dicts(res1, res2):
+    if 'volumes' not in res1:
+        res1['volumes'] = {}
+    if 't_source' not in res1:
+        res1['t_source'] = {}
+    if 'tocks' not in res1:
+        res1['tocks'] = {}
+    _iadd_dict(res1['volumes'], res2.get('volumes', {}))
+    _iadd_dict(res1['t_source'], res2.get('t_source', {}))
+    _iadd_dict(res1['tocks'], res2.get('tocks', {}))
+
 
 class ComputeUnitExecutorPoolManager:
     '''
@@ -312,11 +346,11 @@ class ComputeUnitExecutorPoolManager:
                 update_counter = REPORT_INTERVAL
                 self.send_total()
 
-    def in_place_compilation(it: typing.Iterator):
+    def in_place_compilation(self, it: typing.Iterator):
         '''
             Consumes the iterator while performing compilation on a single core
         '''
-        arch = architecture.get_current_architecture()  
+        arch = plugin_architecture.get_current_architecture()  
 
         # Sets up a singular worker
         worker = arch.worker() 
@@ -458,7 +492,7 @@ class ComputeUnitExecutorPoolManager:
                     )
                 ):
             self.compute_unit_counts[stack_hash] += 1
-            iadd_result_dicts(
+            add_result_dicts(
                 self.compute_unit_result_cache[stack_hash],
                 result
             )
@@ -535,7 +569,7 @@ class ComputeUnitExecutorPoolManager:
         for i, proc in enumerate(self.pool):
             if proc.exitcode is not None:
                 self.n_error += 1
-                print(f"proc {i} exited with {proc.exitcode}, err count = {n_error}")
+                print(f"proc {i} exited with {proc.exitcode}, err count = {self.n_error}")
                 proc.join()
                 restart.append(i)
 
@@ -658,11 +692,15 @@ class ComputeUnitExecutorPoolManager:
         return True
 
     def check_restart_priority_worker(self):
+
+        arch = self._architectures.get_current_architecture()
+        worker_entrypoint = arch.worker_entrypoint
+        
         if self.priority_process.exitcode is not None:
             # Process died
             self.priority_error_count += 1
             self.priority_process.join()
-            self.priority_process = self.ctx.Process(target=pool_worker_main, 
+            self.priority_process = self.ctx.Process(target=worker_entrypoint,
                                 name="PoolWorker(Priority)", 
                                 args=(self.priority_task_queue, self.priority_result_queue), 
                                 daemon=True)

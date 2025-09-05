@@ -1,4 +1,3 @@
-from rottnest.executables.executable_state import ExecutableState
 from rottnest.server.responder import responder
 
 
@@ -118,12 +117,6 @@ class ApplicationConfig:
                                arch_plugin_loader
                                
                            )
-        ).add_loader(
-            AppComponentLoader(
-                               None,
-                               'exe_state',
-                               lambda _ : ExecutableState()
-                           )
         )
 
 def exec_plugin_loader(pth: str):
@@ -159,6 +152,7 @@ def arch_plugin_loader(pth: str):
             sk, sr = sp
             fullname = f"{mask}.{sk}"
             sfn = sr
+            print(key, mask, fullname)
             responder.register_directly(fullname, sfn)
         
     return architectures

@@ -9,8 +9,9 @@ from rottnest.server.responder import responder
 # These are used register routes which are core
 # TODO: We need to revise this component
 from rottnest.server.controller import prgs
-from rottnest.server.controller.arch import meta
+from rottnest.server.controller.arch import meta, callgraph
 from rottnest.server.controller import data
+
 
 import json
 

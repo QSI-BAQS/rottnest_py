@@ -219,6 +219,7 @@ class ComputeUnitExecutorPool:
         '''
             Puts a run sequence to the worker queue
         '''
+        print(layout_ids)
         self.manager_task_queue.put(
             (
                 commands.RUN_SEQUENCE,

@@ -1,4 +1,3 @@
-#from rottnest.server.model.architecture import cu_executor_pool
 
 import gevent
 from gevent.threadpool import ThreadPool
@@ -8,6 +7,7 @@ from geventwebsocket.handler import WebSocketHandler
 from rottnest.debug.monitor import DebugMonitor
 from rottnest.server import sockethandler
 from rottnest.server.app.application import RottnestApplication
+from rottnest.server.model.plugin_architecture import cu_executor_pool
 
 app = Bottle()
 sockethandler.register_routes(app)
@@ -29,8 +29,9 @@ def server_start(hostname="localhost", port=8080):
 if __name__ == '__main__':
     DebugMonitor.with_obj('Server started', 'Server')
     DebugMonitor.current().get_console().set_app(RottnestApplication(None, None))
-    #cu_executor_pool.start()
-    #cu_executor_pool.ping()
+    
+    cu_executor_pool.start()
+    cu_executor_pool.ping_manager()
     
     monitor_obj = DebugMonitor.current()
     pool = ThreadPool(10)

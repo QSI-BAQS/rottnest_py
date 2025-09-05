@@ -104,8 +104,19 @@ def program_set(app, message, **kwargs):
     
     prgmap = app.get_extensions().get_exe_map()
 
+    print(prg_name)
+    print(prg_args)
     prgmap.set_current_executable(prg_name)
-    prgmap.set_current_executable_args(prg_args)
+
+    nprg_args = {}
+    for a in prg_args:
+        param_key = a[0]
+        arg = a[2]
+        nprg_args[param_key] = arg
+
+    nprg_args
+    
+    prgmap.set_current_executable_args(nprg_args)
         
     prgname = prgmap.get_current_executable().get_name()
     params = prgmap.get_executable_params()

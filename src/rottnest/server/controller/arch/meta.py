@@ -23,6 +23,17 @@ def arch_load_list(app, message, **kwargs):
         "arch_list": archlist
     }
 
+
+@responder.register('arch_set')
+def arch_set(app, message, **kwargs):
+    key = message['payload']['arch_name']
+    amap = app.get_extensions().get_arch_map()
+    amap.set_current_architecture(key)
+
+    return {
+        'arch': key
+    }
+
 @responder.register('arch_get_config')
 def arch_get_config(app, message, **kwargs):
     '''
@@ -46,6 +57,7 @@ def arch_set_config(app, message, **kwargs):
     return {
         "success": res
     }
+
 
 @responder.register('arch_get')
 def program_get(app, message, **kwargs):

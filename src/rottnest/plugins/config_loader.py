@@ -24,6 +24,7 @@ def default_loader(
     '''
 
     for loc in config.configuration_locations:
+        print(loc)
         # TODO: Consider composing multiple configs
         # rather than just using the first
         config_path = os.path.expanduser(f'{loc}/{config_file_name}')
@@ -35,6 +36,7 @@ def default_loader(
             return constructor(
                 config_path=config_path
             )
-
+        else:
+            print("Unable to load configuration" + config_path)
     # No configuration files found
     return constructor()
