@@ -1,4 +1,3 @@
-from rottnest.executables import fermi_hubbard
-from functools import partial
+from ejc.executable import EJC, EJCInteraction 
 
-current_executable = partial(fermi_hubbard.make_fh_circuit, N=5)
+current_executable = EJC(10, 4, epsilon_target=0.25)

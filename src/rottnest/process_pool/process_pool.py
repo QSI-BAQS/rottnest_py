@@ -150,6 +150,7 @@ class ComputeUnitExecutorPoolManager:
         totals = self.compute_unit_result_cache[None]
         totals['cu_id'] = cu_id
         self.manager_completion_queue.put(totals)
+        print("TOTAL: ", totals)
     
     def run_task(self):
         '''
@@ -243,7 +244,7 @@ class ComputeUnitExecutorPoolManager:
 
         self.send_total()
         self.send_total("endcomp")
-        # print(compute_unit_counts, compute_unit_totals, compute_unit_result_cache)
+        #print(compute_unit_totals)
         self.manager_completion_queue.put('done')
 
         print("all received")

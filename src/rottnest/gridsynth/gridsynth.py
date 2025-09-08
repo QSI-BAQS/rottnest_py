@@ -11,6 +11,9 @@ Hadamard = object()
 Phase = object()
 T = object()
 
+DEFAULT_PRECISION=30
+
+
 class Gridsynth:
     GATE_SYNTH_BNR = os.path.join(os.path.dirname(gridsynth.__file__), 'gridsynth')
     CMD = f"{GATE_SYNTH_BNR}".split() 
@@ -33,7 +36,7 @@ class Gridsynth:
             self.gate_dict = gate_dict
 
     @lru_cache
-    def z_theta_instruction(self, p, q, precision=33, effort=25, seed=0, **gates):
+    def z_theta_instruction(self, p, q, precision=DEFAULT_PRECISION, effort=25, seed=0, **gates):
         '''
             Returns a series of gates that perform Z(PI * p / q) with some epsilon precision
         '''
