@@ -27,7 +27,7 @@ from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
 from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
 from cirq.ops.raw_types import _InverseCompositeGate
 
-from rottnest.pandora.pandora_sequencer import PandoraSequencer 
+#from rottnest.pandora.pandora_sequencer import PandoraSequencer 
 
 from . import cirq_parser
 from rottnest.monkey_patchers import pyliqtr_patcher, qualtran_patcher
@@ -251,10 +251,10 @@ class PyliqtrParser:
                 yield GraphWrapper(shim_id, str(r), parser=r)
                 continue
 
-            if isinstance(r, PandoraSequencer):
-                shim_id = f"{prefix}{handle_idx}p" 
-                yield GraphWrapper(shim_id, str(r), parser=r)
-                continue
+            #if isinstance(r, PandoraSequencer):
+            #    shim_id = f"{prefix}{handle_idx}p" 
+            #    yield GraphWrapper(shim_id, str(r), parser=r)
+            #    continue
 
             yield GraphWrapper(f"{prefix}{handle_idx}", str(getattr(getattr(r, "op", None), "gate", "Missing attr")), parser=r, rottnest_hash=r.rottnest_hash)
             handle_idx += 1

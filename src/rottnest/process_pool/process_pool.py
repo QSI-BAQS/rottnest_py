@@ -20,7 +20,7 @@ from rottnest.executables.current_executable import current_executable
 from rottnest.input_parsers.cirq_parser import shared_rz_tag_tracker
 from rottnest.compute_units.architecture_proxy import saved_architectures
 
-from rottnest.pandora import pandora_cache 
+#from rottnest.pandora import pandora_cache 
 
 # TODO: Move these to an appropriate config
 N_PROCESSES = 8
@@ -447,7 +447,7 @@ class ComputeUnitExecutorPool:
         global saved_architectures
 
         # Set the pandora union find based on the architecture
-        pandora_cache.architecture_bind(arch_ids[0])
+        #pandora_cache.architecture_bind(arch_ids[0])
 
         parser = PyliqtrParser(current_executable())
         parser.parse()
