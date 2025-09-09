@@ -151,6 +151,7 @@ class ComputeUnitExecutorPoolManager:
         totals['cu_id'] = cu_id
         self.manager_completion_queue.put(totals)
         print("TOTAL: ", totals)
+        print("ERRORS: ", self.n_error)
     
     def run_task(self):
         '''
