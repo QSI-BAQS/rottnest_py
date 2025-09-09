@@ -49,5 +49,5 @@ class Gridsynth:
         return op_sequence 
 
     def __del__(self):
-        if proc is not None:
+        if self.proc is not None:
             self.proc.terminate()
