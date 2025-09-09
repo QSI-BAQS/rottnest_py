@@ -1,6 +1,7 @@
 '''
     Adapter class for mapping Rz gates to tags 
 '''
+from rottnest.gridsynth.gridsynth import DEFAULT_PRECISION
 
 
 class RzTagTracker():
@@ -12,7 +13,7 @@ class RzTagTracker():
         assumptions that no two gates will have
         the same angle and differing values of eps 
     '''
-    def __init__(self, default_eps = 10):
+    def __init__(self, default_eps = DEFAULT_PRECISION):
         # Reserve tag 0 
         self._angles_to_tags = {None: None}
         self._tags_to_angles = [None] 
