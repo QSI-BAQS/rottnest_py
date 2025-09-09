@@ -27,6 +27,8 @@ class Gridsynth:
             'T':T
             }
 
+    proc = None
+
     def __init__(self, gate_dict=None):
         # Because these depend on the location of the file they can't be trusted at compile time
         self.proc = subprocess.Popen(self.CMD, stdin=subprocess.PIPE, stdout=subprocess.PIPE) 
@@ -47,4 +49,5 @@ class Gridsynth:
         return op_sequence 
 
     def __del__(self):
-        self.proc.terminate()
+        if self.proc is not None:
+            self.proc.terminate()

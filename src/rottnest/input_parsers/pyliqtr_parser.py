@@ -31,7 +31,7 @@ from cirq.ops.raw_types import _InverseCompositeGate
 
 from . import cirq_parser
 from rottnest.monkey_patchers import pyliqtr_patcher, qualtran_patcher
-from rottnest.pandora.pandora_cache import pandora_cache
+#from rottnest.pandora.pandora_cache import pandora_cache
 
 # pyLIQTR gates include cirq gates
 known_gates = dict(cirq_parser.known_gates) 
