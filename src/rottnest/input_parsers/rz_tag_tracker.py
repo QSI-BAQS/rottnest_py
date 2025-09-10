@@ -2,6 +2,9 @@
     Adapter class for mapping Rz gates to tags 
 '''
 from rottnest.gridsynth.gridsynth import DEFAULT_PRECISION
+from rottnest.rz_decomposer.angle_to_rational import angle_to_rational 
+
+from cabaliser.gate_constructors import MEASUREMENT_GATE_TAG 
 
 
 class RzTagTracker():
@@ -27,22 +30,27 @@ class RzTagTracker():
 
     def get_gridsynth_params(self, tag):
         '''
-            Helper function to turn a tag into a gridsynth input
+            Helper function to turn a tag into a rz_decomposer input
         '''
-        if tag == 268435455:
+        if tag == MEASUREMENT_GATE_TAG:
             # Measurement gate tag
             angle = 0
             eps = 10
         else:
-            angle = self._tags_to_angles[tag]
             eps = self._eps[tag]
+            if eps is None:
+                eps = self.default_eps
+            else:
+                eps = max(eps, self.default_eps)
+
+            angle = self._tags_to_angles[tag]
+
+        angle = angle % 2
 
         if eps is None: 
             eps = self.default_eps 
-        denominator = int(10 ** eps) 
-        numerator = int(angle * denominator)
-        
-        return numerator, denominator, eps  
+        p, q = angle_to_rational(angle, precision=eps)
+        return p, q, eps 
 
     def get(self, angle, eps): 
         '''
@@ -50,6 +58,7 @@ class RzTagTracker():
         '''
         # Get is triggered by adding an RZ gate
         self.n_rz_gates += 1
+        print("RZ:", angle, eps)
 
         tag = self._angles_to_tags.get(angle, None)
         if tag is None: 
