@@ -449,6 +449,8 @@ class ResultsComposer:
         self._n_obj = other._n_obj
 
     def get_n_compute_units(self): 
+        '''
+        '''
         return max(len(self._unit_ids), self._n_obj)
 
     def serialise(self):

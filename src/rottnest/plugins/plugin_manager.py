@@ -50,6 +50,9 @@ class PluginManager:
         # Currently selection option
         self._current_option = None
 
+        # Dynamically definable parameter field
+        self._parameters = {}
+
         # Load modules
         if len(modules) > 0:
             self.load_options_from_modules(*modules)
@@ -255,3 +258,16 @@ class PluginManager:
             print(f"Unknown option {key}")
         else:
             self._current_option = option
+
+    def get_parameters(self):
+        '''
+            Parameters getter
+        '''
+        return self._parameters
+
+    
+    def set_parameters(self, parameters):
+        '''
+            Parameters setter
+        '''
+        self._parameters = parameters

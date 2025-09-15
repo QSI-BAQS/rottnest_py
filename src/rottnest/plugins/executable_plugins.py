@@ -5,7 +5,7 @@ from ..config import executables_file_name
 from ..executables.executable import ROTTNEST_EXECUTABLE_MODULE_TAG, RottnestExecutable
 from .plugin_manager import PluginManager
 
-DEFAULT_PRECISION = 10
+from rottnest.rz_decomposer import DEFAULT_PRECISION
 
 class ExecutablePlugins(PluginManager):
     '''
@@ -18,9 +18,6 @@ class ExecutablePlugins(PluginManager):
            Creates a new Plugin that can be used by
            rottnest, this plugin
         '''
-
-        self._params = {}
-        self._prg_args = {}
 
         if modules is None:
             modules = tuple()
@@ -44,23 +41,29 @@ class ExecutablePlugins(PluginManager):
         '''
             Parameters for executable
         '''
-        return self._params
+        return self.get_parameters() 
 
     def get_precision(self):
-        return self._params.get(RottnestExecutable.RZ_PREC, DEFAULT_PRECISION)
+        '''
+            Gets the precision
+        '''
+        return self.get_parameters().get(
+            RottnestExecutable.RZ_PREC,
+            DEFAULT_PRECISION
+        )
 
     def set_executable_params(self, **params):
         '''
            Sets executable parameters 
         '''
-        self._params = params
+        self.set_parameters(params)
 
     def set_executable_params_from_dict(self, params: dict):
         '''
            Sets executable parameters 
            This method only exists to skip unpacking and repacking
         '''
-        self._params = params
+        self.set_parameters(params)
 
     def __process_default_params(self, params:dict):
         '''
@@ -84,18 +87,6 @@ class ExecutablePlugins(PluginManager):
             Getter for executable objects
         '''
         return self._options
-
-    def set_current_executable_args(self, args):
-        '''
-           Set the current arguments for the executable 
-        '''
-        self._prg_args = args
-
-    def get_current_executable_args(self):
-        '''
-           Gets the arguments for the executable 
-        '''
-        return self._prg_args
 
     def set_current_executable(self, key):
         '''

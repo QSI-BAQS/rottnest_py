@@ -1,11 +1,13 @@
 import json
 import threading
 
-#from rottnest.widget_compilers.plugin_compiler_flow import run_widget as run_widget
 from rottnest.process_pool import process_pool
-#from rottnest.compute_units.architecture_proxy import saved_architectures
 from rottnest.compute_units.layout_proxy import LayoutProxy 
 from rottnest.process_pool.process_pool import ComputeUnitExecutorPool
+
+
+
+
 # TODO: May want to get a shared unit instead of instantiating it
 # here
 
@@ -23,9 +25,6 @@ def run_widget_pool(arch_id, wsock=None, wsock_sem=None):
     print("in run_widget_pool")
     from rottnest.plugins import architectures, executables
 
-    from t_scheduler.region_builder.json_to_region import json_to_layout, example as layout
-
-    LayoutProxy.add_layout_with_id(0, layout)
     # TODO use more than single object here
     cu_executor_pool.synchronise()
     cu_executor_pool.set_executable(executables.get_current_executable().get_name())

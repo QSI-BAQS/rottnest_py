@@ -90,6 +90,39 @@ class ComputeUnitExecutorPool:
         self.manager_priority_task_queue = self.ctx.Queue()
         self.manager_priority_completion_queue = self.ctx.Queue()
 
+
+
+    def synch_and_start_from_singletons(self):
+        '''
+            Loads singleton parameters then launches the pool
+        '''
+        from rottnest.plugins import architectures, executables
+
+        arch = architectures.get_current_architecture()
+        arch_params = executables.get_current_executable_args()
+
+        executable = executables.get_current_executable() 
+        exec_params = executables.get_current_executable_args()
+        layouts = LayoutProxy.get_layouts() 
+        
+        self.synch_and_start()
+
+
+    def synch_and_start(
+        self,
+        architecture: "RottnestArchitecture",
+        executable: "RottnestExecutable",
+        layouts: dict,
+        *,
+        architecture_params: dict = {},
+        executable_params: dict = {},
+        ): 
+        '''
+            Wraps the synchronisation and start functions
+        '''
+
+
+
     def start(self):
         self.manager = self.ctx.Process(
             target=ComputeUnitExecutorPoolManager.entrypoint, 
