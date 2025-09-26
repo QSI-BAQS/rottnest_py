@@ -11,7 +11,7 @@ Hadamard = object()
 Phase = object()
 T = object()
 
-DEFAULT_PRECISION=30
+DEFAULT_PRECISION=33
 
 
 class Gridsynth:
@@ -42,6 +42,7 @@ class Gridsynth:
         '''
             Returns a series of gates that perform Z(PI * p / q) with some epsilon precision
         '''
+        print("DECOMP: ", precision, file=open("OUT_gs", 'a'))
         self.proc.stdin.write(f"{p} {q} {precision} {effort} {seed}\n".encode('ascii'))
         self.proc.stdin.flush()
         sequence = self.proc.stdout.readline().decode()
