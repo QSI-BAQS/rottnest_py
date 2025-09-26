@@ -71,6 +71,8 @@ class Gridsynth(rz_decomposer.RzDecomposer):
         if precision is None:
             precision = self.precision
   
+
+        print("DECOMP RZ: ", precision, file=open("OUT_RZ", 'a'))
         approx_angle = Decimal(p) / Decimal(q)
         if abs(approx_angle) % self.DEC_Z < self.precision_decimal: 
             return []
@@ -84,6 +86,7 @@ class Gridsynth(rz_decomposer.RzDecomposer):
         self.proc.stdin.write(f"{p} {q} {precision} {effort} {seed}\n".encode('ascii'))
         self.proc.stdin.flush()
         sequence = self.proc.stdout.readline().decode()
+        print('SEQ: ', sequence)
         try:
             op_sequence = sequence.split('[')[1].split(']')[0].split(',')[::-1]
         except:
