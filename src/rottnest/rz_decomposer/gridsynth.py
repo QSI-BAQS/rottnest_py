@@ -64,7 +64,7 @@ class Gridsynth(rz_decomposer.RzDecomposer):
         return self.precision
 
     @lru_cache
-    def z_theta_instruction(self, p, q, *, precision=None, effort=25, seed=0):
+    def z_theta_instruction(self, p, q, precision=None, effort=25, seed=0):
         '''
             Returns a series of gates that perform Z(PI * p / q) with some epsilon precision
         '''

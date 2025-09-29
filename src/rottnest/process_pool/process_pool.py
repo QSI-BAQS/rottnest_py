@@ -23,7 +23,7 @@ from rottnest.compute_units.architecture_proxy import saved_architectures
 #from rottnest.pandora import pandora_cache 
 
 # TODO: Move these to an appropriate config
-N_PROCESSES = 8
+N_PROCESSES = 64 * 2 
 SEGFAULT_SENTINEL_TIMEOUT_SECS = 20
 # result_manager = mp.Manager()
 # dummy_result_cache = result_manager.dict()
