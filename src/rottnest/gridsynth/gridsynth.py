@@ -52,7 +52,7 @@ class Gridsynth:
     def __del__(self):
         if self.proc is not None:
             self.proc.terminate()
-=======
+
 #class Gridsynth:
 #    GATE_SYNTH_BNR = os.path.join(os.path.dirname(gridsynth.__file__), 'gridsynth')
 #    CMD = f"{GATE_SYNTH_BNR}".split() 
@@ -93,4 +93,3 @@ class Gridsynth:
 #    def __del__(self):
 #        if self.proc is not None:
 #            self.proc.terminate()
->>>>>>> c793414344bc09c7c84657fde455de7d0a55d0c6
