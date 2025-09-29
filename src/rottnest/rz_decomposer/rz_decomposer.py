@@ -1,7 +1,9 @@
 import abc
 from typing import Iterable
 
-from rottnest.gridsynth.gridsynth import DEFAULT_PRECISION
+#from rottnest.gridsynth.gridsynth import DEFAULT_PRECISION
+DEFAULT_PRECISION = 49 
+
 
 class RzDecomposer(abc.ABC):
 

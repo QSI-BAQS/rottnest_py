@@ -58,7 +58,6 @@ class RzTagTracker():
         '''
         # Get is triggered by adding an RZ gate
         self.n_rz_gates += 1
-        print("RZ:", angle, eps)
 
         tag = self._angles_to_tags.get(angle, None)
         if tag is None: 
