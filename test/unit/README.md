@@ -1,5 +1,9 @@
 # Rottnest-Py Unit Testing
 
+Note: Pandora does not have to be running, although the tests will attempt to connect to it.
+
+Tests can be run with `python -m unittest <test_name>`. Directly running a test (ie. `python <test_name>.py`) does not appear to currently work (possibly due to Pandora?).
+
 ## `dummy_arch`
 
 `dummy_arch` provides a non-functional architecture module, to be used when testing Plugin loading. It DOES NOT FUNCTION as an architecture.
