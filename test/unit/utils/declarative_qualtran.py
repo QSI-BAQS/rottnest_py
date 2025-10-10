@@ -47,4 +47,10 @@ def build_bloq(registers, gates):
         def signature(s):
             return Signature.build(**dict([(n, 1) for n in registers]))
 
+        def __iter__(self):
+            # Drop qualtran object down to a cirq circuit
+            # This saves having qualtran details in decomp logic
+            for cirq_gate in self.decompose_bloq().to_cirq_circuit():
+                yield cirq_gate
+
     return CustomBloq()
