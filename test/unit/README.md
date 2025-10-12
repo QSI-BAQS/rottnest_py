@@ -34,7 +34,7 @@ x, y = bloq.add(CNOT(), ctrl=x, target=y)
 res = bloq.finalize(x=x, y=y)
 ```
 
-is equivalent to
+is mostly equivalent to
 
 ```
 res = build_bloq(
@@ -43,4 +43,6 @@ res = build_bloq(
     (CNOT(), {'ctrl': 'x', 'target': 'y'})
   ]
 )
-````
+```
+
+with the caveat that `build_bloq` results in a regular `Bloq` (specifically, a `CustomBloq`, a subclass of `Bloq`) rather than a `CompositeBloq`.

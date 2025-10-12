@@ -113,18 +113,20 @@ class TestWorkerCircuitCompilation(unittest.TestCase):
                     cirq.Y(self.cirq_qubits[0]),
                     cirq.Z(self.cirq_qubits[0]),
                     cirq.CNOT(self.cirq_qubits[0], self.cirq_qubits[1])
-                ), 3
+                ),
+                3
             ),
             (
                 cirq.Circuit(
                     cirq.X(self.cirq_qubits[0]) for i in range(100)
-                ), 100
+                ),
+                100
             ),
             (
                 cirq.Circuit(
                     cirq.Ry(rads=0.0)(self.cirq_qubits[0]),
                 ),
-                5
+                5        # TODO : Check that 5 actually expected here
             ),
             (
                 cirq.Circuit(
@@ -155,7 +157,8 @@ class TestWorkerCircuitCompilation(unittest.TestCase):
                 15
             ),
             # --[ Qualtran ]--
-            # TODO: Check up on this - current fails
+            # Note that the current Qualtran parsing uses the fact that `build_bloq` provides an object whose iterator
+            # provides Cirq gates. This is NOT the standard function of an arbitrary Bloq
             (
                 build_bloq(
                     registers = ('x',),
@@ -169,12 +172,64 @@ class TestWorkerCircuitCompilation(unittest.TestCase):
                 build_bloq(
                     registers = ('x', 'y'),
                     gates = [
-                        (qual_gates.CNOT(), {'ctrl': 'x', 'target': 'y'}),
-                        (qual_gates.CNOT(), {'ctrl': 'y', 'target': 'x'})
+                        (qual_gates.Hadamard(), {'q': 'y'}),
+                        (qual_gates.XGate(), {'q': 'x'})
                     ]
                 ),
                 2
-            )
+            ),
+            (
+                build_bloq(
+                    registers = ('x', 'y'),
+                    gates = [
+                        (qual_gates.YGate(), {'q': 'x'}),
+                        (qual_gates.ZGate(), {'q': 'x'}),
+                        (qual_gates.CNOT(), {'ctrl': 'x', 'target': 'y'})
+                    ]
+                ),
+                3
+            ),
+            (
+                build_bloq(
+                    registers = ('x',),
+                    gates = [
+                        (qual_gates.XGate(), {'q': 'x'}) for i in range(100)
+                    ]
+                ),
+                100
+            ),
+            (
+                build_bloq(
+                    registers = ('x',),
+                    gates = [
+                        (qual_gates.Ry(0.0), {'q': 'x'}),
+                    ]
+                ),
+                5
+            ),
+            (
+                build_bloq(
+                    registers = ('x', 'y', 'z'),
+                    gates = [
+                        (qual_gates.Hadamard(), {'q': 'x'}),
+                        (qual_gates.CNOT(), {'ctrl': 'y', 'target': 'x'}),
+                        (qual_gates.Rz(-math.pi / 4), {'q': 'x'}),
+                        (qual_gates.CNOT(), {'ctrl': 'z', 'target': 'x'}),
+                        (qual_gates.Rz(math.pi / 4), {'q': 'x'}),
+                        (qual_gates.CNOT(), {'ctrl': 'z', 'target': 'x'}),
+                        (qual_gates.Rz(-math.pi / 4), {'q': 'x'}),
+                        (qual_gates.CNOT(), {'ctrl': 'y', 'target': 'x'}),
+                        (qual_gates.Rz(math.pi / 4), {'q': 'x'}),
+                        (qual_gates.Rz(math.pi / 4), {'q': 'z'}),
+                        (qual_gates.CNOT(), {'ctrl': 'y', 'target': 'z'}),
+                        (qual_gates.Rz(math.pi / 4), {'q': 'y'}),
+                        (qual_gates.Rz(-math.pi / 4), {'q': 'z'}),
+                        (qual_gates.CNOT(), {'ctrl': 'y', 'target': 'z'}),
+                        (qual_gates.Hadamard(), {'q': 'z'})
+                    ]
+                ),
+                15
+            ),
         ]
 
 
