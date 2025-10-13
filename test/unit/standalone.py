@@ -1,0 +1,1 @@
+from dummy_arch import rottnest_architectures
