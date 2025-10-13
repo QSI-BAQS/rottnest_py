@@ -27,17 +27,25 @@ def legacy_build_bloq(registers, gates):
 def build_bloq(registers, gates):
     class CustomBloq(Bloq):
         def build_composite_bloq(s, bb, **soqs):
+            # Load named registers to be tracked
             reg_map = {}
             for reg in registers:
                 reg_map[reg] = soqs[reg]
 
+            # For (gate, regs) pairs, create the corresponding gate
+            # over those registers
             for gate, regs in gates:
+                # Fetch the required soquets from the tracker
                 reg_soqs = {}
                 for i, r in regs.items():
                     reg_soqs[i] = reg_map[r]
+
+                # Add the gate to the bloqbuilder
                 res = bb.add(gate, **reg_soqs)
                 if not isinstance(res, tuple):
                     res = (res,)
+                # Extract the corresponding bloqs from the resulting gate back into the map
+                # (update the bloq references to their latest versions)
                 for n, i in enumerate(regs.values()):
                     reg_map[i] = res[n]
 
