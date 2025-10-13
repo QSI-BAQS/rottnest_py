@@ -16,7 +16,10 @@ from rottnest.plugins.architecture_plugins import ArchitecturePlugins
 from dummy_arch.dummy_arch import DummyWorker, DummyDesigner, DummyComposer
 
 
-class TestDummyStringImportedArchitecture(unittest.TestCase):
+# TODO : Test the loaders used below
+
+
+class TestDummyModuleStringImportedArchitecture(unittest.TestCase):
     '''
         Testcases related to the bare minimum inspection of an architecture
         loaded as a plugin via a string
@@ -24,7 +27,10 @@ class TestDummyStringImportedArchitecture(unittest.TestCase):
     '''
     def setUp(self):
         self.archPlugins = ArchitecturePlugins()
-        self.archPlugins.load_module_from_string("dummy_architecture")
+        # Acquire a module and load it into the ArchitecturePlugins
+        module = self.archPlugins._load_module_from_module_string("dummy_arch")
+        self.archPlugins._modules.add(module)
+        self.archPlugins.load_options_from_modules()
         self.arch = self.archPlugins['Dummy']
 
     def testArchCount(self):
@@ -57,8 +63,10 @@ class TestDummyPathImportedArchitecture(unittest.TestCase):
     '''
     def setUp(self):
         self.archPlugins = ArchitecturePlugins()
-        # This currently fails - configured wrong? TODO : Check
-        self.archPlugins._load_module_from_file_path("./standalone.py")
+        # Acquire a module and load it into the ArchitecturePlugins
+        module = self.archPlugins._load_module_from_file_path("./standalone.py")
+        self.archPlugins._modules.add(module)
+        self.archPlugins.load_options_from_modules()
         self.arch = self.archPlugins['Dummy']
 
     def testArchCount(self):
@@ -90,8 +98,7 @@ class TestDummyStandardImportedArchitecture(unittest.TestCase):
     '''
     def setUp(self):
         import dummy_arch as inner_dummy_arch
-        # Also fails - TODO : Check
-        self.archPlugins = ArchitecturePlugins([inner_dummy_arch])
+        self.archPlugins = ArchitecturePlugins(modules=[inner_dummy_arch])
         self.arch = self.archPlugins['Dummy']
 
     def testArchCount(self):
