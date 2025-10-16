@@ -213,6 +213,8 @@ class TestWorkerCircuitCounting(unittest.TestCase):
                 # Create dummy layout and load it into the worker
                 dummy_layout = type('DummyLayout', (), dict(mem_bound=lambda s: 100))
                 worker.load_layout(layout_id, dummy_layout)
+
+                # Sequence the given circuit
                 parser = PyliqtrParser(circuit)
                 seq = Sequencer(layout_id)
                 parser.parse()
@@ -221,6 +223,8 @@ class TestWorkerCircuitCounting(unittest.TestCase):
                 for obj in it:
                     if obj != INTERRUPT:
                         # ^ Ignore cache events
+                        # v Pass the sequenced sections of the parsed circuit to the
+                        # worker
                         worker.execute_compute_unit(obj)
 
                 self.assertEqual(worker.gate_ctr, answer)

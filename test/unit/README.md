@@ -4,6 +4,9 @@ Note: Pandora does not have to be running, although the tests will attempt to co
 
 Tests can be run with `python -m unittest <test_name>`. Directly running a test (ie. `python <test_name>.py`) does not appear to currently work (possibly due to Pandora?).
 
+To count tests for coverage reporting, use `python -m coverage run -m unittest <test_name>`.
+`coverage report` will then provide an in-terminal coverage summary,
+
 ## `dummy_arch`
 
 `dummy_arch` provides a non-functional architecture module, to be used when testing Plugin loading. It DOES NOT FUNCTION as an architecture.
