@@ -35,7 +35,6 @@ class TestWorkerCircuitCounting(unittest.TestCase):
         the resulting gates
     '''
     def setUp(self):
-        designer_mem_bound = 100
         self.n_qubits = 10
         def count_gates(worker, compute_unit):
             '''
@@ -51,7 +50,7 @@ class TestWorkerCircuitCounting(unittest.TestCase):
         # - Worker that uses the above `count_gates` method to count gates
         #   from a compute_unit (uses the `gate_ctr` property to store the count)
         self.arch = build_arch('CompDummyArch',
-            build_designer('CompDummyDesigner', get_mem_bound=lambda s,l: designer_mem_bound),
+            build_designer('CompDummyDesigner', get_mem_bound=lambda s,l: l['mem_bound']),
             build_composer('CompDummyComposer'),
             build_worker('CompDummyWorker', gate_ctr=0, execute_compute_unit=count_gates),
         )
@@ -211,7 +210,7 @@ class TestWorkerCircuitCounting(unittest.TestCase):
                 # Instantiate a worker
                 worker = self.arch.worker()
                 # Create dummy layout and load it into the worker
-                dummy_layout = type('DummyLayout', (), dict(mem_bound=lambda s: 100))
+                dummy_layout = {'mem_bound': 200}
                 worker.load_layout(layout_id, dummy_layout)
 
                 # Sequence the given circuit
@@ -228,7 +227,6 @@ class TestWorkerCircuitCounting(unittest.TestCase):
                         worker.execute_compute_unit(obj)
 
                 self.assertEqual(worker.gate_ctr, answer)
-
 
 if __name__ == "__main__":
     unittest.main()
