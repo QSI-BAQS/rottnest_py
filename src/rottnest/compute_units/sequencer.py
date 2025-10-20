@@ -4,7 +4,7 @@ from rottnest.input_parsers.qubit_label_tracker import QubitLabelTracker
 from rottnest.input_parsers.cirq_parser import CirqParser
 from rottnest.input_parsers.interrupt import INTERRUPT, NON_CACHING
 from rottnest.compute_units.compute_unit import ComputeUnit
-from rottnest.compute_units.layout_proxy import LayoutProxy 
+from rottnest.compute_units.layout_proxy import LayoutProxy
 from rottnest.monkey_patchers.cirq_patcher import MIN_SEQUENCE_LEN
 
 class Sequencer():
@@ -19,7 +19,7 @@ class Sequencer():
             ):
 
         # Map layouts to proxies
-        # TODO: determine ownership of this vs ids 
+        # TODO: determine ownership of this vs ids
 
         print("Layouts: ", layouts)
         print("", )
@@ -27,9 +27,9 @@ class Sequencer():
         self.priority_shim = []
 
         # Worst case: Rz operation on a new qubit induces an input, graph state and
-        # teleported qubit 
-        self.sequence_length = self._layout_proxies[0].mem_bound() // 3
-        
+        # teleported qubit
+        self.sequence_length = int(self._layout_proxies[0].mem_bound() // 3 * 0.8)
+
         if global_context is None:
             global_context = QubitLabelTracker()
 
@@ -43,9 +43,9 @@ class Sequencer():
         if self.composer is None:
             layout_generator = cycle(self._layout_proxies)
         else:
-            layout_generator = self.composer.layout_sequence_generator() 
+            layout_generator = self.composer.layout_sequence_generator()
 
-        layout = next(layout_generator) 
+        layout = next(layout_generator)
 
         compute_unit = ComputeUnit(layout.layout_id, mem_bound=layout.mem_bound())
 
@@ -55,9 +55,9 @@ class Sequencer():
             # Interrupt between cirq objects
             for op_seq in cirq_parser.parse(cirq_obj):
                 # Interrupt encountered, force yield
-                # This ensures that pyliqtr level objects compile to distinct  
+                # This ensures that pyliqtr level objects compile to distinct
                 #  sequences of widgets
-                # TODO: Option to skip interrupts to reduce widget count  
+                # TODO: Option to skip interrupts to reduce widget count
 
                 if op_seq == INTERRUPT:
                     # Cache interrupt
@@ -79,22 +79,22 @@ class Sequencer():
 
                         # Reset the context of the parser
                         cirq_parser.reset_context(op_seq)
-                        cirq_parser.sequence_length = self.sequence_length 
+                        cirq_parser.sequence_length = self.sequence_length
                         continue
 
                 curr_memory = cirq_parser.curr_mem()
                 # This doesn't track additional qubit allocations
 
-                # Caution that the next sequence doesn't 
+                # Caution that the next sequence doesn't
                 # push us over
-                # this should be replaced with a lookahead 
+                # this should be replaced with a lookahead
                 # rather than a bound
-                if ((cirq_parser.sequence_length == 0) 
-                    or (cirq_parser.curr_mem() + 3 * op_seq.n_rz_operations + len(op_seq) > 0.8 * compute_unit.memory_bound - MIN_SEQUENCE_LEN)):
+                if ((cirq_parser.sequence_length <= MIN_SEQUENCE_LEN)
+                    or (cirq_parser.curr_mem() + 3 * op_seq.n_rz_operations + len(op_seq) > compute_unit.memory_bound - MIN_SEQUENCE_LEN)):
 
                     local_context = cirq_parser.extract_context()
                     compute_unit.add_context(*local_context)
-                   
+
                     #assert False
 
                     if len(compute_unit) > 0:
@@ -114,14 +114,13 @@ class Sequencer():
                     # Reset the context of the parser
                     cirq_parser.reset_context(op_seq)
                     cirq_parser.sequence_length = self.sequence_length
-                    continue
 
                 # Add the  sequence
                 compute_unit.append(op_seq)
-               
-                # Reduce sequence length 
-                # Worst case is the creation of a new teleported gate 
-                cirq_parser.sequence_length = (self.sequence_length * 3 - cirq_parser.curr_mem()) // 3 
+
+                # Reduce sequence length
+                # Worst case is the creation of a new teleported gate
+                cirq_parser.sequence_length = (self.sequence_length * 3 - cirq_parser.curr_mem()) // 3
 
         if len(compute_unit) > 0:
             local_context = cirq_parser.extract_context()
