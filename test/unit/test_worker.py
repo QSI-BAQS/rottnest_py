@@ -63,7 +63,7 @@ class TestWorkerSanity(unittest.TestCase):
         mock_tasks = MockWorkerQueue((GET_GRAPH, ('fake_arg',)))
         mock_responses = MockWorkerQueue()
         RottnestWorker.entrypoint(mock_tasks, mock_responses, blind=True)
-        self.assertEqual(RottnestWorker().not_supported() in mock_responses.inspect_put())
+        self.assertTrue(RottnestWorker().not_supported() in mock_responses.inspect_put())
 
 # TODO : Test worker tasks (many are currently NotImplemented?
 
