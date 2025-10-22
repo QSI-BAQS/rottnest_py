@@ -28,7 +28,7 @@ class Sequencer():
 
         # Worst case: Rz operation on a new qubit induces an input, graph state and
         # teleported qubit
-        self.sequence_length = int(self._layout_proxies[0].mem_bound() // 3 * 0.8)
+        self.sequence_length = int(self._layout_proxies[0].mem_bound() * 0.8) // 3
 
         if global_context is None:
             global_context = QubitLabelTracker()
@@ -50,6 +50,7 @@ class Sequencer():
         compute_unit = ComputeUnit(layout.layout_id, mem_bound=layout.mem_bound())
 
         cirq_parser = CirqParser(self.sequence_length)
+        cirq_parser.reset_context()
 
         for cirq_obj in parser.traverse():
             # Interrupt between cirq objects

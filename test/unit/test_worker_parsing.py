@@ -187,7 +187,7 @@ class TestWorkerCircuitCounting(unittest.TestCase):
         ]
 
 
-    def testCircuitNGates(self):
+    def test_circuit_n_gates(self):
         '''
             Test a worker that parses a circuit into a compute unit and counts the resulting gates
             directly
@@ -234,7 +234,6 @@ class TestWorkerCircuitCounting(unittest.TestCase):
                 it = seq.sequence_pyliqtr(parser)
 
                 for obj in it:
-                    print(obj)
                     if obj != INTERRUPT:
                         # ^ Ignore cache events
                         # v Pass the sequenced sections of the parsed circuit to the
@@ -244,7 +243,7 @@ class TestWorkerCircuitCounting(unittest.TestCase):
                 self.assertEqual(worker.gate_ctr, answer)
 
 
-    def testCircuitNGatesComposed(self):
+    def test_circuit_n_gates_composed(self):
         '''
             Test an architecture where gates are counted by a composer
         '''
@@ -324,7 +323,7 @@ class TestWorkerCircuitCounting(unittest.TestCase):
                 self.assertEqual(res_composer.get_gate_count(), answer)
 
 
-    def testCircuitNGatesComposedLowMemory(self):
+    def test_circuit_n_gates_composed_low_memory(self):
         '''
             Test an architecture where gates are counted by a composer,
             and there is a sufficiently low memory constraint
