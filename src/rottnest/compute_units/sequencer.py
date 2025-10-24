@@ -21,8 +21,8 @@ class Sequencer():
         # Map layouts to proxies
         # TODO: determine ownership of this vs ids
 
-        print("Layouts: ", layouts)
-        print("", )
+        #print("Layouts: ", layouts)
+        #print("", )
         self._layout_proxies = list(map(LayoutProxy, layouts))
         self.priority_shim = []
 
@@ -38,93 +38,95 @@ class Sequencer():
     def priority(self, gate, layout):
         pass
 
-    def sequence_pyliqtr(self, parser):
 
+    def sequence_pyliqtr(self, parser):
+        '''
+            Performs sequencing over a PyliqtrParser, providing an iterator yielding
+            bounded-size ComputeUnits
+
+            IN:
+                parser [PyliqtrParser]
+                    The parser to acquire operation sequences from
+                    Must have already had `parse` called on it, so that it can
+                    be traversed
+
+
+            OUT: [Iterator<ComputeUnits>]
+                A series of ComputeUnits holding sequential components of the overall
+                object being parsed
+        '''
+        # Determine if layouts are being drawn from a fixed pool (explicitly passed
+        # and loaded via the LayoutProxy) or from a composer
         if self.composer is None:
             layout_generator = cycle(self._layout_proxies)
         else:
+            # Delegate to the composer
             layout_generator = self.composer.layout_sequence_generator()
 
-        layout = next(layout_generator)
-
-        compute_unit = ComputeUnit(layout.layout_id, mem_bound=layout.mem_bound())
+        curr_layout = next(layout_generator)
 
         cirq_parser = CirqParser(self.sequence_length)
+        # Ensure any lingering global context is discarded
         cirq_parser.reset_context()
 
-        for cirq_obj in parser.traverse():
-            # Interrupt between cirq objects
-            for op_seq in cirq_parser.parse(cirq_obj):
-                # Interrupt encountered, force yield
-                # This ensures that pyliqtr level objects compile to distinct
-                #  sequences of widgets
-                # TODO: Option to skip interrupts to reduce widget count
+        compute_unit = ComputeUnit(curr_layout.layout_id, mem_bound=curr_layout.mem_bound())
 
+        yield_unit = False
+
+        # Parser drops down to cirq
+        for cirq_object in parser.traverse():
+            op_iter = cirq_parser.parse(cirq_object)
+            op_seq = next(op_iter, None)
+            # At present, this could actually be a for loop (as there is no path where
+            # we don't get the next op_seq)
+            while op_seq is not None:
+                # Interrupt forces an early yield to force distinct Pyliqtr sequences
                 if op_seq == INTERRUPT:
-                    # Cache interrupt
                     if op_seq.cache_hash() is not NON_CACHING:
+                        # directly provide op_seq object, then grab the next one
+                        # (ignoring anything else we would've done with a regular op_seq)
                         yield op_seq
+                        op_seq = next(op_iter, None)
                         continue
+                    # The sequence is NON_CACHING, and we have at least one sequence in the
+                    # compute unit - this means we need to provide that compute unit
+                    elif len(compute_unit.sequences) > 0:
+                        yield_unit = True
+                else:
+                    # If our parser doesn't have enough room left for the minimal sequence,
+                    # or is going to hit the memory bound for a compute unit, yield the unit
+                    if (cirq_parser.sequence_length <= MIN_SEQUENCE_LEN or
+                        cirq_parser.curr_mem() + 3 * op_seq.n_rz_operations + len(op_seq) > compute_unit.memory_bound - MIN_SEQUENCE_LEN):
+                        yield_unit = True
 
-                    if len(compute_unit.sequences) > 0:
-                        local_context = cirq_parser.extract_context()
-                        compute_unit.add_context(*local_context)
-                        yield compute_unit
+                if yield_unit:
+                    # TODO : This context is actually interleaved in a pretty nasty way if we get an op_seq
+                    # that we can't fit or that is below the minimum. Need to fix at the cirq_parser level
+                    local_ctx = cirq_parser.extract_context()
+                    compute_unit.add_context(*local_ctx)
+                    yield compute_unit
 
-                        layout = next(layout_generator)
-                        # Create a new compute unit
-                        compute_unit = ComputeUnit(
-                            layout.layout_id,
-                            mem_bound=layout.mem_bound()
-                        )
+                    yield_unit = False
 
-                        # Reset the context of the parser
-                        cirq_parser.reset_context(op_seq)
-                        cirq_parser.sequence_length = self.sequence_length
-                        continue
-
-                curr_memory = cirq_parser.curr_mem()
-                # This doesn't track additional qubit allocations
-
-                # Caution that the next sequence doesn't
-                # push us over
-                # this should be replaced with a lookahead
-                # rather than a bound
-                if ((cirq_parser.sequence_length <= MIN_SEQUENCE_LEN)
-                    or (cirq_parser.curr_mem() + 3 * op_seq.n_rz_operations + len(op_seq) > compute_unit.memory_bound - MIN_SEQUENCE_LEN)):
-
-                    local_context = cirq_parser.extract_context()
-                    compute_unit.add_context(*local_context)
-
-                    #assert False
-
-                    if len(compute_unit) > 0:
-                        yield compute_unit
-
-                    # Grab next layout
-                    # Eventually replace this with another scheduler
-                    # TODO: Investigate composer hooks
-                    layout = next(layout_generator)
-
-                    # Create a new compute unit
-                    compute_unit = ComputeUnit(
-                        layout.layout_id,
-                        mem_bound=layout.mem_bound()
-                    )
-
-                    # Reset the context of the parser
+                    # Prepare a new unit on the next layout and reset the context
+                    curr_layout = next(layout_generator)
+                    compute_unit = ComputeUnit(curr_layout.layout_id, mem_bound=curr_layout.mem_bound())
                     cirq_parser.reset_context(op_seq)
+                    print(cirq_parser.extract_context())
                     cirq_parser.sequence_length = self.sequence_length
 
-                # Add the  sequence
+                # Add the current operation sequence to our unit
                 compute_unit.append(op_seq)
+                compute_unit.add_context(*cirq_parser.extract_context())
 
-                # Reduce sequence length
-                # Worst case is the creation of a new teleported gate
+                # Update remaining sequence length
                 cirq_parser.sequence_length = (self.sequence_length * 3 - cirq_parser.curr_mem()) // 3
 
+                # Grab the next sequence
+                op_seq = next(op_iter, None)
+
+        # Handle lingering sequence(s), yielding whatever remains
         if len(compute_unit) > 0:
-            local_context = cirq_parser.extract_context()
-            compute_unit.add_context(*local_context)
-            if local_context[0] > 0:
-                yield compute_unit
+            local_ctx = cirq_parser.extract_context()
+            compute_unit.add_context(*local_ctx)
+            yield compute_unit
