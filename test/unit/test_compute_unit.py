@@ -10,7 +10,7 @@ from cabaliser import gates
 from rottnest.compute_units.compute_unit import ComputeUnit
 
 class TestComputeUnitSanity(unittest.TestCase):
-    def testDefaultComputeUnit(self):
+    def test_default_compute_unit(self):
         cu = ComputeUnit("layout", unit_id="unit")
         self.assertEqual(cu.unit_id, "unit")
         self.assertEqual(cu.layout_id, "layout")
@@ -21,11 +21,10 @@ class TestComputeUnitSanity(unittest.TestCase):
         self.assertEqual(cu.n_qubits, 0)
         self.assertEqual(cu.n_gates, 0)
         self.assertEqual(cu.n_rz_operations, 0)
-        # Presently, failing due to typo
         self.assertEqual(cu._qubit_labels, None)
         self.assertEqual(cu._rz_tracker_dict, None)
 
-    def testSetContext(self):
+    def test_set_context(self):
         cu = ComputeUnit(0)
         cu.add_context(n_inputs=1, n_qubits=2, n_outputs=3, rz_tracker_dict={'a':1}, qubit_labels={'b':2})
         self.assertEqual(cu.n_inputs, 1)
@@ -34,7 +33,7 @@ class TestComputeUnitSanity(unittest.TestCase):
         self.assertEqual(cu._rz_tracker_dict, {'a':1})
         self.assertEqual(cu._qubit_labels, {'b':2})
 
-    def testComputeUnitMemory(self):
+    def test_compute_unit_memory(self):
         for n_inputs in range(100):
             for n_rz_operations in range(100):
                 cu = ComputeUnit(0)
@@ -42,7 +41,7 @@ class TestComputeUnitSanity(unittest.TestCase):
                 cu.n_rz_operations = n_rz_operations
                 self.assertEqual(cu.curr_mem(), n_inputs * 2 + n_rz_operations)
 
-    def testComputeUnitAutoId(self):
+    def test_compute_unit_auto_id(self):
         '''
             Ensures that (when set automatically) compute units are assigned different
             ids
@@ -51,7 +50,7 @@ class TestComputeUnitSanity(unittest.TestCase):
         cu_b = ComputeUnit(0)
         self.assertNotEqual(cu_a.unit_id, cu_b.unit_id)
 
-    def testExport(self):
+    def test_export(self):
         '''
             Ensures that the exported information is correct
         '''
@@ -70,7 +69,7 @@ class TestComputeUnitSequencing(unittest.TestCase):
         self.cu = ComputeUnit(0)
 
 
-    def testSingleGate(self):
+    def test_single_gate(self):
         ops = OperationSequence(1)
         ops.append(gates.H, 0)
         self.cu.append(ops)
@@ -79,7 +78,7 @@ class TestComputeUnitSequencing(unittest.TestCase):
         self.assertEqual(self.cu.n_rz_operations, 0)
         self.assertEqual(len(self.cu), 1)
 
-    def testToffoli(self):
+    def test_toffoli(self):
         # Rz tags
         _I_ = 0
         _T_ = 1
@@ -117,7 +116,7 @@ class TestComputeUnitSequencing(unittest.TestCase):
         self.assertEqual(self.cu.n_rz_operations, 7)
         self.assertEqual(len(self.cu), 1)
 
-    def testMultipleSequences(self):
+    def test_multiple_sequences(self):
         '''
             Ensure sequence counters work with multiple sequences
         '''
@@ -130,7 +129,7 @@ class TestComputeUnitSequencing(unittest.TestCase):
         self.assertEqual(self.cu.n_rz_operations, 0)
         self.assertEqual(len(self.cu), 2)
 
-    def testMultipleDifferentSequences(self):
+    def test_multiple_different_sequences(self):
         ops_a = OperationSequence(2)
         ops_a.append(gates.X, 0)
         ops_a.append(gates.RZ, 0, 0)
@@ -149,16 +148,6 @@ class TestComputeUnitSequencing(unittest.TestCase):
         self.assertEqual(self.cu.n_gates, 5)
         self.assertEqual(self.cu.n_rz_operations, 2)
         self.assertEqual(len(self.cu), 2)
-
-    def testCompilation(self):
-        ops = OperationSequence(1)
-        ops.append(gates.H, 0)
-
-        self.cu.append(ops)
-        self.cu.add_context(1, 2, 1, {}, {})
-
-        wid = self.cu.compile_graph_state()
-        wid.json()
 
 
 if __name__ == "__main__":

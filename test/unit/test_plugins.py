@@ -22,145 +22,145 @@ class TestArchitectureLoading(unittest.TestCase):
         Testcases related to loading modules (providing architectures)
     '''
     def setUp(self):
-        self.archPlugins = ArchitecturePlugins()
+        self.arch_plugins = ArchitecturePlugins()
 
-    def testArchitectureFromString(self):
+    def test_architecture_from_string(self):
         '''
             @INTERNAL
             Load a module from a string
         '''
-        module = self.archPlugins._load_module_from_module_string("dummy_arch")
+        module = self.arch_plugins._load_module_from_module_string("dummy_arch")
         self.assertEqual(len(module.rottnest_architectures), 1)
 
-    def testArchitectureFromPath(self):
+    def test_architecture_from_path(self):
         '''
             @INTERNAL
             Load a module from a path to a Python file that exposes targets
         '''
-        module = self.archPlugins._load_module_from_file_path("./test_data/standalone.py")
+        module = self.arch_plugins._load_module_from_file_path("./test_data/standalone.py")
         self.assertEqual(len(module.rottnest_architectures), 1)
 
-    def testArchitectureFromConfigFile(self):
+    def test_architecture_from_config_file(self):
         '''
             @INTERNAL
             Load a module from a path to a config file that declares modules
         '''
-        module = self.archPlugins._load_modules_from_config("./test_data/arch_module.conf")[0]
+        module = self.arch_plugins._load_modules_from_config("./test_data/arch_module.conf")[0]
         self.assertEqual(len(module.rottnest_architectures), 1)
 
-    def testArchitectureFromConfigFileArgument(self):
+    def test_architecture_from_config_file_argument(self):
         '''
             Load a module from a config file passed as an argument to the
             architecture plugins
         '''
-        self.archPlugins = ArchitecturePlugins(config_path="./test_data/arch_module.conf")
-        self.assertEqual(len(self.archPlugins), 1)
+        self.arch_plugins = ArchitecturePlugins(config_path="./test_data/arch_module.conf")
+        self.assertEqual(len(self.arch_plugins), 1)
 
-    def testPluginArchitectureFromConfigFile(self):
+    def test_plugin_architecture_from_config_file(self):
         '''
             Load a module into the architecture plugins from a config file
         '''
-        self.archPlugins.load_config("./test_data/arch_module.conf")
-        self.assertEqual(len(self.archPlugins), 1)
-        self.assertTrue("dummy_arch" in self.archPlugins.get_module_names())
-        self.assertTrue("Dummy" in self.archPlugins.get_architecture_names())
+        self.arch_plugins.load_config("./test_data/arch_module.conf")
+        self.assertEqual(len(self.arch_plugins), 1)
+        self.assertTrue("dummy_arch" in self.arch_plugins.get_module_names())
+        self.assertTrue("Dummy" in self.arch_plugins.get_architecture_names())
 
-    def testPluginArchitectureNoConfigFile(self):
+    def test_plugin_architecture_no_config_file(self):
         '''
             Ensure config files that don't exist are flagged
         '''
-        self.assertEqual(self.archPlugins.load_config("this doesn't exist"), FileNotFoundError)
+        self.assertEqual(self.arch_plugins.load_config("this doesn't exist"), FileNotFoundError)
 
-    def testPluginArchitectureBadConfigFile(self):
+    def test_plugin_architecture_bad_config_file(self):
         '''
             Try to use a config file with only malformed entries
         '''
-        self.archPlugins.load_config("./test_data/bad_module.conf")
-        self.assertEqual(len(self.archPlugins), 0)
+        self.arch_plugins.load_config("./test_data/bad_module.conf")
+        self.assertEqual(len(self.arch_plugins), 0)
 
-    def testPluginArchitectureKeepGoodConfig(self):
+    def test_plugin_architecture_keep_good_config(self):
         '''
             Ensure that an invalid config file doesn't invalidate prior modules
         '''
-        self.archPlugins.load_config("./test_data/arch_module.conf")
-        self.assertEqual(len(self.archPlugins), 1)
-        self.archPlugins.load_config("./test_data/bad_module.conf")
-        self.assertEqual(len(self.archPlugins), 1)
+        self.arch_plugins.load_config("./test_data/arch_module.conf")
+        self.assertEqual(len(self.arch_plugins), 1)
+        self.arch_plugins.load_config("./test_data/bad_module.conf")
+        self.assertEqual(len(self.arch_plugins), 1)
 
-    def testPluginArchitectureConfigPartiallyValid(self):
+    def test_plugin_architecture_config_partially_valid(self):
         '''
             Ensure that a config file with a mix of valid and invalid
             entries has the valid entries loaded successfully
         '''
-        self.archPlugins.load_config("./test_data/arch_mixed_validity.conf")
-        self.assertEqual(len(self.archPlugins), 1)
+        self.arch_plugins.load_config("./test_data/arch_mixed_validity.conf")
+        self.assertEqual(len(self.arch_plugins), 1)
 
-    def testPluginArchitectureFromString(self):
+    def test_plugin_architecture_from_string(self):
         '''
             Ensures that modules can be loaded from strings
         '''
-        self.archPlugins.load_modules_from_strings("dummy_arch")
-        self.assertEqual(len(self.archPlugins), 1)
+        self.arch_plugins.load_modules_from_strings("dummy_arch")
+        self.assertEqual(len(self.arch_plugins), 1)
 
-    def testPluginArchitectureFileFromString(self):
+    def test_plugin_architecture_file_from_string(self):
         '''
             Ensures that the fallback to treating strings as file paths works
         '''
-        self.archPlugins.load_modules_from_strings("test_data/standalone.py")
-        self.assertEqual(len(self.archPlugins), 1)
-        self.assertTrue("test_data/standalone.py" in self.archPlugins.get_loaded_filepaths())
+        self.arch_plugins.load_modules_from_strings("test_data/standalone.py")
+        self.assertEqual(len(self.arch_plugins), 1)
+        self.assertTrue("test_data/standalone.py" in self.arch_plugins.get_loaded_filepaths())
 
-    def testPluginArchitectureStringInvalid(self):
+    def test_plugin_architecture_string_invalid(self):
         '''
             Ensure an invalid module string is ignored
         '''
-        self.archPlugins.load_modules_from_strings("uh oh")
-        self.assertEqual(len(self.archPlugins), 0)
+        self.arch_plugins.load_modules_from_strings("uh oh")
+        self.assertEqual(len(self.arch_plugins), 0)
 
-    def testPluginArchitectureStringPartiallyValid(self):
+    def test_plugin_architecture_string_partially_valid(self):
         '''
             Ensure loading from strings where some are valid will
             successfully load the valid targets
         '''
-        self.archPlugins.load_modules_from_strings("bad", "dummy_arch")
-        self.assertEqual(len(self.archPlugins), 1)
+        self.arch_plugins.load_modules_from_strings("bad", "dummy_arch")
+        self.assertEqual(len(self.arch_plugins), 1)
 
-    def testPluginArchitectureFileNoTargets(self):
+    def test_plugin_architecture_file_no_targets(self):
         '''
             Ensures a module file with no valid targets is ignored
         '''
-        self.archPlugins.load_modules_from_strings("test_data/invalid_standalone.py")
-        self.assertEqual(len(self.archPlugins), 0)
+        self.arch_plugins.load_modules_from_strings("test_data/invalid_standalone.py")
+        self.assertEqual(len(self.arch_plugins), 0)
 
-    def testPluginArchitectureFileTargetNoName(self):
+    def test_plugin_architecture_file_target_no_name(self):
         '''
             Ensures a module file that provides a target without a name does not load it
         '''
-        self.archPlugins.load_modules_from_strings("test_data/non_arch_obj.py")
-        self.assertEqual(len(self.archPlugins), 0)
+        self.arch_plugins.load_modules_from_strings("test_data/non_arch_obj.py")
+        self.assertEqual(len(self.arch_plugins), 0)
 
-    def testPluginArchitectureFileTargetBadName(self):
+    def test_plugin_architecture_file_target_bad_name(self):
         '''
             Ensures a module file that has a target with a non-string name
             reports the invalid name
         '''
         with self.assertRaises(NotImplementedError):
-            self.archPlugins.load_modules_from_strings("test_data/malformed_name_arch.py")
+            self.arch_plugins.load_modules_from_strings("test_data/malformed_name_arch.py")
 
-    def testPluginArchitectureMixedModule(self):
+    def test_plugin_architecture_mixed_module(self):
         '''
             Ensures a module that exposes architectures and executables can be loaded
         '''
-        self.archPlugins.load_config("test_data/mixed_module.conf")
-        self.assertEqual(len(self.archPlugins), 1)
+        self.arch_plugins.load_config("test_data/mixed_module.conf")
+        self.assertEqual(len(self.arch_plugins), 1)
 
-    def testPluginArchitecturePathConfig(self):
+    def test_plugin_architecture_path_config(self):
         '''
             Ensures a config that provides a path (rather than a module)
             can be loaded
         '''
-        self.archPlugins.load_config("test_data/arch_path_module.conf")
-        self.assertEqual(len(self.archPlugins), 1)
+        self.arch_plugins.load_config("test_data/arch_path_module.conf")
+        self.assertEqual(len(self.arch_plugins), 1)
 
 
 class TestExecutableLoading(unittest.TestCase):
@@ -169,97 +169,97 @@ class TestExecutableLoading(unittest.TestCase):
         largely covered by the above testcases)
     '''
     def setUp(self):
-        self.exePlugins = ExecutablePlugins()
+        self.exec_plugins = ExecutablePlugins()
 
-    def testExecutableFromString(self):
+    def test_executable_from_string(self):
         '''
             @INTERNAL
             Load a module from a string
         '''
-        module = self.exePlugins._load_module_from_module_string("dummy_exec")
+        module = self.exec_plugins._load_module_from_module_string("dummy_exec")
         self.assertEqual(len(module.rottnest_executables), 1)
 
-    def testExecutableFromPath(self):
+    def test_executable_from_path(self):
         '''
             @INTERNAL
             Load a module from a path to a Python file that exposes targets
         '''
-        module = self.exePlugins._load_module_from_file_path("./test_data/standalone.py")
+        module = self.exec_plugins._load_module_from_file_path("./test_data/standalone.py")
         self.assertEqual(len(module.rottnest_executables), 1)
 
-    def testExecutableFromConfigFile(self):
+    def test_executable_from_config_file(self):
         '''
             @INTERNAL
             Load a module from a path to a config file that declares modules
         '''
-        module = self.exePlugins._load_modules_from_config("./test_data/exec_module.conf")[0]
+        module = self.exec_plugins._load_modules_from_config("./test_data/exec_module.conf")[0]
         self.assertEqual(len(module.rottnest_executables), 1)
 
-    def testExecutableFromConfigFileArgument(self):
+    def test_executable_from_config_file_argument(self):
         '''
             Load a module from a config file passed as an argument to the
             executable plugins
         '''
-        self.exePlugins = ExecutablePlugins(config_path="./test_data/exec_module.conf")
-        self.assertEqual(len(self.exePlugins), 1)
+        self.exec_plugins = ExecutablePlugins(config_path="./test_data/exec_module.conf")
+        self.assertEqual(len(self.exec_plugins), 1)
 
-    def testPluginExecutableFromConfigFile(self):
+    def test_plugin_executable_from_config_file(self):
         '''
             Load a module into the executable plugins from a config file
         '''
-        self.exePlugins.load_config("./test_data/exec_module.conf")
-        self.assertEqual(len(self.exePlugins), 1)
-        self.assertTrue("dummy_exec" in self.exePlugins.get_module_names())
-        self.assertTrue("DummyExecutable" in self.exePlugins.get_executable_names())
+        self.exec_plugins.load_config("./test_data/exec_module.conf")
+        self.assertEqual(len(self.exec_plugins), 1)
+        self.assertTrue("dummy_exec" in self.exec_plugins.get_module_names())
+        self.assertTrue("DummyExecutable" in self.exec_plugins.get_executable_names())
 
-    def testPluginExecutableNoConfigFile(self):
+    def test_plugin_executable_no_config_file(self):
         '''
             Ensure config files that don't exist are flagged
         '''
-        self.assertEqual(self.exePlugins.load_config("this doesn't exist"), FileNotFoundError)
+        self.assertEqual(self.exec_plugins.load_config("this doesn't exist"), FileNotFoundError)
 
-    def testPluginExecutableBadConfigFile(self):
+    def test_plugin_executable_bad_config_file(self):
         '''
             Try to use a config file with only malformed entries
         '''
-        self.exePlugins.load_config("./test_data/bad_module.conf")
-        self.assertEqual(len(self.exePlugins), 0)
+        self.exec_plugins.load_config("./test_data/bad_module.conf")
+        self.assertEqual(len(self.exec_plugins), 0)
 
-    def testPluginExecutableFromString(self):
+    def test_plugin_executable_from_string(self):
         '''
             Ensures that modules can be loaded from strings
         '''
-        self.exePlugins.load_modules_from_strings("dummy_exec")
-        self.assertEqual(len(self.exePlugins), 1)
+        self.exec_plugins.load_modules_from_strings("dummy_exec")
+        self.assertEqual(len(self.exec_plugins), 1)
 
-    def testPluginExecutableStringInvalid(self):
+    def test_plugin_executable_string_invalid(self):
         '''
             Ensure an invalid module string is ignored
         '''
-        self.exePlugins.load_modules_from_strings("uh oh")
-        self.assertEqual(len(self.exePlugins), 0)
+        self.exec_plugins.load_modules_from_strings("uh oh")
+        self.assertEqual(len(self.exec_plugins), 0)
 
-    def testPluginExecutableStringPartiallyValid(self):
+    def test_plugin_executable_string_partially_valid(self):
         '''
             Ensure loading from strings where some are valid will
             successfully load the valid targets
         '''
-        self.exePlugins.load_modules_from_strings("bad", "dummy_exec")
-        self.assertEqual(len(self.exePlugins), 1)
+        self.exec_plugins.load_modules_from_strings("bad", "dummy_exec")
+        self.assertEqual(len(self.exec_plugins), 1)
 
-    def testPluginExecutableFileNoTargets(self):
+    def test_plugin_executable_file_no_targets(self):
         '''
             Ensures a module file with no valid targets is ignored
         '''
-        self.exePlugins.load_modules_from_strings("test_data/invalid_standalone.py")
-        self.assertEqual(len(self.exePlugins), 0)
+        self.exec_plugins.load_modules_from_strings("test_data/invalid_standalone.py")
+        self.assertEqual(len(self.exec_plugins), 0)
 
-    def testPluginExecutableMixedModule(self):
+    def test_plugin_executable_mixed_module(self):
         '''
             Ensures a module that exposes executables and architectures can be loaded
         '''
-        self.exePlugins.load_config("test_data/mixed_module.conf")
-        self.assertEqual(len(self.exePlugins), 1)
+        self.exec_plugins.load_config("test_data/mixed_module.conf")
+        self.assertEqual(len(self.exec_plugins), 1)
 
 
 
@@ -269,36 +269,36 @@ class TestDummyArchitecture(unittest.TestCase):
         loaded as a plugin
     '''
     def setUp(self):
-        self.archPlugins = ArchitecturePlugins()
-        self.archPlugins.load_modules_from_strings("dummy_arch")
-        self.arch = self.archPlugins['Dummy']
+        self.arch_plugins = ArchitecturePlugins()
+        self.arch_plugins.load_modules_from_strings("dummy_arch")
+        self.arch = self.arch_plugins['Dummy']
 
-    def testArchCount(self):
-        self.assertEqual(len(self.archPlugins._modules), 1)
-        self.assertEqual(len(self.archPlugins.get_architectures()), 1)
-        self.assertEqual(len(self.archPlugins), 1)
+    def test_arch_count(self):
+        self.assertEqual(len(self.arch_plugins._modules), 1)
+        self.assertEqual(len(self.arch_plugins.get_architectures()), 1)
+        self.assertEqual(len(self.arch_plugins), 1)
 
-    def testGetName(self):
+    def test_get_name(self):
         self.assertEqual(self.arch.get_name(), "Dummy")
 
-    def testGetWorkerEntry(self):
+    def test_get_worker_entry(self):
         self.assertTrue(isinstance(self.arch.worker_entrypoint(), Callable))
 
-    def testWorkerEntryMatches(self):
+    def test_worker_entry_matches(self):
         self.assertEqual(self.arch.worker_entrypoint(), self.arch.worker.entrypoint)
 
-    def testInstantiateWorker(self):
+    def test_instantiate_worker(self):
         self.assertTrue(isinstance(self.arch.worker(), DummyWorker))
 
-    def testInstantiateDesigner(self):
+    def test_instantiate_designer(self):
         self.assertTrue(isinstance(self.arch.designer(), DummyDesigner))
 
-    def testInstantiateComposer(self):
+    def test_instantiate_composer(self):
         self.assertTrue(isinstance(self.arch.composer([ ], [ ]), DummyComposer))
 
-    def testGetSetArch(self):
-        self.archPlugins.set_current_architecture("Dummy")
-        self.assertTrue(self.archPlugins["Dummy"] is self.archPlugins.get_current_architecture())
+    def test_get_set_arch(self):
+        self.arch_plugins.set_current_architecture("Dummy")
+        self.assertTrue(self.arch_plugins["Dummy"] is self.arch_plugins.get_current_architecture())
 
 
 if __name__ == "__main__":

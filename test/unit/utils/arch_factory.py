@@ -6,6 +6,27 @@ def build_arch(arch_name,
                designer: Type['RottnestDesigner'] | None = None,
                composer: Type['RottnestComposer'] | None = None,
                worker: Type['RottnestWorker'] | None = None):
+    '''
+        Creates a new architecture with the provided components
+        Does not load said architecture into the plugin system
+
+        IN:
+            arch_name [str]
+                The name to use for the generated architecture
+
+            designer [Class<RottnestDesigner>] = None
+                The designer class associated with this architecture
+
+            composer [Class<RottnestComposer>]
+                The composer class associated with this architecture
+
+            worker [Class<RottnestWorker>] = None
+                The worker class associated with this architecture
+
+
+        OUT: [Class<RottnestArchitecture>]
+                A new architecture class, with the given name
+    '''
     def get_name() -> str:
         return arch_name
 
@@ -18,6 +39,9 @@ def build_arch(arch_name,
                 )
     )
 
+'''
+    Trivial wrappers on Class construction for creating Architecture components
+'''
 def build_worker(worker_name, **attrs):
     return type(worker_name, (rottnest_worker.RottnestWorker,), attrs)
 

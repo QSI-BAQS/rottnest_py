@@ -1,30 +1,37 @@
 from qualtran import BloqBuilder, Bloq, Signature
-from qualtran.drawing import show_bloq
-
-'''
-def legacy_build_bloq(registers, gates):
-    bloqb = BloqBuilder()
-    reg_map = {}
-
-    for reg in registers:
-        reg_map[reg] = bloqb.add_register(reg, 1)
-
-    for gate, regs in gates:
-        reg_soqs = {}
-        for i, r in regs.items():
-            reg_soqs[i] = reg_map[r]
-        res = bloqb.add(gate, **reg_soqs)
-        if not isinstance(res, tuple):
-            res = (res,)
-        for n, i in enumerate(regs.values()):
-            reg_map[i] = res[n]
-
-    bloq = bloqb.finalize(**reg_map)
-    return bloq
-'''
 
 
 def build_bloq(registers, gates):
+    '''
+        Declaratively creates a new Qualtran Bloq
+
+        IN:
+            registers [Collection<str>]
+                A collection of named registers
+
+            gates [Collection<Tuple(Bloq, Dict<str><str>)>]
+                A collection of pairs (<Bloq>, <QubitRegs>), where <QubitRegs> maps
+                from the input argument names expected for the <Bloq> to the associated
+                regsiter
+                Handled in sequence
+
+
+        OUT: [CustomBloq]
+                A new Bloq (of a custom internal class) that implements a Signature
+                and a CompositeBloq builder for decomposition
+
+        eg.
+        ```
+        build_bloq(
+            registers = ('x', 'y'),
+            gates = [
+                (qualtran.bloqs.basic_gates.CNOT(), {'ctrl': 'x', 'target': 'y'})
+            ]
+        )
+        ```
+        creates a Bloq that describes a circuit that consists of a single CNOT over two qubits.
+        `'ctrl'` and `'targ'` are taken from the Signature/args for a qualtran CNOT.
+    '''
     class CustomBloq(Bloq):
         def build_composite_bloq(s, bb, **soqs):
             # Load named registers to be tracked
@@ -45,7 +52,7 @@ def build_bloq(registers, gates):
                 if not isinstance(res, tuple):
                     res = (res,)
                 # Extract the corresponding bloqs from the resulting gate back into the map
-                # (update the bloq references to their latest versions)
+                # (update the soq references to their latest versions)
                 for n, i in enumerate(regs.values()):
                     reg_map[i] = res[n]
 
@@ -55,9 +62,10 @@ def build_bloq(registers, gates):
         def signature(s):
             return Signature.build(**dict([(n, 1) for n in registers]))
 
+
+        # TODO : Remove this once qualtran parsing has been fixed
         def __iter__(self):
             # Drop qualtran object down to a cirq circuit
-            # This saves having qualtran details in decomp logic
             for cirq_gate in self.decompose_bloq().to_cirq_circuit():
                 yield cirq_gate
 

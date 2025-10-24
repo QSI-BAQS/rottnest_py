@@ -4,6 +4,9 @@ from rottnest.architecture_interface.rottnest_worker import RottnestWorker
 from rottnest.architecture_interface.rottnest_worker import PING, PONG, SET_PRECISION, EXEC_COMPUTE_UNIT, EXEC_GRAPH_STATE, GET_GRAPH, LOAD_LAYOUT
 
 
+'''
+    Trivial duck-typed queue for capturing and testing get/put
+'''
 class MockWorkerQueue():
     def __init__(self, mock_get_v=None):
         self.mock_get_v = mock_get_v
@@ -22,7 +25,7 @@ class MockWorkerQueue():
 
 
 class TestWorkerSanity(unittest.TestCase):
-    def testInit(self):
+    def test_init(self):
         '''
             Inspect an instantiated worker
         '''
@@ -31,7 +34,7 @@ class TestWorkerSanity(unittest.TestCase):
         self.assertTrue(all(task in worker.worker_tasks for task in [PING, SET_PRECISION, EXEC_COMPUTE_UNIT, EXEC_GRAPH_STATE, GET_GRAPH, LOAD_LAYOUT]))
 
 
-    def testInitBlind(self):
+    def test_init_blind(self):
         '''
             Ensure that blind workers cannot GET_GRAPH
         '''
@@ -39,7 +42,7 @@ class TestWorkerSanity(unittest.TestCase):
         self.assertEqual(worker.worker_tasks[GET_GRAPH], worker.not_supported)
 
 
-    def testInitEntrypoint(self):
+    def test_init_entrypoint(self):
         '''
             Test spawning and entering a worker from the class entrypoint
         '''
@@ -52,10 +55,9 @@ class TestWorkerSanity(unittest.TestCase):
         self.assertTrue(PONG in mock_responses.inspect_put())
 
 
-    def testInitEntrypointBlind(self):
+    def test_init_entrypoint_blind(self):
         '''
             Ensures that spawning a worker via entrypoint maintains blindness
-            (inspected indirectly via a task)
         '''
         # Patch running from a raw attribute to a property that is True, then False
         running_states = [True, False]
