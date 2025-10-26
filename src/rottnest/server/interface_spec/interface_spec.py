@@ -20,7 +20,7 @@ class RouteInterfaceSpecification:
     _ROUTE_NAME = '_routes'
 
 
-    def __init__(self, app, *cons, routes=None):
+    def __init__(self, responder, *cons, routes=None):
         '''
             Constructor
             :: app :: Application object to bind routes to 
@@ -41,18 +41,19 @@ class RouteInterfaceSpecification:
 
             # No routes defined, raise Exception
             raise NoRoutesException(
-                interface=self.__class__
+                interface = self.__class__
             )
 
         if len(routes) < 1:
             raise NoRoutesException(
-                interface=self.__class__
+                interface = self.__class__
             )
 
         self._routes = routes 
+        self._responder = responder
 
         bindings = self.collect_route_bindings(cons)
-        #self.bind_routes(app, bindings)
+        self.bind_routes(responder, bindings)
 
     def collect_route_bindings(self, cons) -> dict: 
         '''
@@ -107,4 +108,16 @@ class RouteInterfaceSpecification:
         return self._routes
 
     def get_route_binds(self) -> dict:
+        '''
+            Route binds getter
+        '''
         return self._binds 
+
+
+    def bind_routes(self, responder, bindings: dict): 
+        '''
+            Binds the routes to a responder
+        '''
+        for route, bind in bindings:
+            responder.register(route)(bind)
+        return 

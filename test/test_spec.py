@@ -5,6 +5,18 @@ from rottnest.server.interface_spec.route_interface import RouteInterface
 
 from rottnest.server.interface_spec import interface_exceptions 
 
+import pandora
+
+class NonResponder:
+    '''
+        Dummy class to not register or respond 
+    '''
+    @classmethod
+    def register(cls, *args, **kwargs):
+        '''
+        A non-register
+        '''
+        pass
 
 class InterfaceSpecTests(unittest.TestCase):
     '''
@@ -30,7 +42,7 @@ class InterfaceSpecTests(unittest.TestCase):
             @classmethod
             def test(cls, *args, **kwargs):
                     ...
-        interface = spec(None, TestInterface)
+        interface = spec(NonResponder, TestInterface)
         assert len(interface.get_route_binds()) == 1
 
     def test_two_implementations(self):    
@@ -53,7 +65,7 @@ class InterfaceSpecTests(unittest.TestCase):
             def test(cls, *args, **kwargs):
                     ...
 
-        interface = spec(None, TestInterface, TestInterface2)
+        interface = spec(NonResponder, TestInterface, TestInterface2)
         assert len(interface.get_route_binds()) == 2
 
 
@@ -63,7 +75,7 @@ class InterfaceSpecTests(unittest.TestCase):
         '''
         spec = self.generate_specification()
         try:
-            interface = spec(None)
+            interface = spec(NonResponder)
             # The above line should fail with a no routes exception
             assert False
         except interface_exceptions.NoRoutesException:
@@ -80,7 +92,7 @@ class InterfaceSpecTests(unittest.TestCase):
 
 
         try:
-            interface = spec(None, TestInterface)
+            interface = spec(NonResponder, TestInterface)
             # The above line should fail with a no routes exception
             assert False
         except interface_exceptions.MissingRouteException:
@@ -104,7 +116,7 @@ class InterfaceSpecTests(unittest.TestCase):
                         ...
 
 
-            interface = spec(None, TestInterface)
+            interface = spec(NonResponder, TestInterface)
             # The above line should fail with a no routes exception
             assert False
         except interface_exceptions.DuplicateRouteException:
@@ -128,7 +140,7 @@ class InterfaceSpecTests(unittest.TestCase):
                     ...
 
         try:
-            interface = spec(None, TestInterface, TestInterface2)
+            interface = spec(NonResponder, TestInterface, TestInterface2)
             # The above line should fail with a no routes exception
             assert False
         except interface_exceptions.DuplicateRouteException:
@@ -149,9 +161,11 @@ class InterfaceSpecTests(unittest.TestCase):
                 ...
 
         try:
-            interface = spec(None, TestInterface)
+            interface = spec(NonResponder, TestInterface)
             # The above line should fail with a no routes exception
             assert False
         except interface_exceptions.UndefinedRouteException:
             pass
      
+if __name__ == '__main__':
+    unittest.main()

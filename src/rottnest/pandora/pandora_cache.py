@@ -4,10 +4,13 @@ import pyLIQTR
 from rottnest.pandora.pandora_sequencer import pandora_connection, PandoraSequencer
 from rottnest.compute_units.layout_proxy import LayoutProxy
 
-from pyLIQTR.qubitization.qubitized_gates import QubitizedRotation, QubitizedReflection
-from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU
-from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
-from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
+try:
+    from pyLIQTR.qubitization.qubitized_gates import QubitizedRotation, QubitizedReflection
+    from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU
+    from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
+    from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
+except:
+    pass
 
 from pandora.targeted_decomposition import add_cache_db
 

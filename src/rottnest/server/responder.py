@@ -1,17 +1,35 @@
-
+'''
+    Responder object
+    Handles communication with the websocket
+'''
 import inspect
 import json
 
 class Result:
+    '''
+        Response wrapper object
+        Wraps responses to the front end
+    '''
+
+    # Constants for message fields
+    RESULT = 'result'
+    MESSAGE = 'message'
+    PAYLOAD = 'payload'
+    OBJ = 'obj'
+   
+    # Message types 
+    OK = 'ok'
+    ERROR = 'err'
+    ALTERNATIVE = 'alt'
 
     def __init__(self, pkg):
         """
            Constructor, initialises the fields to defaults
            unless pkg contains a value for: result, message and/or obj 
         """
-        self.result = 'ok' if 'result' not in pkg else pkg['result']
-        self.message = '' if 'message' not in pkg else pkg['message']
-        self.obj = None if 'obj' not in pkg else pkg['obj']
+        self.result = Result.OK if Result.RESULT not in pkg else pkg[Result.RESULT]
+        self.message = '' if Result.MESSAGE not in pkg else pkg[Result.MESSAGE]
+        self.obj = None if Result.OBJ not in pkg else pkg[Result.OBJ]
         
 
     @staticmethod
@@ -23,26 +41,26 @@ class Result:
            constructor
         """
         return Result({
-                          'result': 'ok',
-                          'obj' : obj
+                          Result.RESULT: Result.OK,
+                          Result.OBJ : obj
                       })
         
 
     @staticmethod
-    def Alt(msgkind, obj):
+    def Alternate(msg_kind, obj):
         """
            Labels the result as Alt,
            used for redirecting and sending
            a different response kind
         """
         return Result({
-            'result': 'alt',
-            'message': msgkind,
-            'obj': obj
+            Result.RESULT: Result.ALTERNATIVE,
+            Result.MESSAGE: msg_kind,
+            Result.OBJ: obj
         })
 
     @staticmethod
-    def Err(msg):
+    def Error(msg):
         """
            Labels the result as Error, if
            an object of this nature is absent,
@@ -50,27 +68,27 @@ class Result:
            constructor
         """
         return Result({
-            'result': 'err',
-            'obj': msg 
+            Result.RESULT: Result.ERROR,
+            Result.OBJ: msg 
         })
 
     def is_ok(self):
         """
             Checks to see if Ok kind
         """
-        return self.result == 'ok'
+        return self.result == Result.OK
 
     def is_err(self):
         """
             Checks to see if Error kind
         """
-        return self.result == 'err'
+        return self.result == Result.ERROR
 
     def is_alt(self):
         """
             Checks to see if Alt kind
         """
-        return self.result == 'alt'
+        return self.result == Result.ALTERNATIVE
 
     def get_obj(self):
         """
@@ -123,7 +141,7 @@ class Responder:
         self.serialization_fn = Responder.OUTPUT_FMT_MAP[cfg['output_fmt']]
 
 
-    def validate_responsefn(self, responsefn):
+    def validate_responsefn(self, response_fn):
         """
            Will check to see if the responsefn function
            added will match the expected form
@@ -132,20 +150,22 @@ class Responder:
            def fn(app, msg, **kwargs)
         """
 
-        fnsig = inspect.signature(responsefn)
-        params = fnsig.parameters.values()        
+        fn_sig = inspect.signature(response_fn)
+        params = fn_sig.parameters.values()        
         argcount = len(params)
-        
+       
+        # Check if number of paramaters match 
         if argcount != Responder.EXPFORM_PARAM_COUNT:
             return (False, 'Parameter count does not match')
 
+        # Check if parameter type matches 
         for (i, p) in enumerate(params):
             if p.kind != Responder.EXPFORM_KINDS[i]:
                 return (False, 'Function parameter kind does not meet expected form')
         
         return (True, '')
 
-    def register(self, messagekind=None):
+    def register(self, message_kind=None):
         """
            Registers a response but retrieves the module_name automatically
            Method is intended to be used as a decorator in python
@@ -155,15 +175,14 @@ class Responder:
            format
         """
 
-        serfmt_fn = self.serialization_fn
         modmask = self.namespace_mask
         def _respwrap(responsefn):
-            msgkind = messagekind
+            msg_kind = message_kind
 
-            if msgkind is None:
-                msgkind = responsefn.__name__
+            if msg_kind is None:
+                msg_kind = responsefn.__name__
             modname = responsefn.__module__
-            full_qualname = '_'.join([modname, msgkind])
+            full_qualname = '_'.join([modname, msg_kind])
             
             def _invoke_wrapper(app, message, **kwargs):
                 result = responsefn(app, message, **kwargs)
@@ -176,37 +195,39 @@ class Responder:
                           alt_message = True
                 if alt_message:
                     msg = {
-                        'message': result.get_message(),
-                        'payload': result.get_obj()
+                        Result.MESSAGE: result.get_message(),
+                        Result.PAYLOAD: result.get_obj()
                     }
 
-                    return serfmt_fn(msg)
+                    return self.serialization_fn(msg)
                 else:
                     if result is not None:
                         if isinstance(result, Result):
                             payload = result.get_obj()
                         else:
                             payload = result
+
                     nfq = full_qualname
                     if not self.full_namespace:
                         nfq = nfq.replace(modmask, '')
                     if self.convert_dots:
                         nfq = nfq.replace('.', '_')
+
                     msg = {
-                        'message': nfq,
-                        'payload': payload
+                        Result.MESSAGE: nfq,
+                        Result.PAYLOAD: payload
                     }
 
-                    return serfmt_fn(msg)
+                    return self.serialization_fn(msg)
                     
             
-            self.register_response(modname, msgkind, _invoke_wrapper)
+            self.register_response(modname, msg_kind, _invoke_wrapper)
         return _respwrap
 
-    def register_response(self, module_name, messagekind, responsefn):
+    def register_response(self, module_name, message_kind, responsefn):
         """
            Registers a response to the responder, it will
-           accept the module_name, messagekind and response function
+           accept the module_name, message_kind and response function
         """
         resp_map = {}
         if not self.full_namespace:
@@ -222,14 +243,14 @@ class Responder:
             else:
                 self.response_map[module_name] = resp_map
         (valid, msg) = self.validate_responsefn(responsefn)
-        full_qualname = '_'.join([module_name, messagekind])
+        full_qualname = '_'.join([module_name, message_kind])
         if not valid:
             raise ResponseValidationException(msg)
         self.fullqual_resp_map[full_qualname] = responsefn
-        resp_map[messagekind] = responsefn
+        resp_map[message_kind] = responsefn
 
 
-    def retrieve_response(self, module_name, messagekind):
+    def retrieve_response(self, module_name, message_kind):
         """
             Retrieves a specific response based on the module_name
             and the message kind.
@@ -238,8 +259,8 @@ class Responder:
         """
         bindingfn = None
         if module_name in self.response_map:
-            if messagekind in self.response_map[module_name]:
-                 bindingfn = self.response_map[module_name][messagekind]
+            if message_kind in self.response_map[module_name]:
+                 bindingfn = self.response_map[module_name][message_kind]
         return bindingfn 
 
     def register_directly(self, fullname, respfn):
