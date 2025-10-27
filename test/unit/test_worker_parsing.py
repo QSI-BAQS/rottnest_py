@@ -168,9 +168,19 @@ class TestWorkerCircuitCounting(unittest.TestCase):
         # Load n cirq qubits
         cls.cirq_qubits = tuple(cirq.NamedQubit(str(x)) for x in range(cls.n_qubits))
 
-        # TODO : All gates, high rz that hits memory bound, more qubits
         cls.cirq_circuits = [
+            # ---[ Trivial Single Gates ]---
+            cirq.Circuit(cirq.X(cls.cirq_qubits[0])),
+            cirq.Circuit(cirq.Y(cls.cirq_qubits[0])),
+            cirq.Circuit(cirq.Z(cls.cirq_qubits[0])),
+            cirq.Circuit(cirq.Rx(rads=0.0)(cls.cirq_qubits[0])),
+            cirq.Circuit(cirq.Ry(rads=0.0)(cls.cirq_qubits[0])),
+            cirq.Circuit(cirq.Rz(rads=0.0)(cls.cirq_qubits[0])),
             cirq.Circuit(cirq.H(cls.cirq_qubits[0])),
+            cirq.Circuit(cirq.S(cls.cirq_qubits[0])),
+            cirq.Circuit(cirq.T(cls.cirq_qubits[0])),
+            cirq.Circuit(cirq.CNOT(cls.cirq_qubits[0], cls.cirq_qubits[1])),
+            cirq.Circuit(cirq.CZ(cls.cirq_qubits[0], cls.cirq_qubits[1])),
 
             cirq.Circuit(
                 cirq.H(cls.cirq_qubits[1]),
