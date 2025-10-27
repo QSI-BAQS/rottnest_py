@@ -13,11 +13,12 @@ EXES := $(patsubst ${SRCDIR}/%.hs, ${SRCDIR}/%, ${SRCFILES})
 all: package 
 
 package: gridsynth
+	pip install -r requirements.txt
 	pip install -e .
 
-gridsynth : ${OBJFILES}
+gridsynth:  ${OBJFILES}
 
-build : ${OBJFILES}
+build: package
 
 ${SRCDIR}/% : ${SRCDIR}/%.hs
 	$(GHC) -package random -package newsynth $^
@@ -25,8 +26,12 @@ ${SRCDIR}/% : ${SRCDIR}/%.hs
 test:
 	pytest
 
-clean : 
-	rm $(OBJFILES)
-	rm $(EXES)
-	rm $(HIFILES)
+clean: 
+	rm $(OBJFILES) || true
+	rm $(EXES) || true
+	rm $(HIFILES) || true
 	pip uninstall rottnest
+
+update: 
+	git pull
+	${MAKE} build
