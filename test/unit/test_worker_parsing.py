@@ -6,6 +6,8 @@
 import unittest
 import cirq
 import math
+import random
+import sys
 
 import qualtran.bloqs.basic_gates as qual_gates
 
@@ -31,12 +33,15 @@ from utils.arch_factory import build_arch, build_worker, build_designer, build_c
 # Used to create qualtran circuits in a manner more similar to cirq
 from utils.declarative_qualtran import build_bloq
 
+# seed for testcases featuring randomisation
+# if None, uses system time
+RAND_SEED = None
 
 # --[ Internal Utils ]--
 def cirq_len(circuit):
     '''
         Determine the correct length for a given cirq circuit
-        (accounting for internal wrappers)
+        (accounting for internal wrapper sizes)
     '''
     lengths = {
         cirq.Rx: 3,
@@ -59,7 +64,7 @@ def cirq_len(circuit):
 def qualtran_len(bloq):
     '''
         Determine the correct length for a given qualtran circuit
-        (accounting for internal wrappers)
+        (accounting for internal wrapper sizes)
     '''
     lengths = {
         qual_gates.Rx: 3,
@@ -208,6 +213,31 @@ class TestWorkerCircuitCounting(unittest.TestCase):
                 cirq.Rz(rads=-math.pi / 4)(cls.cirq_qubits[2]),
                 cirq.CNOT(cls.cirq_qubits[1], cls.cirq_qubits[2]),
                 cirq.H(cls.cirq_qubits[0])
+            ),
+
+            # Massive parameterised toffoli
+            cirq.Circuit(
+                reduce(lambda a, b: a + b,
+                    (
+                        [
+                            cirq.H(qubit_0),
+                            cirq.CNOT(qubit_1, qubit_0),
+                            cirq.Rz(rads=-math.pi / 4)(qubit_0),
+                            cirq.CNOT(qubit_2, qubit_0),
+                            cirq.Rz(rads=math.pi / 4)(qubit_0),
+                            cirq.CNOT(qubit_2, qubit_0),
+                            cirq.Rz(rads=-math.pi / 4)(qubit_0),
+                            cirq.CNOT(qubit_1, qubit_0),
+                            cirq.Rz(rads=math.pi / 4)(qubit_0),
+                            cirq.Rz(rads=math.pi / 4)(qubit_2),
+                            cirq.CNOT(qubit_1, qubit_2),
+                            cirq.Rz(rads=math.pi / 4)(qubit_1),
+                            cirq.Rz(rads=-math.pi / 4)(qubit_2),
+                            cirq.CNOT(qubit_1, qubit_2),
+                            cirq.H(qubit_0)
+                        ] for qubit_0, qubit_1, qubit_2 in zip(cls.cirq_qubits, cls.cirq_qubits[1:], cls.cirq_qubits[2:])
+                    )
+                )
             ),
 
             cirq.Circuit(
@@ -391,8 +421,6 @@ class TestWorkerCircuitCounting(unittest.TestCase):
 
         # Load gates from a sequencer on a cirq object
         for circuit in self.cirq_circuits:
-            print("-" * 70)
-            print(circuit)
             with self.subTest(circuit=circuit):
                 # Empty qubit tracker
                 composer = arch.composer([LayoutProxy.get_layout(layout_id)], [])
@@ -411,11 +439,9 @@ class TestWorkerCircuitCounting(unittest.TestCase):
                         # v Pass the sequenced sections of the parsed circuit to the
                         # worker
                         res = worker.execute_compute_unit(obj)
-                        print(res)
                         res_composer += composer.compose_result(obj.unit_id, res)
 
                 self.assertEqual(res_composer.get_gate_count(), cirq_len(circuit))
-            print("-" * 70)
 
 
     def test_qualtran_n_gates_composed(self):
@@ -487,6 +513,67 @@ class TestWorkerCircuitCounting(unittest.TestCase):
                         res_composer += composer.compose_result(obj.unit_id, res)
 
                 self.assertEqual(res_composer.get_gate_count(), qualtran_len(circuit))
+
+
+    def test_cirq_random_toffoli_low_memory(self):
+        '''
+            Randomised test over sequence of toffolis
+        '''
+        layout_id = "low_mem_layout"
+        architectures.set_current_architecture("ComposedGateCounting")
+        arch = architectures.get_current_architecture()
+
+        if RAND_SEED is None:
+            seed_v = random.randrange(sys.maxsize)
+            print(f"--[ Seed for randomised Toffoli is {seed_v} ]--")
+            random.seed(seed_v)
+        else:
+            random.seed(RAND_SEED)
+
+        worker = arch.worker()
+
+        circuit = cirq.Circuit(reduce(lambda a, b: a + b,
+            (
+                [
+                    cirq.H(qubit_0),
+                    cirq.CNOT(qubit_1, qubit_0),
+                    cirq.Rz(rads=-math.pi / 4)(qubit_0),
+                    cirq.CNOT(qubit_2, qubit_0),
+                    cirq.Rz(rads=math.pi / 4)(qubit_0),
+                    cirq.CNOT(qubit_2, qubit_0),
+                    cirq.Rz(rads=-math.pi / 4)(qubit_0),
+                    cirq.CNOT(qubit_1, qubit_0),
+                    cirq.Rz(rads=math.pi / 4)(qubit_0),
+                    cirq.Rz(rads=math.pi / 4)(qubit_2),
+                    cirq.CNOT(qubit_1, qubit_2),
+                    cirq.Rz(rads=math.pi / 4)(qubit_1),
+                    cirq.Rz(rads=-math.pi / 4)(qubit_2),
+                    cirq.CNOT(qubit_1, qubit_2),
+                    cirq.H(qubit_0)
+                ] for qubit_0, qubit_1, qubit_2 in (random.sample(self.cirq_qubits, 3) for i in range(1000))
+            )
+        ))
+
+        composer = arch.composer(LayoutProxy.get_layout(layout_id), [])
+
+        # Sequence the given circuit
+        parser = PyliqtrParser(circuit)
+        seq = Sequencer(layout_id)
+        parser.parse()
+        it = seq.sequence_pyliqtr(parser)
+
+        res_composer = composer.results_composer_constructor()()
+
+        for obj in it:
+            if obj != INTERRUPT:
+                # ^ Ignore cache events
+                # v Pass the sequenced sections of the parsed circuit to the
+                # worker
+                res = worker.execute_compute_unit(obj)
+                res_composer += composer.compose_result(obj.unit_id, res)
+
+        self.assertEqual(res_composer.get_gate_count(), cirq_len(circuit))
+
 
 
 
