@@ -5,7 +5,6 @@ from rottnest.server.interface_spec.route_interface import RouteInterface
 
 from rottnest.server.interface_spec import interface_exceptions 
 
-import pandora
 
 class NonResponder:
     '''
@@ -16,7 +15,7 @@ class NonResponder:
         '''
         A non-register
         '''
-        pass
+        return lambda x: x 
 
 class InterfaceSpecTests(unittest.TestCase):
     '''

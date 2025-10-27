@@ -118,6 +118,6 @@ class RouteInterfaceSpecification:
         '''
             Binds the routes to a responder
         '''
-        for route, bind in bindings:
+        for route, bind in bindings.items():
             responder.register(route)(bind)
         return 
