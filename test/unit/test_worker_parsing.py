@@ -316,6 +316,13 @@ class TestWorkerCircuitCounting(unittest.TestCase):
                     (qual_gates.Hadamard(), {'q': 'z'})
                 ]
             ),
+
+            build_bloq(
+                registers = tuple(str(i) for i in range(100)),
+                gates = [
+                    (qual_gates.XGate(), {'q': str(i)}) for i in range(100)
+                ]
+            )
         ]
 
 
