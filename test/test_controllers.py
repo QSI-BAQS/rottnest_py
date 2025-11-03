@@ -38,3 +38,13 @@ class ControllerRouteTests(unittest.TestCase):
     
         spec = ArchitectureSpecification
         interface = spec(NonResponder, ArchitectureInterface) 
+
+    def test_executables(self):
+        '''
+        Tests executable endpoints
+        '''
+        from rottnest.server.interface_spec.specs.executable_spec import ExecutableSpecification 
+        from rottnest.server.controller.executable import ExecutableInterface
+    
+        spec = ExecutableSpecification
+        interface = spec(NonResponder, ExecutableInterface) 
