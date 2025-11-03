@@ -5,19 +5,19 @@
 from rottnest.server.interface_spec.interface_spec import RouteInterfaceSpecification
 
 # Symbols
-EXECUTABLE_LIST_GET = 'executable.get_list'
-EXECUTABLE_CURRENT_GET = 'executable.get_current'
-EXECUTABLE_CURRENT_SET = 'executable.set_current'
-EXECUTABLE_CONFIG_GET = 'executable.get_config'
-EXECUTABLE_CONFIG_SET = 'executable.set_config'
+GET_EXECUTABLE_LIST = 'executable.get_list'
+GET_EXECUTABLE_CURRENT = 'executable.get_current'
+SET_EXECUTABLE_CURRENT = 'executable.set_current'
+GET_EXECUTABLE_CONFIG = 'executable.get_config'
+SET_EXECUTABLE_CONFIG = 'executable.set_config'
 
 # Routes
 executable_routes = [
-    EXECUTABLE_LIST_GET,
-    EXECUTABLE_CURRENT_GET,
-    EXECUTABLE_CURRENT_SET,
-    EXECUTABLE_CONFIG_GET,
-    EXECUTABLE_CONFIG_SET
+    GET_EXECUTABLE_LIST,
+    GET_EXECUTABLE_CURRENT,
+    SET_EXECUTABLE_CURRENT,
+    GET_EXECUTABLE_CONFIG,
+    SET_EXECUTABLE_CONFIG
 ]
 
 class ExecutableSpecification(RouteInterfaceSpecification):

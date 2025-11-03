@@ -5,11 +5,11 @@
 from rottnest.server.interface_spec.interface_spec import RouteInterfaceSpecification
 
 # Symbols
-USE_LAYOUT = 'layout_use'
+SET_LAYOUT = 'layout_use'
 
 # Routes
 layout_routes = [
-    USE_LAYOUT
+    SET_LAYOUT
 ]
 
 class LayoutSpecification(RouteInterfaceSpecification):
