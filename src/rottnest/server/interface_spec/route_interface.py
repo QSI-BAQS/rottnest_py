@@ -41,9 +41,15 @@ class Routes(type):
         # Reset the dict
         Routes._routes = {}
         return obj
-        
+
 
 class RouteInterface(metaclass=Routes):
+    '''
+        Interface parent class
+        Metaclassed to hook route aggregation
+    '''
+
+    PAYLOAD = 'payload'
 
     @classmethod
     def get_routes(cls):
@@ -63,3 +69,19 @@ class RouteInterface(metaclass=Routes):
             return fn 
         return _wrap
 
+    @staticmethod
+    def load(message):
+        '''
+        Wraps the payload unloader avoiding messy strings
+        '''
+        return message[Routes.PAYLOAD]
+
+    @staticmethod
+    def load_and_model_call(message, field, model_function):
+        '''
+            Fills a common pattern of loading and calling 
+            to a model function with a simple param
+        '''
+        msg = self.load(message)
+        var = msg[field]
+        return model_function(field)

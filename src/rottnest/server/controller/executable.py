@@ -2,9 +2,9 @@
     This interface handles the executable controllers 
 '''
 from rottnest.server.interface_spec.route_interface import RouteInterface
-from rottnest.server.interface_spec.specs.executable_spec import EXECUTABLE_LIST_GET, EXECUTABLE_CURRENT_GET, EXECUTABLE_CURRENT_SET, EXECUTABLE_CONFIG_GET, EXECUTABLE_CONFIG_SET 
+from rottnest.server.interface_spec.specs.executable_spec import GET_EXECUTABLE_LIST, GET_EXECUTABLE_CURRENT, SET_EXECUTABLE_CURRENT, GET_EXECUTABLE_CONFIG, SET_EXECUTABLE_CONFIG 
 
-from rottnest.server.model import plugin_architecture
+from rottnest.server.model import executable as model 
 from rottnest.server.responder import responder, Result
 
 
@@ -12,45 +12,56 @@ class ExecutableInterface(RouteInterface):
     '''
         Interface for the executable controllers
     '''
+    EXECUTABLE_KEY = 'executable_key'
+    EXECUTABLE_CONFIG = 'executable_config'
    
-    @RouteInterface.bind_route(EXECUTABLE_LIST_GET) 
+    @RouteInterface.bind_route(GET_EXECUTABLE_LIST) 
     @classmethod
     def get_executable_list(cls, message, **kwargs) -> Result:
         '''
             Gets the list of currently loaded executables
+            Loads from the singleton instance
         '''
-        pass
+        return model.get_executables()
 
-    @RouteInterface.bind_route(EXECUTABLE_CURRENT_GET) 
+    @RouteInterface.bind_route(GET_EXECUTABLE_CURRENT) 
     @classmethod
     def get_current_executable(cls, message, **kwargs) -> Result:
         '''
             Gets the currently loaded executable
         '''
-        pass
+        return model.get_current_executable()
 
-    @RouteInterface.bind_route(EXECUTABLE_CURRENT_SET) 
+    @RouteInterface.bind_route(SET_EXECUTABLE_CURRENT) 
     @classmethod
     def set_current_executable(cls, message, **kwargs) -> Result:
         '''
             Sets the current executable
         '''
-        pass
+        return cls.load_and_model_call(
+            message,
+            cls.EXECUTABLE_KEY,
+            model.set_current_executable
+        )
 
-    @RouteInterface.bind_route(EXECUTABLE_CONFIG_GET) 
+    @RouteInterface.bind_route(GET_EXECUTABLE_CONFIG) 
     @classmethod
     def get_current_config(cls, message, **kwargs) -> Result:
         '''
             Gets the configuration options for the 
              current executable
         '''
-        pass
+        return model.get_current_config()
 
-    @RouteInterface.bind_route(EXECUTABLE_CONFIG_SET) 
+    @RouteInterface.bind_route(SET_EXECUTABLE_CONFIG) 
     @classmethod
     def set_current_config(cls, message, **kwargs) -> Result:
         '''
             Sets the configuration options for the 
              current executable
         '''
-        pass
+        return cls.load_and_model_call(
+            message,
+            cls.EXECUTABLE_CONFIG,
+            model.set_current_config            
+        )
