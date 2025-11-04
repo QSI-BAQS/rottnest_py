@@ -6,16 +6,16 @@ from rottnest.server.interface_spec.interface_spec import RouteInterfaceSpecific
 
 # Symbols
 GET_ARCHITECTURE_LIST = 'arch_list'
-GET_ARCHITECTURE = 'arch_get'
-SET_ARCHITECTURE = 'arch_set'
+GET_CURRENT_ARCHITECTURE = 'arch_get'
+SET_CURRENT_ARCHITECTURE = 'arch_set'
 GET_ARCHITECTURE_CONFIG = 'arch_get_config'
 SET_ARCHITECTURE_CONFIG = 'arch_set_config'
 
 # Routes
 architecture_routes = [
     GET_ARCHITECTURE_LIST,
-    GET_ARCHITECTURE,
-    SET_ARCHITECTURE,
+    GET_CURRENT_ARCHITECTURE,
+    SET_CURRENT_ARCHITECTURE,
     GET_ARCHITECTURE_CONFIG,
     SET_ARCHITECTURE_CONFIG
 ]

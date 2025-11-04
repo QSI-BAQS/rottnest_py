@@ -6,18 +6,25 @@
 
 from rottnest.plugins import executables as singleton 
 
-def get_executables() -> list:
+def get_executables() -> Result:
     '''
         Returns executables from the singleton instance 
     '''
     return singleton.get_executables() 
 
-def get_current_executable() -> str:
+def get_current_executable() -> Result:
     '''
        Returns the currently loaded executable from the singleton
         instance 
     '''
     return singleton.get_current_executable()
+
+def set_current_executable(params: dict) -> Result:
+    '''
+       Returns the currently loaded executable from the singleton
+        instance 
+    '''
+    return singleton.get_current_executable(**params)
 
 def get_current_config() -> dict:
     '''
