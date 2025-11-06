@@ -76,9 +76,9 @@ from qualtran._infra.adjoint import Adjoint
 
 # Skip if pandora is not enabled
 # This should be promoted to a module for each circuit that is to be constructed and run  
-if pandora_connection is not None:
+#if pandora_connection is not None:
 
-    attach_class('adjoint', Adjoint)
+    #attach_class('adjoint', Adjoint)
     #attach_class('lcu', PauliStringLCU)
     #attach_class('prepare_lcu', prepare_pauli_lcu)
-    attach_class('qsp', QSP_Prepare)
+    #attach_class('qsp', QSP_Prepare)
