@@ -25,8 +25,15 @@ from rottnest.input_parsers.interrupt import INTERRUPT
 
 from rottnest.process_pool.standalone import process_elem_cache, process_elem_obj
 
+from rottnest.input_parsers.rz_tag_tracker import RzTagTracker
+
+from rottnest.rz_collector.rz_collection_worker import RzCollectionWorker
+from rottnest.rz_collector.rz_collection_composer import RzCollectionComposer, RzCollectionResultsComposer
+
 # --[ Testing Utilities ]---
 from functools import reduce
+
+from collections import Counter
 
 from utils.arch_factory import build_arch, build_worker, build_designer, build_composer
 
@@ -81,6 +88,19 @@ def qualtran_len(bloq):
             res += v
 
     return res
+
+
+def cirq_n_rz(circuit):
+    res = Counter()
+    for moment in circuit.moments:
+        for operation in moment:
+            if (isinstance(operation.gate, (cirq.Rz, cirq.Ry, cirq.Rx)) or
+                (isinstance(operation.gate, cirq.ZPowGate) and operation.gate.exponent == 0.25)):
+                # NOTE : exponent 0.25 for a ZPow is a T (which maps to rz internally)
+                res[operation.gate.exponent] += 1
+
+    return res
+
 
 
 class TestWorkerCircuitCounting(unittest.TestCase):
@@ -592,6 +612,43 @@ class TestWorkerCircuitCounting(unittest.TestCase):
         self.assertEqual(res_composer.get_gate_count(), cirq_len(circuit))
 
 
+    def test_rz_collection(self):
+        layout_id = "std_layout"
+
+        worker = RzCollectionWorker()
+
+        # Load gates from a sequencer on a qualtran object
+        for circuit in self.cirq_circuits:
+            with self.subTest(circuit=circuit):
+                composer = RzCollectionComposer(LayoutProxy.get_layout(layout_id), [])
+
+                res_composer = composer.results_composer_constructor()()
+
+                # Sequence the given circuit
+                parser = PyliqtrParser(circuit)
+                seq = Sequencer(layout_id)
+                parser.parse()
+                it = seq.sequence_pyliqtr(parser)
+
+                res_composer = composer.results_composer_constructor()()
+
+                rz_tracker = None
+
+                for obj in it:
+                    if obj != INTERRUPT:
+                        # ^ Ignore cache events
+                        # v Pass the sequenced sections of the parsed circuit to the
+                        # worker
+                        res = worker.execute_compute_unit(obj)
+                        res_composer += composer.compose_result(obj.unit_id, res)
+                        rz_tracker = obj.extract_rz_tracker()
+
+                validation_count = cirq_n_rz(circuit)
+                for tag, count in res_composer._obj["rz_counts"].items():
+                    self.assertEqual(
+                        count,
+                        validation_count[rz_tracker[tag]]
+                    )
 
 
 if __name__ == "__main__":
