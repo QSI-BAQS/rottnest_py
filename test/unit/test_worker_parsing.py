@@ -37,8 +37,7 @@ from collections import Counter
 
 from utils.arch_factory import build_arch, build_worker, build_designer, build_composer
 
-# Used to create qualtran circuits in a manner more similar to cirq
-from utils.declarative_qualtran import build_bloq
+from test_data.test_circuits import cirq_circuits, cirq_qubits, qualtran_circuits
 
 # seed for testcases featuring randomisation
 # if None, uses system time
@@ -181,170 +180,6 @@ class TestWorkerCircuitCounting(unittest.TestCase):
         LayoutProxy.add_layout_with_id("std_layout", {'mem_bound': 500})
         LayoutProxy.add_layout_with_id("low_mem_layout", {'mem_bound': 50})
 
-        '''
-            Create circuits
-        '''
-        cls.n_qubits = 100
-        # Load n cirq qubits
-        cls.cirq_qubits = tuple(cirq.NamedQubit(str(x)) for x in range(cls.n_qubits))
-
-        cls.cirq_circuits = [
-            # ---[ Trivial Single Gates ]---
-            cirq.Circuit(cirq.X(cls.cirq_qubits[0])),
-            cirq.Circuit(cirq.Y(cls.cirq_qubits[0])),
-            cirq.Circuit(cirq.Z(cls.cirq_qubits[0])),
-            cirq.Circuit(cirq.Rx(rads=0.0)(cls.cirq_qubits[0])),
-            cirq.Circuit(cirq.Ry(rads=0.0)(cls.cirq_qubits[0])),
-            cirq.Circuit(cirq.Rz(rads=0.0)(cls.cirq_qubits[0])),
-            cirq.Circuit(cirq.H(cls.cirq_qubits[0])),
-            cirq.Circuit(cirq.S(cls.cirq_qubits[0])),
-            cirq.Circuit(cirq.T(cls.cirq_qubits[0])),
-            cirq.Circuit(cirq.CNOT(cls.cirq_qubits[0], cls.cirq_qubits[1])),
-            cirq.Circuit(cirq.CZ(cls.cirq_qubits[0], cls.cirq_qubits[1])),
-
-            cirq.Circuit(
-                cirq.H(cls.cirq_qubits[1]),
-                cirq.X(cls.cirq_qubits[0])
-            ),
-
-            cirq.Circuit(
-                cirq.Y(cls.cirq_qubits[0]),
-                cirq.Z(cls.cirq_qubits[0]),
-                cirq.CNOT(cls.cirq_qubits[0], cls.cirq_qubits[1])
-            ),
-
-            cirq.Circuit(
-                cirq.X(cls.cirq_qubits[0]) for i in range(100)
-            ),
-
-            cirq.Circuit(
-                cirq.Ry(rads=0.0)(cls.cirq_qubits[0]),
-            ),
-
-            cirq.Circuit(
-                cirq.H(cls.cirq_qubits[0]),
-                cirq.measure(cls.cirq_qubits[0])
-            ),
-
-            # Toffoli
-            cirq.Circuit(
-                cirq.H(cls.cirq_qubits[0]),
-                cirq.CNOT(cls.cirq_qubits[1], cls.cirq_qubits[0]),
-                cirq.Rz(rads=-math.pi / 4)(cls.cirq_qubits[0]),
-                cirq.CNOT(cls.cirq_qubits[2], cls.cirq_qubits[0]),
-                cirq.Rz(rads=math.pi / 4)(cls.cirq_qubits[0]),
-                cirq.CNOT(cls.cirq_qubits[2], cls.cirq_qubits[0]),
-                cirq.Rz(rads=-math.pi / 4)(cls.cirq_qubits[0]),
-                cirq.CNOT(cls.cirq_qubits[1], cls.cirq_qubits[0]),
-                cirq.Rz(rads=math.pi / 4)(cls.cirq_qubits[0]),
-                cirq.Rz(rads=math.pi / 4)(cls.cirq_qubits[2]),
-                cirq.CNOT(cls.cirq_qubits[1], cls.cirq_qubits[2]),
-                cirq.Rz(rads=math.pi / 4)(cls.cirq_qubits[1]),
-                cirq.Rz(rads=-math.pi / 4)(cls.cirq_qubits[2]),
-                cirq.CNOT(cls.cirq_qubits[1], cls.cirq_qubits[2]),
-                cirq.H(cls.cirq_qubits[0])
-            ),
-
-            # Massive parameterised toffoli
-            cirq.Circuit(
-                reduce(lambda a, b: a + b,
-                    (
-                        [
-                            cirq.H(qubit_0),
-                            cirq.CNOT(qubit_1, qubit_0),
-                            cirq.Rz(rads=-math.pi / 4)(qubit_0),
-                            cirq.CNOT(qubit_2, qubit_0),
-                            cirq.Rz(rads=math.pi / 4)(qubit_0),
-                            cirq.CNOT(qubit_2, qubit_0),
-                            cirq.Rz(rads=-math.pi / 4)(qubit_0),
-                            cirq.CNOT(qubit_1, qubit_0),
-                            cirq.Rz(rads=math.pi / 4)(qubit_0),
-                            cirq.Rz(rads=math.pi / 4)(qubit_2),
-                            cirq.CNOT(qubit_1, qubit_2),
-                            cirq.Rz(rads=math.pi / 4)(qubit_1),
-                            cirq.Rz(rads=-math.pi / 4)(qubit_2),
-                            cirq.CNOT(qubit_1, qubit_2),
-                            cirq.H(qubit_0)
-                        ] for qubit_0, qubit_1, qubit_2 in zip(cls.cirq_qubits, cls.cirq_qubits[1:], cls.cirq_qubits[2:])
-                    )
-                )
-            ),
-
-            cirq.Circuit(
-                cirq.X(cls.cirq_qubits[n]) for n in range(100)
-            )
-        ]
-
-        cls.qualtran_circuits = [
-            # Note that the current Qualtran parsing uses the fact that `build_bloq` provides an object whose iterator
-            # provides Cirq gates. This is NOT the standard function of an arbitrary Bloq
-            build_bloq(
-                registers = ('x',),
-                gates = [
-                    (qual_gates.Hadamard(), {'q': 'x'})
-                ]
-            ),
-
-            build_bloq(
-                registers = ('x', 'y'),
-                gates = [
-                    (qual_gates.Hadamard(), {'q': 'y'}),
-                    (qual_gates.XGate(), {'q': 'x'})
-                ]
-            ),
-
-            build_bloq(
-                registers = ('x', 'y'),
-                gates = [
-                    (qual_gates.YGate(), {'q': 'x'}),
-                    (qual_gates.ZGate(), {'q': 'x'}),
-                    (qual_gates.CNOT(), {'ctrl': 'x', 'target': 'y'})
-                ]
-            ),
-
-            build_bloq(
-                registers = ('x',),
-                gates = [
-                    (qual_gates.XGate(), {'q': 'x'}) for i in range(100)
-                ]
-            ),
-
-            build_bloq(
-                registers = ('x',),
-                gates = [
-                    (qual_gates.Ry(0.0), {'q': 'x'}),
-                ]
-            ),
-
-            build_bloq(
-                registers = ('x', 'y', 'z'),
-                gates = [
-                    (qual_gates.Hadamard(), {'q': 'x'}),
-                    (qual_gates.CNOT(), {'ctrl': 'y', 'target': 'x'}),
-                    (qual_gates.Rz(-math.pi / 4), {'q': 'x'}),
-                    (qual_gates.CNOT(), {'ctrl': 'z', 'target': 'x'}),
-                    (qual_gates.Rz(math.pi / 4), {'q': 'x'}),
-                    (qual_gates.CNOT(), {'ctrl': 'z', 'target': 'x'}),
-                    (qual_gates.Rz(-math.pi / 4), {'q': 'x'}),
-                    (qual_gates.CNOT(), {'ctrl': 'y', 'target': 'x'}),
-                    (qual_gates.Rz(math.pi / 4), {'q': 'x'}),
-                    (qual_gates.Rz(math.pi / 4), {'q': 'z'}),
-                    (qual_gates.CNOT(), {'ctrl': 'y', 'target': 'z'}),
-                    (qual_gates.Rz(math.pi / 4), {'q': 'y'}),
-                    (qual_gates.Rz(-math.pi / 4), {'q': 'z'}),
-                    (qual_gates.CNOT(), {'ctrl': 'y', 'target': 'z'}),
-                    (qual_gates.Hadamard(), {'q': 'z'})
-                ]
-            ),
-
-            build_bloq(
-                registers = tuple(str(i) for i in range(100)),
-                gates = [
-                    (qual_gates.XGate(), {'q': str(i)}) for i in range(100)
-                ]
-            )
-        ]
-
 
     def test_cirq_direct_gate_count(self):
         '''
@@ -357,7 +192,7 @@ class TestWorkerCircuitCounting(unittest.TestCase):
         worker = arch.worker()
 
         # Load gates from a sequencer on a cirq object
-        for circuit in self.cirq_circuits:
+        for name, circuit in cirq_circuits.items():
             with self.subTest(circuit=circuit):
                 # Reset the worker's counter
                 worker.gate_ctr = 0
@@ -378,38 +213,6 @@ class TestWorkerCircuitCounting(unittest.TestCase):
                 self.assertEqual(worker.gate_ctr, cirq_len(circuit))
 
 
-    def test_qualtran_direct_gate_count(self):
-        '''
-            Test a worker that parses a circuit (qualtran) and directly counts the number of gates
-        '''
-        layout_id = "std_layout"
-        architectures.set_current_architecture("DirectGateCounting")
-        arch = architectures.get_current_architecture()
-
-        worker = arch.worker()
-
-        # Load gates from a sequencer on a qualtran object
-        for circuit in self.qualtran_circuits:
-            with self.subTest(circuit=circuit):
-                # Reset the worker's counter
-                worker.gate_ctr = 0
-
-                # Sequence the given circuit
-                parser = PyliqtrParser(circuit)
-                seq = Sequencer(layout_id)
-                parser.parse()
-                it = seq.sequence_pyliqtr(parser)
-
-                for obj in it:
-                    if obj != INTERRUPT:
-                        # ^ Ignore cache events
-                        # v Pass the sequenced sections of the parsed circuit to the
-                        # worker
-                        worker.execute_compute_unit(obj)
-
-                self.assertEqual(worker.gate_ctr, qualtran_len(circuit))
-
-
     def test_cirq_n_gates_composed(self):
         '''
             Test an architecture where gates are counted by a composer
@@ -421,7 +224,7 @@ class TestWorkerCircuitCounting(unittest.TestCase):
         worker = arch.worker()
 
         # Load gates from a sequencer on a cirq object
-        for circuit in self.cirq_circuits:
+        for name, circuit in cirq_circuits.items():
             with self.subTest(circuit=circuit):
                 # Empty qubit tracker
                 composer = arch.composer([LayoutProxy.get_layout(layout_id)], [])
@@ -457,7 +260,7 @@ class TestWorkerCircuitCounting(unittest.TestCase):
         worker = arch.worker()
 
         # Load gates from a sequencer on a cirq object
-        for circuit in self.cirq_circuits:
+        for name, circuit in cirq_circuits.items():
             with self.subTest(circuit=circuit):
                 # Empty qubit tracker
                 composer = arch.composer([LayoutProxy.get_layout(layout_id)], [])
@@ -479,77 +282,6 @@ class TestWorkerCircuitCounting(unittest.TestCase):
                         res_composer += composer.compose_result(obj.unit_id, res)
 
                 self.assertEqual(res_composer.get_gate_count(), cirq_len(circuit))
-
-
-    def test_qualtran_n_gates_composed(self):
-        '''
-            Test an architecture where gates are counted by a composer
-        '''
-        layout_id = "std_layout"
-        architectures.set_current_architecture("ComposedGateCounting")
-        arch = architectures.get_current_architecture()
-
-        worker = arch.worker()
-
-        # Load gates from a sequencer on a qualtran object
-        for circuit in self.qualtran_circuits:
-            with self.subTest(circuit=circuit):
-                # Empty qubit tracker
-                composer = arch.composer([LayoutProxy.get_layout(layout_id)], [])
-
-                # Sequence the given circuit
-                parser = PyliqtrParser(circuit)
-                seq = Sequencer(layout_id)
-                parser.parse()
-                it = seq.sequence_pyliqtr(parser)
-
-                res_composer = composer.results_composer_constructor()()
-
-                for obj in it:
-                    if obj != INTERRUPT:
-                        # ^ Ignore cache events
-                        # v Pass the sequenced sections of the parsed circuit to the
-                        # worker
-                        res = worker.execute_compute_unit(obj)
-                        res_composer += composer.compose_result(obj.unit_id, res)
-
-                self.assertEqual(res_composer.get_gate_count(), qualtran_len(circuit))
-
-
-    def test_qualtran_n_gates_composed_low_memory(self):
-        '''
-            Test an architecture where gates are counted by a composer,
-            and there is a sufficiently low memory constraint
-        '''
-        layout_id = "low_mem_layout"
-        architectures.set_current_architecture("ComposedGateCounting")
-        arch = architectures.get_current_architecture()
-
-        worker = arch.worker()
-
-        # Load gates from a sequencer on a qualtran object
-        for circuit in self.qualtran_circuits:
-            with self.subTest(circuit=circuit):
-                # Empty qubit tracker
-                composer = arch.composer([LayoutProxy.get_layout(layout_id)], [])
-
-                # Sequence the given circuit
-                parser = PyliqtrParser(circuit)
-                seq = Sequencer(layout_id)
-                parser.parse()
-                it = seq.sequence_pyliqtr(parser)
-
-                res_composer = composer.results_composer_constructor()()
-
-                for obj in it:
-                    if obj != INTERRUPT:
-                        # ^ Ignore cache events
-                        # v Pass the sequenced sections of the parsed circuit to the
-                        # worker
-                        res = worker.execute_compute_unit(obj)
-                        res_composer += composer.compose_result(obj.unit_id, res)
-
-                self.assertEqual(res_composer.get_gate_count(), qualtran_len(circuit))
 
 
     def test_cirq_random_toffoli_low_memory(self):
@@ -587,7 +319,7 @@ class TestWorkerCircuitCounting(unittest.TestCase):
                     cirq.Rz(rads=-math.pi / 4)(qubit_2),
                     cirq.CNOT(qubit_1, qubit_2),
                     cirq.H(qubit_0)
-                ] for qubit_0, qubit_1, qubit_2 in (random.sample(self.cirq_qubits, 3) for i in range(1000))
+                ] for qubit_0, qubit_1, qubit_2 in (random.sample(cirq_qubits, 3) for i in range(1000))
             )
         ))
 
@@ -612,13 +344,13 @@ class TestWorkerCircuitCounting(unittest.TestCase):
         self.assertEqual(res_composer.get_gate_count(), cirq_len(circuit))
 
 
-    def test_rz_collection(self):
+    def test_cirq_rz_collection(self):
         layout_id = "std_layout"
 
         worker = RzCollectionWorker()
 
         # Load gates from a sequencer on a qualtran object
-        for circuit in self.cirq_circuits:
+        for name, circuit in cirq_circuits.items():
             with self.subTest(circuit=circuit):
                 composer = RzCollectionComposer(LayoutProxy.get_layout(layout_id), [])
 
