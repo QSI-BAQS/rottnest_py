@@ -23,8 +23,6 @@ from rottnest.compute_units.layout_proxy import LayoutProxy
 from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
 from rottnest.input_parsers.interrupt import INTERRUPT
 
-from rottnest.process_pool.standalone import process_elem_cache, process_elem_obj
-
 from rottnest.input_parsers.rz_tag_tracker import RzTagTracker
 
 from rottnest.rz_collector.rz_collection_worker import RzCollectionWorker
@@ -33,73 +31,15 @@ from rottnest.rz_collector.rz_collection_composer import RzCollectionComposer, R
 # --[ Testing Utilities ]---
 from functools import reduce
 
-from collections import Counter
-
 from utils.arch_factory import build_arch, build_worker, build_designer, build_composer
+
+from utils.quantum_lib_utils import cirq_len, qualtran_len, cirq_n_rz
 
 from test_data.test_circuits import cirq_circuits, cirq_qubits, qualtran_circuits
 
 # seed for testcases featuring randomisation
 # if None, uses system time
 RAND_SEED = None
-
-# --[ Internal Utils ]--
-def cirq_len(circuit):
-    '''
-        Determine the correct length for a given cirq circuit
-        (accounting for internal wrapper sizes)
-    '''
-    lengths = {
-        cirq.Rx: 3,
-        cirq.Ry: 5
-    }
-
-    res = 0
-    for moment in circuit.moments:
-        for operation in moment:
-            for t, v in lengths.items():
-                if isinstance(operation.gate, t):
-                    res += v
-                    break
-            else:
-                res += 1
-
-    return res
-
-
-def qualtran_len(bloq):
-    '''
-        Determine the correct length for a given qualtran circuit
-        (accounting for internal wrapper sizes)
-    '''
-    lengths = {
-        qual_gates.Rx: 3,
-        qual_gates.Ry: 5
-    }
-
-    res = 0
-    for k, v in bloq.bloq_counts().items():
-        for t, mult in lengths.items():
-            if isinstance(k, t):
-                res += v * mult
-                break
-        else:
-            res += v
-
-    return res
-
-
-def cirq_n_rz(circuit):
-    res = Counter()
-    for moment in circuit.moments:
-        for operation in moment:
-            if (isinstance(operation.gate, (cirq.Rz, cirq.Ry, cirq.Rx)) or
-                (isinstance(operation.gate, cirq.ZPowGate) and operation.gate.exponent == 0.25)):
-                # NOTE : exponent 0.25 for a ZPow is a T (which maps to rz internally)
-                res[operation.gate.exponent] += 1
-
-    return res
-
 
 
 class TestWorkerCircuitCounting(unittest.TestCase):
