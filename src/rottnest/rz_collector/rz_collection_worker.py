@@ -18,6 +18,16 @@ class RzCollectionWorker(RottnestWorker):
         '''
         return self.execute_compute_unit(compute_unit)
 
+    def execute_graph_state(
+            self,
+            unit_id: int,
+            layout_id: int,
+            widget_json: dict,
+            rz_tag_tracker_dict: dict
+        ):
+        return NotImplemented
+        # TODO : Is it possible to map widget (JSON) back to gates?
+
     def execute_compute_unit(
             self,
             compute_unit: "ComputeUnit"
@@ -26,9 +36,11 @@ class RzCollectionWorker(RottnestWorker):
             For an rz collector, execution is just counting rz by tag
         '''
         rz_counter = Counter()
+        rz_tracker = compute_unit.extract_rz_tracker()
         for seq in compute_unit.sequences:
             for op in seq:
                 if op.is_rz():
-                    rz_counter[op.rz.tag] += 1
+                    # Map tag back to actual angle
+                    rz_counter[rz_tracker[op.rz.tag]] += 1
 
         return { "rz_counts": rz_counter }

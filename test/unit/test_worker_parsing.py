@@ -641,13 +641,12 @@ class TestWorkerCircuitCounting(unittest.TestCase):
                         # worker
                         res = worker.execute_compute_unit(obj)
                         res_composer += composer.compose_result(obj.unit_id, res)
-                        rz_tracker = obj.extract_rz_tracker()
 
                 validation_count = cirq_n_rz(circuit)
-                for tag, count in res_composer._obj["rz_counts"].items():
+                for angle, count in res_composer._obj["rz_counts"].items():
                     self.assertEqual(
                         count,
-                        validation_count[rz_tracker[tag]]
+                        validation_count[angle]
                     )
 
 
