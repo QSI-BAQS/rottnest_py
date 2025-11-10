@@ -28,6 +28,13 @@ class RzCollectionResultsComposer(rottnest_composer.ResultsComposer):
 
         return self
 
+    # TODO : Non-dummy value?
+    def get_tocks(self):
+        return 0
+
+    def serialise(self):
+        return f'{{"rz_counts": {dict(self._obj["rz_counts"])} }}'
+
 
 class RzCollectionComposer(rottnest_composer.RottnestComposer):
     @staticmethod
