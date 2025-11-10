@@ -35,9 +35,7 @@ from rottnest.rz_collector.rz_collection_composer import RzCollectionComposer, R
 from functools import reduce
 
 from utils.arch_factory import build_arch, build_worker, build_designer, build_composer
-
 from utils.quantum_lib_utils import cirq_len, qualtran_len, cirq_n_rz
-
 from test_data.test_circuits import cirq_circuits, cirq_qubits, qualtran_circuits
 
 # seed for testcases featuring randomisation
@@ -305,8 +303,6 @@ class TestWorkerRzCollection(unittest.TestCase):
                 it = seq.sequence_pyliqtr(parser)
 
                 res_composer = composer.results_composer_constructor()()
-
-                rz_tracker = None
 
                 for obj in it:
                     if obj != INTERRUPT:
