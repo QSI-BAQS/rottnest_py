@@ -85,8 +85,15 @@ class Sequencer():
                         continue
                     # The sequence is NON_CACHING, and we have at least one sequence in the
                     # compute unit - this means we need to provide that compute unit
-                    elif len(compute_unit.sequences) > 0:
+                    if len(compute_unit.sequences) > 0:
                         yield_unit = True
+                        # Void the op_seq so we don't append it while falling thru
+                        # to yield the current unit
+                        op_seq = None
+                    # We don't have to yield current, and this is an interrupt (not to be
+                    # added to a unit)
+                    else:
+                        continue
                 else:
                     # If we got given a short sequence, pack it into the current
                     # sequence and yield it
