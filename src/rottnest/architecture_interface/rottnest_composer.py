@@ -74,11 +74,28 @@ class RottnestComposer(abc.ABC):
             )
         ]
 
-        if len(RottnestComposer.result_cache) == 0:
-            RottnestComposer.result_cache[RottnestComposer.__START] = self.stack_frames[0]
+        # TODO : This may be a problem if we ever have composers in parallel
+        # (we hopefully shouldn't)
+        RottnestComposer.result_cache[RottnestComposer.__START] = self.stack_frames[0]
 
         # Maps active ids to stack frames
         self.active_compute_units = {}
+
+
+    def reset_result(self):
+        '''
+            Resets the current result from;
+                - The top of the stack (replaced with a fresh stack frame)
+                - The start symbol (replaced with the above fresh stack frame)
+            This allows safe composer reuse with full cache (minus result entry)
+        '''
+        self.stack_frames[0] = self.StackFrame(
+            RottnestComposer.__START,
+            self.ResultsComposer,
+            qubit_map={}
+        )
+
+        RottnestComposer.result_cache[RottnestComposer.__START] = self.stack_frames[0]
 
 
     def submit(self, compute_unit):
@@ -129,8 +146,7 @@ class RottnestComposer(abc.ABC):
         self.stack_frames.append(stack_frame)
 
         # Add it to the cache
-        self.result_cache[cache_obj.cache_hash()] =  stack_frame
-
+        RottnestComposer.result_cache[cache_obj.cache_hash()] = stack_frame
 
     def cache_entry_end(self, cache_obj):
         '''
@@ -148,15 +164,18 @@ class RottnestComposer(abc.ABC):
         # Remove frame from stack
         old_frame = self.stack_frames.pop()
 
+        old_frame.last_submitted()
+
         # Compose into caller
         self.stack_frames[-1].compose_stack_frames(old_frame)
+
 
     def get_result(self):
         '''
             Returns result
             This just pulls the top level stack frame
         '''
-        return self.result_cache[RottnestComposer.__START].get_result()
+        return RottnestComposer.result_cache[RottnestComposer.__START].get_result()
 
     def get_next_layout(self) -> int | object:
         '''
@@ -212,37 +231,11 @@ class RottnestComposer(abc.ABC):
             Requests an element from the cache
             Returns true if success, false if blocking on previously submitted compute units
         '''
-
-        if not self.result_cache[cache_obj.cache_hash()].complete():
+        if not RottnestComposer.result_cache[cache_obj.cache_hash()].complete():
             return False
 
-        result = self.compute_unit_result_cache[cache_hash]
-
-        #output = deepcopy(self.compute_unit_result_cache[cache_hash])
-
-        #duration = output.n_tocks()
-
-        #output['cache_hash_hex'] = cache_hash.hex()
-        ## print("output:", output, self.compute_unit_counts, self.compute_unit_totals)
-        #self.manager_completion_queue.put(output)
-
-        #tock_dict = output.get('tocks', {})
-        #np_dur = tock_dict.get('bell', 0) + tock_dict.get('t_schedule', 0) + tock_dict.get('bell2', 0)
-        #if 'volumes' not in output:
-        #    output['volumes'] = {}
-
-        #old_volume = output['volumes'].get('NP_VOLUME', 0)
-        #output['volumes']['NP_VOLUME'] = old_volume + np_qubits * np_dur
-
-        #for i,stack_hash in enumerate(reversed(self.cache_hash_stack)):
-        #    iadd_result_dicts(
-        #        self.compute_unit_result_cache[stack_hash], output
-        #    )
-        #    output['volumes']['NP_VOLUME'] += self.np_stack[-i-1] * np_dur
-
-        #output['volumes']['NP_VOLUME'] = old_volume
-
-        # print(sum(self.np_stack, start=np_qubits), self.compute_unit_result_cache[None]['volumes']['NP_VOLUME'], self.compute_unit_result_cache[None]['tocks']['total'])
+        # Compose the cache request result into the active frame
+        self.stack_frames[-1].compose_stack_frames(RottnestComposer.result_cache[cache_obj.cache_hash()])
 
         return True
 
@@ -339,7 +332,7 @@ class ComposerStackFrame:
             # submitted but recv == submitted
             # It also blocks recursion
             return False
-        if self.submitted == self.received:
+        if self.n_submitted == self.n_received:
             self.compilation_complete = True
         return True
 
