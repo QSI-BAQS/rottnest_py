@@ -61,16 +61,18 @@ def cirq_n_rz(circuit):
                 res[operation.gate.exponent] += 1
             else:
                 # This is a semi-ok check to see if the operation in question
-                # is a custom (ie. composed) gate vs an internal
+                # is a composed (ie. not primitive) gate
                 if hasattr(operation, "_decompose_"):
                     decomp = cirq.decompose(operation)
-                    if len(decomp) > 1:
-                        res += cirq_n_rz(cirq.Circuit(*decomp))
+                    # |decomp| = 1 could imply primitive, as all primitives decompose to themselves
+                    if len(decomp) == 1 and decomp[0].gate is operation.gate:
+                        continue
+                    res += cirq_n_rz(cirq.Circuit(*decomp))
 
     return res
 
 
-def cirq_circuit_to_gate(circuit, n_qubits):
+def cirq_circuit_to_gate(circuit, n_qubits, name: str = 'CircuitAsGate'):
     '''
         Converts a circuit into an equivalent gate class for composition
     '''
@@ -98,4 +100,5 @@ def cirq_circuit_to_gate(circuit, n_qubits):
         def _circuit_diagram_info_(self, args):
             return ["CircuitGate"] * self.num_qubits()
 
+    CircuitAsGate.__name__ = name
     return CircuitAsGate
