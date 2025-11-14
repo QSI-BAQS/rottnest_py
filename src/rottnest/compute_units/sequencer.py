@@ -21,7 +21,7 @@ class Sequencer():
         self.priority_shim = []
 
         # TODO: Update the length dynamically  
-        self.sequence_length = self._architecture_proxies[0].mem_bound()
+        self.sequence_length = self._architecture_proxies[0].mem_bound() // 3
 
         if global_context is None:
             global_context = QubitLabelTracker()
@@ -74,8 +74,11 @@ class Sequencer():
 
                 curr_memory = compute_unit.n_rz_operations + 2 * len(cirq_parser)
                 # This doesn't track additional qubit allocations
-                if curr_memory + op_seq.n_rz_operations > compute_unit.memory_bound * compactness:
-                    compute_unit.append(op_seq)
+
+                if ((cirq_parser.sequence_length == 0) 
+                                    or (curr_memory + 3 * op_seq.n_rz_operations + len(op_seq) > 0.8 * compute_unit.memory_bound - 5)):
+
+
 
                     local_context = cirq_parser.extract_context()
                     compute_unit.add_context(*local_context)
@@ -99,7 +102,7 @@ class Sequencer():
                
                 # Reduce sequence length 
                 # This guarantees that hitting the compactness threshold doesn't run over the memory bound 
-                cirq_parser.sequence_length = int(compactness * (compute_unit.memory_bound - (op_seq.n_rz_operations) + 2 * len(cirq_parser))) 
+                cirq_parser.sequence_length = (self.sequence_length * 3 - curr_memory) // 3 
 
         if len(compute_unit) > 0:
             local_context = cirq_parser.extract_context()
