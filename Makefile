@@ -1,10 +1,16 @@
 GHC = ghc
 
 SRCDIR := src/rottnest/gridsynth
+SRCDIRb := src/rottnest/rz_decomposer
+
 
 SRCFILES := $(wildcard ${SRCDIR}/*.hs)
+
 OBJFILES := $(patsubst ${SRCDIR}/%.hs, ${SRCDIR}/%, ${SRCFILES})
+OBJFILESb := $(patsubst ${SRCDIR}/%.hs, ${SRCDIRb}/%, ${SRCFILES})
+
 HIFILES := $(patsubst ${SRCDIR}/%.hs, ${SRCDIR}/%.hi, ${SRCFILES})
+
 EXES := $(patsubst ${SRCDIR}/%.hs, ${SRCDIR}/%, ${SRCFILES})
 
 
@@ -16,12 +22,16 @@ package: gridsynth
 	pip install -r requirements.txt
 	pip install -e .
 
-gridsynth:  ${OBJFILES}
+gridsynth:  ${OBJFILES} ${OBJFILESb}
 
 build: package
 
 ${SRCDIR}/% : ${SRCDIR}/%.hs
 	$(GHC) -package random -package newsynth $^
+
+${SRCDIRb}/% : ${SRCDIRb}/%.hs
+	$(GHC) -package random -package newsynth $^
+
 
 test:
 	pytest
