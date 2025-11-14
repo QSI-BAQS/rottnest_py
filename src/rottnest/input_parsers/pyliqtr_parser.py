@@ -21,6 +21,15 @@ import qualtran.bloqs
 import qualtran.bloqs.mcmt
 import cirq
 
+# TODO
+# This function breaks on particular matplotlib versions with an unimplemented exception 
+def _blank(*args, **kwargs):
+    return ''
+import matplotlib as mpl 
+mpl.get_backend = _blank
+#plt.switch_backend = _blank
+#plot_helpers.plot_func_error = None
+
 from pyLIQTR.qubitization import qsvt, qubitized_gates
 from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU 
 from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
