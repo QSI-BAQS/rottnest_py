@@ -4,9 +4,8 @@
     to the controller's caller methods
 '''
 
-from rottnest.plugins import architectures as singleton
+from rottnest.plugins import architectures as singleton 
 from rottnest.server.responder import Result
-
 
 def get_architectures() -> list:
     '''
