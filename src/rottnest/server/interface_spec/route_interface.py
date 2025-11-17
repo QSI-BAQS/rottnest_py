@@ -1,7 +1,12 @@
-from .interface_exceptions import DuplicateRouteException
 '''
     Routes metaclass
 '''
+from typing import Callable
+
+from .interface_spec import ROTTNEST_PREFIX
+from .interface_exceptions import DuplicateRouteException
+
+
 class Routes(type):
     '''
         Singleton route collector
@@ -11,12 +16,18 @@ class Routes(type):
 
     _ROUTES = '_routes'
     _routes = {}
+    _prefixed_routes = {}
+
+    _rottnest_prefix = ROTTNEST_PREFIX 
 
     @classmethod
-    def add_route(cls, route, fn):
+    def add_route(cls, module_prefix, route, fn):
         '''
             Adds unique routes
         '''
+        # Prepend module
+        route = f"{cls._rottnest_prefix}.{module_prefix}.{route}"
+
         if cls._routes.get(route, None) is not None: 
             raise DuplicateRouteException(interface=cls, route=route)
         cls._routes[route] = fn
@@ -58,14 +69,14 @@ class RouteInterface(metaclass=Routes):
         '''
         return cls._routes.items()
 
-    def bind_route(route):
+    def bind_route(prefix: str, route: str) -> Callable:
         '''
             Via the magic of metaclassing the 
             target route object is uniqe for each
             class instance
         '''
         def _wrap(fn): 
-            Routes.add_route(route, fn)
+            Routes.add_route(prefix, route, fn)
             return fn 
         return _wrap
 

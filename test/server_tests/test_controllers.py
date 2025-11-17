@@ -61,3 +61,9 @@ class ControllerRouteTests(unittest.TestCase):
         from rottnest.server.controller.layout import LayoutInterface as interface
         self.assert_binds(spec, interface)
    
+if __name__ == '__main__':
+    c = ControllerRouteTests()
+    c.test_callgraph()
+    c.test_architecture()
+    c.test_executables()
+    c.test_layouts()

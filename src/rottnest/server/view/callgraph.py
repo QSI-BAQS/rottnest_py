@@ -1,5 +1,5 @@
 """
-    View generation elements for the callgraph
+    View generation elements for the
 """
 
 NODE_NAME = "name"
@@ -11,22 +11,21 @@ NODE_EXPANDS = "expands"
 NODE_ROOT = "root_index"
 NODE_GRAPH = "graph"
 
-
 def callgraph_node(
-    name: str, 
+    name: str,
     description: str,
     children: list,
     handle_id: int,
     expands: bool
     ):
     """
-        callgraph_node
-        Builds a node for the callgraph     
+
+        Builds a node for the callgraph
     """
     return {
-            NODE_NAME: node.name, 
-            NODE_DESCRIPTION: node.description, 
-            NODE_CHILDREN: [],
+            NODE_NAME: name,
+            NODE_DESCRIPTION: description,
+            NODE_CHILDREN: children,
             NODE_ID: handle_id,
             NODE_EXPANDS: expands,
             }
@@ -36,8 +35,8 @@ def callgraph_segment(
     graph: list
     ):
     """
-callgraph_segment
-Constructs a view for a list of graph nodes 
+
+Constructs a view for a list of graph nodes
     """
     return {
             NODE_ROOT : handle_id,

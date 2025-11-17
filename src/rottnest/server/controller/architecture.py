@@ -4,8 +4,9 @@
 
 from rottnest.server.interface_spec.route_interface import RouteInterface
 from rottnest.server.interface_spec.specs.architecture_spec import (
-    GET_ARCHITECTURE_LIST, GET_ARCHITECTURE,
-    SET_ARCHITECTURE, GET_ARCHITECTURE_CONFIG,
+    MODULE_PREFIX,
+    GET_ARCHITECTURE_LIST, GET_CURRENT_ARCHITECTURE,
+    SET_CURRENT_ARCHITECTURE, GET_ARCHITECTURE_CONFIG,
     SET_ARCHITECTURE_CONFIG)
 
 from rottnest.server.model import plugin_architecture
@@ -20,8 +21,9 @@ class ArchitectureInterface(RouteInterface):
 
     ARCHITECTURE_KEY = 'architecture_key'
     ARCHITECTURE_CONFIG = 'architecture_config'
+    _module_prefix = MODULE_PREFIX
     
-    @RouteInterface.bind_route(GET_ARCHITECTURE_LIST)
+    @RouteInterface.bind_route(MODULE_PREFIX, GET_ARCHITECTURE_LIST)
     @classmethod
     def get_architecture_list(cls, message, **kwargs) -> Result:
         '''
@@ -29,14 +31,14 @@ class ArchitectureInterface(RouteInterface):
         '''
         return model.get_architecture_list()
 
-    @RouteInterface.bind_route(GET_CURRENT_ARCHITECTURE)
+    @RouteInterface.bind_route(MODULE_PREFIX, GET_CURRENT_ARCHITECTURE)
     @classmethod
     def get_current_architecture(cls, message, **kwargs) -> Result:
         '''
            Gets the current architecture 
         '''
 
-    @RouteInterface.bind_route(SET_CURRENT_ARCHITECTURE)
+    @RouteInterface.bind_route(MODULE_PREFIX, SET_CURRENT_ARCHITECTURE)
     @classmethod
     def set_architecture(cls, message, **kwargs) -> Result:
         '''
@@ -48,7 +50,7 @@ class ArchitectureInterface(RouteInterface):
             model.set_current_executable
         )
 
-    @RouteInterface.bind_route(GET_ARCHITECTURE_CONFIG)
+    @RouteInterface.bind_route(MODULE_PREFIX, GET_ARCHITECTURE_CONFIG)
     @classmethod
     def get_architecture_config(cls, message, **kwargs) -> Result:
         '''
@@ -56,7 +58,7 @@ class ArchitectureInterface(RouteInterface):
         '''
         return model.get_current_config()
 
-    @RouteInterface.bind_route(SET_ARCHITECTURE_CONFIG)
+    @RouteInterface.bind_route(MODULE_PREFIX, SET_ARCHITECTURE_CONFIG)
     @classmethod
     def set_architecture_config(cls, message, **kwargs) -> Result:
         '''

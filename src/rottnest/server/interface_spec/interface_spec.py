@@ -11,6 +11,9 @@ from .interface_exceptions import (
     DuplicateRouteException
 )
 
+# Rottnest route prefix
+ROTTNEST_PREFIX = 'rottnest'
+
 class RouteInterfaceSpecification:
     '''
         Specifies a set of route route that must be implemented 
@@ -20,12 +23,15 @@ class RouteInterfaceSpecification:
     _ROUTE_NAME = '_routes'
 
 
-    def __init__(self, responder, *cons, routes=None):
+    def __init__(self, responder, *cons, routes=None, module_name=''):
         '''
             Constructor
             :: app :: Application object to bind routes to 
             :: *cons :: Objects that implement the interface 
         '''
+
+        self._module_name = module_name
+
         # Default to kwarg
         # Second to test for a _routes variable
         if (
