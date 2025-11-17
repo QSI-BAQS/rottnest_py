@@ -1,6 +1,6 @@
 import unittest
 
-from rottnest.server.interface_spec.interface_spec import RouteInterfaceSpecification
+from rottnest.server.interface_spec.interface_spec import RouteInterfaceSpecification, ROTTNEST_PREFIX
 from rottnest.server.interface_spec.route_interface import RouteInterface 
 
 from rottnest.server.interface_spec import interface_exceptions 
@@ -25,7 +25,9 @@ class InterfaceSpecTests(unittest.TestCase):
     def generate_specification(self, *routes):
         class TestSpec(RouteInterfaceSpecification):
             ...
-        TestSpec._routes = routes
+        _routes = [f"{ROTTNEST_PREFIX}.{ROTTNEST_PREFIX}.{route}" for route in routes]
+
+        TestSpec._routes = _routes
         return TestSpec
 
 
@@ -37,7 +39,7 @@ class InterfaceSpecTests(unittest.TestCase):
  
         class TestInterface(RouteInterface): 
 
-            @RouteInterface.bind_route('test')
+            @RouteInterface.bind_route(ROTTNEST_PREFIX, 'test')
             @classmethod
             def test(cls, *args, **kwargs):
                     ...
@@ -52,14 +54,14 @@ class InterfaceSpecTests(unittest.TestCase):
  
         class TestInterface(RouteInterface): 
 
-            @RouteInterface.bind_route('test')
+            @RouteInterface.bind_route(ROTTNEST_PREFIX, 'test')
             @classmethod
             def test(cls, *args, **kwargs):
                     ...
 
         class TestInterface2(RouteInterface): 
 
-            @RouteInterface.bind_route('test_2')
+            @RouteInterface.bind_route(ROTTNEST_PREFIX, 'test_2')
             @classmethod
             def test(cls, *args, **kwargs):
                     ...
@@ -105,11 +107,11 @@ class InterfaceSpecTests(unittest.TestCase):
 
         try:
             class TestInterface(RouteInterface): 
-                @RouteInterface.bind_route('test')
+                @RouteInterface.bind_route(ROTTNEST_PREFIX, 'test')
                 @classmethod
                 def test(cls, *args, **kwargs):
                         ...
-                @RouteInterface.bind_route('test')
+                @RouteInterface.bind_route(ROTTNEST_PREFIX, 'test')
                 @classmethod
                 def test_2(cls, *args, **kwargs):
                         ...
@@ -126,14 +128,14 @@ class InterfaceSpecTests(unittest.TestCase):
         spec = self.generate_specification('test')
 
         class TestInterface(RouteInterface): 
-            @RouteInterface.bind_route('test')
+            @RouteInterface.bind_route(ROTTNEST_PREFIX, 'test')
             @classmethod
             def test(cls, *args, **kwargs):
                 ...
 
         class TestInterface2(RouteInterface): 
 
-            @RouteInterface.bind_route('test')
+            @RouteInterface.bind_route(ROTTNEST_PREFIX, 'test')
             @classmethod
             def test_2(cls, *args, **kwargs):
                     ...
@@ -149,12 +151,12 @@ class InterfaceSpecTests(unittest.TestCase):
         spec = self.generate_specification('test')
 
         class TestInterface(RouteInterface): 
-            @RouteInterface.bind_route('test')
+            @RouteInterface.bind_route(ROTTNEST_PREFIX, 'test')
             @classmethod
             def test(cls, *args, **kwargs):
                 ...
 
-            @RouteInterface.bind_route('test_2')
+            @RouteInterface.bind_route(ROTTNEST_PREFIX, 'test_2')
             @classmethod
             def test_2(cls, *args, **kwargs):
                 ...
