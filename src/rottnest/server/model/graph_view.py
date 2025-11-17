@@ -1,10 +1,6 @@
-print("TST 1c")
 from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
 
-print("TST 2c")
-
 from rottnest.executables import current_executable
-print("TST 3c")
 
 
 from rottnest.input_parsers.interrupt import INTERRUPT, CACHED

@@ -7,7 +7,6 @@ from rottnest.process_pool.process_pool import ComputeUnitExecutorPool
 
 
 
-
 # TODO: May want to get a shared unit instead of instantiating it
 # here
 
