@@ -46,7 +46,7 @@ class ArchitectureInterface(RouteInterface):
         '''
         return cls.load_and_model_call(
             message,
-            cls.EXECUTABLE_KEY,
+            cls.ARCHITECTURE_KEY,
             model.set_current_executable
         )
 
@@ -66,6 +66,6 @@ class ArchitectureInterface(RouteInterface):
         '''
         return cls.load_and_model_call(
             message,
-            cls.EXECUTABLE_CONFIG,
+            cls.ARCHITECTURE_CONFIG,
             model.set_current_config            
         )
