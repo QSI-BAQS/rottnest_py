@@ -4,7 +4,8 @@
     to the controller's caller methods
 '''
 
-from rottnest.plugins import executables as singleton 
+from rottnest.plugins import executables as singleton
+from rottnest.server.responder import Result
 
 def get_executables() -> Result:
     '''
