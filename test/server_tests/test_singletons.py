@@ -40,7 +40,7 @@ class ArchitectureSingletonTests(unittest.TestCase):
             architecture.set_current_architecture(test_arch)
             current = architecture.get_current_architecture()
             
-            self.assertEqual(current, test_arch)
+            self.assertEqual(current.get_name(), test_arch)
         else:
             self.skipTest("No architectures loaded")
     
@@ -131,9 +131,9 @@ class ExecutableSingletonTests(unittest.TestCase):
         config2 = executable.get_current_config()
         config3 = executable.get_current_config()
         
-        self.assertEqual(config1, config2)
-        self.assertEqual(config2, config3)
-        self.assertEqual(config1["persist_test"], "yes")
+        self.assertEqual(config_1, config_2)
+        self.assertEqual(config_2, config_3)
+        self.assertEqual(config_1["persist_test"], "yes")
 
 
 class SingletonBehaviorTests(unittest.TestCase):
@@ -148,16 +148,18 @@ class SingletonBehaviorTests(unittest.TestCase):
             Verifies true singleton behavior: multiple imports should share
             the same underlying state (config)
         '''
-        from rottnest.server.model import executable as exe1
-        from rottnest.server.model import executable as exe2
+        from rottnest.server.model import executable as exe_1
+        from rottnest.server.model import executable as exe_2
         
         test_config = {"shared_test": "singleton_value"}
-        exe1.set_current_config(test_config)
+        exe_1.set_current_config(test_config)
         
-        result = exe2.get_current_config()
+        result = exe_2.get_current_config()
         
         self.assertEqual(result["shared_test"], "singleton_value")
 
-
 if __name__ == '__main__':
-    unittest.main()
+    arch_tests = ArchitectureSingletonTests() 
+    arch_tests.test_set_and_get_current_architecture()
+    exe_tests = ExecutableSingletonTests()
+    exe_tests.test_set_and_get_current_executable()

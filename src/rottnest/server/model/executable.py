@@ -22,12 +22,12 @@ def get_current_executable() -> Result:
     return singleton.get_current_executable()
 
 
-def set_current_executable(params: dict) -> Result:
+def set_current_executable(name: str) -> Result:
     '''
        Returns the currently loaded executable from the singleton
         instance
     '''
-    return singleton.get_current_executable(**params)
+    return singleton.set_current_executable(name)
 
 
 def get_current_config() -> Result:
