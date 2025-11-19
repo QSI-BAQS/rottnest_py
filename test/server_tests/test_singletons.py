@@ -91,7 +91,7 @@ class ExecutableSingletonTests(unittest.TestCase):
             executable.set_current_executable(test_exe)
             current = executable.get_current_executable()
             
-            self.assertEqual(current, test_exe)
+            self.assertEqual(current.get_name(), test_exe)
         else:
             self.skipTest("No executables loaded - no modules export 'rottnest_executables'")
     
@@ -127,9 +127,9 @@ class ExecutableSingletonTests(unittest.TestCase):
         
         executable.set_current_config(test_config)
         
-        config1 = executable.get_current_config()
-        config2 = executable.get_current_config()
-        config3 = executable.get_current_config()
+        config_1 = executable.get_current_config()
+        config_2 = executable.get_current_config()
+        config_3 = executable.get_current_config()
         
         self.assertEqual(config_1, config_2)
         self.assertEqual(config_2, config_3)
