@@ -1,15 +1,14 @@
 '''
-
-Model wrapper functions for the process pool
-
+    Model wrapper functions for the process pool
 '''
+
 from rottnest.process_pool.process_pool import ComputeUnit 
 
 def status_update(status, post_status):
     '''
         Status update decorator factory
     '''
-    def _wrap_fn(fn)
+    def _wrap_fn(fn):
         '''
             Decorator wrapper
         '''
@@ -18,7 +17,7 @@ def status_update(status, post_status):
                 Decorator resolver
             '''
             self.set_status(status)
-            result = fn(*args, **kwargs)
+            result = fn(self, *args, **kwargs)
             self.set_status(post_status)
             return result
         return _wrap 
@@ -31,6 +30,7 @@ class PoolStatus:
         Not quite an ENUM
     '''
     UNSTARTED = 'UNSTARTED'
+    STARTING = 'UNSTARTED'
     IDLE = 'IDLE'
     SYNCHRONISING = 'SYNCHRONISING'
     PREPROCESSING = 'PREPROCESSING'
@@ -125,10 +125,10 @@ class ModelProcessPool():
 # Singleton Hook functions
 ##
 
-process_pool = _ProcessPool()
+#process_pool = ModelProcessPool()
 
 def run_standalone():
-
-
+    pass
 
 def run_pool():
+    pass
