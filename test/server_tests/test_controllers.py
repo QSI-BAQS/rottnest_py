@@ -1,14 +1,12 @@
+'''
+    Tests for controllers and route hooks 
+'''
+
 import unittest
-
-from rottnest.server.interface_spec.interface_spec import RouteInterfaceSpecification
-from rottnest.server.interface_spec.route_interface import RouteInterface 
-
-from rottnest.server.interface_spec import interface_exceptions 
-
 
 class NonResponder:
     '''
-        Dummy class to not register or respond 
+        Dummy class to not register or respond
         Assertion logic is in the specification constructor
     '''
     @classmethod
@@ -16,18 +14,21 @@ class NonResponder:
         '''
         A non-register
         '''
-        return lambda x: x 
+        return lambda x: x
 
 
 class ControllerRouteTests(unittest.TestCase):
+    '''
+        Tests the controller and associated routes
+    '''
 
     @staticmethod
     def assert_binds(spec, interface):
         '''
-            Runs the constructor of the specification using the interface 
+            Runs the constructor of the specification using the interface
             Assertion statements are in the constructor
         '''
-        interface = spec(NonResponder, interface) 
+        interface = spec(NonResponder, interface)
 
     def test_callgraph(self):
         '''
@@ -60,7 +61,7 @@ class ControllerRouteTests(unittest.TestCase):
         from rottnest.server.interface_spec.specs.layout_spec import LayoutSpecification  as spec
         from rottnest.server.controller.layout import LayoutInterface as interface
         self.assert_binds(spec, interface)
-   
+
 if __name__ == '__main__':
     c = ControllerRouteTests()
     c.test_callgraph()

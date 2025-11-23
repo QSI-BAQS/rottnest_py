@@ -2,47 +2,75 @@
     Tests for the status update decorator
 '''
 import unittest
-from functools import partial
 
-from rottnest.server.model.process_pool import status_update, PoolStatus 
+from rottnest.server.model.process_pool import status_update, PoolStatus
 
 class StatusDecoratorTests(unittest.TestCase):
+    '''
+        Tests for the status update decorator
+    '''
 
     class STATUS_DECORATOR_TEST_EXCEPTION(Exception):
-        ...
+        '''
+            Exception class for hooking mid-test calls
+        '''
 
     def gen_class(self, decorator):
-
+        '''
+            Class factory with decorator hook
+        '''
         class StatusHolder:
+            '''
+                Duck-typed status proxy
+            '''
             def __init__(self):
-                self._status = PoolStatus.UNSTARTED 
+                '''
+                    Constructor
+                '''
+                self._status = PoolStatus.UNSTARTED
+
             def set_status(self, status):
+                '''
+                    Setter
+                '''
                 self._status = status
 
             def get_status(self):
+                '''
+                    Getter
+                '''
                 return self._status
 
             @decorator
             def hooked(self, *args, interrupt=False, **kwargs):
+                '''
+                    Hooking function
+                '''
                 if interrupt:
-                    raise StatusDecoratorTests.STATUS_DECORATOR_TEST_EXCEPTION 
-        
+                    raise StatusDecoratorTests.STATUS_DECORATOR_TEST_EXCEPTION
         return StatusHolder
 
     def test_prior(self):
-        def null_decorator(fn): 
+        '''
+            Test prior to hook
+        '''
+
+        def null_decorator(fn):
             return fn
 
-        cls = self.gen_class(null_decorator) 
+        cls = self.gen_class(null_decorator)
         obj = cls()
         assert obj.get_status() is PoolStatus.UNSTARTED
 
         obj.hooked()
         assert obj.get_status() is PoolStatus.UNSTARTED
-    
+
     def test_post(self):
+        '''
+            Test status after the function has completed
+        '''
         cls = self.gen_class(
-            status_update( 
+            status_update(
                 PoolStatus.STARTING,
                 PoolStatus.IDLE
             )
@@ -55,8 +83,12 @@ class StatusDecoratorTests(unittest.TestCase):
 
 
     def test_during(self):
+        '''
+            Test during hooked function execution
+        '''
+
         cls = self.gen_class(
-            status_update( 
+            status_update(
                 PoolStatus.STARTING,
                 PoolStatus.IDLE
             )
@@ -68,11 +100,9 @@ class StatusDecoratorTests(unittest.TestCase):
             obj.hooked(interrupt=True)
             assert False
         except StatusDecoratorTests.STATUS_DECORATOR_TEST_EXCEPTION:
-            pass 
+            pass
 
         assert obj.get_status() is PoolStatus.STARTING
-
-
 
 if __name__ == '__main__':
     unittest.main()
