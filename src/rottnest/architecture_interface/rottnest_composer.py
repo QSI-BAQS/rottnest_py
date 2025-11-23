@@ -1,7 +1,7 @@
 '''
     Rottnest Composer interface
 
-    This class handles program logic relating 
+    This class handles program logic relating
     to the composition of widgets
 
 '''
@@ -17,38 +17,40 @@ from rottnest.compute_units.layout_proxy import LayoutProxy
 
 class RottnestComposer(abc.ABC):
     '''
-        Handles composition of compilation units 
+        Handles composition of compilation units
     '''
 
     __START = object()
 
+    # Map of hashes to result objects
+    result_cache = dict()
+
     @staticmethod
     def results_composer_constructor() -> Type["ResultsComposer"]:
         '''
-            Dispatch method for modular hooking 
-            of constructors 
+            Dispatch method for modular hooking
+            of constructors
         '''
         return ResultsComposer
 
     @staticmethod
     def stack_frame_constructor() -> Type["ComposerStackFrame"]:
         '''
-            Dispatch method for modular hooking 
-            of constructors 
+            Dispatch method for modular hooking
+            of constructors
         '''
         return ComposerStackFrame
 
     @staticmethod
     def memory_manager_constructor() -> Type["MemoryManager"]:
         '''
-            Dispatch method for modular hooking 
+            Dispatch method for modular hooking
             of constructors
         '''
         return MemoryManager
 
 
     def __init__(self, layouts, qubits):
-
         # Tracks qubits irrespective of renaming
         self.qubit_map = {qubit:i for i, qubit in enumerate(qubits)}
 
@@ -63,20 +65,37 @@ class RottnestComposer(abc.ABC):
         self.layouts = list(map(LayoutProxy.add_layout, layouts))
 
         # Initial stack frames
-        # Top level frame has a cache hash of __START 
+        # Top level frame has a cache hash of __START
         self.stack_frames = [
             self.StackFrame(
-                RottnestComposer.__START, 
-                self.ResultsComposer, 
+                RottnestComposer.__START,
+                self.ResultsComposer,
                 qubit_map={}
             )
         ]
 
-        # Maps active ids to stack frames 
+        # TODO : This may be a problem if we ever have composers in parallel
+        # (we hopefully shouldn't)
+        RottnestComposer.result_cache[RottnestComposer.__START] = self.stack_frames[0]
+
+        # Maps active ids to stack frames
         self.active_compute_units = {}
 
-        # Map of hashes to result objects
-        self.result_cache = {RottnestComposer.__START: self.stack_frames[0]}
+
+    def reset_result(self):
+        '''
+            Resets the current result from;
+                - The top of the stack (replaced with a fresh stack frame)
+                - The start symbol (replaced with the above fresh stack frame)
+            This allows safe composer reuse with full cache (minus result entry)
+        '''
+        self.stack_frames[0] = self.StackFrame(
+            RottnestComposer.__START,
+            self.ResultsComposer,
+            qubit_map={}
+        )
+
+        RottnestComposer.result_cache[RottnestComposer.__START] = self.stack_frames[0]
 
 
     def submit(self, compute_unit):
@@ -92,19 +111,19 @@ class RottnestComposer(abc.ABC):
         '''
         result = self.ResultsComposer(result)
         stack_frame = self.unhook_compute_unit(compute_unit_id)
-        stack_frame.receive(compute_unit_id, result) 
+        stack_frame.receive(compute_unit_id, result)
 
     def cache_entry_start(self, cache_obj):
         '''
             Creates a new stack frame
         '''
-       
-        # Store all qubits to create clean cache context 
+
+        # Store all qubits to create clean cache context
         self.memory_manager.store_all()
 
         operation = cache_obj.op
 
-        # Get qubits that are pulled 
+        # Get qubits that are pulled
         input_qubits = operation.qubits
 
         # Example only
@@ -118,23 +137,22 @@ class RottnestComposer(abc.ABC):
             self.ResultsComposer,
             qubit_map=qubit_map
         )
-   
+
         # Prev Frame
         prev_frame = self.stack_frames[-1]
-        prev_frame.non_participatory_qubits += cache_obj.non_participatory_qubits 
-    
-        # Stack frame goes on the bottom 
+        prev_frame.non_participatory_qubits += cache_obj.non_participatory_qubits
+
+        # Stack frame goes on the bottom
         self.stack_frames.append(stack_frame)
 
         # Add it to the cache
-        self.result_cache[cache_obj.cache_hash()] =  stack_frame
-        
+        RottnestComposer.result_cache[cache_obj.cache_hash()] = stack_frame
 
     def cache_entry_end(self, cache_obj):
         '''
             Sequencer should provide asser that this function is not
-            called unless all compute units for the stack frame are 
-            compiled 
+            called unless all compute units for the stack frame are
+            compiled
         '''
         if self.stack_frames[-1].cache_hash() != cache_obj.cache_hash():
             raise Exception(
@@ -146,39 +164,42 @@ class RottnestComposer(abc.ABC):
         # Remove frame from stack
         old_frame = self.stack_frames.pop()
 
+        old_frame.last_submitted()
+
         # Compose into caller
         self.stack_frames[-1].compose_stack_frames(old_frame)
+
 
     def get_result(self):
         '''
             Returns result
             This just pulls the top level stack frame
         '''
-        return self.result_cache[RottnestComposer.__START].get_result()
+        return RottnestComposer.result_cache[RottnestComposer.__START].get_result()
 
     def get_next_layout(self) -> int | object:
         '''
-            Gets the id of the next layout to use 
+            Gets the id of the next layout to use
             Allows for inhomogeneous architectures
             May also return a WAIT signal, indicating that
-            there are currently no active nodes  
+            there are currently no active nodes
             WAIT is currently not implemented
-            
+
             Default implementation is to return the first layout
         '''
         return LayoutProxy(self.layouts[0])
 
-    def layout_sequence_generator(self) -> int | object: 
+    def layout_sequence_generator(self) -> int | object:
         '''
             Generator over get next layout
             Used by the sequencer
         '''
         while None != (layout := self.get_next_layout()):
-            yield layout 
-       
+            yield layout
+
     def hook_compute_unit(self, compute_unit):
         '''
-            Sets up tracking of active compute units 
+            Sets up tracking of active compute units
             This allocates the result to the correct stack frame
         '''
         current_stack_frame = self.stack_frames[-1]
@@ -195,12 +216,12 @@ class RottnestComposer(abc.ABC):
         '''
             Composes results and tracks unit ids
             Default implementation reduces
-            More complex implementations may do active management of these IDs and layouts 
+            More complex implementations may do active management of these IDs and layouts
         '''
         #stack_frame = self.active_compute_units[unit_id]
         result = self.results_composer_constructor()(result)
 
-        # Pass to both the stack frame, and the global total 
+        # Pass to both the stack frame, and the global total
         #self.stack_frames[stack_frame].compose_result(result)
         #self.active_compute_units.pop(unit_id)
         return result
@@ -210,37 +231,11 @@ class RottnestComposer(abc.ABC):
             Requests an element from the cache
             Returns true if success, false if blocking on previously submitted compute units
         '''
-
-        if not self.result_cache[cache_obj.cache_hash()].complete():
+        if not RottnestComposer.result_cache[cache_obj.cache_hash()].complete():
             return False
-        
-        result = self.compute_unit_result_cache[cache_hash]       
- 
-        #output = deepcopy(self.compute_unit_result_cache[cache_hash])
 
-        #duration = output.n_tocks()
-
-        #output['cache_hash_hex'] = cache_hash.hex()
-        ## print("output:", output, self.compute_unit_counts, self.compute_unit_totals)
-        #self.manager_completion_queue.put(output)
-
-        #tock_dict = output.get('tocks', {})
-        #np_dur = tock_dict.get('bell', 0) + tock_dict.get('t_schedule', 0) + tock_dict.get('bell2', 0)
-        #if 'volumes' not in output:
-        #    output['volumes'] = {}
-
-        #old_volume = output['volumes'].get('NP_VOLUME', 0) 
-        #output['volumes']['NP_VOLUME'] = old_volume + np_qubits * np_dur
-
-        #for i,stack_hash in enumerate(reversed(self.cache_hash_stack)):
-        #    iadd_result_dicts(
-        #        self.compute_unit_result_cache[stack_hash], output
-        #    )
-        #    output['volumes']['NP_VOLUME'] += self.np_stack[-i-1] * np_dur
-
-        #output['volumes']['NP_VOLUME'] = old_volume
-
-        # print(sum(self.np_stack, start=np_qubits), self.compute_unit_result_cache[None]['volumes']['NP_VOLUME'], self.compute_unit_result_cache[None]['tocks']['total'])
+        # Compose the cache request result into the active frame
+        self.stack_frames[-1].compose_stack_frames(RottnestComposer.result_cache[cache_obj.cache_hash()])
 
         return True
 
@@ -250,15 +245,15 @@ class ComposerStackFrame:
         Stack frame instance for the composer
     '''
 
-    def __init__(self, 
+    def __init__(self,
             rottnest_hash,
             results_composer_constructor: Type,
             qubit_map: dict,
-            
+
         ):
 
         # Tracks current qubits
-        self.qubit_map = qubit_map 
+        self.qubit_map = qubit_map
 
         self.rottnest_hash = rottnest_hash
         self.ResultsComposer = results_composer_constructor
@@ -267,20 +262,20 @@ class ComposerStackFrame:
 
         self.all_submitted = False
         self.compilation_complete = False
-  
-        self.n_submitted = 0 
+
+        self.n_submitted = 0
         self.n_received = 0
 
-        # Number of qubits 
-        self.n_qubits_in_frame = len(qubit_map) 
+        # Number of qubits
+        self.n_qubits_in_frame = len(qubit_map)
 
-        # Qubits that are not passed to a called function 
+        # Qubits that are not passed to a called function
         self.non_participatory_qubits = 0
         self.idle_volume = 0
 
     def cache_hash(self):
         return self.rottnest_hash
-    
+
     def get_result(self):
         return self.result
 
@@ -296,14 +291,14 @@ class ComposerStackFrame:
         '''
             Adds idle volume to this stack frame
         '''
-        self.idle_volume = n_cycles * self.non_participatory_qubits   
+        self.idle_volume = n_cycles * self.non_participatory_qubits
 
     def get_tocks(self):
         '''
             Gets the runtime of this stack frame
         '''
         return self.get_result().get_tocks()
- 
+
     def submit(self, compute_unit, n_submitted=1):
         '''
             Compute units submitted that are part of this stack frame
@@ -330,30 +325,30 @@ class ComposerStackFrame:
             Checks if the compilation of this stack frame is complete
             At that point it can be used as a cache element
         '''
-        if self.compilation_complete: 
+        if self.compilation_complete:
             return True
         if not self.all_submitted:
-            # This lock works to prevent a situation where not all are 
+            # This lock works to prevent a situation where not all are
             # submitted but recv == submitted
             # It also blocks recursion
             return False
-        if self.submitted == self.received:
+        if self.n_submitted == self.n_received:
             self.compilation_complete = True
         return True
 
 class MemoryManager:
     '''
         Simple class that tracks the current state of memory
-        This is useful for architectures with inhomogeneous memories 
-        Also useful for separating storage from  
+        This is useful for architectures with inhomogeneous memories
+        Also useful for separating storage from
 
         The initial empty construction is identical to an arbitrary
-        connectivity between an arbitrary number of devices 
+        connectivity between an arbitrary number of devices
 
         Idling costs are accounted by the stack frame management
-        To restrict the hypothetical number of   
+        To restrict the hypothetical number of
     '''
-    
+
     def __init__(self, results_composer_constructor):
         '''
             Constructor
@@ -388,17 +383,17 @@ class ResultsComposer:
     '''
         Composition object for composing results
         Technically only requires:
-        __add__   :: Composition under addition 
+        __add__   :: Composition under addition
         __iadd__  :: In place addition
-        serialise :: Maps to a front-end readable form 
-        get_tocks :: Required for non-participatory qubits 
+        serialise :: Maps to a front-end readable form
+        get_tocks :: Required for non-participatory qubits
 
-        This is a default implementation and should be 
+        This is a default implementation and should be
          overwritten by the architecture module
-        
+
         This assumption assumes that the backing is a
         dictionary of objects where values composer under
-         addition 
+         addition
     '''
 
     def __init__(self, result_obj: dict = None, n_obj=1, unit_id=None):
@@ -407,29 +402,29 @@ class ResultsComposer:
         '''
         if result_obj is None:
             result_obj = {}
-        self._obj = result_obj 
+        self._obj = result_obj
 
         # Used for tracking batching of results
         self._unit_ids = []
         if unit_id is not None:
             self._unit_ids.append(unit_id)
-        self._n_obj = n_obj 
-   
+        self._n_obj = n_obj
+
     def items(self):
         return self._obj.items()
- 
+
     def __iadd__(self, other):
         self._unit_ids += other._unit_ids
         self._n_obj += other._n_obj
 
         for key, val in other.items():
-            self._obj[key] = self._obj.get(key, 0) + val 
-        return self 
+            self._obj[key] = self._obj.get(key, 0) + val
+        return self
 
     def __add__(self, other):
         res = ResultsComposer(**self._obj)
         for key, val in other.items():
-            res._obj[key] = res._obj.get(key, 0) + val 
+            res._obj[key] = res._obj.get(key, 0) + val
 
         res._unit_ids = self._unit_ids + other._unit_ids
         res._n_obj = self._n_obj + other._n_obj
@@ -438,24 +433,24 @@ class ResultsComposer:
     def compose(self, other):
         '''
             Unlike addition we use composition to
-            imply that one stack frame is 
-            contained within another 
+            imply that one stack frame is
+            contained within another
         '''
         tmp_ids = self._unit_ids
         tmp_recv = self._n_obj
 
-        self.__iadd__(other)  
+        self.__iadd__(other)
         self._unit_ids = tmp_ids
         self._n_obj = other._n_obj
 
-    def get_n_compute_units(self): 
+    def get_n_compute_units(self):
         '''
         '''
         return max(len(self._unit_ids), self._n_obj)
 
     def serialise(self):
         '''
-            Returns a representation for display 
+            Returns a representation for display
             on the front end
         '''
         return str(self._obj)

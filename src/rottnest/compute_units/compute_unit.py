@@ -3,16 +3,16 @@ from rottnest.input_parsers.rz_tag_tracker import RzTagTracker
 from .layout_proxy import LayoutProxy
 
 '''
-Wrapper object for cabaliser sequences 
+Wrapper object for cabaliser sequences
 '''
 
 
-class ComputeUnit(): 
+class ComputeUnit():
 
     counter = 0
 
     @classmethod
-    def get_unit_id(cls): 
+    def get_unit_id(cls):
         unit_id = cls.counter
         cls.counter += 1
         return unit_id
@@ -28,27 +28,27 @@ class ComputeUnit():
                 mem_bound=None
             ):
 
-        if unit_id is None: 
-            unit_id = ComputeUnit.get_unit_id() 
+        if unit_id is None:
+            unit_id = ComputeUnit.get_unit_id()
         self.unit_id = unit_id
 
         # Should be equal to number of registers
-        self.memory_bound = mem_bound 
+        self.memory_bound = mem_bound
 
         self.layout_id = layout_id
         self.sequences = list()
-        
+
         # Context trackers
         self.n_inputs = 0
         self.n_outputs = 0
         self.n_qubits = 0
-       
-        self._qubit_lables = None 
+
+        self._qubit_labels = None
         self._rz_tracker_dict = None
-         
+
         self.n_rz_operations = 0
         self.n_gates = 0
-      
+
     def add_context(
             self,
             n_inputs: int,
@@ -69,7 +69,7 @@ class ComputeUnit():
         '''
             Wrapper around the rz_tracker constructor
         '''
-        return RzTagTracker.from_dict(self._rz_tracker_dict) 
+        return RzTagTracker.from_dict(self._rz_tracker_dict)
 
     def curr_mem(self):
         '''
@@ -79,19 +79,19 @@ class ComputeUnit():
 
     def __iter__(self):
         return iter(self.sequences)
- 
+
     def __len__(self):
         return len(self.sequences)
- 
+
     def append(self, sequence):
         self.n_gates += len(sequence)
-        self.n_rz_operations += sequence.n_rz_operations 
+        self.n_rz_operations += sequence.n_rz_operations
         self.sequences.append(sequence)
 
     def compile_graph_state(self):
         '''
             Compiles a graph state from the currently
-             loaded sequences 
+             loaded sequences
 
             TODO: Setup context extraction decorator
         '''
