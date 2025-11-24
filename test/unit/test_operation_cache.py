@@ -29,15 +29,20 @@ from test_data.test_circuits import cirq_circuits, cirq_qubits, qualtran_circuit
 from utils.arch_factory import build_arch, build_designer
 
 
-rz_collection_arch = build_arch("RzCollection",
-    build_designer("DummyDesigner", get_mem_bound=lambda s,l: l['mem_bound']),
+arch_name = "RzCollection"
+designer_name = "DummyDesigner"
+mem_bound = "mem_bound"
+default_mem_bound = 1000 
+
+rz_collection_arch = build_arch(arch_name,
+    build_designer(designer_name, get_mem_bound=lambda s,l: l[mem_bound]),
     RzCollectionComposer,
     RzCollectionWorker
 )
 
-architectures._options["RzCollection"] = rz_collection_arch
+architectures._options[arch_name] = rz_collection_arch
 
-architectures.set_current_architecture("RzCollection")
+architectures.set_current_architecture(arch_name)
 
 
 class TestCachedRzCollection(unittest.TestCase):
@@ -45,7 +50,7 @@ class TestCachedRzCollection(unittest.TestCase):
         '''
             Ensure that cache is hit with a cachable cirq circuit of toffolis
         '''
-        layout = { 'mem_bound': 1000 }
+        layout = { mem_bound: default_mem_bound }
         LayoutProxy.add_layout_with_id(0, layout)
 
         # Convert existing toffoli to a gate
@@ -85,7 +90,7 @@ class TestCachedRzCollection(unittest.TestCase):
         '''
             Ensure that result of composing over cache is the same as without composing
         '''
-        layout = { 'mem_bound': 1000 }
+        layout = { mem_bound: default_mem_bound }
         LayoutProxy.add_layout_with_id(0, layout)
 
         # Convert existing toffoli to a gate
@@ -136,7 +141,7 @@ class TestCachedRzCollection(unittest.TestCase):
             Tests composition over cache with some cacheable and some primitive circuit
             components
         '''
-        layout = { 'mem_bound': 1000 }
+        layout = { mem_bound: default_mem_bound }
         LayoutProxy.add_layout_with_id(0, layout)
 
         # Convert existing toffoli to a gate
@@ -189,7 +194,7 @@ class TestCachedRzCollection(unittest.TestCase):
         '''
             Tests a circuit with multiple distinct cacheable components
         '''
-        layout = { 'mem_bound': 1000 }
+        layout = { mem_bound: default_mem_bound }
         LayoutProxy.add_layout_with_id(0, layout)
 
         # Convert existing toffoli to a gate
@@ -252,7 +257,7 @@ class TestCachedRzCollection(unittest.TestCase):
         '''
             Tests a circuit composed of the same sub-circuit on different qubits (differnet cache hash)
         '''
-        layout = { 'mem_bound': 1000 }
+        layout = { mem_bound: default_mem_bound }
         LayoutProxy.add_layout_with_id(0, layout)
 
         # Convert existing toffoli to a gate
@@ -312,7 +317,7 @@ class TestCachedRzCollection(unittest.TestCase):
         '''
             Attempts to use the same composer for two cached compositions in a row
         '''
-        layout = { 'mem_bound': 1000 }
+        layout = { mem_bound: default_mem_bound }
         LayoutProxy.add_layout_with_id(0, layout)
 
         # Convert existing toffoli to a gate
@@ -364,7 +369,10 @@ class TestCachedRzCollection(unittest.TestCase):
         composer.reset_result()
 
         longer_composed_toffoli_circuit = cirq.Circuit(
-            composed_toffoli_gate_cls().on(cirq_qubits[0], cirq_qubits[1], cirq_qubits[2]) for i in range(20)
+            composed_toffoli_gate_cls().on(
+                cirq_qubits[0], cirq_qubits[1], cirq_qubits[2]
+            ) 
+            for i in range(20)
         )
 
         parser = PyliqtrParser(longer_composed_toffoli_circuit)
