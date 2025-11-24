@@ -4,6 +4,8 @@ from rottnest.architecture_interface.rottnest_worker import RottnestWorker
 
 class RzCollectionWorker(RottnestWorker):
 
+    COUNTER = 'rz_counts'
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -25,8 +27,8 @@ class RzCollectionWorker(RottnestWorker):
             widget_json: dict,
             rz_tag_tracker_dict: dict
         ):
-        return NotImplemented
         # TODO : Is it possible to map widget (JSON) back to gates?
+        raise NotImplementedError
 
     def execute_compute_unit(
             self,
@@ -43,4 +45,10 @@ class RzCollectionWorker(RottnestWorker):
                     # Map tag back to actual angle
                     rz_counter[rz_tracker[op.rz.tag]] += 1
 
-        return { "rz_counts": rz_counter }
+        return { self.COUNTER: rz_counter }
+    
+    def set_precision(self, precision):
+        '''
+            No need to set precision
+        '''
+        pass
