@@ -28,8 +28,8 @@ from rottnest.input_parsers.interrupt import INTERRUPT
 
 from rottnest.input_parsers.rz_tag_tracker import RzTagTracker
 
-from rottnest.rz_collector.rz_collection_worker import RzCollectionWorker
-from rottnest.rz_collector.rz_collection_composer import RzCollectionComposer, RzCollectionResultsComposer
+from rottnest.preprocessor.rz_collection_worker import RzCollectionWorker
+from rottnest.preprocessor.rz_collection_composer import RzCollectionComposer, RzCollectionResultsComposer
 
 # --[ Testing Utilities ]---
 from functools import reduce

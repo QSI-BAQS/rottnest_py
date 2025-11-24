@@ -20,8 +20,8 @@ from rottnest.input_parsers.interrupt import INTERRUPT, CACHED
 
 from rottnest.monkey_patchers.pyliqtr_patcher import hash_function_patchers
 
-from rottnest.rz_collector.rz_collection_worker import RzCollectionWorker
-from rottnest.rz_collector.rz_collection_composer import RzCollectionComposer, RzCollectionResultsComposer
+from rottnest.preprocessor.rz_collection_worker import RzCollectionWorker
+from rottnest.preprocessor.rz_collection_composer import RzCollectionComposer, RzCollectionResultsComposer
 
 from utils.quantum_lib_utils import cirq_n_rz, cirq_circuit_to_gate
 from test_data.test_circuits import cirq_circuits, cirq_qubits, qualtran_circuits
