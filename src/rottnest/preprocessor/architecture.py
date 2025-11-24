@@ -3,8 +3,8 @@
 '''
 from rottnest.architecture_interface import rottnest_architecture
 
-from .rz_collector.rz_collection_worker import RzCollectionWorker
-from .rz_collector.rz_collection_composer import RzCollectionComposer, RzCollectionResultsComposer
+from .rz_collection_worker import RzCollectionWorker
+from .rz_collection_composer import RzCollectionComposer, RzCollectionResultsComposer
 
 
 from .designer import PreprocessDesigner
