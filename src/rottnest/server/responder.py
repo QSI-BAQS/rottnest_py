@@ -30,7 +30,6 @@ class Result:
         self.result = Result.OK if Result.RESULT not in pkg else pkg[Result.RESULT]
         self.message = '' if Result.MESSAGE not in pkg else pkg[Result.MESSAGE]
         self.obj = None if Result.OBJ not in pkg else pkg[Result.OBJ]
-        
 
     @staticmethod
     def Ok(obj):
@@ -103,12 +102,14 @@ class Result:
         """
         return self.message
 
+
 class ResponseValidationException(Exception):
     """
         Exception to outline that the validation on the
         function did not pass.
     """
     pass
+
 
 class Responder:
     """
@@ -139,7 +140,6 @@ class Responder:
         self.namespace_prefix = cfg['namespace_prefix']
         self.convert_dots = cfg['convert_dot']
         self.serialization_fn = Responder.OUTPUT_FMT_MAP[cfg['output_fmt']]
-
 
     def validate_responsefn(self, response_fn):
         """
@@ -219,7 +219,6 @@ class Responder:
                     }
 
                     return self.serialization_fn(msg)
-                    
             
             self.register_response(modname, msg_kind, _invoke_wrapper)
         return _respwrap
@@ -233,8 +232,10 @@ class Responder:
         if not self.full_namespace:
             modmask = self.namespace_mask
             module_name = module_name.replace(modmask, '')
+
         if self.convert_dots:
             module_name = module_name.replace('.', '_')
+
         if not self.namespace_prefix:
             resp_map = self.response_map
         else:
@@ -248,7 +249,6 @@ class Responder:
             raise ResponseValidationException(msg)
         self.fullqual_resp_map[full_qualname] = responsefn
         resp_map[message_kind] = responsefn
-
 
     def retrieve_response(self, module_name, message_kind):
         """
@@ -294,6 +294,7 @@ class Responder:
         return self.response_map
 
 
+# I feel like this is basically pointless
 DEFAULT_CONFIG = {
     "full_namespace": False,
     "namespace_mask": ''.join([__name__.replace('responder', ''), 'controller.']),

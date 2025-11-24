@@ -17,7 +17,7 @@ from cabaliser.widget import Widget
 
 PING = 'ping'
 PONG = 'pong'
-SET_PRECISION = 'set_precision' 
+SET_PRECISION = 'set_precision'
 EXEC_COMPUTE_UNIT  = 'exec_compute_unit'
 EXEC_GRAPH_STATE = 'exec_widget'
 GET_GRAPH = 'get_graph'
@@ -59,8 +59,8 @@ class RottnestWorker(abc.ABC):
         # Workers enabled blinding
         # Architecture details are contained to workers
         if blind:
-            self.worker_tasks[GET_GRAPH] = self.not_supported 
-       
+            self.worker_tasks[GET_GRAPH] = self.not_supported
+
         if layouts is not None:
             for layout_id, layout in layouts:
                 self.worker_tasks[LOAD_LAYOUT](layout_id, layout)
@@ -71,7 +71,7 @@ class RottnestWorker(abc.ABC):
             worker_results_queue: mp.Queue,
             ):
         '''
-            Dispatch method for the main worker loop 
+            Dispatch method for the main worker loop
         '''
         return self.main(task_queue, worker_results_queue)
 
@@ -88,7 +88,7 @@ class RottnestWorker(abc.ABC):
         ):
         '''
             Default entrypoint function
-            Invokes the dispatch call 
+            Invokes the dispatch call
         '''
 
         worker = cls(
@@ -102,7 +102,7 @@ class RottnestWorker(abc.ABC):
 
     def main(self, task_queue: mp.Queue, worker_results_queue: mp.Queue):
         '''
-            Worker loop - queries 
+            Worker loop - queries
         '''
         print("Worker started:", mp.current_process().name, flush=True)
         self.running = True
@@ -110,24 +110,24 @@ class RottnestWorker(abc.ABC):
             task, *args = task_queue.get()
             response = self.worker_tasks[task](*args)
             if response is not None:
-                worker_results_queue.put(response) 
-        return       
+                worker_results_queue.put(response)
+        return
 
     def halt(
             self,
-            *args, 
+            *args,
         ):
         '''
-           Halts the worker 
+           Halts the worker
         '''
         self.running = False
 
     def ping(
             self,
-            *args, 
+            *args,
         ) -> str:
         '''
-            Ping function for worker alive status checking 
+            Ping function for worker alive status checking
         '''
         return PONG
 
@@ -144,7 +144,7 @@ class RottnestWorker(abc.ABC):
     def load_layout(self, layout_id: int, layout_json: dict):
         '''
             Loads an architecture to the cache table
-            This intentionally does not expose the non-id 
+            This intentionally does not expose the non-id
              loads to the worker
             Not marked as a task so that it can be
              called in single threaded mode
@@ -157,45 +157,45 @@ class RottnestWorker(abc.ABC):
     @staticmethod
     def get_layout(layout_id: int) -> dict | None:
         '''
-            Loads an architecture from the cache table 
+            Loads an architecture from the cache table
             :: architecture_id : int :: Key for architecture
             Returns either an architecture object (or builder), or None if the key is invalid
         '''
         return LayoutProxy.get_layout(layout_id)
 
-    def set_rz_decomposer(self, manager):   
+    def set_rz_decomposer(self, manager):
         '''
             Not Yet implemented
             Will be used to sync workers to a particular manager on start-up
 
             FEATURE: RzDecomposition
-            Proxy the gs_instance through a class that can hotswap between  
+            Proxy the gs_instance through a class that can hotswap between
             different decomposers
         '''
         raise NotImplementedError
- 
+
     def get_rz_decomposer(self):
         '''
             Gets the current decomposition manager
-            As this may be executed in a subprocess the import is inlined 
-            Within the worker this is intended to be a 
+            As this may be executed in a subprocess the import is inlined
+            Within the worker this is intended to be a
             singleton method
         '''
         raise NotImplementedError
- 
+
     def execute_compute_unit(
             self,
             compute_unit: "ComputeUnit",
         ):
         '''
-            Executes a sequence of instructions 
+            Executes a sequence of instructions
             This performs the graph state compilation
-             on the worker 
+             on the worker
         '''
         unit_id = compute_unit.unit_id
         layout_id = compute_unit.layout_id
         widget = compute_unit.compile_graph_state()
-        
+
         rz_tag_tracker = compute_unit.extract_rz_tracker()
 
         return unit_id, self.execute_graph_state(
@@ -213,9 +213,9 @@ class RottnestWorker(abc.ABC):
             rz_tag_tracker: RzTagTracker,
         ):
         '''
-            Executes a graph node 
+            Executes a graph node
             This performs the graph state
-             compilation on the process pool, 
+             compilation on the process pool,
              blinding the worker to the computation
         '''
         raise NotImplementedError
@@ -238,7 +238,7 @@ class RottnestWorker(abc.ABC):
             full_output: bool=False
         ):
         '''
-            Abstract base method 
+            Abstract base method
         '''
         raise NotImplementedError
 
@@ -247,14 +247,14 @@ class RottnestWorker(abc.ABC):
             compiled_widget,
             compute_unit,
             cache_hash,
-            ) -> dict: 
+            ) -> dict:
         '''
             Abstract base method for extracting
             relevant statistics from a compiled
-            widget 
+            widget
         '''
         raise NotImplementedError
-    
+
     @staticmethod
     def __MISSING() -> dict:
         return {
@@ -277,11 +277,11 @@ class RottnestWorker(abc.ABC):
                     "ERROR"
                 )
         return {
-            'cu_id': str(unit_id), 
-            'err_type': repr(error), 
+            'cu_id': str(unit_id),
+            'err_type': repr(error),
             'traceback': traceback,
             'status': 'error',
         }
 
-    def not_supported(self):
-        return 'Operation Not Supported' 
+    def not_supported(self, *args):
+        return 'Operation Not Supported'

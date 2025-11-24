@@ -91,6 +91,21 @@ class ComputeUnitExecutorPool:
         self.manager_priority_completion_queue = self.ctx.Queue()
 
 
+    def synch_from_singletons(self):
+        '''
+            Synchronises from singletons
+        '''
+        from rottnest.plugins import architectures, executables
+        architecture = architectures.get_current_architecture()
+        self._pool.set_architecture_module(architecture)
+
+        executable = executables.get_current_executable()
+        self._pool.set_executable(executable)
+
+        executable_params = executables.get_executable_params()
+        self._pool.set_exectuable_params(executable_params)
+
+
 
     def synch_and_start_from_singletons(self):
         '''
@@ -105,7 +120,7 @@ class ComputeUnitExecutorPool:
         exec_params = executables.get_current_executable_args()
         layouts = LayoutProxy.get_layouts() 
         
-        self.synch_and_start()
+        self.synch_and_start(arch, executable, layouts, executable_params=exec_params)
 
 
     def synch_and_start(
@@ -191,7 +206,6 @@ class ComputeUnitExecutorPool:
             )
         )
          
-
     def start_workers(self):
         '''
            Spins up the workers 

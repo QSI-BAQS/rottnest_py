@@ -1,14 +1,22 @@
+"""
+    Rottnest application class
+"""
+
 from rottnest.server.app.app_config import ApplicationConfig, AppExtensions
 from rottnest.debug.monitor import DebugMonitor
 
 class RottnestApplication:
     """
-        Application class that will can be used
-        as a simple map right now.
-
+        Application class
+        Acts as a simple map 
         To have more concrete information provided later
     """
-    def __init__(self, wsock, wsock_sem, apploader=ApplicationConfig.default()):
+    def __init__(
+            self,
+            wsock,
+            wsock_sem,
+            apploader=ApplicationConfig.default()
+        ):
         """
             Initialises an application
             with simple dictionary that will
