@@ -38,8 +38,6 @@ class ArchitecturePlugins(PluginManager):
         plugins = ArchitecturePlugins(config_path=path)
         return plugins
 
-    
-
     def get_current_architecture(self):
         '''
             Getter for the current architecture
@@ -61,10 +59,17 @@ class ArchitecturePlugins(PluginManager):
         '''
         self._set_current_option(key)
 
+    def _force_set_current_architecture(self, architecture):
+        '''
+            Forcible setter for the current architecture
+            Used to set non-displaying architectures
+            Such as the pre-processor
+        '''
+        self._current_option = architecture
+
     def get_architecture_names(self):
         '''
            Retrieves a list of dtos of the architectures
            that the front-end can select from.
         '''
         return list(self._options.keys())
-
