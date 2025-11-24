@@ -8,20 +8,30 @@ from rottnest.compute_units.sequencer import Sequencer
 from rottnest.compute_units.layout_proxy import LayoutProxy 
 from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
 
-def compile_from_modules(layout):
+def compile_from_modules(layout, compile_from_graph=True):
     '''
         Assumes that all params and module loads have occurred
+        :: layout :: Layout(s) to compile 
+        :: compile_from_graph : bool :: Whether to compile then handoff
     '''
     architecture_module = architectures.get_current_architecture()     
     executable = executables.get_current_executable()
 
-    return compile(layout, executable, architecture_module)
+    return compile(layout, executable, architecture_module, compile_from_graph=compile_from_graph)
 
 def compile(
     layouts,
     executable,
-    architecture
+    architecture,
+    compile_from_graph=True
     ):
+    '''
+        Standalone compilation function
+        :: layouts : int | list :: Layouts to compile from 
+        :: executable : RottnestExecutable :: Object to compile
+        :: architecture : RottnestArchitecture :: Target architecture 
+        :: compile_from_graph : bool :: Whether the worker supports `execute_graph_state`
+    '''
 
     # Set architecture and ID
     # If single layout, detect and make it a list
@@ -50,7 +60,7 @@ def compile(
         if obj == INTERRUPT:
             process_elem_cache(obj, composer)
         else:
-            process_elem_obj(obj, worker, composer)
+            process_elem_obj(obj, worker, composer, compile_from_graph=compile_from_graph)
 
     return composer.get_result()
 
@@ -80,25 +90,32 @@ def process_elem_cache(
 def process_elem_obj(
     compute_unit,
     worker,
-    composer
+    composer,
+    compile_from_graph=True
 ):
     '''
-        Triggers a compilation
+        Triggers a compilation of a compute unit
     '''
-
-    # Emulating serialisation 
-    rz_tag_tracker = compute_unit.extract_rz_tracker().to_dict() 
-    widget_json = compute_unit.compile_graph_state().json()
-
-    # Register compute unit with composer
+    # Pass compute unit to the composer
     composer.submit(compute_unit)
 
-    res = worker.execute_graph_state(
-        compute_unit.unit_id,
-        compute_unit.layout_id,
-        widget_json,
-        rz_tag_tracker,
-    )
+    if compile_from_graph:
+        # Emulating serialisation 
+        rz_tag_tracker = compute_unit.extract_rz_tracker().to_dict() 
+        widget_json = compute_unit.compile_graph_state().json()
+
+        # Register compute unit with composer
+
+        # Compile using the widget
+        res = worker.execute_graph_state(
+            compute_unit.unit_id,
+            compute_unit.layout_id,
+            widget_json,
+            rz_tag_tracker,
+        )
+    else:
+        # Compile from the sequence in the compute unit
+        res = worker.execute_compute_unit(compute_unit)
 
     # Unregister
     # This makes more sense when using the process pool
