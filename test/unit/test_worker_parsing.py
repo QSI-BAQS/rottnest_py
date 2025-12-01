@@ -37,7 +37,7 @@ from functools import reduce
 try:
     from utils.arch_factory import build_arch, build_worker, build_designer, build_composer
     from utils.quantum_lib_utils import cirq_len, qualtran_len, cirq_n_rz
-    from test_data.test_circuits import cirq_circuits, cirq_qubits, qualtran_circuits
+    from test_data.circuit_data import cirq_circuits, cirq_qubits, qualtran_circuits
 except ModuleNotFoundError:
     from .utils.arch_factory import build_arch, build_worker, build_designer, build_composer
     from .utils.quantum_lib_utils import cirq_len, qualtran_len, cirq_n_rz
