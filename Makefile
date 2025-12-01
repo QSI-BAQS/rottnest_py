@@ -10,7 +10,7 @@ EXES := $(patsubst ${SRCDIR}/%.hs, ${SRCDIR}/%, ${SRCFILES})
 
 .PHONY: all package test clean gridsynth build
 
-all: package 
+all: package
 
 package: gridsynth
 	pip install -e .
@@ -24,8 +24,11 @@ ${SRCDIR}/% : ${SRCDIR}/%.hs
 
 test:
 	pytest
+	# We have to run this one separately, since importing breaks inside test systems
+	python test/unit/test_plugins.py
 
-clean : 
+
+clean :
 	rm $(OBJFILES)
 	rm $(EXES)
 	rm $(HIFILES)
