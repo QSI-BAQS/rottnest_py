@@ -10,7 +10,11 @@ import qualtran.bloqs.basic_gates as qual_gates
 
 from functools import reduce
 
-from utils.declarative_qualtran import build_bloq
+# Ensure import works w/ both unittest and direct running
+try:
+    from utils.declarative_qualtran import build_bloq
+except ModuleNotFoundError:
+    from ..utils.declarative_qualtran import build_bloq
 
 cirq_qubits = tuple(cirq.NamedQubit(str(x)) for x in range(100))
 

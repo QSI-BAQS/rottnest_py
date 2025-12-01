@@ -23,16 +23,22 @@ from rottnest.monkey_patchers.pyliqtr_patcher import hash_function_patchers
 from rottnest.rz_collector.rz_collection_worker import RzCollectionWorker
 from rottnest.rz_collector.rz_collection_composer import RzCollectionComposer, RzCollectionResultsComposer
 
-from utils.quantum_lib_utils import cirq_n_rz, cirq_circuit_to_gate
-from test_data.test_circuits import cirq_circuits, cirq_qubits, qualtran_circuits
 
-from utils.arch_factory import build_arch, build_designer
+# Ensure this works with both unittest and direct running
+try:
+    from utils.quantum_lib_utils import cirq_n_rz, cirq_circuit_to_gate
+    from test_data.test_circuits import cirq_circuits, cirq_qubits, qualtran_circuits
+    from utils.arch_factory import build_arch, build_designer
+except ModuleNotFoundError:
+    from .utils.quantum_lib_utils import cirq_n_rz, cirq_circuit_to_gate
+    from .test_data.circuit_data import cirq_circuits, cirq_qubits, qualtran_circuits
+    from .utils.arch_factory import build_arch, build_designer
 
 
 arch_name = "RzCollection"
 designer_name = "DummyDesigner"
 mem_bound = "mem_bound"
-default_mem_bound = 1000 
+default_mem_bound = 1000
 
 rz_collection_arch = build_arch(arch_name,
     build_designer(designer_name, get_mem_bound=lambda s,l: l[mem_bound]),
@@ -371,7 +377,7 @@ class TestCachedRzCollection(unittest.TestCase):
         longer_composed_toffoli_circuit = cirq.Circuit(
             composed_toffoli_gate_cls().on(
                 cirq_qubits[0], cirq_qubits[1], cirq_qubits[2]
-            ) 
+            )
             for i in range(20)
         )
 
@@ -394,3 +400,7 @@ class TestCachedRzCollection(unittest.TestCase):
                 composer.receive(obj.unit_id, res)
 
         self.assertEqual(composer.get_result()._obj["rz_counts"], cirq_n_rz(longer_composed_toffoli_circuit))
+
+
+if __name__ == "__main__":
+    unittest.main()
