@@ -77,6 +77,8 @@ def cirq_circuit_to_gate(circuit, n_qubits, name: str = 'CircuitAsGate'):
         Converts a circuit into an equivalent gate class for composition
     '''
     class CircuitAsGate(cirq.Gate):
+        __name__ = name
+
         def __init__(self):
             super(CircuitAsGate, self)
 
@@ -100,5 +102,4 @@ def cirq_circuit_to_gate(circuit, n_qubits, name: str = 'CircuitAsGate'):
         def _circuit_diagram_info_(self, args):
             return ["CircuitGate"] * self.num_qubits()
 
-    CircuitAsGate.__name__ = name
     return CircuitAsGate

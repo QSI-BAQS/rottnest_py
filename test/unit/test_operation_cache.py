@@ -414,30 +414,32 @@ class TestCachedRzCollection(unittest.TestCase):
         # Hash value doesn't matter here as long as it
         # agrees for identical instances
         toffoli_gate_cls._rottnest_hash = lambda s, so: MD5.new(
-            str(so.gate.__class__).encode('ascii')
+            so.gate.__name__.encode('ascii')
             + b''.join(str(qb).encode('ascii') for qb in so.qubits)
         ).digest()
 
-        # NOTE : One layer of toffolis would be insufficient
-        # as we hit an initial one-layer decomp
+        # Convert composition of two toffolis into a gate
         composed_toffoli_gate_cls = cirq_circuit_to_gate(cirq.Circuit(
             toffoli_gate_cls().on(cirq_qubits[0], cirq_qubits[1], cirq_qubits[2]),
             toffoli_gate_cls().on(cirq_qubits[2], cirq_qubits[1], cirq_qubits[0])
-        ), 3)
+        ), 3, name="ComposedToffoliGate")
         composed_toffoli_gate_cls._rottnest_hash = lambda s, so: MD5.new(
-            str(so.gate.__class__).encode('ascii') + b'composed'
+            so.gate.__name__.encode('ascii')
             + b''.join(str(qb).encode('ascii') for qb in so.qubits)
         ).digest()
 
-
+        # Convert composition of 2 composed toffolis into a gate
         composed_toffoli_circuit = cirq.Circuit(
-            composed_toffoli_gate_cls().on(cirq_qubits[i % 3], cirq_qubits[(i + 1) % 3], cirq_qubits[(i + 2) % 3]) for i in range(10)
+            composed_toffoli_gate_cls().on(cirq_qubits[0], cirq_qubits[1], cirq_qubits[2]),
+            composed_toffoli_gate_cls().on(cirq_qubits[2], cirq_qubits[1], cirq_qubits[0])
         )
 
         composed_toffoli_circuit_cls = cirq_circuit_to_gate(composed_toffoli_circuit, 3)
 
+        # Compose the final result
         final_circuit = cirq.Circuit(
-            composed_toffoli_circuit_cls().on(cirq_qubits[i % 3], cirq_qubits[(i + 1) % 3], cirq_qubits[(i + 2) % 3]) for i in range(6)
+            composed_toffoli_circuit_cls().on(cirq_qubits[0], cirq_qubits[1], cirq_qubits[2]),
+            composed_toffoli_circuit_cls().on(cirq_qubits[1], cirq_qubits[0], cirq_qubits[2])
         )
 
         # Patch tracking of toffolis into parser
@@ -468,9 +470,11 @@ class TestCachedRzCollection(unittest.TestCase):
                 res = worker.execute_compute_unit(obj)
                 composer.receive(obj.unit_id, res)
 
-        # We have two forms of the cacheable toffoli, should see two distinct hashes
-        # when accessing cache
-        self.assertEqual(len(seen_cache_hashes), 9)
+        # We have two forms of the cacheable toffoli,
+        # per two forms of cacheable composed toffoli,
+        # per two instances of said toffoli with different qubits
+        # for 2^3 == 8
+        self.assertEqual(len(seen_cache_hashes), 8)
         self.assertEqual(composer.get_result()._obj["rz_counts"], cirq_n_rz(final_circuit))
 
 
