@@ -63,10 +63,4 @@ def build_bloq(registers, gates):
             return Signature.build(**dict([(n, 1) for n in registers]))
 
 
-        # TODO : Remove this once qualtran parsing has been fixed
-        def __iter__(self):
-            # Drop qualtran object down to a cirq circuit
-            for cirq_gate in self.decompose_bloq().to_cirq_circuit():
-                yield cirq_gate
-
     return CustomBloq()

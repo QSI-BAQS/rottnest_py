@@ -295,7 +295,7 @@ class TestWorkerRzCollection(unittest.TestCase):
 
         worker = RzCollectionWorker()
 
-        # Load gates from a sequencer on a qualtran object
+        # Load gates from a sequencer on a cirq object
         for name, circuit in cirq_circuits.items():
             with self.subTest(circuit=circuit):
                 composer = RzCollectionComposer(LayoutProxy.get_layout(layout_id), [])
