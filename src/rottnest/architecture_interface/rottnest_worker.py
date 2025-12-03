@@ -22,6 +22,7 @@ EXEC_COMPUTE_UNIT  = 'exec_compute_unit'
 EXEC_GRAPH_STATE = 'exec_widget'
 GET_GRAPH = 'get_graph'
 LOAD_LAYOUT = 'load_layout'
+HALT = 'halt'
 
 from rottnest.rz_decomposer.rz_decomposer import DEFAULT_PRECISION
 
@@ -54,6 +55,7 @@ class RottnestWorker(abc.ABC):
             EXEC_GRAPH_STATE: self.execute_graph_state,
             GET_GRAPH: self.get_graph,
             LOAD_LAYOUT: self.load_layout,
+            HALT: self.halt
         }
 
         # Workers enabled blinding
