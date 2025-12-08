@@ -37,8 +37,8 @@ class MPIRootQueue():
             self.available_clients = list(range(1, self.n_peers + 1))
             self.all_clients = list(range(1, self.n_peers + 1))
         else:
-            self.available_clients = list(allocated_clients)
-            self.all_clients = list(allocated_clients)
+            self.available_clients = allocated_clients.copy()
+            self.all_clients = allocated_clients.copy()
 
         self.priority = priority
         self.TAG_CLIENT = TAG_CLIENT_NO_PRIO if not self.priority else TAG_CLIENT_PRIO
@@ -58,7 +58,9 @@ class MPIRootQueue():
         response = None
         if block:
             if timeout is None:
-                status, response = self.outstanding_response.wait()
+                # This is guaranteed to succeed
+                response = self.outstanding_response.wait()
+                status = True
             else:
                 timeout_remaining = timeout
 
@@ -122,7 +124,7 @@ class MPIRootQueue():
 
 
     def full(self):
-        return (self.maxsize == -1) or (len(self.local_queue) >= self.maxsize)
+        return not self.available_clients
 
 
     def qsize(self):
