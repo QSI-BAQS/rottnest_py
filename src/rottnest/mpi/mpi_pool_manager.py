@@ -1,6 +1,16 @@
-from rottnest.process_pool.pool_manager import ComputeUnitExecutorPoolManager
+import time
 
+from collections import defaultdict
+
+from rottnest.mpi.mpi_queue import MPIRootQueue
+
+from rottnest.architecture_interface import rottnest_worker
+from rottnest.process_pool import commands, symbols
+from rottnest.process_pool.pool_manager import ComputeUnitExecutorPoolManager
 from rottnest.architecture_interface.rottnest_worker import HALT
+from rottnest.rz_decomposer.rz_decomposer import DEFAULT_PRECISION
+from rottnest.config import REPORT_INTERVAL, RESULT_INTERVAL
+
 
 class MPIPoolManager(ComputeUnitExecutorPoolManager):
     '''
@@ -36,7 +46,6 @@ class MPIPoolManager(ComputeUnitExecutorPoolManager):
         self.priority_process = None
 
         self.manager_running = True
-        self.pool_running = False
 
         self.priority_submitted_count = 0
         self.priority_received_count = 0
@@ -62,6 +71,10 @@ class MPIPoolManager(ComputeUnitExecutorPoolManager):
             commands.SET_PRECISION: self._task_set_precision
         }
         # ------ Same as base ------
+
+        # CHANGE : The pool is running by default when using MPI
+        self.pool_running = True
+
         # CHANGE : These are no longer assumed to be multiprocessing queues,
         # and thus may not have file descriptors
         # Manager Communication queues
@@ -91,14 +104,14 @@ class MPIPoolManager(ComputeUnitExecutorPoolManager):
         # (ie. put(x), get() will not give back x)
         self.worker_task_queue = MPIRootQueue(
             comm,
-            allocated_workers=[range(1, n_workers)]
+            allocated_clients=list(range(1, self.n_workers))
         )
         self.worker_result_queue = self.worker_task_queue
 
         self.priority_task_queue = MPIRootQueue(
             comm,
             priority=True,
-            allocated_workers=[n_workers,]
+            allocated_clients=[self.n_workers,]
         )
         self.priority_result_queue = self.priority_task_queue
 
@@ -108,7 +121,9 @@ class MPIPoolManager(ComputeUnitExecutorPoolManager):
         if not self.pool_running:
             return
 
-        self.worker_task_queue.putall(HALT)
+        self.worker_task_queue.putall((HALT,))
+        self.priority_task_queue.putall((HALT,))
+        self.pool_running = False
 
 
     def process_elem_obj(self, obj: 'ComputeUnit', composer: 'RottnestComposer'):
