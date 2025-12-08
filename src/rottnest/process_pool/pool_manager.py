@@ -14,7 +14,7 @@ from rottnest.rz_decomposer.rz_decomposer import DEFAULT_PRECISION
 
 from rottnest.compute_units.compilation_producers import generate_compute_units
 
-from .symbols import TOTAL, SPAWN_CONTEXT, PONG 
+from .symbols import TOTAL, SPAWN_CONTEXT, PONG
 
 from rottnest.process_pool import commands, symbols
 
@@ -60,8 +60,8 @@ class ComputeUnitExecutorPoolManager:
         Manages communications with process pool workers
     '''
 
-    def __init__(self, 
-                 manager_task_queue: mp.Queue, 
+    def __init__(self,
+                 manager_task_queue: mp.Queue,
                  manager_completion_queue: mp.Queue,
                  manager_priority_task_queue: mp.Queue,
                  manager_priority_completion_queue: mp.Queue,
@@ -71,20 +71,20 @@ class ComputeUnitExecutorPoolManager:
             Manager class for the process pool
         '''
         # Internal import to for instantiation
-        from rottnest.plugins import architectures, executables 
+        from rottnest.plugins import architectures, executables
         self._architectures = architectures
         self._executables = executables
 
         self.composer = None
-        self._rz_precision = DEFAULT_PRECISION 
+        self._rz_precision = DEFAULT_PRECISION
 
         # Cache management
-        # TODO: Move this into the composer 
+        # TODO: Move this into the composer
         self.non_participatory_stack = [0]
         self.cache_hash_stack = [None]
         self.compute_unit_result_cache = defaultdict(dict)
-        
-        # Manager Communication queues 
+
+        # Manager Communication queues
         self.manager_task_queue = manager_task_queue
         self.manager_completion_queue = manager_completion_queue
 
@@ -100,14 +100,14 @@ class ComputeUnitExecutorPoolManager:
             maxsize = 4 * N_PROCESSES
         )
         self.worker_result_queue = self.ctx.Queue()
-    
+
         # Entrypoints
-        self._architecture = None 
+        self._architecture = None
         self.pool = list()
         self.priority_process = None
 
         self.manager_running = True
-        self.pool_running = False 
+        self.pool_running = False
 
         #############################
         # Priority data structures + setup
@@ -121,11 +121,11 @@ class ComputeUnitExecutorPoolManager:
 
         # Default precision
         self.precision_bits = 10
-        
+
         # File desciptors
         self.manager_task_fds = [
-            self.manager_task_queue._reader, 
-            self.manager_priority_task_queue._reader, 
+            self.manager_task_queue._reader,
+            self.manager_priority_task_queue._reader,
             self.priority_result_queue._reader
         ]
 
@@ -156,12 +156,12 @@ class ComputeUnitExecutorPoolManager:
 
     def main_loop(self):
         '''
-            Main loop for manager 
-            Sits and waits for either: 
+            Main loop for manager
+            Sits and waits for either:
             - A task
             - A priority task
             - A priority result
-        '''        
+        '''
         while self.manager_running:
             select.select(
                 self.manager_task_fds,
@@ -184,7 +184,7 @@ class ComputeUnitExecutorPoolManager:
             Only uses the with_id constructor to ensure
             synchronisation of ids across processes
         '''
-        for layout_id, layout_json in args[0]: 
+        for layout_id, layout_json in args[0]:
             LayoutProxy.add_layout_with_id(
                 layout_id, layout_json
             )
@@ -196,13 +196,13 @@ class ComputeUnitExecutorPoolManager:
     def _task_start_workers(self, *args):
         '''
             Starts the pool
-            This is decoupled from initialisation to allow 
-             for worker swapping 
+            This is decoupled from initialisation to allow
+             for worker swapping
         '''
         if self.pool_running:
             # Workers already running, return
             return
-        
+
         arch = self._architectures.get_current_architecture()
         worker_entrypoint = arch.worker_entrypoint
 
@@ -211,48 +211,48 @@ class ComputeUnitExecutorPoolManager:
         self.pool_running = True
 
         self.priority_process = self.ctx.Process(
-            target=arch.worker.entrypoint, 
-            name="PoolWorker(Priority)", 
+            target=arch.worker.entrypoint,
+            name="PoolWorker(Priority)",
             args=(
                 self.priority_task_queue,
                 self.priority_result_queue,
                 layouts,
                 self._rz_precision
-                ), 
+                ),
             daemon=True
         )
 
         self.pool = [
-            self.ctx.Process(target=arch.worker.entrypoint, 
-                        name=f"PoolWorker{i}", 
+            self.ctx.Process(target=arch.worker.entrypoint,
+                        name=f"PoolWorker{i}",
                         args=(
-                            self.worker_task_queue, 
+                            self.worker_task_queue,
                             self.worker_result_queue,
                             layouts
                         ),
                         daemon=True)
             for i in range(N_PROCESSES)
         ]
-        
+
         self.priority_process.start()
         for proc in self.pool:
             proc.start()
 
         self.pool_running = True
         print("Pool Started")
-   
+
     def run_task(self):
         '''
             Task selector entrypoint
             Takes a task from the manager task queue
-            Distributes the task to the workers 
+            Distributes the task to the workers
             Then reports any results back to the manager
              completion queue.
         '''
         task_name, *args = self.manager_task_queue.get()
         print("Running: ", task_name, args)
         task = self._tasks.get(task_name, None)
-        if task is None: 
+        if task is None:
             raise Exception(f"Unknown task: {task_name}")
         else:
             result = task(*args)
@@ -265,16 +265,16 @@ class ComputeUnitExecutorPoolManager:
             Terminate the pool
         '''
         self.manager_running = False
-        self.pool_running = False 
+        self.pool_running = False
         # TODO, incorporate worker shutdown
         return None
 
     def _task_ping_manager(self, *args):
         '''
-            Checks that the manager is alive 
+            Checks that the manager is alive
         '''
-        # This should not block 
-        return PONG 
+        # This should not block
+        return PONG
 
     def _task_ping(self, *args):
         '''
@@ -283,10 +283,10 @@ class ComputeUnitExecutorPoolManager:
         # Requires that the pool is running
         assert self.pool_running
 
-        # This should not block 
+        # This should not block
         self.worker_task_queue.put((commands.PING,))
-        assert self.worker_result_queue.get() == PONG 
-        return PONG 
+        assert self.worker_result_queue.get() == PONG
+        return PONG
 
     def _task_synchronise_modules(self, *args):
         '''
@@ -295,21 +295,21 @@ class ComputeUnitExecutorPoolManager:
         print("Synching: ", args)
         architectures = args[0]
         executables = args[1]
-        self._architectures.load_modules_from_strings(*architectures) 
-        self._executables.load_modules_from_strings(*executables) 
+        self._architectures.load_modules_from_strings(*architectures)
+        self._executables.load_modules_from_strings(*executables)
 
     def _task_set_architecture_module(self, *args):
         '''
             Sets an architecture module from a key
         '''
-        key = args[0] 
+        key = args[0]
         self._architectures.set_current_architecture(key)
 
     def _task_set_executable(self, *args):
         '''
             Sets an executable from a key
         '''
-        key = args[0] 
+        key = args[0]
         self._executables.set_current_executable(key)
 
     def _task_set_precision(self, *args):
@@ -324,19 +324,19 @@ class ComputeUnitExecutorPoolManager:
 
     def distribute_compilation(self, it: typing.Iterator, composer: "RottnestComposer"):
         '''
-            Consumes the iterator and distributes 
-            compilation among the workers 
+            Consumes the iterator and distributes
+            compilation among the workers
         '''
 
-        update_counter = REPORT_INTERVAL 
+        update_counter = REPORT_INTERVAL
 
-        # Consume the iterator 
+        # Consume the iterator
         for obj in it:
             # Interupts trigger cache updates
             if obj == INTERRUPT:
                 self.process_elem_cache(obj, composer)
             else:
-                # Non interrupts trigger compilation 
+                # Non interrupts trigger compilation
                 self.process_elem_obj(obj, composer)
 
             # Update reports after each interval
@@ -350,21 +350,21 @@ class ComputeUnitExecutorPoolManager:
         '''
             Consumes the iterator while performing compilation on a single core
         '''
-        arch = plugin_architecture.get_current_architecture()  
+        arch = plugin_architecture.get_current_architecture()
 
         # Sets up a singular worker
-        worker = arch.worker() 
+        worker = arch.worker()
 
         for arch_id, architecture in saved_architectures.items():
             worker.load_architecture(arch_id, architecture)
 
-        # Consume the iterator 
+        # Consume the iterator
         for obj in it:
             # Interupts trigger cache updates
             if obj[0] == INTERRUPT:
                 self.process_elem_cache(obj)
             else:
-                # Non interrupts trigger compilation 
+                # Non interrupts trigger compilation
                 results = worker.exec_compute_unit(*obj)
                 # TODO: combine results
         return
@@ -383,7 +383,7 @@ class ComputeUnitExecutorPoolManager:
 
         self.compute_unit_counts = defaultdict(int)
         self.compute_unit_totals = defaultdict(int)
-        
+
         if None in self.compute_unit_result_cache:
             del self.compute_unit_result_cache[None]
 
@@ -395,8 +395,8 @@ class ComputeUnitExecutorPoolManager:
 
         arch_ids = args[0]
 
-        architecture = self._architectures.get_current_architecture() 
-        executable = self._executables.get_current_executable() 
+        architecture = self._architectures.get_current_architecture()
+        executable = self._executables.get_current_executable()
 
         # Pass layouts to composer
         layouts = list(LayoutProxy.get_layouts())
@@ -407,7 +407,7 @@ class ComputeUnitExecutorPoolManager:
         it = generate_compute_units(arch_ids, architecture, executable)
 
         # Consume the iterator to distribute jobs to workers
-        self.distribute_compilation(it, composer)        
+        self.distribute_compilation(it, composer)
         print("all submitted!")
         print("last non-cache job at", self.submit_time, "delta", self.submit_time - self.run_seq_start)
         print("sequencer time:", self.sequencer_time, "cache_time:", self.cache_time)
@@ -422,6 +422,7 @@ class ComputeUnitExecutorPoolManager:
                 self.check_priority_result()
 
                 self.process_result_elem(
+                    composer,
                     timeout=SEGFAULT_SENTINEL_TIMEOUT_SECS
                 )
 
@@ -447,7 +448,7 @@ class ComputeUnitExecutorPoolManager:
 
     def process_result_elem(self, composer, timeout=None):
         '''
-        Blocking read from worker_result_queue and 
+        Blocking read from worker_result_queue and
             process result
         '''
         unit_id, result = self.worker_result_queue.get(
@@ -458,7 +459,7 @@ class ComputeUnitExecutorPoolManager:
             print(result)
             return
 
-        # Composer takes result to reportable 
+        # Composer takes result to reportable
         composer.receive(
             unit_id,
             result
@@ -480,8 +481,8 @@ class ComputeUnitExecutorPoolManager:
         np_dur = tock_dict.get('bell', 0) + tock_dict.get('t_schedule', 0) + tock_dict.get('bell2', 0)
         if 'volumes' not in result:
             result['volumes'] = {}
-        
-        old_volume = result['volumes'].get('NP_VOLUME', 0) 
+
+        old_volume = result['volumes'].get('NP_VOLUME', 0)
         result['volumes']['NP_VOLUME'] = old_volume
 
         ###
@@ -543,14 +544,14 @@ class ComputeUnitExecutorPoolManager:
             while not composer.cache_request(
                 cache_obj
             ):
-                # Barrier until we can resolve this 
+                # Barrier until we can resolve this
                 # cache request
                 self.process_result_elem(composer)
 
         self.cache_time += time.time() - cache_start
 
     def _task_stop_workers(self):
-        if not self.pool_running:       
+        if not self.pool_running:
             # Pool isn't running, skip
             return
 
@@ -562,7 +563,7 @@ class ComputeUnitExecutorPoolManager:
 
     def restart_dead_processes(self):
         '''
-             Check status of processes and restart 
+             Check status of processes and restart
              dead processes
         '''
         restart = []
@@ -583,12 +584,12 @@ class ComputeUnitExecutorPoolManager:
         for i in restart:
             print(f"Restarting worker {i}")
             self.pool[i] = self.ctx.Process(
-                target=worker_entrypoint, 
-                name=f"PoolWorker{i}", 
+                target=worker_entrypoint,
+                name=f"PoolWorker{i}",
                 args=(
                     self.worker_task_queue,
                     self.worker_result_queue
-                ), 
+                ),
                 daemon=True
             )
             self.pool[i].start()
@@ -615,20 +616,20 @@ class ComputeUnitExecutorPoolManager:
         # TODO: Figure out what this is up to
         for stack_hash in self.cache_hash_stack:
             self.compute_unit_totals[stack_hash] += 1
-        
-        # Check if we need to post results 
+
+        # Check if we need to post results
         if (
-            self.worker_task_queue.full() 
-            or 
-            self.worker_result_queue.qsize() 
+            self.worker_task_queue.full()
+            or
+            self.worker_result_queue.qsize()
                 > RESULT_INTERVAL
             ):
             self.post_result_queue(composer)
-        
+
         # Restart dead processes and tally errors
         # TODO
         #self.restart_dead_processes()
-            
+
         #print("Submitting", self.n_submitted)
 
         submitted = False
@@ -650,12 +651,12 @@ class ComputeUnitExecutorPoolManager:
                         rottnest_worker.EXEC_COMPUTE_UNIT,
                         obj,
                     )
-                ) 
+                )
                 submitted = True
             else:
                 # Wait for space in queue
-                time.sleep(0.1) 
-        
+                time.sleep(0.1)
+
         print("Submitted", self.n_submitted)
         self.n_submitted += 1
 
@@ -665,7 +666,7 @@ class ComputeUnitExecutorPoolManager:
         '''
         if self.compute_unit_counts[cache_hash] != self.compute_unit_totals[cache_hash]:
             return False
-        
+
         output = deepcopy(self.compute_unit_result_cache[cache_hash])
         output['cache_hash_hex'] = cache_hash.hex()
         # print("output:", output, self.compute_unit_counts, self.compute_unit_totals)
@@ -676,7 +677,7 @@ class ComputeUnitExecutorPoolManager:
         if 'volumes' not in output:
             output['volumes'] = {}
 
-        old_volume = output['volumes'].get('NP_VOLUME', 0) 
+        old_volume = output['volumes'].get('NP_VOLUME', 0)
         output['volumes']['NP_VOLUME'] = old_volume + np_qubits * np_dur
 
         for i,stack_hash in enumerate(reversed(self.cache_hash_stack)):
@@ -695,14 +696,14 @@ class ComputeUnitExecutorPoolManager:
 
         arch = self._architectures.get_current_architecture()
         worker_entrypoint = arch.worker_entrypoint
-        
+
         if self.priority_process.exitcode is not None:
             # Process died
             self.priority_error_count += 1
             self.priority_process.join()
             self.priority_process = self.ctx.Process(target=worker_entrypoint,
-                                name="PoolWorker(Priority)", 
-                                args=(self.priority_task_queue, self.priority_result_queue), 
+                                name="PoolWorker(Priority)",
+                                args=(self.priority_task_queue, self.priority_result_queue),
                                 daemon=True)
             self.priority_process.start()
 
@@ -725,7 +726,7 @@ class ComputeUnitExecutorPoolManager:
             elif task == "save_arch":
                 arch_id, arch_json_obj = args
                 saved_architectures[arch_id] = arch_json_obj
-    
+
     def check_priority_result(self):
         # Check if process is alive
         self.check_restart_priority_worker()
