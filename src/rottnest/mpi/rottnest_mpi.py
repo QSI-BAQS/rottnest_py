@@ -15,6 +15,8 @@ from rottnest.mpi.mpi_queue import MPIClientQueue
 
 from rottnest.process_pool import commands, symbols
 
+from rottnest.compute_units.layout_proxy import LayoutProxy
+
 from rottnest.plugins import architectures, executables
 
 
@@ -25,6 +27,7 @@ class RottnestMPIArgs():
     STATE_OPEN = object()
     STATE_LOAD_MODULE = object()
     STATE_SET_OUTPUT_FILE = object()
+    STATE_SET_PARAM = object()
     STATE_CLOSED = object()
 
 
@@ -36,14 +39,17 @@ class RottnestMPIArgs():
         self.executable_name = None
         self.layout_file = None
 
+        self.executable_params = dict()
+
         self.state = RottnestMPIArgs.STATE_OPEN
 
         self.state_handlers = {
             RottnestMPIArgs.STATE_OPEN: self.handle_arg_state_open,
             RottnestMPIArgs.STATE_LOAD_MODULE: self.handle_arg_state_load_module,
             RottnestMPIArgs.STATE_SET_OUTPUT_FILE: self.handle_arg_state_set_output_file,
+            RottnestMPIArgs.STATE_SET_PARAM: self.handle_arg_state_set_param,
             # No-Op bound to closed state
-            RottnestMPIArgs.STATE_CLOSED: lambda *a: None
+            RottnestMPIArgs.STATE_CLOSED: lambda *a: None,
         }
 
         self.open_flag_handlers = {
@@ -51,7 +57,9 @@ class RottnestMPIArgs():
             "-m": lambda s: RottnestMPIArgs.STATE_LOAD_MODULE,
             "--module": lambda s: RottnestMPIArgs.STATE_LOAD_MODULE,
             "-o": lambda s: RottnestMPIArgs.STATE_SET_OUTPUT_FILE,
-            "--output_file": lambda s: RottnestMPIArgs.STATE_SET_OUTPUT_FILE
+            "--output_file": lambda s: RottnestMPIArgs.STATE_SET_OUTPUT_FILE,
+            "-p": lambda s: RottnestMPIArgs.STATE_SET_PARAM,
+            "--param": lambda s: RottnestMPIArgs.STATE_SET_PARAM,
         }
 
     def help(self):
@@ -84,7 +92,10 @@ OPTIONS:
         Can be provided any number of times
 
     -o/--output_file <file>
-        Provides a file to write the result to (as opposed to dumping it to stdout)'''
+        Provides a file to write the result to (as opposed to dumping it to stdout)
+
+    -p/--param <key>=<val>
+        Sets the value of a parameter for the executable'''
         )
         return RottnestMPIArgs.STATE_CLOSED
 
@@ -108,7 +119,7 @@ OPTIONS:
 
     def handle_arg_state_load_module(self, arg):
         if arg[0] == "-":
-            print(f"Expected module name, got flag '{arg}'")
+            print(f"Error: Expected module name, got flag '{arg}'")
             self.state = RottnestMPIArgs.STATE_CLOSED
         else:
             self.modules_to_load.add(arg)
@@ -116,31 +127,51 @@ OPTIONS:
 
     def handle_arg_state_set_output_file(self, arg):
         if arg[0] == "-":
-            print(f"Expected output file path, got flag '{arg}'")
+            print(f"Error: Expected output file path, got flag '{arg}'")
             self.state = RottnestMPIArgs.STATE_CLOSED
         elif self.output_file is not None:
-            print(f"Output file was already set to '{self.output_file}', please set exactly one output file")
+            print(f"Error: Output file was already set to '{self.output_file}', please set exactly one output file")
             self.state = RottnestMPIArgs.STATE_CLOSED
         else:
             self.output_file = arg
             self.state = RottnestMPIArgs.STATE_OPEN
 
+    def handle_arg_state_set_param(self, arg):
+        param_name_val = arg.split("=", maxsplit=1)
+        if len(param_name_val) != 2:
+            print(f"Error: Excepted format <key>=<val> for executable parameter, got '{arg}'")
+            self.state = RottnestMPIArgs.STATE_CLOSED
+
+        param_name, param_val = param_name_val
+        if param_name in self.executable_params:
+            print(f"Error: Got multiple assignments for param '{param_name}'")
+            self.state = RottnestMPIArgs.STATE_CLOSED
+        else:
+            # TODO : This doesn't handle typing properly
+            try:
+                self.executable_params[param_name] = int(param_val)
+            except:
+                self.executable_params[param_name] = param_val
+            self.state = RottnestMPIArgs.STATE_OPEN
+
     def finalise(self) -> bool:
         if self.architecture_name is None:
-            print("No architecture name was provided")
+            print("Error: No architecture name was provided")
             return False
         elif self.executable_name is None:
-            print("No executable name was provided")
+            print("Error: No executable name was provided")
             return False
         elif self.layout_file is None:
-            print("No layout file was provided")
+            print("Error: No layout file was provided")
             return False
         # We tried to finalise while not in an open state
         elif self.state is not RottnestMPIArgs.STATE_OPEN:
             if self.state is RottnestMPIArgs.STATE_LOAD_MODULE:
-                print("Arguments ended while expecting a module name")
+                print("Error: Arguments ended while expecting a module name")
             elif self.state is RottnestMPIArgs.STATE_SET_OUTPUT_FILE:
-                print("Arguments ended while expecting an output file")
+                print("Error: Arguments ended while expecting an output file")
+            elif self.state is RottnestMPIArgs.STATE_SET_PARAM:
+                print("Error: Arguments ended while expecting a parameter assignment")
             return False
 
         return True
@@ -193,6 +224,7 @@ def root_main(comm, architecture, executable, layouts):
     pool_task_queue.put(
         (
             commands.RUN_SEQUENCE,
+            tuple(id for id in layouts.keys()),
         )
     )
 
@@ -214,22 +246,26 @@ def root_main(comm, architecture, executable, layouts):
 
     # Handle all completions
     while not pool_completion_queue.empty():
-        # TODO : This should handle the queued items properly
-        print(pool_completion_queue.get())
+        # TODO : This should handle the queued items properly?
+        # Alternatively, is this ok to just flush (or even not populate in the first place?)
+        pool_completion_queue.get()
+
+    # TODO : This works, but there might be a neater way to get the final result
+    return pool_manager.composer.get_result().serialise()
 
 
-def worker_main(comm, architecture, layouts):
+def worker_main(comm, architecture, layouts, priority=False):
     '''
         Main function for the worker process(es)
     '''
     worker = architecture.worker()
-    queue = MPIClientQueue()
+    queue = MPIClientQueue(comm, priority=priority)
 
     # Queue is two way, and so is used for both tasks in and results out
     worker.main(queue, queue)
 
 
-def main(architecture_name, executable_name, layouts):
+def main(architecture_name, executable_name, layouts, executable_params=None):
     '''
         Handles common behaviour before diverging to root/worker behaviour
     '''
@@ -239,19 +275,21 @@ def main(architecture_name, executable_name, layouts):
     architectures.set_current_architecture(architecture_name)
     executables.set_current_executable(executable_name)
 
+    if executable_params is not None:
+        executables.set_executable_params(**executable_params)
+
     architecture = architectures.get_current_architecture()
     executable = executables.get_current_executable()
 
-    for layout_id, layout in layouts:
-        pass
-        # TODO : Load layouts by id into proxy
+    for layout_id, layout in layouts.items():
+        LayoutProxy.add_layout_with_id(layout_id, layout)
 
     if comm.Get_rank() == 0:
-        root_main(comm, architecture, executable, layouts)
+        return root_main(comm, architecture, executable, layouts)
     else:
-        worker_main(comm, architecture, layouts)
-
-    print(f"MPI peer {comm.Get_rank()} completed")
+        worker_main(comm, architecture, layouts, priority = (comm.Get_rank() == comm.Get_size() - 1))
+        return None
+    #print(f"MPI peer {comm.Get_rank()} completed")
 
 
 def launch():
@@ -260,15 +298,20 @@ def launch():
     '''
     argv = sys.argv[1:]
 
-    # Silence non-root processes
-    if MPI.COMM_WORLD.Get_rank() != 0:
-        sys.stdout = type("DummyWriter", tuple(), dict(write=lambda *a, **ka: None, flush=lambda *a, **ka: None))
-
     # Parse args
     args = RottnestMPIArgs.from_args(*argv)
 
     if args is None:
         exit(1)
+
+    # Silence stdout (TEMP : waiting for silencing internally of output)
+    saved_stdout = sys.stdout
+    dummy_writer_cls = type("DummyWriter", (), dict(write=lambda *a, **ka: None, flush=lambda *a, **ka: None))
+    sys.stdout = dummy_writer_cls()
+    sys.stderr = dummy_writer_cls()
+
+    architectures.load_modules_from_strings(*args.modules_to_load)
+    executables.load_modules_from_strings(*args.modules_to_load)
 
     # For now, panic if there is only one process
     if MPI.COMM_WORLD.Get_size() == 1:
@@ -289,7 +332,15 @@ def launch():
         print(f"Failed to open file '{args.layout_file}' : {e}")
         exit(1)
 
-    main(args.architecture_name, args.executable_name, layouts)
+    # Run main - workers return None, root returns the final result
+    res = main(args.architecture_name, args.executable_name, layouts, args.executable_params)
+
+    if res is not None:
+        if args.output_file is None:
+            print(res, file=saved_stdout)
+        else:
+            with open(args.output_file, "w") as f:
+                print(res, file=f)
 
 
 if __name__ == "__main__":
