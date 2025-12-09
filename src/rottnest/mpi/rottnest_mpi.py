@@ -19,50 +19,107 @@ from rottnest.compute_units.layout_proxy import LayoutProxy
 
 from rottnest.plugins import architectures, executables
 
+def perror(msg, *args, **kwargs):
+    print("[ ERROR ] " + msg, *args, **kwargs, file=sys.stderr)
+
+
+class MPIArgState():
+    '''
+        A state in the arg parsing state machine
+
+        transition_fn must return the next state
+    '''
+    def __init__(self, transition_fn, final=False):
+        self.transition_fn = transition_fn
+        self.final = final
+
+
+    def __call__(self, *args, **kwargs):
+        return self.transition_fn(*args, **kwargs)
+
 
 class RottnestMPIArgs():
     '''
         Argument parsing
     '''
-    STATE_OPEN = object()
-    STATE_LOAD_MODULE = object()
-    STATE_SET_OUTPUT_FILE = object()
-    STATE_SET_PARAM = object()
-    STATE_CLOSED = object()
-
-
-    def __init__(self):
-        self.output_file = None
-        self.modules_to_load = set()
-
-        self.architecture_name = None
-        self.executable_name = None
-        self.layout_file = None
-
-        self.executable_params = dict()
-
-        self.state = RottnestMPIArgs.STATE_OPEN
-
-        self.state_handlers = {
-            RottnestMPIArgs.STATE_OPEN: self.handle_arg_state_open,
-            RottnestMPIArgs.STATE_LOAD_MODULE: self.handle_arg_state_load_module,
-            RottnestMPIArgs.STATE_SET_OUTPUT_FILE: self.handle_arg_state_set_output_file,
-            RottnestMPIArgs.STATE_SET_PARAM: self.handle_arg_state_set_param,
-            # No-Op bound to closed state
-            RottnestMPIArgs.STATE_CLOSED: lambda *a: None,
+    @staticmethod
+    def _handle_state_open(instance, arg, *_):
+        flag_handlers = {
+            "--help": RottnestMPIArgs._help,
+            "-m": lambda *a: RottnestMPIArgs.STATE_LOAD_MODULE,
+            "--module": lambda *a: RottnestMPIArgs.STATE_LOAD_MODULE,
+            "-o": lambda *a: RottnestMPIArgs.STATE_SET_OUTPUT_FILE,
+            "--output_file": lambda *a: RottnestMPIArgs.STATE_SET_OUTPUT_FILE,
+            "-p": lambda *a: RottnestMPIArgs.STATE_SET_PARAM_FILE,
+            "--param_file": lambda *a: RottnestMPIArgs.STATE_SET_PARAM_FILE,
         }
 
-        self.open_flag_handlers = {
-            "--help": self.help,
-            "-m": lambda s: RottnestMPIArgs.STATE_LOAD_MODULE,
-            "--module": lambda s: RottnestMPIArgs.STATE_LOAD_MODULE,
-            "-o": lambda s: RottnestMPIArgs.STATE_SET_OUTPUT_FILE,
-            "--output_file": lambda s: RottnestMPIArgs.STATE_SET_OUTPUT_FILE,
-            "-p": lambda s: RottnestMPIArgs.STATE_SET_PARAM,
-            "--param": lambda s: RottnestMPIArgs.STATE_SET_PARAM,
-        }
+        instance.back_arg = arg
 
-    def help(self):
+        if arg in flag_handlers:
+            return flag_handlers[arg]()
+
+        if arg[0] == "-":
+            instance.error_msg = f"Unknown flag '{arg}'"
+            return RottnestMPIArgs.STATE_CLOSED
+
+        if instance.outstanding_attributes:
+            instance.attributes[instance.outstanding_attributes.pop(0)] = arg
+            return RottnestMPIArgs.STATE_OPEN
+
+        instance.error_msg = f"Was not expecting more unbound arguments, got '{arg}'"
+        return RottnestMPIArgs.STATE_CLOSED
+
+    STATE_OPEN = MPIArgState(transition_fn=_handle_state_open, final=True)
+
+
+    @staticmethod
+    def _handle_load_module(instance, arg, *_):
+        if arg[0] == "-":
+            instance.error_msg = f"Expected module name, got flag '{arg}'"
+            return RottnestMPIArgs.STATE_CLOSED
+        instance.modules_to_load.add(arg)
+        return RottnestMPIArgs.STATE_OPEN
+
+    STATE_LOAD_MODULE = MPIArgState(transition_fn=_handle_load_module)
+
+
+    @staticmethod
+    def _handle_set_output_file(instance, arg, *_):
+        if instance.output_file is not None:
+            instance.error_msg = f"Output file should only be set once"
+            return RottnestMPIArgs.STATE_CLOSED
+        if arg[0] == "-":
+            instance.error_msg = f"Expected output file, got flag '{arg}'"
+            return RottnestMPIArgs.STATE_CLOSED
+        instance.output_file = arg
+        return RottnestMPIArgs.STATE_OPEN
+
+    STATE_SET_OUTPUT_FILE = MPIArgState(transition_fn=_handle_set_output_file)
+
+
+    @staticmethod
+    def _handle_set_param_file(instance, arg, *_):
+        if instance.param_file is not None:
+            instance.error_msg = f"Parameter file should only be set once"
+            return RottnestMPIArgs.STATE_CLOSED
+        if arg[0] == "-":
+            instance.error_msg = f"Expected parameter file, got flag '{arg}'"
+            return RottnestMPIArgs.STATE_CLOSED
+        instance.param_file = arg
+        return RottnestMPIArgs.STATE_OPEN
+
+    STATE_SET_PARAM_FILE = MPIArgState(transition_fn=_handle_set_param_file)
+
+
+    STATE_CLOSED = MPIArgState(transition_fn=lambda *a, **ka: STATE_CLOSED)
+
+
+    STATE_CLOSED_HELP = MPIArgState(transition_fn=lambda *a, **ka: STATE_CLOSED_HELP)
+
+
+    @staticmethod
+    def _help(*_):
         print(
 '''rottnest_mpi <architecture_name> <executable_name> <layout_file> [OPTIONS...]
 
@@ -75,8 +132,8 @@ USAGE:
 
     <architecture_name>
         The name of the architecture to use.
-        Tries to load the architecture as a Python module, then falls
-        back to a filepath
+        Will attempt to load the architecture from any available modules, which can either
+        be explicitly used (see -m) or loaded as part of your rottnest config.
 
     <executable_name>
         As above, but for an executable.
@@ -94,87 +151,64 @@ OPTIONS:
     -o/--output_file <file>
         Provides a file to write the result to (as opposed to dumping it to stdout)
 
-    -p/--param <key>=<val>
-        Sets the value of a parameter for the executable'''
+    -p/--param_file
+        Provides a JSON file to load the executable arguments from'''
         )
-        return RottnestMPIArgs.STATE_CLOSED
+        return RottnestMPIArgs.STATE_CLOSED_HELP
+
+
+    def __init__(self):
+        self.output_file = None
+        self.param_file = None
+        self.modules_to_load = set()
+
+        self.outstanding_attributes = [ "architecture_name", "executable_name", "layout_file" ]
+        self.attributes = dict()
+
+        self.state = RottnestMPIArgs.STATE_OPEN
+        self.error_msg = ""
+        self.back_arg = ""
 
 
     def parse(self, arg):
-        self.state_handlers[self.state](arg)
+        self.state = self.state(self, arg)
 
-    def handle_arg_state_open(self, arg):
-        if arg in self.open_flag_handlers.keys():
-            self.state = self.open_flag_handlers[arg](self)
-        elif arg[0] == "-":
-            print(f"Error: unknown flag '{arg}'")
-            self.state = RottnestMPIArgs.STATE_CLOSED
-        else:
-            if self.architecture_name is None:
-                self.architecture_name = arg
-            elif self.executable_name is None:
-                self.executable_name = arg
-            elif self.layout_file is None:
-                self.layout_file = arg
-
-    def handle_arg_state_load_module(self, arg):
-        if arg[0] == "-":
-            print(f"Error: Expected module name, got flag '{arg}'")
-            self.state = RottnestMPIArgs.STATE_CLOSED
-        else:
-            self.modules_to_load.add(arg)
-            self.state = RottnestMPIArgs.STATE_OPEN
-
-    def handle_arg_state_set_output_file(self, arg):
-        if arg[0] == "-":
-            print(f"Error: Expected output file path, got flag '{arg}'")
-            self.state = RottnestMPIArgs.STATE_CLOSED
-        elif self.output_file is not None:
-            print(f"Error: Output file was already set to '{self.output_file}', please set exactly one output file")
-            self.state = RottnestMPIArgs.STATE_CLOSED
-        else:
-            self.output_file = arg
-            self.state = RottnestMPIArgs.STATE_OPEN
-
-    def handle_arg_state_set_param(self, arg):
-        param_name_val = arg.split("=", maxsplit=1)
-        if len(param_name_val) != 2:
-            print(f"Error: Excepted format <key>=<val> for executable parameter, got '{arg}'")
-            self.state = RottnestMPIArgs.STATE_CLOSED
-
-        param_name, param_val = param_name_val
-        if param_name in self.executable_params:
-            print(f"Error: Got multiple assignments for param '{param_name}'")
-            self.state = RottnestMPIArgs.STATE_CLOSED
-        else:
-            # TODO : This doesn't handle typing properly
-            try:
-                self.executable_params[param_name] = int(param_val)
-            except:
-                self.executable_params[param_name] = param_val
-            self.state = RottnestMPIArgs.STATE_OPEN
 
     def finalise(self) -> bool:
-        if self.architecture_name is None:
-            print("Error: No architecture name was provided")
+        if self.state is RottnestMPIArgs.STATE_CLOSED_HELP:
             return False
-        elif self.executable_name is None:
-            print("Error: No executable name was provided")
+
+        if not self.state.final:
+            # We hit an error and closed early
+            if self.state is RottnestMPIArgs.STATE_CLOSED:
+                perror(self.error_msg)
+            else:
+                perror(f"Arguments ended while expecting an additional argument for flag '{self.back_arg}'")
             return False
-        elif self.layout_file is None:
-            print("Error: No layout file was provided")
-            return False
-        # We tried to finalise while not in an open state
-        elif self.state is not RottnestMPIArgs.STATE_OPEN:
-            if self.state is RottnestMPIArgs.STATE_LOAD_MODULE:
-                print("Error: Arguments ended while expecting a module name")
-            elif self.state is RottnestMPIArgs.STATE_SET_OUTPUT_FILE:
-                print("Error: Arguments ended while expecting an output file")
-            elif self.state is RottnestMPIArgs.STATE_SET_PARAM:
-                print("Error: Arguments ended while expecting a parameter assignment")
+        elif self.outstanding_attributes:
+            perror(f"No {self.outstanding_attributes.pop(0)} was provided")
             return False
 
         return True
+
+
+    def get_arch_name(self):
+        return self.attributes["architecture_name"]
+
+    def get_exe_name(self):
+        return self.attributes["executable_name"]
+
+    def get_layout_file(self):
+        return self.attributes["layout_file"]
+
+    def get_output_file(self):
+        return self.output_file
+
+    def get_param_file(self):
+        return self.param_file
+
+    def get_modules(self):
+        return self.modules_to_load
 
 
     @staticmethod
@@ -304,42 +338,61 @@ def launch():
     if args is None:
         exit(1)
 
+    arch_name = args.get_arch_name()
+    exe_name = args.get_exe_name()
+    layout_file = args.get_layout_file()
+    output_file = args.get_output_file()
+    param_file = args.get_param_file()
+    target_modules = args.get_modules()
+
+    # For now, panic if there are not enough peers
+    if MPI.COMM_WORLD.Get_size() < 3:
+        print("rottnest_mpi requires at least three MPI peers to function")
+        exit(1)
+
     # Silence stdout (TEMP : waiting for silencing internally of output)
     saved_stdout = sys.stdout
     dummy_writer_cls = type("DummyWriter", (), dict(write=lambda *a, **ka: None, flush=lambda *a, **ka: None))
     sys.stdout = dummy_writer_cls()
     sys.stderr = dummy_writer_cls()
 
-    architectures.load_modules_from_strings(*args.modules_to_load)
-    executables.load_modules_from_strings(*args.modules_to_load)
-
-    # For now, panic if there is only one process
-    if MPI.COMM_WORLD.Get_size() == 1:
-        # TODO : Attempt local instead?
-        print("rottnest_mpi requires at least two processes to function")
-        exit(1)
+    architectures.load_modules_from_strings(*target_modules)
+    executables.load_modules_from_strings(*target_modules)
 
 
     # Open layout file and load layout
     # (currently single layout only, no validation)
     layouts = None
     try:
-        with open(args.layout_file, 'r') as lf:
+        with open(layout_file, 'r') as lf:
             layout_data = lf.read()
 
             layouts = {0: json.loads(layout_data)}
     except Exception as e:
-        print(f"Failed to open file '{args.layout_file}' : {e}")
+        print(f"Failed to load file '{layout_file}' : {e}")
         exit(1)
 
+    # If given, open and load parameters
+    executable_params = None
+    if param_file is not None:
+        try:
+            with open(param_file, 'r') as pf:
+                param_data = pf.read()
+
+                executable_params = json.loads(param_data)
+        except Exception as e:
+            print(f"Failed to load file '{layout_file}' : {e}")
+            exit(1)
+
+
     # Run main - workers return None, root returns the final result
-    res = main(args.architecture_name, args.executable_name, layouts, args.executable_params)
+    res = main(arch_name, exe_name, layouts, executable_params)
 
     if res is not None:
-        if args.output_file is None:
+        if output_file is None:
             print(res, file=saved_stdout)
         else:
-            with open(args.output_file, "w") as f:
+            with open(output_file, "w") as f:
                 print(res, file=f)
 
 
