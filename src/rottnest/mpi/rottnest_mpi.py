@@ -224,10 +224,20 @@ OPTIONS:
 
 
 
-def root_main(comm, architecture, executable, layouts):
+def root_main(comm, architecture, executable_name, executable_params, layouts, target_modules):
     '''
         Main function for the root process (manager)
     '''
+    # Load executable (manager only)
+    executables.load_modules_from_strings(*target_modules)
+
+    executables.set_current_executable(executable_name)
+
+    if executable_params is not None:
+        executables.set_executable_params(**executable_params)
+
+    executable = executables.get_current_executable()
+
     pool_task_queue = Queue()
     pool_completion_queue = Queue()
     pool_prio_task_queue = Queue()
@@ -299,27 +309,22 @@ def worker_main(comm, architecture, layouts, priority=False):
     worker.main(queue, queue)
 
 
-def main(architecture_name, executable_name, layouts, executable_params=None):
+def main(architecture_name, executable_name, layouts, target_modules, executable_params=None):
     '''
         Handles common behaviour before diverging to root/worker behaviour
     '''
     comm = MPI.COMM_WORLD
 
-    # Load arch, exe and layouts
+    # Load arch and layouts
     architectures.set_current_architecture(architecture_name)
-    executables.set_current_executable(executable_name)
-
-    if executable_params is not None:
-        executables.set_executable_params(**executable_params)
 
     architecture = architectures.get_current_architecture()
-    executable = executables.get_current_executable()
 
     for layout_id, layout in layouts.items():
         LayoutProxy.add_layout_with_id(layout_id, layout)
 
     if comm.Get_rank() == 0:
-        return root_main(comm, architecture, executable, layouts)
+        return root_main(comm, architecture, executable_name, executable_params, layouts, target_modules)
     else:
         worker_main(comm, architecture, layouts, priority = (comm.Get_rank() == comm.Get_size() - 1))
         return None
@@ -357,8 +362,6 @@ def launch():
     sys.stderr = dummy_writer_cls()
 
     architectures.load_modules_from_strings(*target_modules)
-    executables.load_modules_from_strings(*target_modules)
-
 
     # Open layout file and load layout
     # (currently single layout only, no validation)
@@ -381,12 +384,12 @@ def launch():
 
                 executable_params = json.loads(param_data)
         except Exception as e:
-            print(f"Failed to load file '{layout_file}' : {e}")
+            print(f"Failed to load file '{param_file}' : {e}")
             exit(1)
 
 
     # Run main - workers return None, root returns the final result
-    res = main(arch_name, exe_name, layouts, executable_params)
+    res = main(arch_name, exe_name, layouts, target_modules, executable_params)
 
     if res is not None:
         if output_file is None:
