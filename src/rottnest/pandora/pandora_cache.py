@@ -1,7 +1,8 @@
 import base64
 
 import pyLIQTR
-from rottnest.pandora.pandora_sequencer import pandora_connection, PandoraSequencer
+from rottnest.pandora.pandora_sequencer import PandoraSequencer
+from rottnest.pandora.pandora_connection import pandora_connection
 from rottnest.compute_units.layout_proxy import LayoutProxy
 
 try:
@@ -25,7 +26,7 @@ class PandoraCacheOp:
         return self.hsh
 
     def __iter__(self):
-        return [].__iter__() 
+        return [].__iter__()
 
     gate = None
 
@@ -41,13 +42,13 @@ class PandoraCache:
         # Try the hash cache
         obj = self.hash_cache.get(hsh, None)
 
-        # Fallback to class cache 
+        # Fallback to class cache
         if obj is None:
             obj = self.class_cache.get(type(op.gate), None)
 
         # Create connection
         if spawn and obj is not None:
-            conn = pandora_connection.spawn(obj) 
+            conn = pandora_connection.spawn(obj)
             obj = PandoraSequencer(conn=conn)
 
         return obj
@@ -58,20 +59,20 @@ class PandoraCache:
 
     def bind_class(self, op):
 
-        table_name = self.db_table_name(op, hash_postfix=False)  
+        table_name = self.db_table_name(op, hash_postfix=False)
 
         # Add the operation to the pandora database
         conn = add_cache_db(pandora_connection, op, table_name)
         conn.connection.close()
 
-        self.class_cache[type(op.gate)] = table_name 
+        self.class_cache[type(op.gate)] = table_name
 
-       
+
     def bind_hash(self, op, *, hsh=None):
 
 
         if hsh is None:
-            table_name = self.db_table_name(op, hash_postfix=True)  
+            table_name = self.db_table_name(op, hash_postfix=True)
             hsh = op._rottnest_hash()
         else:
             table_name = hsh
@@ -80,26 +81,26 @@ class PandoraCache:
         conn = add_cache_db(pandora_connection, op, table_name)
         conn.connection.close()
 
-        self.hash_cache[hsh] = table_name 
+        self.hash_cache[hsh] = table_name
 
     @staticmethod
     def db_table_name(op, *, hash_postfix=True):
         base_name = str(op.gate.__class__).split("'")[1].replace('.', '_')[:10]
-        
-        # Is the hash appended as a postfix? 
-        if hash_postfix: 
+
+        # Is the hash appended as a postfix?
+        if hash_postfix:
             hsh = op._rottnest_hash()
             base_name += '_' + base64.b32encode(hsh).decode()[:-6]
-        return base_name.lower() 
+        return base_name.lower()
 
-pandora_cache = PandoraCache() 
+pandora_cache = PandoraCache()
 
 def attach_class(db_name, class_obj):
     '''
-        Attaches a class hook to the cache 
+        Attaches a class hook to the cache
     '''
-    class_str = class_obj.__name__ 
-    conn = pandora_connection.spawn(db_name) 
+    class_str = class_obj.__name__
+    conn = pandora_connection.spawn(db_name)
     seq = PandoraSequencer(conn=conn)
     pandora_cache.add_class(class_str, seq)
 
@@ -112,7 +113,7 @@ def layout_bind(seq, layout_id: int):
     # TODO move to convex bound model in Pandora
     arch = LayoutProxy(layout_id)
     n_registers = arch.mem_bound()
-    max_t = n_registers 
+    max_t = n_registers
     max_d = n_registers
     batch_size = n_registers
     update_sequencer(seq, max_t=max_t, max_d=max_d, batch_size=batch_size)
@@ -131,7 +132,7 @@ def update_sequencer(seq, *args, **kwargs):
 #from qualtran._infra.adjoint import Adjoint
 
 # Skip if pandora is not enabled
-# This should be promoted to a module for each circuit that is to be constructed and run  
+# This should be promoted to a module for each circuit that is to be constructed and run
 #if pandora_connection is not None:
 #    pass
     #attach_class('adjoint', Adjoint)
