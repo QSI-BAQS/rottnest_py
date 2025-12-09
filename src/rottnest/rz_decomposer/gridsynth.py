@@ -4,7 +4,7 @@ import subprocess
 from decimal import Decimal
 from functools import lru_cache
 
-# Try a self import 
+# Try a self import
 from rottnest.rz_decomposer import rz_decomposer
 from rottnest.rz_decomposer import gridsynth
 
@@ -19,18 +19,18 @@ T = object()
 class Gridsynth(rz_decomposer.RzDecomposer):
     '''
         Gridsynth management
-        Main concern with set-up is setting the default precision 
+        Main concern with set-up is setting the default precision
         TODO: Make sure that if this is invoked by workers that they communicate the required precision
         TODO: Precision should be sourced from the current executable
     '''
     GATE_SYNTH_BNR = os.path.join(os.path.dirname(gridsynth.__file__), 'gridsynth')
-    CMD = f"{GATE_SYNTH_BNR}".split() 
-  
+    CMD = f"{GATE_SYNTH_BNR}".split()
+
     DEC_Z = Decimal(1)
     DEC_S = Decimal(0.5)
     DEC_T = Decimal(0.5)
 
-    # TODO: IR  
+    # TODO: IR
     DEFAULT_GATE_DICT = {
             'X':X,
             'Z':Z,
@@ -41,7 +41,7 @@ class Gridsynth(rz_decomposer.RzDecomposer):
 
     def __init__(self, gate_dict=None, default_precision=rz_decomposer.DEFAULT_PRECISION):
         # Because these depend on the location of the file they can't be trusted at compile time
-        self.proc = subprocess.Popen(self.CMD, stdin=subprocess.PIPE, stdout=subprocess.PIPE) 
+        self.proc = subprocess.Popen(self.CMD, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         if gate_dict is None:
             self.gate_dict = self.DEFAULT_GATE_DICT
         else:
@@ -70,9 +70,9 @@ class Gridsynth(rz_decomposer.RzDecomposer):
         '''
         if precision is None:
             precision = self.precision
-  
+
         approx_angle = Decimal(p) / Decimal(q)
-        if abs(approx_angle) % self.DEC_Z < self.precision_decimal: 
+        if abs(approx_angle) % self.DEC_Z < self.precision_decimal:
             return []
 
         if abs(self.DEC_S - (approx_angle % self.DEC_Z)) < self.precision_decimal:
@@ -88,7 +88,7 @@ class Gridsynth(rz_decomposer.RzDecomposer):
             op_sequence = sequence.split('[')[1].split(']')[0].split(',')[::-1]
         except:
             return []
-        return op_sequence 
+        return op_sequence
 
     def __del__(self):
         self.proc.terminate()
