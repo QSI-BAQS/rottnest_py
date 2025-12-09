@@ -18,6 +18,9 @@ from rottnest.process_pool import commands, symbols
 from rottnest.compute_units.layout_proxy import LayoutProxy
 
 from rottnest.plugins import architectures, executables
+from rottnest.plugins import load_default_architecture_config, load_default_executable_config
+
+from rottnest.pandora.pandora_connection import pandora_connect_glb
 
 def perror(msg, *args, **kwargs):
     print("[ ERROR ] " + msg, *args, **kwargs, file=sys.stderr)
@@ -229,8 +232,8 @@ def root_main(comm, architecture, executable_name, executable_params, layouts, t
         Main function for the root process (manager)
     '''
     # Load executable (manager only)
+    load_default_executable_config()
     executables.load_modules_from_strings(*target_modules)
-
     executables.set_current_executable(executable_name)
 
     if executable_params is not None:
@@ -302,6 +305,8 @@ def worker_main(comm, architecture, layouts, priority=False):
     '''
         Main function for the worker process(es)
     '''
+    pandora_connect_glb()
+
     worker = architecture.worker()
     queue = MPIClientQueue(comm, priority=priority)
 
@@ -316,8 +321,8 @@ def main(architecture_name, executable_name, layouts, target_modules, executable
     comm = MPI.COMM_WORLD
 
     # Load arch and layouts
+    load_default_architecture_config()
     architectures.set_current_architecture(architecture_name)
-
     architecture = architectures.get_current_architecture()
 
     for layout_id, layout in layouts.items():
@@ -352,7 +357,7 @@ def launch():
 
     # For now, panic if there are not enough peers
     if MPI.COMM_WORLD.Get_size() < 3:
-        print("rottnest_mpi requires at least three MPI peers to function")
+        perror("rottnest_mpi requires at least three MPI peers to function")
         exit(1)
 
     # Silence stdout (TEMP : waiting for silencing internally of output)
