@@ -4,7 +4,7 @@ from rottnest.pandora.pandora_pg import pandora_pg_config_load, pandora_pg_defau
 
 pandora_connection = None
 
-def pandora_connect_glb():
+def pandora_connect_glb(config_path=None):
     '''
         Somewhat bandaid-y fix to pandora connection being made at import time
 
@@ -14,7 +14,9 @@ def pandora_connect_glb():
     '''
     global pandora_connection
 
-    is_from_file, pgcfg = pandora_pg_config_load(pandora_pg_default_path)
+    config_path = pandora_pg_default_path if config_path is None else config_path
+
+    is_from_file, pgcfg = pandora_pg_config_load(config_path)
     config = PandoraConfig(**pgcfg)
 
     if pandora_connection is not None:
