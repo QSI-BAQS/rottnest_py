@@ -1,55 +1,58 @@
-from enum import Enum, auto
+'''
+    Process pool controller
+    Holds high level API calls to manager systems
+    The manager lives on a separate process and handles asynch
+    This class provides a non-asynch interface 
+'''
 import multiprocessing as mp
-from threading import Thread
 
-from typing import Any
 from types import GeneratorType
 
-import time 
-import queue
-import select
-from copy import deepcopy
-
-from collections import defaultdict, deque
-
-from rottnest.compute_units.compute_unit import ComputeUnit 
 from rottnest.compute_units.sequencer import Sequencer
-from rottnest.input_parsers.interrupt import INTERRUPT, CACHED
-
 from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
-from rottnest.input_parsers import pyliqtr_parser
 
-from rottnest.input_parsers.cirq_parser import shared_rz_tag_tracker
- 
-from rottnest.architecture_interface.rottnest_worker import RottnestWorker
-
-# TODO: Move these to an appropriate config
-
-from .pool_manager import ComputeUnitExecutorPoolManager
-
-from rottnest.config import N_PROCESSES, SEGFAULT_SENTINEL_TIMEOUT_SECS
-
-from .symbols import TOTAL, SPAWN_CONTEXT
 from rottnest.process_pool import commands, symbols
 
 from rottnest.compute_units.layout_proxy import LayoutProxy
 
+from rottnest.plugins import architectures, executables
+
+from .status_decorator import status_update, StatusTracked  
+from .pool_manager import ComputeUnitExecutorPoolManager
+
+from .symbols import TOTAL, SPAWN_CONTEXT
+
+class PoolStatus:
+    '''
+        Namespacing class
+        Not quite an ENUM
+    '''
+    UNSTARTED = 'UNSTARTED'
+    STARTING = 'UNSTARTED'
+    IDLE = 'IDLE'
+    SYNCHRONISING = 'SYNCHRONISING'
+    PREPROCESSING = 'PREPROCESSING'
+    EXECUTING = 'EXECUTING'
+
+
+
 # result_manager = mp.Manager()
 # dummy_result_cache = result_manager.dict()
 
-class ComputeUnitExecutorPool:    
+class ComputeUnitExecutorPool(StatusTracked):
     '''
-        This class acts as an interface to the worker 
+        This class acts as an interface to the worker
          pool manager
-        Function calls here bind to calls to the manager 
-         queue 
-        The manager is then responsible for dispatching   
-         tasks to elements in the queue 
+        Function calls here bind to calls to the manager
+         queue
+        The manager is then responsible for dispatching
+         tasks to elements in the queue
         This gives a singleton interface for the queue
-         and allows the manager to run on a separate process 
-        It is not intended that any serious computation 
-         occur in this class, as it will be bound to the             front end server's event loop, and so computation
-         should be delegated to the manager 
+         and allows the manager to run on a separate process
+        It is not intended that any serious computation
+         occur in this class, as it will be bound to the             
+         front end server's event loop, and so computation
+         should be delegated to the manager
     '''
 
     @staticmethod
@@ -59,43 +62,60 @@ class ComputeUnitExecutorPool:
             executable: 'RottnestExecutable'
         ) -> GeneratorType:
         '''
-            Generates compute units for distribution 
-            This forms a producer / consumer pattern 
+            Generates compute units for distribution
+            This forms a producer / consumer pattern
         '''
         # Drops cache if the architecture changes
-        pyliqtr_parser.PyliqtrParser.set_cache_tag(layout_ids)
+        PyliqtrParser.set_cache_tag(layout_ids)
 
         parser = PyliqtrParser(executable())
         parser.parse()
-        
+
         seq = Sequencer(layout_ids)
         it = seq.sequence_pyliqtr(parser)
 
         return it
 
+    @staticmethod
     def _generate_graph_states(
             layout_ids: list[int],
             architecture: 'RottnestArchitecture',
             executable: 'RottnestExecutable'
         ) -> GeneratorType:
-            '''
-                Generates graph states for distribution
-            '''
-            ...
+        '''
+            Generates graph states for distribution
+        '''
+        ...
 
     def __init__(self):
+        '''
+            Constructor
+        '''
         self.ctx = mp.get_context(SPAWN_CONTEXT)
+
+        self.manager = None
+
         self.manager_task_queue = self.ctx.Queue()
         self.manager_completion_queue = self.ctx.Queue()
         self.manager_priority_task_queue = self.ctx.Queue()
         self.manager_priority_completion_queue = self.ctx.Queue()
 
+        self._status = PoolStatus.UNSTARTED 
 
+    def get_status(self):
+        return self._status
+
+    def set_status(self, status):
+        self._status = status
+
+    @status_update(
+        PoolStatus.SYNCHRONISING, 
+        PoolStatus.IDLE
+    )
     def synch_from_singletons(self):
         '''
             Synchronises from singletons
         '''
-        from rottnest.plugins import architectures, executables
         architecture = architectures.get_current_architecture()
         self._pool.set_architecture_module(architecture)
 
@@ -111,15 +131,14 @@ class ComputeUnitExecutorPool:
         '''
             Loads singleton parameters then launches the pool
         '''
-        from rottnest.plugins import architectures, executables
 
         arch = architectures.get_current_architecture()
         arch_params = executables.get_current_executable_args()
 
-        executable = executables.get_current_executable() 
+        executable = executables.get_current_executable()
         exec_params = executables.get_current_executable_args()
-        layouts = LayoutProxy.get_layouts() 
-        
+        layouts = LayoutProxy.get_layouts()
+
         self.synch_and_start(arch, executable, layouts, executable_params=exec_params)
 
 
@@ -129,20 +148,25 @@ class ComputeUnitExecutorPool:
         executable: "RottnestExecutable",
         layouts: dict,
         *,
-        architecture_params: dict = {},
-        executable_params: dict = {},
-        ): 
+        architecture_params: dict = None,
+        executable_params: dict = None,
+        ):
         '''
             Wraps the synchronisation and start functions
         '''
 
-
-
+    @status_update(
+        PoolStatus.SYNCHRONISING,
+        PoolStatus.IDLE
+    )
     def start(self):
+        '''
+            Starts the process pool manager
+        '''
         self.manager = self.ctx.Process(
-            target=ComputeUnitExecutorPoolManager.entrypoint, 
+            target=ComputeUnitExecutorPoolManager.entrypoint,
             args=[
-                 self.manager_task_queue, 
+                 self.manager_task_queue,
                  self.manager_completion_queue,
                  self.manager_priority_task_queue,
                  self.manager_priority_completion_queue
@@ -154,45 +178,51 @@ class ComputeUnitExecutorPool:
 
     def synchronise(self):
         '''
-            Calls synchronisation functions 
+            Calls synchronisation functions
         '''
         self.synchronise_modules()
         self.synchronise_layouts()
 
+    @status_update(
+        PoolStatus.SYNCHRONISING, 
+        PoolStatus.IDLE
+    )
     def synchronise_modules(self):
         '''
-            Attempts to synchronise all architecure and 
+            Attempts to synchronise all architecure and
             executable modules with the manager
         '''
-        from rottnest.plugins import architectures, executables
-
-        architecture_strings = (
-            architectures.get_module_names()
-            + architectures.get_loaded_filepaths()
-        )
-        executable_strings = (
-            executables.get_module_names()
-            + executables.get_loaded_filepaths()
-        )
         self.manager_task_queue.put(
-            (commands.SYNCHRONISE_MODULES,
-            architecture_strings,
-            executable_strings)
+            (
+    commands.SYNCHRONISE_MODULES,
+    architectures.get_synchronisation_strings(),
+    executables.get_synchronisation_strings()
+            )
         )
+        return
 
-    def synchronise_precision(self):  
+    @status_update(
+        PoolStatus.SYNCHRONISING, 
+        PoolStatus.IDLE
+    )
+    def synchronise_precision(self):
         '''
+            Synchronises the Rz precision with the queue 
         '''
-        from rottnest.plugins import executables
         prec = executables.get_precision()
 
         self.manager_task_queue.put(
             (
                 commands.SET_PRECISION,
-                prec 
+                prec
             )
         )
+        return
 
+    @status_update(
+        PoolStatus.SYNCHRONISING, 
+        PoolStatus.IDLE
+    )
     def synchronise_layouts(self):
         '''
             Synchronises all loaded layouts with the
@@ -205,10 +235,11 @@ class ComputeUnitExecutorPool:
                 layout_payload
             )
         )
-         
+        return
+
     def start_workers(self):
         '''
-           Spins up the workers 
+           Spins up the workers
         '''
         self.manager_task_queue.put(
             (commands.START_WORKERS,)
@@ -216,7 +247,7 @@ class ComputeUnitExecutorPool:
 
     def stop_workers(self):
         '''
-           Spins down the workers 
+           Spins down the workers
         '''
         self.manager_task_queue.put(
             (commands.STOP_WORKERS,)
@@ -233,19 +264,19 @@ class ComputeUnitExecutorPool:
         self.manager_task_queue.put(
             (
                 commands.SET_ARCHITECTURE_MODULE,
-                architecture_module 
+                architecture_module
             )
         )
 
     def set_executable(self, executable: str):
         '''
-            Sets the current executable 
+            Sets the current executable
             This is only set on the manager
         '''
         self.manager_task_queue.put(
             (
                 commands.SET_EXECUTABLE,
-                executable 
+                executable
             )
         )
         self.synchronise_precision()
@@ -258,10 +289,10 @@ class ComputeUnitExecutorPool:
         self.manager_task_queue.put(
             (
                 commands.SET_EXECUTABLE_PARAMS,
-                params 
+                params
             )
         )
- 
+
     def run_sequence(self, layout_ids):
         '''
             Puts a run sequence to the worker queue
@@ -273,7 +304,7 @@ class ComputeUnitExecutorPool:
                 layout_ids
             )
         )
-   
+
     def shutdown(self):
         '''
             Broadcasts a shutdown to all workers
@@ -281,26 +312,37 @@ class ComputeUnitExecutorPool:
         self.manager_task_queue.put(
             (commands.TERMINATE,)
         )
-   
+
     def ping_manager(self):
         '''
-            Checks for worker life 
+            Checks for worker life
         '''
         self.manager_task_queue.put((commands.PING_MANAGER,))
-        resp = self.manager_completion_queue.get() 
-        assert resp == symbols.PONG 
- 
+        resp = self.manager_completion_queue.get()
+        assert resp == symbols.PONG
+
     def ping(self):
         '''
-            Checks for worker life 
+            Checks for worker life
         '''
         self.manager_task_queue.put((commands.PING,))
-        resp = self.manager_completion_queue.get() 
-        assert resp == symbols.PONG 
+        resp = self.manager_completion_queue.get()
+        assert resp == symbols.PONG
 
+    def get_results(self):
+        '''
+            Testing function
+            Requests results from the pool manager 
+        '''
+        self.manager_task_queue.put(
+            (commands.GET_CURRENT_RESULTS,)
+        ) 
+        print("Awaiting")
+        resp = self.manager_completion_queue.get()
+        return resp
 
     #######
- 
+
     def run_priority(self, compute_unit, rz_tag_tracker, full_output=True):
         self.manager_priority_task_queue.put(("run_priority", ('exc_cu', compute_unit, rz_tag_tracker, full_output, [None], 0)))
 

@@ -22,38 +22,7 @@ from rottnest.config import N_PROCESSES, SEGFAULT_SENTINEL_TIMEOUT_SECS
 
 from rottnest.compute_units.layout_proxy import LayoutProxy
 
-
 from copy import deepcopy
-
-def _add_dict(d1, d2):
-    return {
-        k: d1.get(k, 0) + d2.get(k, 0)
-        for k in d1.keys() | d2.keys()
-    }
-
-def add_result_dicts(res1, res2):
-    return {
-        'volumes': _add_dict(res1.get('volumes', {}), res2.get('volumes', {})),
-        't_source': _add_dict(res1.get('t_source', {}), res2.get('t_source', {})),
-        'tocks': _add_dict(res1.get('tocks', {}), res2.get('tocks', {})),
-    }
-
-
-def _iadd_dict(d1, d2):
-    for k in d2:
-        d1[k] = d1.get(k, 0) + d2[k]
-
-def iadd_result_dicts(res1, res2):
-    if 'volumes' not in res1:
-        res1['volumes'] = {}
-    if 't_source' not in res1:
-        res1['t_source'] = {}
-    if 'tocks' not in res1:
-        res1['tocks'] = {}
-    _iadd_dict(res1['volumes'], res2.get('volumes', {}))
-    _iadd_dict(res1['t_source'], res2.get('t_source', {}))
-    _iadd_dict(res1['tocks'], res2.get('tocks', {}))
-
 
 class ComputeUnitExecutorPoolManager:
     '''
@@ -143,7 +112,9 @@ class ComputeUnitExecutorPoolManager:
             commands.SET_ARCHITECTURE_MODULE: self._task_set_architecture_module,
             commands.SET_EXECUTABLE: self._task_set_executable,
             commands.SET_EXECUTABLE_PARAMS: self._task_set_executable_params,
-            commands.SET_PRECISION: self._task_set_precision
+            commands.SET_PRECISION: self._task_set_precision,
+
+            commands.GET_CURRENT_RESULTS: self._task_get_results,
         }
 
     @staticmethod
@@ -239,7 +210,6 @@ class ComputeUnitExecutorPoolManager:
             proc.start()
 
         self.pool_running = True
-        print("Pool Started")
    
     def run_task(self):
         '''
@@ -255,6 +225,7 @@ class ComputeUnitExecutorPoolManager:
         if task is None: 
             raise Exception(f"Unknown task: {task_name}")
         else:
+            print(task, args)
             result = task(*args)
             # If a response occurs, pass it back
             if result is not None:
@@ -445,21 +416,28 @@ class ComputeUnitExecutorPoolManager:
         print("time:", time.time() - self.run_seq_start)
 
 
-    def process_result_elem(self, composer, timeout=None):
+    def process_result_elem(self, timeout=None):
         '''
         Blocking read from worker_result_queue and 
             process result
         '''
+        print("Processing result")
+        obj = self.worker_result_queue.get(
+            timeout=timeout
+        )
+        print(obj)
+        return 
         unit_id, result = self.worker_result_queue.get(
             timeout=timeout
         )
+        print('Result:', unit_id, result, type(result))
 
         if result.get('status', 'error') == 'error':
             print(result)
             return
 
         # Composer takes result to reportable 
-        composer.receive(
+        self.composer.receive(
             unit_id,
             result
         )
@@ -514,10 +492,17 @@ class ComputeUnitExecutorPoolManager:
         '''
             Asynch sending of totals
         '''
-        print("Sending Total!")
         totals = self.compute_unit_result_cache[None]
         totals['cu_id'] = cu_id
         self.manager_completion_queue.put(totals)
+
+    def _task_get_results(self, *args, **kwargs):
+        '''
+            Sends the results
+            Wrapper around send total
+        '''
+        print("Getting Results")
+        self.send_total()
 
 
     def process_elem_cache(
@@ -598,7 +583,6 @@ class ComputeUnitExecutorPoolManager:
         Drain the result queue and post
         '''
         while not self.worker_result_queue.empty():
-            print("RECEIVED RESULT")
             # Drain result queue
             self.process_result_elem(composer)
 
@@ -629,7 +613,6 @@ class ComputeUnitExecutorPoolManager:
         # TODO
         #self.restart_dead_processes()
             
-        #print("Submitting", self.n_submitted)
 
         submitted = False
         while not submitted:
@@ -656,19 +639,18 @@ class ComputeUnitExecutorPoolManager:
                 # Wait for space in queue
                 time.sleep(0.1) 
         
-        print("Submitted", self.n_submitted)
         self.n_submitted += 1
 
     def process_cache_request(self, cache_hash, np_qubits = 0) -> bool:
         '''
         Returns true if success, false if blocking on previously submitted compute units
+        MOVED TO COMPOSER
         '''
         if self.compute_unit_counts[cache_hash] != self.compute_unit_totals[cache_hash]:
             return False
         
         output = deepcopy(self.compute_unit_result_cache[cache_hash])
         output['cache_hash_hex'] = cache_hash.hex()
-        # print("output:", output, self.compute_unit_counts, self.compute_unit_totals)
         self.manager_completion_queue.put(output)
 
         tock_dict = output.get('tocks', {})
@@ -686,8 +668,6 @@ class ComputeUnitExecutorPoolManager:
             output['volumes']['NP_VOLUME'] += self.np_stack[-i-1] * np_dur
 
         output['volumes']['NP_VOLUME'] = old_volume
-
-        # print(sum(self.np_stack, start=np_qubits), self.compute_unit_result_cache[None]['volumes']['NP_VOLUME'], self.compute_unit_result_cache[None]['tocks']['total'])
 
         return True
 
@@ -714,7 +694,7 @@ class ComputeUnitExecutorPoolManager:
             task, args = self.manager_priority_task_queue.get() # This should not block, now that we checked
 
             if task == "run_priority":
-                print("manager got priority task", task, args)
+                print("Manager got priority task", task, args)
                 # Check if process is alive
                 self.check_restart_priority_worker()
 

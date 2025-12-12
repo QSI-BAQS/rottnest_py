@@ -22,4 +22,6 @@ SYNCHRONISE_MODULES = 'synchronise_modules'
 # Synchronises layouts with the manager process
 SYNCHRONISE_LAYOUTS = 'synchronise_layouts'
 
-
+# Sends current results to the manager 
+# Priority task
+GET_CURRENT_RESULTS = 'get_current_results'
