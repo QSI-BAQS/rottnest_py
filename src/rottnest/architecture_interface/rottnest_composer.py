@@ -448,6 +448,22 @@ class ResultsComposer:
         '''
         return max(len(self._unit_ids), self._n_obj)
 
+    def to_args(self):
+        '''
+            Emits constructor arguments
+            Should be paired with from_args such that:
+            self.__class__.from_args(self.to_args()) == self
+        '''
+        raise NotImplementedError
+   
+    @staticmethod 
+    def from_args(self, *args, **kwargs):
+        '''
+            Constructor from args
+            Rebuilds the class instance over a serial interface
+        '''
+        raise NotImplementedError
+
     def serialise(self):
         '''
             Returns a representation for display

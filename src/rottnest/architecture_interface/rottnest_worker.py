@@ -51,7 +51,7 @@ class RottnestWorker(abc.ABC):
             PING: self.ping,
             SET_PRECISION: self.set_precision,
             EXEC_COMPUTE_UNIT: self.execute_compute_unit,
-            EXEC_GRAPH_STATE: self.execute_graph_state,
+            EXEC_GRAPH_STATE: self.task_execute_graph_state,
             GET_GRAPH: self.get_graph,
             LOAD_LAYOUT: self.load_layout,
         }
@@ -198,12 +198,32 @@ class RottnestWorker(abc.ABC):
 
         rz_tag_tracker = compute_unit.extract_rz_tracker()
 
-        return unit_id, self.execute_graph_state(
+        result = self.execute_graph_state(
             unit_id,
             layout_id,
             widget.json(),
             rz_tag_tracker.to_dict()
         )
+
+        return unit_id, result.to_args() 
+
+    def task_execute_graph_state( 
+            self,
+            unit_id: int,
+            layout_id: int,
+            widget: "Widget",
+            rz_tag_tracker: RzTagTracker
+        ) -> "ResultComposer":
+        '''
+            Task wrapper to execute a graph state
+            This handles return arguments
+        '''
+        return unit_id, self.execute_graph_state(
+            unit_id,
+            layout_id,
+            widget,
+            rz_tag_tracker
+        ).to_args()
 
     def execute_graph_state(
             self,
