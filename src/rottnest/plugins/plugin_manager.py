@@ -88,7 +88,17 @@ class PluginManager:
             Useful for synchronising
         '''
         return list(self._file_paths) 
-        
+       
+    def get_synchronisation_strings(self):
+        '''
+            Shorthand for getting string
+             representations of loaded objects
+        '''
+        return (
+            self.get_module_names()
+            + self.get_loaded_filepaths()
+        )
+ 
     @classmethod
     def default_loader(cls) -> 'cls':
         '''
