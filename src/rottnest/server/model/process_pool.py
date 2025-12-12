@@ -2,43 +2,16 @@
     Model wrapper functions for the process pool
 '''
 
-from rottnest.process_pool.process_pool import ComputeUnit 
+from rottnest.process_pool.process_pool import ComputeUnitExecutorPool 
+from rottnest.process_pool.status_decorator import StatusTracked
+from rottnest.process_pool import standalone
 
-def status_update(status, post_status):
-    '''
-        Status update decorator factory
-    '''
-    def _wrap_fn(fn):
-        '''
-            Decorator wrapper
-        '''
-        def _wrap(self, *args, **kwargs):
-            '''
-                Decorator resolver
-            '''
-            self.set_status(status)
-            result = fn(self, *args, **kwargs)
-            self.set_status(post_status)
-            return result
-        return _wrap 
-    return _wrap_fn
+from rottnest.plugins import executables, architectures 
+
+from rottnest.compute_units.layout_proxy import LayoutProxy
 
 
-class PoolStatus:
-    '''
-        Namespacing class
-        Not quite an ENUM
-    '''
-    UNSTARTED = 'UNSTARTED'
-    STARTING = 'UNSTARTED'
-    IDLE = 'IDLE'
-    SYNCHRONISING = 'SYNCHRONISING'
-    PREPROCESSING = 'PREPROCESSING'
-    EXECUTING = 'EXECUTING'
-
-
-
-class ModelProcessPool():
+class ModelProcessPool(StatusTracked):
     '''
         Singleton process pool manager
         This handles a process pool object and wraps
@@ -50,15 +23,21 @@ class ModelProcessPool():
             Wrap a process pool
         '''
         self._pool = ComputeUnitExecutorPool()
-        self._status = PoolStatus.UNSTARTED
+
+    def get_status(self) -> str:
+        '''
+            Getter for status
+            Defers to the pool status
+        '''
+        return self._pool.get_status()
 
     def set_status(self, status: str):
         '''
             Setter for status
         '''
-        self._status = status
+        raise Exception("Cannot set status on the model object") 
 
-    @status_update(PoolStatus.SYNCHRONISING, PoolStatus.IDLE)
+
     def update_loaded_modules(self):
         '''
             Triggers a synchronisation betwween the 
@@ -67,27 +46,30 @@ class ModelProcessPool():
         '''
         self._pool.synchronise_modules()
 
-    @status_update(PoolStatus.PREPROCESSING, PoolStatus.IDLE)
     def preprocess(self):
         '''
             Manages the preprocessing hooks
         '''
         pass
 
-    def execute_standalone(self):
+    def execute_standalone(self, compile_from_graph=True):
         executable = executables.get_current_executable()
         architecture = architectures.get_current_architecture()
 
-        layout = example_region_obj
+        layout = LayoutProxy.get_layouts()
 
         # TODO: Use preprocessing results
         self.preprocess()
 
         # Force consumption of iterator
-        result = standalone.compile(layout, executable, architecture)
+        result = standalone.compile(
+            layout,
+            executable,
+            architecture,
+            compile_from_graph=compile_from_graph
+        )
         return result
 
-    @status_update(PoolStatus.SYNCHRONISING, PoolStatus.IDLE)
     def synchronise(self):
         '''
             pool synchronises
@@ -95,7 +77,6 @@ class ModelProcessPool():
         self._pool.synchronise_modules()
         self._pool.synch_from_singletons()
 
-    @status_update(PoolStatus.STARTING, PoolStatus.IDLE)
     def start(self):
         self._pool.start()
 
@@ -115,17 +96,16 @@ class ModelProcessPool():
         # Execute
         self.execute()
         
-
     def get_status(self):
         '''
+            Getter for status
         '''
-
+        return self._status
 
 ###
 # Singleton Hook functions
 ##
-
-#process_pool = ModelProcessPool()
+process_pool = ModelProcessPool()
 
 def run_standalone():
     pass

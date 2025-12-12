@@ -30,14 +30,14 @@ def set_current_executable(name: str) -> Result:
     return singleton.set_current_executable(name)
 
 
-def get_current_config() -> Result:
+def get_current_params() -> Result:
     '''
         Gets the parameters for the current executable
     '''
     return singleton.get_executable_params()
 
 
-def set_current_config(params: dict) -> Result:
+def set_current_params(params: dict) -> Result:
     '''
         Sets the executable parameters
     '''
