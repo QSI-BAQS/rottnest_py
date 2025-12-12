@@ -1,10 +1,8 @@
-from collections import Counter
-
 from rottnest.architecture_interface.rottnest_worker import RottnestWorker
 
-class RzCollectionWorker(RottnestWorker):
+from .rz_collection_composer import RzCollectionResultsComposer
 
-    COUNTER = 'rz_counts'
+class RzCollectionWorker(RottnestWorker):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -37,15 +35,16 @@ class RzCollectionWorker(RottnestWorker):
         '''
             For an rz collector, execution is just counting rz by tag
         '''
-        rz_counter = Counter()
+        rz_counter = RzCollectionResultsComposer()
         rz_tracker = compute_unit.extract_rz_tracker()
         for seq in compute_unit.sequences:
             for op in seq:
                 if op.is_rz():
                     # Map tag back to actual angle
-                    rz_counter[rz_tracker[op.rz.tag]] += 1
-
-        return { self.COUNTER: rz_counter }
+                    rz_counter.tally(
+                        rz_tracker[op.rz.tag]
+                    ) 
+        return rz_counter
     
     def set_precision(self, precision):
         '''

@@ -23,4 +23,4 @@ class PreprocessorArchitecture(rottnest_architecture.RottnestArchitecture):
 
     @staticmethod
     def get_name() -> str:
-        return "Preprocessor"
+        return "Rz Counter"

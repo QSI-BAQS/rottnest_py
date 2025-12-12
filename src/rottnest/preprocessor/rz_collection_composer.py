@@ -8,17 +8,21 @@ from collections import Counter
 
 from rottnest.architecture_interface import rottnest_composer
 
-from .rz_collection_worker import RzCollectionWorker
-RZ_COUNTS = RzCollectionWorker.COUNTER 
+
+RZ_COUNTS = 'rz_counts' 
 
 class RzCollectionResultsComposer(rottnest_composer.ResultsComposer):
-    def __init__(self, result_dict=None, n_obj=1, comp_unit=None):
-        super().__init__()
+    def __init__(self, result_dict=None, n_obj=1, unit_id=None):
 
         if result_dict is None:
             result_dict = { RZ_COUNTS: Counter() }
 
-        self._obj = result_dict
+        super().__init__(
+            result_obj = result_dict,
+            n_obj = n_obj,
+            unit_id = unit_id
+        )
+
 
     def __add__(self, other):
         res = RzCollectionResultsComposer(
@@ -37,7 +41,17 @@ class RzCollectionResultsComposer(rottnest_composer.ResultsComposer):
 
         return self
 
-    def get_tagged_rz_counts():
+    def tally(self, tag, num=1):
+        '''
+            Tracks an rz
+        '''
+        if tag in self._obj:
+            self._obj[tag] += num 
+        else:
+            self._obj[tag] = num
+        return
+
+    def get_tagged_rz_counts(self):
         '''
             Gets tagged rz counts
         '''
