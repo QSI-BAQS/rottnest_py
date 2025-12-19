@@ -14,6 +14,8 @@ from rottnest.compute_units.layout_proxy import LayoutProxy
 from rottnest.preprocessor.architecture import PreprocessorArchitecture
 
 from rottnest.process_pool.process_pool import ComputeUnitExecutorPool
+from rottnest.process_pool.pool_status import PoolStatus
+
 from rottnest.plugins import architectures, executables
 
 from rottnest import test_utils
@@ -59,10 +61,16 @@ class ProcessPoolTests(unittest.TestCase):
          
         # Run the sequence
         pool.run_sequence([layout_id])
+        
+        while pool.poll() != PoolStatus.FINISHED:
+            # Example busy wait
+            print("Executing...")
+            time.sleep(1)
 
-        time.sleep(5)
         # Shutdown the pool
         pool.shutdown()
+        print("Triggered shutdown")
+        return
 
 if __name__ == '__main__':
     obj = ProcessPoolTests()

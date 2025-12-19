@@ -3,6 +3,7 @@
 '''
 
 PING = 'ping'
+POLL = 'poll'
 PING_MANAGER = 'ping_mgr'
 
 START_WORKERS = 'start_workers'

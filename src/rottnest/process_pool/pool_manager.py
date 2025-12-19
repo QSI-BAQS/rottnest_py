@@ -24,7 +24,11 @@ from rottnest.compute_units.layout_proxy import LayoutProxy
 
 from copy import deepcopy
 
-class ComputeUnitExecutorPoolManager:
+from .pool_status import PoolStatus
+from .status_decorator import status_update, StatusTracked  
+
+
+class ComputeUnitExecutorPoolManager(StatusTracked):
     '''
         Manages communications with process pool workers
     '''
@@ -43,6 +47,9 @@ class ComputeUnitExecutorPoolManager:
         from rottnest.plugins import architectures, executables 
         self._architectures = architectures
         self._executables = executables
+
+        # Only really used once running
+        self._status = PoolStatus.UNSTARTED
 
         self.composer = None
         self._rz_precision = DEFAULT_PRECISION 
@@ -101,6 +108,7 @@ class ComputeUnitExecutorPoolManager:
         # Task selector
         self._tasks = {
             commands.PING: self._task_ping,
+            commands.POLL: self._task_poll,
             commands.PING_MANAGER: self._task_ping_manager,
             commands.START_WORKERS: self._task_start_workers,
             commands.STOP_WORKERS: self._task_stop_workers,
@@ -141,13 +149,25 @@ class ComputeUnitExecutorPoolManager:
             )
 
             # TODO: Do priority override here
-            #self.check_run_priority()
-            #self.check_priority_result()
+            if not self.manager_priority_task_queue.empty():
+                self.run_priority_task()
 
             # Task available: run task
             if not self.manager_task_queue.empty():
                 self.run_task()
         return
+
+    def get_status(self):
+        '''
+            Status Getter
+        '''
+        return self._status
+
+    def set_status(self, status):
+        '''
+            Status Setter
+        '''
+        self._status = status
 
     def _task_synchronise_layouts(self, *args):
         '''
@@ -211,7 +231,7 @@ class ComputeUnitExecutorPoolManager:
 
         self.pool_running = True
    
-    def run_task(self):
+    def run_task(self, task_queue=None, completion_queue=None):
         '''
             Task selector entrypoint
             Takes a task from the manager task queue
@@ -219,7 +239,13 @@ class ComputeUnitExecutorPoolManager:
             Then reports any results back to the manager
              completion queue.
         '''
-        task_name, *args = self.manager_task_queue.get()
+        if task_queue is None:
+            task_queue = self.manager_task_queue
+
+        if completion_queue is None:
+            completion_queue = self.manager_completion_queue
+
+        task_name, *args = task_queue.get()
         print("Running: ", task_name, args)
         task = self._tasks.get(task_name, None)
         if task is None: 
@@ -229,7 +255,17 @@ class ComputeUnitExecutorPoolManager:
             result = task(*args)
             # If a response occurs, pass it back
             if result is not None:
-                self.manager_completion_queue.put(result)
+                completion_queue.put(result)
+
+    def run_priority_task(self):
+        '''
+            Run a priority task
+        '''
+        return self.run_task(
+            task_queue = self.manager_priority_task_queue,
+            completion_queue = self.manager_priority_completion_queue
+        )
+
 
     def _task_terminate(self, *args):
         '''
@@ -246,6 +282,13 @@ class ComputeUnitExecutorPoolManager:
         '''
         # This should not block 
         return PONG 
+
+    def _task_poll(self, *args):
+        '''
+           Gets manager status 
+        '''
+        # This should not block 
+        return self.get_status() 
 
     def _task_ping(self, *args):
         '''
@@ -340,7 +383,10 @@ class ComputeUnitExecutorPoolManager:
                 # TODO: combine results
         return
 
-
+    @status_update(
+        PoolStatus.EXECUTING,
+        PoolStatus.FINISHED
+    )
     def _task_run_sequence(self, *args):
         '''
             Returns true if exiting, none otherwise
@@ -619,7 +665,6 @@ class ComputeUnitExecutorPoolManager:
             # Spin until either we get a priority task or we are unblocked on the worker task
 
             self.check_run_priority()
-            self.check_priority_result()
 
             # This may block, so check
             if not self.worker_task_queue.full():
@@ -686,25 +731,34 @@ class ComputeUnitExecutorPoolManager:
                                 daemon=True)
             self.priority_process.start()
 
+
     def check_run_priority(self):
-        global saved_architectures
+        '''
+            Convenience function
+        '''
+        if not self.manager_priority_task_queue.empty():
+            self.run_priority_task()
 
-        while not self.manager_priority_task_queue.empty():
-            # Get task
-            task, args = self.manager_priority_task_queue.get() # This should not block, now that we checked
 
-            if task == "run_priority":
-                print("Manager got priority task", task, args)
-                # Check if process is alive
-                self.check_restart_priority_worker()
+    #def check_run_priority(self):
+    #    global saved_architectures
 
-                # Submit task
-                self.priority_task_queue.put(args)
-                print("submitted priority", self.priority_submitted_count)
-                self.priority_submitted_count += 1
-            elif task == "save_arch":
-                arch_id, arch_json_obj = args
-                saved_architectures[arch_id] = arch_json_obj
+    #    while not self.manager_priority_task_queue.empty():
+    #        # Get task
+    #        task, args = self.manager_priority_task_queue.get() # This should not block, now that we checked
+
+    #        if task == "run_priority":
+    #            print("Manager got priority task", task, args)
+    #            # Check if process is alive
+    #            self.check_restart_priority_worker()
+
+    #            # Submit task
+    #            self.priority_task_queue.put(args)
+    #            print("submitted priority", self.priority_submitted_count)
+    #            self.priority_submitted_count += 1
+    #        elif task == "save_arch":
+    #            arch_id, arch_json_obj = args
+    #            saved_architectures[arch_id] = arch_json_obj
     
     def check_priority_result(self):
         # Check if process is alive

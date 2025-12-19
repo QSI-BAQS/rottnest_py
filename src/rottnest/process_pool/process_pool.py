@@ -22,18 +22,7 @@ from .pool_manager import ComputeUnitExecutorPoolManager
 
 from .symbols import TOTAL, SPAWN_CONTEXT
 
-class PoolStatus:
-    '''
-        Namespacing class
-        Not quite an ENUM
-    '''
-    UNSTARTED = 'UNSTARTED'
-    STARTING = 'UNSTARTED'
-    IDLE = 'IDLE'
-    SYNCHRONISING = 'SYNCHRONISING'
-    PREPROCESSING = 'PREPROCESSING'
-    EXECUTING = 'EXECUTING'
-
+from .pool_status import PoolStatus
 
 
 # result_manager = mp.Manager()
@@ -293,6 +282,10 @@ class ComputeUnitExecutorPool(StatusTracked):
             )
         )
 
+    @status_update(
+        PoolStatus.EXECUTING, 
+        PoolStatus.EXECUTING
+    )
     def run_sequence(self, layout_ids):
         '''
             Puts a run sequence to the worker queue
@@ -304,6 +297,19 @@ class ComputeUnitExecutorPool(StatusTracked):
                 layout_ids
             )
         )
+
+    def poll(self):
+        '''
+            Checks the state of the running job
+        '''
+        # TODO - get status from backend
+
+        self.manager_priority_task_queue.put((commands.POLL,))
+        status = self.manager_priority_completion_queue.get()
+
+        self.set_status(status)
+        return status 
+    
 
     def shutdown(self):
         '''
