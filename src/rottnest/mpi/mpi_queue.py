@@ -8,17 +8,19 @@ import time
 
 from queue import Empty, Full
 
-TAG_SERVER_NO_PRIO=1
-TAG_CLIENT_NO_PRIO=2
-TAG_SERVER_PRIO=3
-TAG_CLIENT_PRIO=4
+from mpi_uniq_tag import get_uniq_tag
+
+TAG_SERVER_NO_PRIO = get_uniq_tag()
+TAG_CLIENT_NO_PRIO = get_uniq_tag()
+TAG_SERVER_PRIO = get_uniq_tag()
+TAG_CLIENT_PRIO = get_uniq_tag()
 
 # How much to consume of the remaining timeout if there is one
 # (clamped to at least 0.05s)
 QUEUE_TIMEOUT_RATE = 0.2
 
 class MPIRootQueue():
-    def __init__(self, comm, allocated_clients=None, priority=False, maxsize=-1):
+    def __init__(self, comm, allocated_clients=None, priority=False):
         '''
             Create the root queue (dispatches jobs)
         '''
@@ -47,7 +49,6 @@ class MPIRootQueue():
         self.outstanding_response = self.comm.irecv(tag=self.TAG_CLIENT)
 
         self.local_queue = []
-        self.maxsize = maxsize
 
 
     def poll(self, block=True, timeout=None):
@@ -58,7 +59,7 @@ class MPIRootQueue():
         response = None
         if block:
             if timeout is None:
-                # This is guaranteed to succeed
+                # Unless something fatal happens, this returning means it succeeded
                 response = self.outstanding_response.wait()
                 status = True
             else:
@@ -157,6 +158,7 @@ class MPIClientQueue():
 
 
     def put(self, v, block=True, timeout=None):
+        # TODO : Blocking as above?
         self.comm.send((self.rank, v), dest=0, tag=self.TAG_CLIENT)
 
 
