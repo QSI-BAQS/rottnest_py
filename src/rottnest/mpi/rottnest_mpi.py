@@ -20,7 +20,8 @@ from rottnest.compute_units.layout_proxy import LayoutProxy
 from rottnest.plugins import architectures, executables
 from rottnest.plugins import load_default_architecture_config, load_default_executable_config
 
-from rottnest.pandora.pandora_connection import pandora_connect_glb
+from rottnest.pandora import pandora_connection
+from rottnest.mpi.pandora_mpi_patching import MPIPandoraRootConnection, MPIPandoraWorker
 
 def perror(msg, *args, **kwargs):
     print("[ ERROR ] " + msg, *args, **kwargs, file=sys.stderr)
@@ -30,7 +31,10 @@ class MPIArgState():
     '''
         A state in the arg parsing state machine
 
-        transition_fn must return the next state
+        transition_fn is a function (arg parser instance, next arg) -> next state
+        that mutates the arg parser appropriately
+
+        final flags a state as being appropriate to end parsing in
     '''
     def __init__(self, transition_fn, final=False):
         self.transition_fn = transition_fn
@@ -47,6 +51,9 @@ class RottnestMPIArgs():
     '''
     @staticmethod
     def _handle_state_open(instance, arg, *_):
+        # Map <arg> -> handler function
+        # handler function must return the next state (will often just be a constant fn to a handler
+        # state)
         flag_handlers = {
             "--help": RottnestMPIArgs._help,
             "-m": lambda *a: RottnestMPIArgs.STATE_LOAD_MODULE,
@@ -57,15 +64,18 @@ class RottnestMPIArgs():
             "--param_file": lambda *a: RottnestMPIArgs.STATE_SET_PARAM_FILE,
         }
 
+        # Track the current flag/arg encountered in the open state, for error reporting
         instance.back_arg = arg
 
         if arg in flag_handlers:
             return flag_handlers[arg]()
 
+        # Any flag-style (starting with `-`) args not caught by flag_handlers are necessarily invalid
         if arg[0] == "-":
             instance.error_msg = f"Unknown flag '{arg}'"
             return RottnestMPIArgs.STATE_CLOSED
 
+        # Fill in the next outstanding attribute with a non-flag unbound arg
         if instance.outstanding_attributes:
             instance.attributes[instance.outstanding_attributes.pop(0)] = arg
             return RottnestMPIArgs.STATE_OPEN
@@ -115,6 +125,7 @@ class RottnestMPIArgs():
     STATE_SET_PARAM_FILE = MPIArgState(transition_fn=_handle_set_param_file)
 
 
+    # Distinguish between closed due to an error, and due to asking for help
     STATE_CLOSED = MPIArgState(transition_fn=lambda *a, **ka: STATE_CLOSED)
 
 
@@ -128,10 +139,13 @@ class RottnestMPIArgs():
 
 USAGE:
     An MPI-backed standalone rottnest executor.
-    Must be run via mpirun, and intended to be launched as part of a slurm job.
+    Must be run via mpirun (or a slurm equivalent).
 
-    Given n MPI peers, runs a manager and n-1 clients, with clients doing
-    distributed work.
+    Runs a manager, workers and pandora nodes distributed over the MPI peers.
+    Requires at minimum 4 peers.
+
+    Note that any files used (ie. module files, parameter files) must be present
+    in the same (relative) location on all MPI peers.
 
     <architecture_name>
         The name of the architecture to use.
@@ -155,7 +169,7 @@ OPTIONS:
         Provides a file to write the result to (as opposed to dumping it to stdout)
 
     -p/--param_file
-        Provides a JSON file to load the executable arguments from'''
+        Provides a JSON file to load the executable parameters from'''
         )
         return RottnestMPIArgs.STATE_CLOSED_HELP
 
@@ -178,6 +192,12 @@ OPTIONS:
 
 
     def finalise(self) -> bool:
+        '''
+            "Complete" parsing by checking if the parser exists in a valid final state
+
+            Returns True if parsing succeeded (ended in a final state, got all requires args)
+            Returns False otherwise
+        '''
         if self.state is RottnestMPIArgs.STATE_CLOSED_HELP:
             return False
 
@@ -185,6 +205,7 @@ OPTIONS:
             # We hit an error and closed early
             if self.state is RottnestMPIArgs.STATE_CLOSED:
                 perror(self.error_msg)
+            # We finished in a state waiting for a flag value
             else:
                 perror(f"Arguments ended while expecting an additional argument for flag '{self.back_arg}'")
             return False
@@ -216,6 +237,12 @@ OPTIONS:
 
     @staticmethod
     def from_args(*args):
+        '''
+            Performs full parsing and finalisation for a given series of arguments
+
+            Returns the args object on success
+            Returns None if something went wrong
+        '''
         res = RottnestMPIArgs()
         for arg in args:
             res.parse(arg)
@@ -247,12 +274,35 @@ def root_main(comm, architecture, executable_name, executable_params, layouts, t
     pool_prio_completion_queue = Queue()
 
     pool_manager = MPIPoolManager(
+        # TEMP : Manually allocate workers until a proper allocation scheme is used
+        list(    # Non-priority
+            filter(
+                lambda x: x % 2 != 0,
+                range(1, comm.Get_size() - 2)
+            )
+        ),
+        [comm.Get_size() - 1,],    # Priority
         pool_task_queue, pool_completion_queue,
         pool_prio_task_queue, pool_prio_completion_queue,
         comm
     )
 
     pool_manager._precision = executables.get_precision()
+
+
+    # Patch over Pandora with an MPI-enabled version
+    # TEMP : Until a proper allocation scheme is used
+    pandora_clients = list(
+        filter(
+            lambda x: x % 2 == 0,
+            # All even processes (exclude root and last)
+            range(1, comm.Get_size() - 1)
+        )
+    )
+    pandora_connection.conn = MPIPandoraRootConnection(
+        comm=comm,
+        allocated_clients=pandora_clients,
+    )
 
     '''
         This process has to play the role of a manager (since it is standalone)
@@ -287,9 +337,15 @@ def root_main(comm, architecture, executable_name, executable_params, layouts, t
         )
     )
 
+    # TEMP : Precompute to trigger some pandora activity
+    executable.precompute()
+
     # Run each task
     while not pool_task_queue.empty():
         pool_manager.run_task()
+
+    # Close pandora connection and halt peers
+    pandora_connection.conn.halt()
 
     # Handle all completions
     while not pool_completion_queue.empty():
@@ -305,8 +361,6 @@ def worker_main(comm, architecture, layouts, priority=False):
     '''
         Main function for the worker process(es)
     '''
-    pandora_connect_glb()
-
     worker = architecture.worker()
     queue = MPIClientQueue(comm, priority=priority)
 
@@ -314,7 +368,18 @@ def worker_main(comm, architecture, layouts, priority=False):
     worker.main(queue, queue)
 
 
-def main(architecture_name, executable_name, layouts, target_modules, executable_params=None):
+def pandora_main(comm):
+    '''
+        Main function for pandora process(es)
+    '''
+    print(f"Dispatching to pandora_main on {comm.Get_rank()}")
+    pandora_connection.load_pandora_connection()
+    worker = MPIPandoraWorker(comm, pandora_connection.conn)
+
+    worker.main()
+
+
+def dispatch_main(architecture_name, executable_name, layouts, target_modules, executable_params=None):
     '''
         Handles common behaviour before diverging to root/worker behaviour
     '''
@@ -329,11 +394,17 @@ def main(architecture_name, executable_name, layouts, target_modules, executable
         LayoutProxy.add_layout_with_id(layout_id, layout)
 
     if comm.Get_rank() == 0:
+        # Root process serves as manager, returns final result
         return root_main(comm, architecture, executable_name, executable_params, layouts, target_modules)
+    elif comm.Get_rank() == comm.Get_size() - 1:
+        # Last process serves as priority worker
+        worker_main(comm, architecture, layouts, priority = True)
+    elif comm.Get_rank() % 2:
+        # TEMP : Odd processes are workers, even are pandora nodes
+        worker_main(comm, architecture, layouts, priority = False)
     else:
-        worker_main(comm, architecture, layouts, priority = (comm.Get_rank() == comm.Get_size() - 1))
-        return None
-    #print(f"MPI peer {comm.Get_rank()} completed")
+        pandora_main(comm)
+    return None
 
 
 def launch():
@@ -356,15 +427,15 @@ def launch():
     target_modules = args.get_modules()
 
     # For now, panic if there are not enough peers
-    if MPI.COMM_WORLD.Get_size() < 3:
-        perror("rottnest_mpi requires at least three MPI peers to function")
+    if MPI.COMM_WORLD.Get_size() < 4:
+        perror("rottnest_mpi requires at least 4 MPI peers to function")
         exit(1)
 
     # Silence stdout (TEMP : waiting for silencing internally of output)
     saved_stdout = sys.stdout
     dummy_writer_cls = type("DummyWriter", (), dict(write=lambda *a, **ka: None, flush=lambda *a, **ka: None))
-    sys.stdout = dummy_writer_cls()
-    sys.stderr = dummy_writer_cls()
+    # sys.stdout = dummy_writer_cls() if MPI.COMM_WORLD.Get_rank() != 0 else sys.stdout
+    # sys.stderr = dummy_writer_cls()
 
     architectures.load_modules_from_strings(*target_modules)
 
@@ -394,7 +465,7 @@ def launch():
 
 
     # Run main - workers return None, root returns the final result
-    res = main(arch_name, exe_name, layouts, target_modules, executable_params)
+    res = dispatch_main(arch_name, exe_name, layouts, target_modules, executable_params)
 
     if res is not None:
         if output_file is None:
