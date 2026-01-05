@@ -21,7 +21,7 @@ class MPIPoolManager(ComputeUnitExecutorPoolManager):
         this cannot restart workers, as they are managed via MPI, not internally)
     '''
 
-    def __init__(self,
+    def __init__(self, allocated_workers, allocated_priority_workers,
                  manager_task_queue, manager_completion_queue,
                  manager_priority_task_queue, manager_priority_completion_queue,
                  comm, worker=None):
@@ -98,22 +98,21 @@ class MPIPoolManager(ComputeUnitExecutorPoolManager):
             self.manager_task_fds = []
 
         # Allocate last worker as priority, all else as standard
-        self.n_workers = comm.Get_size() - 1
-
         # Here, MPIRootQueue is 2-way
         # (ie. put(x), get() will not give back x)
-        self.worker_task_queue = MPIRootQueue(
-            comm,
-            allocated_clients=list(range(1, self.n_workers))
-        )
-        self.worker_result_queue = self.worker_task_queue
-
         self.priority_task_queue = MPIRootQueue(
             comm,
             priority=True,
-            allocated_clients=[self.n_workers,]
+            allocated_clients=allocated_priority_workers
         )
         self.priority_result_queue = self.priority_task_queue
+
+        self.worker_task_queue = MPIRootQueue(
+            comm,
+            allocated_clients=allocated_workers
+        )
+        self.worker_result_queue = self.worker_task_queue
+
 
 
     # ---=[ Overriding Internals ]=---
