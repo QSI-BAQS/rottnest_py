@@ -2,7 +2,7 @@ import base64
 
 import pyLIQTR
 from rottnest.pandora.pandora_sequencer import PandoraSequencer
-from rottnest.pandora.pandora_connection import pandora_connection
+from rottnest.pandora import pandora_connection
 from rottnest.compute_units.layout_proxy import LayoutProxy
 
 try:
@@ -48,7 +48,7 @@ class PandoraCache:
 
         # Create connection
         if spawn and obj is not None:
-            conn = pandora_connection.spawn(obj)
+            conn = pandora_connection.conn.spawn(obj)
             obj = PandoraSequencer(conn=conn)
 
         return obj
@@ -62,7 +62,7 @@ class PandoraCache:
         table_name = self.db_table_name(op, hash_postfix=False)
 
         # Add the operation to the pandora database
-        conn = add_cache_db(pandora_connection, op, table_name)
+        conn = add_cache_db(pandora_connection.conn, op, table_name)
         conn.connection.close()
 
         self.class_cache[type(op.gate)] = table_name
@@ -78,7 +78,7 @@ class PandoraCache:
             table_name = hsh
 
         # Add the operation to the pandora database
-        conn = add_cache_db(pandora_connection, op, table_name)
+        conn = add_cache_db(pandora_connection.conn, op, table_name)
         conn.connection.close()
 
         self.hash_cache[hsh] = table_name
@@ -100,7 +100,7 @@ def attach_class(db_name, class_obj):
         Attaches a class hook to the cache
     '''
     class_str = class_obj.__name__
-    conn = pandora_connection.spawn(db_name)
+    conn = pandora_connection.conn.spawn(db_name)
     seq = PandoraSequencer(conn=conn)
     pandora_cache.add_class(class_str, seq)
 

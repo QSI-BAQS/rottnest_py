@@ -16,7 +16,7 @@ from rottnest.pandora.proxy_cirq_parser import ProxyCirqParser
 
 from rottnest.pandora.pandora_pg import pandora_pg_config_load, pandora_pg_default_path
 
-from rottnest.pandora.pandora_connection import pandora_connection
+from rottnest.pandora import pandora_connection
 
 class PandoraSequencer():
     '''
@@ -40,7 +40,7 @@ class PandoraSequencer():
         self.op = PandoraGate(name)
 
         if conn is None:
-            conn = pandora_connection
+            conn = pandora_connection.conn
         self.pandora_connection = conn
 
         if len(layouts) == 0:
