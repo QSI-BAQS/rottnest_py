@@ -5,9 +5,11 @@
 
 from pandora.qualtran_to_pandora_util import windowed_cirq_to_pandora
 from pandora.connection_util import insert_single_batch
+from pandora.targeted_decomposition import add_cache_db
 
-from mpi_uniq_tag import get_uniq_tag
+from rottnest.pandora.pandora_cache import pandora_cache, PandoraCache
 
+from rottnest.pandora import pandora_connection
 
 '''
     TODO
@@ -19,14 +21,23 @@ from mpi_uniq_tag import get_uniq_tag
 
 
 # Tags : Disjoint communication channels for different types of messages
-TAG_PANDORA_TASK = get_uniq_tag()
-TAG_PANDORA_RESULT = get_uniq_tag()
+TAG_PANDORA_TASK = 100
+TAG_PANDORA_RESULT = 101
 
 # Tasks : Minimum set that is actually used by rottnest
 TASK_HALT = "HALT"
 TASK_SPAWN = "SPAWN"
 TASK_WIDGETIZE = "WIDGETIZE"
-TASK_BUILD_PYLIQTR_CIRCUIT = "BUILD_PYLIQTR"
+TASK_ADD_CACHE = "ADD_CACHE"
+
+
+def mpi_pandora_cache_dispatch(op, do_hash=False, hash_override=None, *args, **kwargs):
+    # NOTE : This will fail with a real pandora connection
+    return pandora_connection.conn.mpi_add_cache(op, do_hash, hash_override, *args, **kwargs)
+
+
+def mpi_patch_pandora_cache():
+    pandora_cache.enable_cache_dispatch(mpi_pandora_cache_dispatch)
 
 
 class MPIPandoraRootConnection():
@@ -45,10 +56,14 @@ class MPIPandoraRootConnection():
         if self.rank != 0:
             raise Exception("MPI Pandora connection is reserved for the MPI root peer")
 
-        self.available_clients = allocated_clients.copy()
         self.all_clients = allocated_clients.copy()
 
+        self.db_allocation_idx = 0
+
         self.decomposition_window_size = decomp_window_size
+
+        # Mapping of previously spawned tables to the client with that table
+        self.tables = dict()
 
 
     def halt(self):
@@ -56,25 +71,48 @@ class MPIPandoraRootConnection():
             self.comm.send((TASK_HALT, tuple()), dest=rank, tag=TAG_PANDORA_TASK)
 
 
+    def mpi_add_cache(self, op, do_hash=False, hash_override=None, *args, **kwargs):
+        client_rank = self.all_clients[self.db_allocation_idx]
+        self.db_allocation_idx = (self.db_allocation_idx + 1) % len(self.all_clients)
+
+        # Send task
+        self.comm.send(
+            (
+                TASK_ADD_CACHE,
+                (
+                    op,
+                    args,
+                    kwargs,
+                    do_hash,
+                    hash_override
+                )
+            ),
+            dest=client_rank,
+            tag=TAG_PANDORA_TASK
+        )
+
+        # Get early response
+        table_name, res_v = self.comm.recv(source=client_rank, tag=TAG_PANDORA_RESULT)
+
+        self.tables[table_name] = client_rank
+
+        return (table_name, res_v)
+
+
     # --- Pandora Ducktyped Interface ---
     def spawn(self, database):
-        if self.available_clients:
-            client_rank = self.available_clients.pop(0)
-            # Tell the chosen client to spawn the database
-            self.comm.send((TASK_SPAWN, (database,)), dest=client_rank, tag=TAG_PANDORA_TASK)
-            response = self.comm.recv(source=client_rank, tag=TAG_PANDORA_RESULT)
+        # Handle case where we are re-spawning a table
+        if database in self.tables:
+            return MPIPandoraDBConnection(self.comm, self, database, self.tables[database])
 
-            # Check response
-            if not response:
-                # TODO
-                raise Exception(f"Peer failed to spawn database {database}")
+        # Otherwise, ask a client to spawn the new table
+        client_rank = self.all_clients[self.db_allocation_idx]
+        # Tell the chosen client to spawn the database
+        self.comm.send((TASK_SPAWN, (database,)), dest=client_rank, tag=TAG_PANDORA_TASK)
 
-            self.available_clients.append(client_rank)
+        self.db_allocation_idx = (self.db_allocation_idx + 1) % len(self.all_clients)
 
-            print("Prepared spawned connection")
-            return MPIPandoraDBConnection(self.comm, self, database, client_rank)
-        else:
-            raise Exception(f"No peer to dispatch spawn of database {database} to")
+        return MPIPandoraDBConnection(self.comm, self, database, client_rank)
 
 
     def get_connection(self, database=None):
@@ -85,8 +123,8 @@ class MPIPandoraRootConnection():
         raise NotImplementedError("The root MPI pandora connection does not handle a widgetizable database")
 
 
-    def build_pyliqtr_circuit(self, pyliqtr_circuit):
-        raise NotImplementedError("The root MPI pandora connection does not handle a circuit database")
+    def build_pyliqtr_circuit(self, *_):
+        raise NotImplementedError("MPI-based Pandora requires a patching over add_cache_db, to ensure build_pyliqtr_circuit is never invoked on the root side")
 
 
 
@@ -107,6 +145,11 @@ class MPIPandoraDBConnection():
         ))
 
         self.decomposition_window_size = root.decomposition_window_size
+
+
+    def mpi_add_cache(*args, **kwargs):
+        # Delegate to root
+        return self.root.mpi_add_cache(*args, **kwargs)
 
 
     def spawn(self, database):
@@ -131,18 +174,9 @@ class MPIPandoraDBConnection():
             tag = TAG_PANDORA_TASK
         )
 
-        # Initial response should be (TASK_WIDGETIZE, True) to confirm successs
-        response = self.comm.recv(source=self.client_rank, tag=TAG_PANDORA_RESULT)
-
-        task, result = response
-
-        if task != TASK_WIDGETIZE:
-            raise Exception(f"Got incorrect response task : {task}")
-        if not result:
-            raise Exception(f"Error during widgetisation")
-
         # Stream the result from the client (yielding each individual widget)
         while True:
+            # TODO : May need to be a stream of the widget list as well?
             widget_status, widget = self.comm.recv(source=self.client_rank, tag=TAG_PANDORA_RESULT)
             if not widget_status:
                 break
@@ -150,52 +184,8 @@ class MPIPandoraDBConnection():
             yield widget
 
 
-    def build_pyliqtr_circuit(self, pyliqtr_circuit):
-        # Decomposition into serialisable pandora gates occurs on the root side
-        # as pyliqtr circuits are not generally serialisable
-        batches = windowed_cirq_to_pandora(circuit=pyliqtr_circuit,
-                                           window_size=self.decomposition_window_size)
-
-        # Initialise build
-        self.comm.send(
-            (
-                TASK_BUILD_PYLIQTR_CIRCUIT,
-                (self.database,)        # As above, need to inform the client of the database in use
-            ),
-            dest=self.client_rank,
-            tag=TAG_PANDORA_TASK
-        )
-
-        response = self.comm.recv(source=self.client_rank, tag=TAG_PANDORA_RESULT)
-
-        # Initial response should be (TASK_BUILD_PYLIQTR_CIRCUIT, True) to confirm
-        task, result = response
-
-        if task != TASK_BUILD_PYLIQTR_CIRCUIT:
-            raise Exception(f"Got incorrect response task : {task}")
-        if not result:
-            raise Exception(f"Error during circuit building")
-
-        # Dispatch each batch to the client
-        for batch, decomp_time in batches:
-            self.comm.send(
-                (
-                    TASK_BUILD_PYLIQTR_CIRCUIT,
-                    batch
-                ),
-                dest=self.client_rank,
-                tag=TAG_PANDORA_TASK
-            )
-
-        # End the batches
-        self.comm.send(
-            (
-                TASK_BUILD_PYLIQTR_CIRCUIT,
-                None
-            ),
-            dest=self.client_rank,
-            tag=TAG_PANDORA_TASK
-        )
+    def build_pyliqtr_circuit(self, *_):
+        raise NotImplementedError("MPI-based Pandora requires a patching over add_cache_db, to ensure build_pyliqtr_circuit is never invoked on the root side")
 
 
 class MPIPandoraWorker():
@@ -218,7 +208,7 @@ class MPIPandoraWorker():
             TASK_HALT: self.handle_task_halt,
             TASK_SPAWN: self.handle_task_spawn,
             TASK_WIDGETIZE: self.handle_task_widgetize,
-            TASK_BUILD_PYLIQTR_CIRCUIT: self.handle_task_build_pyliqtr
+            TASK_ADD_CACHE: self.handle_task_add_cache
         }
 
 
@@ -242,9 +232,6 @@ class MPIPandoraWorker():
         conn = self.pandora.spawn(database)
         self.databases[database] = conn
 
-        # Confirm the spawn
-        self.comm.send(True, dest=0, tag=TAG_PANDORA_RESULT)
-
 
     def handle_task_widgetize(self,
                               database,
@@ -253,56 +240,38 @@ class MPIPandoraWorker():
                               batch_size,
                               add_gin_per_widget,
                               *args):
+        # Cover case where an invalid database is requested
+        # (terminate stream immediately so root doesn't hang)
         if database not in self.databases:
-            print(f"Got unknown database {database} for widgetize")
-            self.comm.send((TASK_WIDGETIZE, False), dest=0, tag=TAG_PANDORA_RESULT)
+            self.comm.send((False, None), dest=0, tag=TAG_PANDORA_RESULT)
             return
-
-        # Open the stream of widgets
-        self.comm.send((TASK_WIDGETIZE, True), dest=0, tag=TAG_PANDORA_RESULT)
 
         conn = self.databases[database]
         for wid in conn.widgetize(max_t, max_d, batch_size, add_gin_per_widget):
-            # TODO : Could these be too big to send?
+            # TODO : Could these be too big to send? May need to stream widget components
             self.comm.send((True, wid), dest=0, tag=TAG_PANDORA_RESULT)
 
         # Terminate the stream of widgets
         self.comm.send((False, None), dest=0, tag=TAG_PANDORA_RESULT)
 
 
-    def handle_task_build_pyliqtr(self, database, *args):
-        '''
-            We can't serialise arbitrary pyliqtr objects
+    def handle_task_add_cache(self, op, args, kwargs, do_hash, hash_override):
+        # Create the circuit
+        circuit = op(*args, **kwargs)
 
-            However, we can process them on the manager side,
-            and stream the resulting Pandora gates, essentially
-            recreating build_pyliqtr_circuit, just disjoint between
-            two nodes
-        '''
-        if database not in self.databases:
-            print(f"Got unknown database {database} for build_pyliqtr_circuit")
-            self.comm.send((TASK_BUILD_PYLIQTR_CIRCUIT, False), dest=0, tag=TAG_PANDORA_RESULT)
-            return
+        if hash_override is not None:
+            table_name = hash_override
+        else:
+            table_name = PandoraCache.db_table_name(circuit, hash_postfix=do_hash)
 
-        conn = self.databases[database]
+        if do_hash:
+            if hash_override is None:
+                hsh = circuit._rottnest_hash()
+            else:
+                hsh = hash_override
 
-        # Confirm start of build
-        self.comm.send((TASK_BUILD_PYLIQTR_CIRCUIT, True), dest=0, tag=TAG_PANDORA_RESULT)
+            self.comm.send((table_name, hsh), dest=0, tag=TAG_PANDORA_RESULT)
+        else:
+            self.comm.send((table_name, type(circuit)), dest=0, tag=TAG_PANDORA_RESULT)
 
-        conn.build_pandora()
-
-        # Stream pandora gates representing the pyliqtr circuit
-        task, batch = self.comm.recv(source=0, tag=TAG_PANDORA_TASK)
-
-        while batch is not None:
-            if task != TASK_BUILD_PYLIQTR_CIRCUIT:
-                print(f"Got bad task {task} during stream of pyliqtr gates")
-                return
-
-            insert_single_batch(connection=conn.connection, batch=batch)
-
-            task, batch = self.comm.recv(source=0, tag=TAG_PANDORA_TASK)
-
-        conn.build_edge_list()
-
-
+        add_cache_db(self.pandora, circuit, table_name)

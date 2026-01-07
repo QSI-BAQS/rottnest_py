@@ -21,7 +21,9 @@ from rottnest.plugins import architectures, executables
 from rottnest.plugins import load_default_architecture_config, load_default_executable_config
 
 from rottnest.pandora import pandora_connection
-from rottnest.mpi.pandora_mpi_patching import MPIPandoraRootConnection, MPIPandoraWorker
+from rottnest.mpi.pandora_mpi_patching import MPIPandoraRootConnection, MPIPandoraWorker, mpi_patch_pandora_cache
+
+
 
 def perror(msg, *args, **kwargs):
     print("[ ERROR ] " + msg, *args, **kwargs, file=sys.stderr)
@@ -257,8 +259,30 @@ OPTIONS:
 def root_main(comm, architecture, executable_name, executable_params, layouts, target_modules):
     '''
         Main function for the root process (manager)
+
+        IN:
+            comm
+                MPI communicator
+
+            architecture [RottnestArchitecture]
+                The architecture module loaded pre-divergence
+
+            executable_name [str]
+                The name of the executable to load
+
+            executable_params [dict<json> | None]
+                The parameters for the executable
+
+            layouts [dict<int, dict<json>>]
+                A mapping layout_id -> layout_json
+
+            target_modules [list<str>]
+                A set of modules to load executables from
+
+        OUT: [*]
+            Final rottnest result
     '''
-    # Load executable (manager only)
+    # Load executable
     load_default_executable_config()
     executables.load_modules_from_strings(*target_modules)
     executables.set_current_executable(executable_name)
@@ -303,6 +327,8 @@ def root_main(comm, architecture, executable_name, executable_params, layouts, t
         comm=comm,
         allocated_clients=pandora_clients,
     )
+
+    mpi_patch_pandora_cache()
 
     '''
         This process has to play the role of a manager (since it is standalone)
@@ -357,9 +383,25 @@ def root_main(comm, architecture, executable_name, executable_params, layouts, t
     return pool_manager.composer.get_result().serialise()
 
 
-def worker_main(comm, architecture, layouts, priority=False):
+def worker_main(comm, architecture, priority=False):
     '''
         Main function for the worker process(es)
+
+        IN:
+            comm
+                MPI communicator
+
+            architecture [RottnestArchitecture]
+                The architecture instance loaded pre-divergence
+                (a subclass of RottnestArchitecture, providing a dedicated worker)
+
+            priority [bool]
+                Determines if this worker is to serve as a priority node
+                (MPI tags are split)
+
+
+        OUT:
+            N/A
     '''
     worker = architecture.worker()
     queue = MPIClientQueue(comm, priority=priority)
@@ -368,11 +410,16 @@ def worker_main(comm, architecture, layouts, priority=False):
     worker.main(queue, queue)
 
 
-def pandora_main(comm):
+def pandora_main(comm, executable_name, target_modules):
     '''
         Main function for pandora process(es)
     '''
-    print(f"Dispatching to pandora_main on {comm.Get_rank()}")
+    # Load executable
+    load_default_executable_config()
+    executables.load_modules_from_strings(*target_modules)
+    executables.set_current_executable(executable_name)
+
+    # Create an actual connection to pandora
     pandora_connection.load_pandora_connection()
     worker = MPIPandoraWorker(comm, pandora_connection.conn)
 
@@ -382,6 +429,28 @@ def pandora_main(comm):
 def dispatch_main(architecture_name, executable_name, layouts, target_modules, executable_params=None):
     '''
         Handles common behaviour before diverging to root/worker behaviour
+
+        IN:
+            architecture_name [str]
+                Name of the architecture to use from among the loaded modules
+
+            exectuable_name [str]
+                As above, for executable instead
+
+            layouts [dict<int, dict<json>>]
+                A mapping layout_id -> layout
+
+            target_modules [list<str>]
+                Modules loaded by the program
+                Passed on to the root for executable loading
+
+            executable_params [dict<json> | None]
+                Executable parameters, to be passed on to the root
+
+
+        OUT: [* | None]
+            Root is expected to return the final result
+            All others must return None
     '''
     comm = MPI.COMM_WORLD
 
@@ -398,12 +467,12 @@ def dispatch_main(architecture_name, executable_name, layouts, target_modules, e
         return root_main(comm, architecture, executable_name, executable_params, layouts, target_modules)
     elif comm.Get_rank() == comm.Get_size() - 1:
         # Last process serves as priority worker
-        worker_main(comm, architecture, layouts, priority = True)
+        worker_main(comm, architecture, priority = True)
     elif comm.Get_rank() % 2:
         # TEMP : Odd processes are workers, even are pandora nodes
-        worker_main(comm, architecture, layouts, priority = False)
+        worker_main(comm, architecture, priority = False)
     else:
-        pandora_main(comm)
+        pandora_main(comm, executable_name, target_modules)
     return None
 
 
@@ -448,7 +517,7 @@ def launch():
 
             layouts = {0: json.loads(layout_data)}
     except Exception as e:
-        print(f"Failed to load file '{layout_file}' : {e}")
+        perror(f"Failed to load file '{layout_file}' : {e}")
         exit(1)
 
     # If given, open and load parameters
@@ -460,7 +529,7 @@ def launch():
 
                 executable_params = json.loads(param_data)
         except Exception as e:
-            print(f"Failed to load file '{param_file}' : {e}")
+            perror(f"Failed to load file '{param_file}' : {e}")
             exit(1)
 
 

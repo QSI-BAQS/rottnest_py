@@ -30,11 +30,14 @@ class PandoraCacheOp:
 
     gate = None
 
+
 class PandoraCache:
 
     def __init__(self):
         self.hash_cache = {}
         self.class_cache = {}
+
+        self.cache_dispatch = None
 
     def in_cache(self, op, spawn=False):
         hsh = op._rottnest_hash()
@@ -57,31 +60,67 @@ class PandoraCache:
         # Load all existing entries
         pass
 
-    def bind_class(self, op):
+    '''
+        Bind interface takes the constructor, plus args,
+        to produce a given circuit
+        This ensures the circuit can be serialised
+        (send (fn, args) rather than a circuit object)
+    '''
+    def bind_class(self, op, *args, **kwargs):
+        circuit = op(*args, **kwargs)
 
-        table_name = self.db_table_name(op, hash_postfix=False)
+        table_name = self.db_table_name(circuit, hash_postfix=False)
 
         # Add the operation to the pandora database
-        conn = add_cache_db(pandora_connection.conn, op, table_name)
+        conn = add_cache_db(pandora_connection.conn, circuit, table_name)
         conn.connection.close()
 
-        self.class_cache[type(op.gate)] = table_name
+        self.class_cache[type(circuit.gate)] = table_name
 
 
-    def bind_hash(self, op, *, hsh=None):
-
+    def bind_hash(self, op, hsh=None, *args, **kwargs):
+        circuit = op(*args, **kwargs)
 
         if hsh is None:
-            table_name = self.db_table_name(op, hash_postfix=True)
-            hsh = op._rottnest_hash()
+            table_name = self.db_table_name(circuit, hash_postfix=True)
+            hsh = circuit._rottnest_hash()
         else:
             table_name = hsh
 
         # Add the operation to the pandora database
-        conn = add_cache_db(pandora_connection.conn, op, table_name)
+        conn = add_cache_db(pandora_connection.conn, circuit, table_name)
         conn.connection.close()
 
         self.hash_cache[hsh] = table_name
+
+    '''
+        By providing dispatch bindings, the cache can be patched to interact differently (eg. with pandora)
+
+        A valid cache dispatch function must ensure caching occurs somewhere, then return the
+        associated table name and either the circuit's type (for non-hashing scenarios), or the circuit's
+        hash (for hashing scenarios)
+
+        The dispatch function can be patched in with enable_cache_dispatch
+    '''
+
+    def dispatch_bind_class(self, op, *args, **kwargs):
+        if self.cache_dispatch is None:
+            raise Exception("A cache dispatch handler must be attached before attempting a dispatched bind")
+        table_name, circuit_type = self.cache_dispatch(op, do_hash=False, *args, **kwargs)
+        self.class_cache[circuit_type] = table_name
+
+    def dispatch_bind_hash(self, op, hsh=None, *args, **kwargs):
+        if self.cache_dispatch is None:
+            raise Exception("A cache dispatch handler must be attached before attempting a dispatched bind")
+        table_name, res_hsh = self.cache_dispatch(op, do_hash=True, hash_override=hsh, *args, **kwargs)
+        self.hash_cache[res_hsh] = table_name
+
+
+    def enable_cache_dispatch(self, dispatch):
+        self.cache_dispatch = dispatch
+        self.bind_class = self.dispatch_bind_class
+        self.bind_hash = self.dispatch_bind_hash
+
 
     @staticmethod
     def db_table_name(op, *, hash_postfix=True):

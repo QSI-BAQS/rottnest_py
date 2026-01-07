@@ -8,12 +8,10 @@ import time
 
 from queue import Empty, Full
 
-from mpi_uniq_tag import get_uniq_tag
-
-TAG_SERVER_NO_PRIO = get_uniq_tag()
-TAG_CLIENT_NO_PRIO = get_uniq_tag()
-TAG_SERVER_PRIO = get_uniq_tag()
-TAG_CLIENT_PRIO = get_uniq_tag()
+TAG_SERVER_NO_PRIO = 1
+TAG_CLIENT_NO_PRIO = 2
+TAG_SERVER_PRIO = 3
+TAG_CLIENT_PRIO = 4
 
 # How much to consume of the remaining timeout if there is one
 # (clamped to at least 0.05s)
