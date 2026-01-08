@@ -11,20 +11,15 @@ from rottnest.pandora.pandora_cache import pandora_cache, PandoraCache
 
 from rottnest.pandora import pandora_connection
 
-'''
-    TODO
-        - This should probably be unified under some standard protocol (especially if
-          we may need to add new pandora functionality)
-        - Unsure about sizes (1. bottleneck on network, 2. may be non-viable if massive)
-        - Needs proper testing with an example that heavily uses pandora (cache requests, etc.)
-'''
 
-
-# Tags : Disjoint communication channels for different types of messages
+# Tags for distinct channels
+# NOTE : Other tags are present in mpi_queue
 TAG_PANDORA_TASK = 100
 TAG_PANDORA_RESULT = 101
 
-# Tasks : Minimum set that is actually used by rottnest
+# Tasks
+# NOTE : Only the set of Pandora functions actually called in rottnest code are provided
+# NOTE : Must be serializable and have <serialized remote instance> == <local instance>
 TASK_HALT = "HALT"
 TASK_SPAWN = "SPAWN"
 TASK_WIDGETIZE = "WIDGETIZE"
@@ -32,12 +27,32 @@ TASK_ADD_CACHE = "ADD_CACHE"
 
 
 def mpi_pandora_cache_dispatch(op, do_hash=False, hash_override=None, *args, **kwargs):
-    # NOTE : This will fail with a real pandora connection
+    '''
+        Trivial dispatch method matching the signature required by pandora_cache,
+        to be enabled as the cache dispatch method
+    '''
+    # NOTE : This call will fail with a real pandora connection object
     return pandora_connection.conn.mpi_add_cache(op, do_hash, hash_override, *args, **kwargs)
 
 
-def mpi_patch_pandora_cache():
+def pandora_patch_mpi(comm, allocated_ranks):
+    '''
+        Patches over current pandora connection with an MPI-based connection
+        that dispatches pandora calls to MPI peers
+
+        Should only be called on the MPI root, as worker nodes don't need pandora at all,
+        and pandora nodes need an actual pandora connection
+
+        comm provides the MPI communicator in use, and allocated_nodes is a list
+        of ranks for clients that are to be sent pandora jobs
+    '''
+    # Patch over caching to dispatch cache additions
     pandora_cache.enable_cache_dispatch(mpi_pandora_cache_dispatch)
+
+    # Patch over the pandora connection object itself
+    pandora_connection.conn = MPIPandoraRootConnection(
+        comm, allocated_ranks
+    )
 
 
 class MPIPandoraRootConnection():
@@ -72,6 +87,7 @@ class MPIPandoraRootConnection():
 
 
     def mpi_add_cache(self, op, do_hash=False, hash_override=None, *args, **kwargs):
+        # Get the next client peer
         client_rank = self.all_clients[self.db_allocation_idx]
         self.db_allocation_idx = (self.db_allocation_idx + 1) % len(self.all_clients)
 
@@ -91,7 +107,8 @@ class MPIPandoraRootConnection():
             tag=TAG_PANDORA_TASK
         )
 
-        # Get early response
+        # Get early response providing the chosen table name and either the hash or class
+        # for the corresponding cache bind
         table_name, res_v = self.comm.recv(source=client_rank, tag=TAG_PANDORA_RESULT)
 
         self.tables[table_name] = client_rank
@@ -112,6 +129,9 @@ class MPIPandoraRootConnection():
 
         self.db_allocation_idx = (self.db_allocation_idx + 1) % len(self.all_clients)
 
+        # spawn() is expected to provide another Pandora instance
+        # instead, this provides a similar mock connection that tracks an associated database
+        # and allows widgetisation
         return MPIPandoraDBConnection(self.comm, self, database, client_rank)
 
 
@@ -202,6 +222,8 @@ class MPIPandoraWorker():
 
         self.pandora = pandora_connection
 
+        # TODO : We may need some way to close older connections
+        # to ensure Postgres doesn'tm reject further connections
         self.databases = dict()
 
         self.task_handlers = {

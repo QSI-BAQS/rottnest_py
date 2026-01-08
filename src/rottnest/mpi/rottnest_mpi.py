@@ -21,8 +21,7 @@ from rottnest.plugins import architectures, executables
 from rottnest.plugins import load_default_architecture_config, load_default_executable_config
 
 from rottnest.pandora import pandora_connection
-from rottnest.mpi.pandora_mpi_patching import MPIPandoraRootConnection, MPIPandoraWorker, mpi_patch_pandora_cache
-
+from rottnest.mpi.pandora_mpi_patching import pandora_patch_mpi, MPIPandoraWorker
 
 
 def perror(msg, *args, **kwargs):
@@ -323,12 +322,8 @@ def root_main(comm, architecture, executable_name, executable_params, layouts, t
             range(1, comm.Get_size() - 1)
         )
     )
-    pandora_connection.conn = MPIPandoraRootConnection(
-        comm=comm,
-        allocated_clients=pandora_clients,
-    )
 
-    mpi_patch_pandora_cache()
+    pandora_patch_mpi(comm, pandora_clients)
 
     '''
         This process has to play the role of a manager (since it is standalone)
@@ -342,6 +337,8 @@ def root_main(comm, architecture, executable_name, executable_params, layouts, t
         - Send STOP_WORKERS, TERMINATE to clean up
         - Read from the completion queue
     '''
+
+    # TODO : This entire sequence should be neater, possibly more flexible?
 
     # We queue these up in advance, to be consumed below
     pool_task_queue.put(
@@ -374,10 +371,7 @@ def root_main(comm, architecture, executable_name, executable_params, layouts, t
     pandora_connection.conn.halt()
 
     # Handle all completions
-    while not pool_completion_queue.empty():
-        # TODO : This should handle the queued items properly?
-        # Alternatively, is this ok to just flush (or even not populate in the first place?)
-        pool_completion_queue.get()
+    # TODO : Do we actually need to do anything with the intermediate received messages?
 
     # TODO : This works, but there might be a neater way to get the final result
     return pool_manager.composer.get_result().serialise()
@@ -420,6 +414,7 @@ def pandora_main(comm, executable_name, target_modules):
     executables.set_current_executable(executable_name)
 
     # Create an actual connection to pandora
+    # TODO : Handle cases where pandora fails to connect - fallback of some kind?
     pandora_connection.load_pandora_connection()
     worker = MPIPandoraWorker(comm, pandora_connection.conn)
 
@@ -495,16 +490,10 @@ def launch():
     param_file = args.get_param_file()
     target_modules = args.get_modules()
 
-    # For now, panic if there are not enough peers
+    # Exit if there are not enough peers
     if MPI.COMM_WORLD.Get_size() < 4:
         perror("rottnest_mpi requires at least 4 MPI peers to function")
         exit(1)
-
-    # Silence stdout (TEMP : waiting for silencing internally of output)
-    saved_stdout = sys.stdout
-    dummy_writer_cls = type("DummyWriter", (), dict(write=lambda *a, **ka: None, flush=lambda *a, **ka: None))
-    # sys.stdout = dummy_writer_cls() if MPI.COMM_WORLD.Get_rank() != 0 else sys.stdout
-    # sys.stderr = dummy_writer_cls()
 
     architectures.load_modules_from_strings(*target_modules)
 
@@ -538,7 +527,7 @@ def launch():
 
     if res is not None:
         if output_file is None:
-            print(res, file=saved_stdout)
+            print(res)
         else:
             with open(output_file, "w") as f:
                 print(res, file=f)

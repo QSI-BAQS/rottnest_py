@@ -5,6 +5,8 @@ from rottnest.pandora.pandora_pg import pandora_pg_config_load, pandora_pg_defau
 # Internal singleton connection
 # To ensure this is accessed in its latest state, must be accessed
 # via `<module_name>.conn`
+# (ie. importing the `conn` symbol gets a version corresponding to the
+# AT-IMPORT value, which will most likely still be None)
 conn = None
 
 def load_pandora_connection(config_path=None):

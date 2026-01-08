@@ -8,6 +8,8 @@ import time
 
 from queue import Empty, Full
 
+# Tags provide distinct communication channels
+# NOTE : Additional tags are present in pandora_mpi_patching
 TAG_SERVER_NO_PRIO = 1
 TAG_CLIENT_NO_PRIO = 2
 TAG_SERVER_PRIO = 3
@@ -98,11 +100,12 @@ class MPIRootQueue():
         if self.local_queue:
             return self.local_queue.pop(0)
 
-        raise Empty("Queue failed to retrieve an item" + "" if timeout is None else f"within timeout {timeout}")
+        raise Empty("Queue failed to retrieve an item" + "" if timeout is None else f" within timeout {timeout}")
 
 
     def put(self, v, block=True, timeout=None):
-        # TODO : Handle blocking behaviour?
+        # NOTE : Block/timeout args are only to match typical queue signature
+        #        In general, send() will not block
         if self.available_clients:
             client_rank = self.available_clients.pop(0)
             self.comm.send(v, dest=client_rank, tag=self.TAG_SERVER)
@@ -149,7 +152,9 @@ class MPIClientQueue():
 
 
     def get(self, block=True, timeout=None):
-        # TODO : Blocking behaviour?
+        # NOTE : Block/timeout args are only to match typical queue signature
+        #        Proper block/timeout handling can be implemented
+        #        if client nodes ever require it
         msg = self.comm.recv(source=0, tag=self.TAG_SERVER)
 
         return msg

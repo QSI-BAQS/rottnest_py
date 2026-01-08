@@ -60,6 +60,7 @@ class PandoraCache:
         # Load all existing entries
         pass
 
+
     '''
         Bind interface takes the constructor, plus args,
         to produce a given circuit
@@ -93,6 +94,7 @@ class PandoraCache:
 
         self.hash_cache[hsh] = table_name
 
+
     '''
         By providing dispatch bindings, the cache can be patched to interact differently (eg. with pandora)
 
@@ -100,9 +102,13 @@ class PandoraCache:
         associated table name and either the circuit's type (for non-hashing scenarios), or the circuit's
         hash (for hashing scenarios)
 
+        A dispatch function must handle hashing (do_hash=True), possibly with an override (hash_override),
+        and non-hashing (do_hash=False) scenarios, and must return a pair (table_name, v), where v is
+        the circuit type (type(circuit.gate)) when non-hashing, and the resulting hash of the circuit
+        when hashing
+
         The dispatch function can be patched in with enable_cache_dispatch
     '''
-
     def dispatch_bind_class(self, op, *args, **kwargs):
         if self.cache_dispatch is None:
             raise Exception("A cache dispatch handler must be attached before attempting a dispatched bind")
