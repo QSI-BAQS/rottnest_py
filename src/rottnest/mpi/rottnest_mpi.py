@@ -325,6 +325,7 @@ def root_main(comm, architecture, executable_name, executable_params, layouts, t
 
     pandora_patch_mpi(comm, pandora_clients)
 
+
     '''
         This process has to play the role of a manager (since it is standalone)
         However, some manager tasks have already been complete pre-divergence:
@@ -333,7 +334,7 @@ def root_main(comm, architecture, executable_name, executable_params, layouts, t
         - Setting precision
 
         Hence, all we need to do now is;
-        - Send the RUN_SEQUENCE command to run the standalone job
+        - Send the RUN_SEQUENCE command to run the job
         - Send STOP_WORKERS, TERMINATE to clean up
         - Read from the completion queue
     '''
@@ -415,7 +416,9 @@ def pandora_main(comm, executable_name, target_modules):
 
     # Create an actual connection to pandora
     # TODO : Handle cases where pandora fails to connect - fallback of some kind?
-    pandora_connection.load_pandora_connection()
+    if not pandora_connection.load_pandora_connection():
+        perror(f"Pandora worker {comm.Get_rank()} failed to connect to pandora")
+        comm.Abort(2)
     worker = MPIPandoraWorker(comm, pandora_connection.conn)
 
     worker.main()
