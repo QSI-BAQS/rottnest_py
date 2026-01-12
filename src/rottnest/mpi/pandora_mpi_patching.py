@@ -223,7 +223,7 @@ class MPIPandoraWorker():
         self.pandora = pandora_connection
 
         # TODO : We may need some way to close older connections
-        # to ensure Postgres doesn'tm reject further connections
+        # to ensure Postgres doesn't reject further connections
         self.databases = dict()
 
         self.task_handlers = {
@@ -251,7 +251,9 @@ class MPIPandoraWorker():
 
     def handle_task_spawn(self, database, *args):
         # Spawn and track a new pandora connection to the given database
-        conn = self.pandora.spawn(database)
+        # NOTE : This defers the initial opening/creation of the database to
+        # the first time it is used
+        conn = PandoraConnectionWrapper(database)
         self.databases[database] = conn
 
 
@@ -269,12 +271,15 @@ class MPIPandoraWorker():
             return
 
         conn = self.databases[database]
-        for wid in conn.widgetize(max_t, max_d, batch_size, add_gin_per_widget):
+        for wid in conn.get_connection().widgetize(max_t, max_d, batch_size, add_gin_per_widget):
             # TODO : Could these be too big to send? May need to stream widget components
             self.comm.send((True, wid), dest=0, tag=TAG_PANDORA_RESULT)
 
         # Terminate the stream of widgets
         self.comm.send((False, None), dest=0, tag=TAG_PANDORA_RESULT)
+
+        # Close the connection to avoid hitting pg connection limits
+        conn.close()
 
 
     def handle_task_add_cache(self, op, args, kwargs, do_hash, hash_override):
@@ -297,3 +302,26 @@ class MPIPandoraWorker():
             self.comm.send((table_name, type(circuit)), dest=0, tag=TAG_PANDORA_RESULT)
 
         add_cache_db(self.pandora, circuit, table_name)
+
+
+class PandoraConnectionWrapper():
+    '''
+        A wrapper on a pandora connection that provides a means of closing
+        and reopening the underlying Postgres connection
+    '''
+    def __init__(self, root, database):
+        self.root = root
+        self.database = database
+        self.pandora_connection = None
+
+    def get_connection(self):
+        if self.pandora_connection is not None:
+            return self.pandora_connection
+
+        self.pandora_connection = self.root.spawn(self.database)
+        return self.pandora_connection
+
+    def close(self):
+        if self.pandora_connection is not None:
+            self.pandora_connection.close()
+            self.pandora_connection = None
