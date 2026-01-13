@@ -51,6 +51,10 @@ class RottnestMPIArgs():
     '''
         Argument parsing
     '''
+    ATTR_ARCHNAME = "architecture_name"
+    ATTR_EXENAME = "executable_name"
+    ATTR_LAYOUTFILE = "layout_file"
+
     @staticmethod
     def _handle_state_open(instance, arg, *_):
         # Map <arg> -> handler function
@@ -181,7 +185,9 @@ OPTIONS:
         self.param_file = None
         self.modules_to_load = set()
 
-        self.outstanding_attributes = [ "architecture_name", "executable_name", "layout_file" ]
+        self.outstanding_attributes = [ RottnestMPIArgs.ATTR_ARCHNAME,
+                                        RottnestMPIArgs.ATTR_EXENAME,
+                                        RottnestMPIArgs.ATTR_LAYOUTFILE ]
         self.attributes = dict()
 
         self.state = RottnestMPIArgs.STATE_OPEN
@@ -219,13 +225,13 @@ OPTIONS:
 
 
     def get_arch_name(self):
-        return self.attributes["architecture_name"]
+        return self.attributes[RottnestMPIArgs.ATTR_ARCHNAME]
 
     def get_exe_name(self):
-        return self.attributes["executable_name"]
+        return self.attributes[RottnestMPIArgs.ATTR_EXENAME]
 
     def get_layout_file(self):
-        return self.attributes["layout_file"]
+        return self.attributes[RottnestMPIArgs.ATTR_LAYOUTFILE]
 
     def get_output_file(self):
         return self.output_file
