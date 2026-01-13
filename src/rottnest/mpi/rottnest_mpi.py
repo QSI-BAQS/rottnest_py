@@ -22,6 +22,7 @@ from rottnest.plugins import load_default_architecture_config, load_default_exec
 
 from rottnest.pandora import pandora_connection
 from rottnest.mpi.pandora_mpi_patching import pandora_patch_mpi, MPIPandoraWorker
+from rottnest.mpi.mpi_allocator import FixedRatioAllocator
 
 
 def perror(msg, *args, **kwargs):
@@ -255,7 +256,13 @@ OPTIONS:
 
 
 
-def root_main(comm, architecture, executable_name, executable_params, layouts, target_modules):
+def root_main(comm,
+              architecture,
+              executable_name,
+              executable_params,
+              layouts,
+              target_modules,
+              worker_allocator):
     '''
         Main function for the root process (manager)
 
@@ -278,6 +285,9 @@ def root_main(comm, architecture, executable_name, executable_params, layouts, t
             target_modules [list<str>]
                 A set of modules to load executables from
 
+            allocator [MPIWorkerAllocator]
+                The allocator by which to distribute peers
+
         OUT: [*]
             Final rottnest result
     '''
@@ -297,14 +307,8 @@ def root_main(comm, architecture, executable_name, executable_params, layouts, t
     pool_prio_completion_queue = Queue()
 
     pool_manager = MPIPoolManager(
-        # TEMP : Manually allocate workers until a proper allocation scheme is used
-        list(    # Non-priority
-            filter(
-                lambda x: x % 2 != 0,
-                range(1, comm.Get_size() - 2)
-            )
-        ),
-        [comm.Get_size() - 1,],    # Priority
+        worker_allocator.rottnest_workers(),
+        worker_allocator.rottnest_prio_workers(),
         pool_task_queue, pool_completion_queue,
         pool_prio_task_queue, pool_prio_completion_queue,
         comm
@@ -312,19 +316,8 @@ def root_main(comm, architecture, executable_name, executable_params, layouts, t
 
     pool_manager._precision = executables.get_precision()
 
-
     # Patch over Pandora with an MPI-enabled version
-    # TEMP : Until a proper allocation scheme is used
-    pandora_clients = list(
-        filter(
-            lambda x: x % 2 == 0,
-            # All even processes (exclude root and last)
-            range(1, comm.Get_size() - 1)
-        )
-    )
-
-    pandora_patch_mpi(comm, pandora_clients)
-
+    pandora_patch_mpi(comm, worker_allocator.pandora_workers())
 
     '''
         This process has to play the role of a manager (since it is standalone)
@@ -452,6 +445,9 @@ def dispatch_main(architecture_name, executable_name, layouts, target_modules, e
     '''
     comm = MPI.COMM_WORLD
 
+    # TODO : Other allocator options, vary size
+    worker_allocator = FixedRatioAllocator(comm.Get_size(), 0.5)
+
     # Load arch and layouts
     load_default_architecture_config()
     architectures.set_current_architecture(architecture_name)
@@ -462,12 +458,17 @@ def dispatch_main(architecture_name, executable_name, layouts, target_modules, e
 
     if comm.Get_rank() == 0:
         # Root process serves as manager, returns final result
-        return root_main(comm, architecture, executable_name, executable_params, layouts, target_modules)
-    elif comm.Get_rank() == comm.Get_size() - 1:
-        # Last process serves as priority worker
+        return root_main(comm,
+                         architecture,
+                         executable_name,
+                         executable_params,
+                         layouts,
+                         target_modules,
+                         worker_allocator)
+    # Dispatch according to allocation
+    elif comm.Get_rank() in worker_allocator.rottnest_prio_workers():
         worker_main(comm, architecture, priority = True)
-    elif comm.Get_rank() % 2:
-        # TEMP : Odd processes are workers, even are pandora nodes
+    elif comm.Get_rank() in worker_allocator.rottnest_workers():
         worker_main(comm, architecture, priority = False)
     else:
         pandora_main(comm, executable_name, target_modules)
