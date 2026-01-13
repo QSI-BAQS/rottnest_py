@@ -105,13 +105,24 @@ class RottnestComposer(abc.ABC):
         stack_frame = self.hook_compute_unit(compute_unit)
         stack_frame.submit(compute_unit)
 
-    def receive(self, compute_unit_id: int, result):
+    def receive(self, result_composer: "ResultsComposer"):
         '''
             Receiving a result from a compilation
         '''
-        result = self.ResultsComposer(result)
-        stack_frame = self.unhook_compute_unit(compute_unit_id)
-        stack_frame.receive(compute_unit_id, result)
+        print("RES: ", result_composer)
+        if result_composer.end_computation():
+        #    # TODO set pending remaining compute units
+            return
+
+        #result = self.ResultsComposer(result)
+        compute_unit_ids = result_composer.get_compute_unit_ids() 
+
+        print("UNIT IDs", compute_unit_ids)
+        return
+
+        # All units should belong to the same stack frame
+        stack_frame = self.unhook_compute_unit(compute_unit_ids[0])
+        stack_frame.receive(compute_unit_ids[0], result_composer)
 
     def cache_entry_start(self, cache_obj):
         '''
@@ -307,7 +318,7 @@ class ComposerStackFrame:
         self.qubit_map |= compute_unit._qubit_labels
         self.n_qubits_in_frame = len(self.qubit_map)
 
-    def receive(self, compute_unit_id: int , result):
+    def receive(self, result):
         '''
             Compute units received that are part of this stack frame
         '''
@@ -396,7 +407,16 @@ class ResultsComposer:
          addition
     '''
 
-    def __init__(self, result_obj: dict = None, n_obj=1, unit_id=None):
+    # A useful symbol
+    END_COMPUTATION = 'END_COMPUTATION'
+
+    def __init__(
+        self,
+        result_obj: dict = None,
+        n_obj = 1,
+        unit_id = None,
+        end_computation = False
+        ):
         '''
             Constructor
         '''
@@ -409,6 +429,14 @@ class ResultsComposer:
         if unit_id is not None:
             self._unit_ids.append(unit_id)
         self._n_obj = n_obj
+        
+        self._end_computation = end_computation
+
+    def end_computation(self):
+        '''
+            End computation getter
+        '''
+        return self._end_computation
 
     def items(self):
         return self._obj.items()
@@ -429,6 +457,12 @@ class ResultsComposer:
         res._unit_ids = self._unit_ids + other._unit_ids
         res._n_obj = self._n_obj + other._n_obj
         return res
+
+    def get_compute_unit_ids(self):
+        '''
+            Unit ID getter
+        '''
+        return self._unit_ids
 
     def compose(self, other):
         '''
