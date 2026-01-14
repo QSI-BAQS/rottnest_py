@@ -439,7 +439,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
                 self.check_priority_result()
 
                 self.process_result_elem(
-                    composer,
                     timeout=SEGFAULT_SENTINEL_TIMEOUT_SECS
                 )
 
@@ -470,35 +469,24 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             process result
         '''
         print("Processing result")
-        obj = self.worker_result_queue.get(
-            timeout=timeout
-        )
-        print(obj)
-        # TODO
-        return
+        #obj = self.worker_result_queue.get(
+        #    timeout=timeout
+        #)
+
         unit_id, result = self.worker_result_queue.get(
             timeout=timeout
         )
         print('Result:', unit_id, result, type(result))
 
-        #unit_id, result = self.worker_result_queue.get(
-        #    timeout=timeout
-        #)
-        print('Result:', obj, type(obj))
+        result_obj = self.composer.compose_result(unit_id, result)
 
-        #if result.get('status', 'error') == 'error':
-        #    print(result)
-        #    return
-
-        # Composer takes result to reportable 
-        self.composer.receive(obj)
         # Composer takes result to reportable
         self.composer.receive(
-            unit_id,
-            result
+            result_obj
         )
 
-        self.manager_completion_queue.put(obj)
+        self.manager_completion_queue.put(result_obj)
+
         # TODO: Batch
         self.n_received += 1
 

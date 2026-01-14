@@ -44,7 +44,7 @@ class RzCollectionWorker(RottnestWorker):
                     rz_counter.tally(
                         rz_tracker[op.rz.tag]
                     ) 
-        return compute_unit.unit_id, rz_counter.to_args()
+        return compute_unit.unit_id, rz_counter
     
     def set_precision(self, precision):
         '''

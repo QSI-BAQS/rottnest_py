@@ -67,8 +67,12 @@ class RzCollectionResultsComposer(rottnest_composer.ResultsComposer):
     def get_tocks(self):
         return 0
 
-    def serialise(self):
+    def to_args(self):
         return f'{{{RZ_COUNTS}: {dict(self._obj[RZ_COUNTS])} }}'
+
+    @classmethod
+    def from_args(cls, results_dict, unit_id = None):
+        return cls(results_dict=results_obj, unit_id=unit_id)
 
 class RzCollectionComposer(rottnest_composer.RottnestComposer):
     @staticmethod
