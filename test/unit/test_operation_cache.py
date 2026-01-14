@@ -23,16 +23,22 @@ from rottnest.monkey_patchers.pyliqtr_patcher import hash_function_patchers
 from rottnest.preprocessor.rz_collection_worker import RzCollectionWorker
 from rottnest.preprocessor.rz_collection_composer import RzCollectionComposer, RzCollectionResultsComposer
 
-from utils.quantum_lib_utils import cirq_n_rz, cirq_circuit_to_gate
-from test_data.test_circuits import cirq_circuits, cirq_qubits, qualtran_circuits
 
-from utils.arch_factory import build_arch, build_designer
+# Ensure this works with both unittest and direct running
+try:
+    from utils.quantum_lib_utils import cirq_n_rz, cirq_circuit_to_gate
+    from test_data.circuit_data import cirq_circuits, cirq_qubits, qualtran_circuits
+    from utils.arch_factory import build_arch, build_designer
+except ModuleNotFoundError:
+    from .utils.quantum_lib_utils import cirq_n_rz, cirq_circuit_to_gate
+    from .test_data.circuit_data import cirq_circuits, cirq_qubits, qualtran_circuits
+    from .utils.arch_factory import build_arch, build_designer
 
 
 arch_name = "RzCollection"
 designer_name = "DummyDesigner"
 mem_bound = "mem_bound"
-default_mem_bound = 1000 
+default_mem_bound = 1000
 
 rz_collection_arch = build_arch(arch_name,
     build_designer(designer_name, get_mem_bound=lambda s,l: l[mem_bound]),
@@ -371,7 +377,7 @@ class TestCachedRzCollection(unittest.TestCase):
         longer_composed_toffoli_circuit = cirq.Circuit(
             composed_toffoli_gate_cls().on(
                 cirq_qubits[0], cirq_qubits[1], cirq_qubits[2]
-            ) 
+            )
             for i in range(20)
         )
 
@@ -394,3 +400,83 @@ class TestCachedRzCollection(unittest.TestCase):
                 composer.receive(obj.unit_id, res)
 
         self.assertEqual(composer.get_result()._obj["rz_counts"], cirq_n_rz(longer_composed_toffoli_circuit))
+
+
+    def test_circuit_vertical_cache(self):
+        '''
+            Tests a circuit composed of cacheable circuits that are themselves composed of cacheable circuits
+        '''
+        layout = { mem_bound: default_mem_bound }
+        LayoutProxy.add_layout_with_id(0, layout)
+
+        # Convert existing toffoli to a gate
+        toffoli_gate_cls = cirq_circuit_to_gate(cirq_circuits["toffoli"], 3, name="ToffoliGate")
+        # Hash value doesn't matter here as long as it
+        # agrees for identical instances
+        toffoli_gate_cls._rottnest_hash = lambda s, so: MD5.new(
+            so.gate.__name__.encode('ascii')
+            + b''.join(str(qb).encode('ascii') for qb in so.qubits)
+        ).digest()
+
+        # Convert composition of two toffolis into a gate
+        composed_toffoli_gate_cls = cirq_circuit_to_gate(cirq.Circuit(
+            toffoli_gate_cls().on(cirq_qubits[0], cirq_qubits[1], cirq_qubits[2]),
+            toffoli_gate_cls().on(cirq_qubits[2], cirq_qubits[1], cirq_qubits[0])
+        ), 3, name="ComposedToffoliGate")
+        composed_toffoli_gate_cls._rottnest_hash = lambda s, so: MD5.new(
+            so.gate.__name__.encode('ascii')
+            + b''.join(str(qb).encode('ascii') for qb in so.qubits)
+        ).digest()
+
+        # Convert composition of 2 composed toffolis into a gate
+        composed_toffoli_circuit = cirq.Circuit(
+            composed_toffoli_gate_cls().on(cirq_qubits[0], cirq_qubits[1], cirq_qubits[2]),
+            composed_toffoli_gate_cls().on(cirq_qubits[2], cirq_qubits[1], cirq_qubits[0])
+        )
+
+        composed_toffoli_circuit_cls = cirq_circuit_to_gate(composed_toffoli_circuit, 3)
+
+        # Compose the final result
+        final_circuit = cirq.Circuit(
+            composed_toffoli_circuit_cls().on(cirq_qubits[0], cirq_qubits[1], cirq_qubits[2]),
+            composed_toffoli_circuit_cls().on(cirq_qubits[1], cirq_qubits[0], cirq_qubits[2])
+        )
+
+        # Patch tracking of toffolis into parser
+        rottnest_cacheable(toffoli_gate_cls)
+        rottnest_cacheable(composed_toffoli_gate_cls)
+
+        worker = RzCollectionWorker()
+        composer = RzCollectionComposer((layout,), [cirq_qubits[0], cirq_qubits[1], cirq_qubits[2]])
+
+        parser = PyliqtrParser(final_circuit)
+        seq = Sequencer(0)
+        parser.parse()
+        it = seq.sequence_pyliqtr(parser)
+
+        seen_cache_hashes = set()
+
+        for obj in it:
+            if obj == INTERRUPT:
+                seen_cache_hashes.add(obj.cache_hash())
+                if obj.request_type == CACHED.START:
+                    composer.cache_entry_start(obj)
+                elif obj.request_type == CACHED.END:
+                    composer.cache_entry_end(obj)
+                elif obj.request_type == CACHED.REQUEST:
+                    composer.cache_request(obj)
+            else:
+                composer.submit(obj)
+                res = worker.execute_compute_unit(obj)
+                composer.receive(obj.unit_id, res)
+
+        # We have two forms of the cacheable toffoli,
+        # per two forms of cacheable composed toffoli,
+        # per two instances of said toffoli with different qubits
+        # for 2^3 == 8
+        self.assertEqual(len(seen_cache_hashes), 8)
+        self.assertEqual(composer.get_result()._obj["rz_counts"], cirq_n_rz(final_circuit))
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,7 +1,8 @@
 import base64
 
 import pyLIQTR
-from rottnest.pandora.pandora_sequencer import pandora_connection, PandoraSequencer
+from rottnest.pandora.pandora_sequencer import PandoraSequencer
+from rottnest.pandora import pandora_connection
 from rottnest.compute_units.layout_proxy import LayoutProxy
 
 try:
@@ -25,9 +26,10 @@ class PandoraCacheOp:
         return self.hsh
 
     def __iter__(self):
-        return [].__iter__() 
+        return [].__iter__()
 
     gate = None
+
 
 class PandoraCache:
 
@@ -35,19 +37,21 @@ class PandoraCache:
         self.hash_cache = {}
         self.class_cache = {}
 
+        self.cache_dispatch = None
+
     def in_cache(self, op, spawn=False):
         hsh = op._rottnest_hash()
 
         # Try the hash cache
         obj = self.hash_cache.get(hsh, None)
 
-        # Fallback to class cache 
+        # Fallback to class cache
         if obj is None:
             obj = self.class_cache.get(type(op.gate), None)
 
         # Create connection
         if spawn and obj is not None:
-            conn = pandora_connection.spawn(obj) 
+            conn = pandora_connection.conn.spawn(obj)
             obj = PandoraSequencer(conn=conn)
 
         return obj
@@ -56,50 +60,92 @@ class PandoraCache:
         # Load all existing entries
         pass
 
-    def bind_class(self, op):
 
-        table_name = self.db_table_name(op, hash_postfix=False)  
+    '''
+        Bind interface takes the constructor, plus args,
+        to produce a given circuit
+        This ensures the circuit can be serialised
+        (send (fn, args) rather than a circuit object)
+    '''
+    def bind_class(self, op, *args, **kwargs):
+        circuit = op(*args, **kwargs)
+
+        table_name = self.db_table_name(circuit, hash_postfix=False)
 
         # Add the operation to the pandora database
-        conn = add_cache_db(pandora_connection, op, table_name)
+        conn = add_cache_db(pandora_connection.conn, circuit, table_name)
         conn.connection.close()
 
-        self.class_cache[type(op.gate)] = table_name 
+        self.class_cache[type(circuit.gate)] = table_name
 
-       
-    def bind_hash(self, op, *, hsh=None):
 
+    def bind_hash(self, op, hsh=None, *args, **kwargs):
+        circuit = op(*args, **kwargs)
 
         if hsh is None:
-            table_name = self.db_table_name(op, hash_postfix=True)  
-            hsh = op._rottnest_hash()
+            table_name = self.db_table_name(circuit, hash_postfix=True)
+            hsh = circuit._rottnest_hash()
         else:
             table_name = hsh
 
         # Add the operation to the pandora database
-        conn = add_cache_db(pandora_connection, op, table_name)
+        conn = add_cache_db(pandora_connection.conn, circuit, table_name)
         conn.connection.close()
 
-        self.hash_cache[hsh] = table_name 
+        self.hash_cache[hsh] = table_name
+
+
+    '''
+        By providing dispatch bindings, the cache can be patched to interact differently (eg. with pandora)
+
+        A valid cache dispatch function must ensure caching occurs somewhere, then return the
+        associated table name and either the circuit's type (for non-hashing scenarios), or the circuit's
+        hash (for hashing scenarios)
+
+        A dispatch function must handle hashing (do_hash=True), possibly with an override (hash_override),
+        and non-hashing (do_hash=False) scenarios, and must return a pair (table_name, v), where v is
+        the circuit type (type(circuit.gate)) when non-hashing, and the resulting hash of the circuit
+        when hashing
+
+        The dispatch function can be patched in with enable_cache_dispatch
+    '''
+    def dispatch_bind_class(self, op, *args, **kwargs):
+        if self.cache_dispatch is None:
+            raise Exception("A cache dispatch handler must be attached before attempting a dispatched bind")
+        table_name, circuit_type = self.cache_dispatch(op, do_hash=False, *args, **kwargs)
+        self.class_cache[circuit_type] = table_name
+
+    def dispatch_bind_hash(self, op, hsh=None, *args, **kwargs):
+        if self.cache_dispatch is None:
+            raise Exception("A cache dispatch handler must be attached before attempting a dispatched bind")
+        table_name, res_hsh = self.cache_dispatch(op, do_hash=True, hash_override=hsh, *args, **kwargs)
+        self.hash_cache[res_hsh] = table_name
+
+
+    def enable_cache_dispatch(self, dispatch):
+        self.cache_dispatch = dispatch
+        self.bind_class = self.dispatch_bind_class
+        self.bind_hash = self.dispatch_bind_hash
+
 
     @staticmethod
     def db_table_name(op, *, hash_postfix=True):
         base_name = str(op.gate.__class__).split("'")[1].replace('.', '_')[:10]
-        
-        # Is the hash appended as a postfix? 
-        if hash_postfix: 
+
+        # Is the hash appended as a postfix?
+        if hash_postfix:
             hsh = op._rottnest_hash()
             base_name += '_' + base64.b32encode(hsh).decode()[:-6]
-        return base_name.lower() 
+        return base_name.lower()
 
-pandora_cache = PandoraCache() 
+pandora_cache = PandoraCache()
 
 def attach_class(db_name, class_obj):
     '''
-        Attaches a class hook to the cache 
+        Attaches a class hook to the cache
     '''
-    class_str = class_obj.__name__ 
-    conn = pandora_connection.spawn(db_name) 
+    class_str = class_obj.__name__
+    conn = pandora_connection.conn.spawn(db_name)
     seq = PandoraSequencer(conn=conn)
     pandora_cache.add_class(class_str, seq)
 
@@ -112,7 +158,7 @@ def layout_bind(seq, layout_id: int):
     # TODO move to convex bound model in Pandora
     arch = LayoutProxy(layout_id)
     n_registers = arch.mem_bound()
-    max_t = n_registers 
+    max_t = n_registers
     max_d = n_registers
     batch_size = n_registers
     update_sequencer(seq, max_t=max_t, max_d=max_d, batch_size=batch_size)
@@ -131,7 +177,7 @@ def update_sequencer(seq, *args, **kwargs):
 #from qualtran._infra.adjoint import Adjoint
 
 # Skip if pandora is not enabled
-# This should be promoted to a module for each circuit that is to be constructed and run  
+# This should be promoted to a module for each circuit that is to be constructed and run
 #if pandora_connection is not None:
 #    pass
     #attach_class('adjoint', Adjoint)

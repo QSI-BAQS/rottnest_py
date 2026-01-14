@@ -34,9 +34,15 @@ from rottnest.preprocessor.rz_collection_composer import RzCollectionComposer, R
 # --[ Testing Utilities ]---
 from functools import reduce
 
-from utils.arch_factory import build_arch, build_worker, build_designer, build_composer
-from utils.quantum_lib_utils import cirq_len, qualtran_len, cirq_n_rz
-from test_data.test_circuits import cirq_circuits, cirq_qubits, qualtran_circuits
+try:
+    from utils.arch_factory import build_arch, build_worker, build_designer, build_composer
+    from utils.quantum_lib_utils import cirq_len, qualtran_len, cirq_n_rz
+    from test_data.circuit_data import cirq_circuits, cirq_qubits, qualtran_circuits
+except ModuleNotFoundError:
+    from .utils.arch_factory import build_arch, build_worker, build_designer, build_composer
+    from .utils.quantum_lib_utils import cirq_len, qualtran_len, cirq_n_rz
+    from .test_data.circuit_data import cirq_circuits, cirq_qubits, qualtran_circuits
+
 
 # seed for testcases featuring randomisation
 # if None, uses system time
@@ -289,7 +295,7 @@ class TestWorkerRzCollection(unittest.TestCase):
 
         worker = RzCollectionWorker()
 
-        # Load gates from a sequencer on a qualtran object
+        # Load gates from a sequencer on a cirq object
         for name, circuit in cirq_circuits.items():
             with self.subTest(circuit=circuit):
                 composer = RzCollectionComposer(LayoutProxy.get_layout(layout_id), [])

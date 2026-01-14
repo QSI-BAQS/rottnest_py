@@ -8,6 +8,7 @@ import typing
 
 from .. import config
 
+
 def default_loader(
         config_file_name: str,
         constructor: typing.Type['PluginManager'],
@@ -40,3 +41,17 @@ def default_loader(
             print("Unable to load configuration" + config_path)
     # No configuration files found
     return constructor()
+
+
+def _load_default_config(conf_name, plugin_obj):
+    for loc in config.configuration_locations:
+        config_path = os.path.expanduser(f'{loc}/{conf_name}')
+
+        # Check if file exists
+        # File error handling is managed in the
+        # constructor
+        if os.path.isfile(config_path):
+            try:
+                plugin_obj.load_options_from_config(config_path)
+            except:
+                pass
