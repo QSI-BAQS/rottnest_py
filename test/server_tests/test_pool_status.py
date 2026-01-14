@@ -3,7 +3,8 @@
 '''
 import unittest
 
-from rottnest.server.model.process_pool import status_update, PoolStatus
+from rottnest.process_pool.status_decorator import status_update
+from rottnest.process_pool.pool_status import PoolStatus
 
 class StatusDecoratorTests(unittest.TestCase):
     '''
