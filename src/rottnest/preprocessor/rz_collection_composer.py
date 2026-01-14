@@ -75,11 +75,11 @@ class RzCollectionResultsComposer(rottnest_composer.ResultsComposer):
         '''
             Serialisation
         '''
-        return str(self._obj)
+        return self._obj
 
     @classmethod
     def from_args(cls, results_dict, unit_id = None):
-        return cls(results_dict=results_obj, unit_id=unit_id)
+        return cls(results_dict=results_dict, unit_id=unit_id)
 
 class RzCollectionComposer(rottnest_composer.RottnestComposer):
     @staticmethod
