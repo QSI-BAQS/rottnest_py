@@ -379,5 +379,29 @@ class CompositionTests(unittest.TestCase):
         self.assertEqual(composer.get_result()._obj['val'], sum(range(1, 10)) * 3)
 
 
+    def test_deeply_nested_cache(self):
+        '''
+            Test deeply nested cache
+        '''
+        composer = generic_composer()
+        composer.reset_result()
+
+        cache_layers = []
+
+        for i in range(10):
+            cachable = MockCachable(i)
+            composer.cache_entry_start(cachable)
+            cache_layers.append(cachable)
+
+        for unit, res in (unit_res_pair({'val': i}, i) for i in range(10)):
+            composer.submit(unit)
+            composer.receive(res)
+
+        for i in range(10):
+            cachable = cache_layers.pop()
+            composer.cache_entry_end(cachable)
+
+        self.assertEqual(composer.get_result()._obj['val'], sum(range(1, 10)))
+
 if __name__ == "__main__":
     unittest.main()
