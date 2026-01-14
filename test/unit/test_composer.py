@@ -287,5 +287,97 @@ class CompositionTests(unittest.TestCase):
         self.assertEqual(composer.get_result()._obj['val'], sum(range(1, 20)))
 
 
+    def test_composer_cache_request(self):
+        '''
+            Ensure that cache entries can be requested and are then aggregated
+        '''
+        composer = generic_composer()
+        composer.reset_result()
+
+        cachable = MockCachable(1)
+
+        composer.cache_entry_start(cachable)
+
+        for unit, res in (unit_res_pair({'val': i}, i) for i in range(1, 10)):
+            composer.submit(unit)
+            composer.receive(res)
+
+        composer.cache_entry_end(cachable)
+
+        composer.cache_request(cachable)
+
+        self.assertEqual(composer.get_result()._obj['val'], sum(range(1, 10)) * 2)
+
+
+    def test_composer_vertical_cache(self):
+        '''
+            Test vertical (nested) caching
+        '''
+        composer = generic_composer()
+        composer.reset_result()
+
+        outer_cachable = MockCachable(1)
+        composer.cache_entry_start(outer_cachable)
+
+        for i in range(10):
+            composer.submit(MockComputeUnit(i))
+
+        # Receive some of the results
+        for i in range(5):
+            composer.receive(ResultsComposer({'val': i}, unit_id=i))
+
+        # Start another nested cachable
+        inner_cachable = MockCachable(2)
+        composer.cache_entry_start(inner_cachable)
+
+        for unit, res in (unit_res_pair({'val': i}, i) for i in range(10, 20)):
+            composer.submit(unit)
+            composer.receive(res)
+
+        composer.cache_entry_end(inner_cachable)
+
+        # Receive remaining results
+        for i in range(5, 10):
+            composer.receive(ResultsComposer({'val': i}, unit_id=i))
+
+        composer.cache_entry_end(outer_cachable)
+
+        composer.cache_request(outer_cachable)
+
+        self.assertEqual(composer.get_result()._obj['val'], sum(range(1, 20)) * 2)
+
+
+    def test_composer_multi_layer_request(self):
+        '''
+            Test requesting an object that was cached at a different level
+
+            ie.
+                                A --- B      <- subsequently requested here
+                                |
+                             B --- B         <- hits cache here
+        '''
+        composer = generic_composer()
+        composer.reset_result()
+
+        a_cache = MockCachable('a')
+        composer.cache_entry_start(a_cache)
+
+        b_cache = MockCachable('b')
+        composer.cache_entry_start(b_cache)
+
+        for unit, res in (unit_res_pair({'val': i}, i) for i in range(10)):
+            composer.submit(unit)
+            composer.receive(res)
+
+        composer.cache_entry_end(b_cache)
+
+        composer.cache_request(b_cache)
+        composer.cache_entry_end(a_cache)
+
+        composer.cache_request(b_cache)
+
+        self.assertEqual(composer.get_result()._obj['val'], sum(range(1, 10)) * 3)
+
+
 if __name__ == "__main__":
     unittest.main()
