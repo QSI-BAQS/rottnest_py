@@ -127,8 +127,8 @@ class TestCachedRzCollection(unittest.TestCase):
                     composer.cache_request(obj)
             else:
                 composer.submit(obj)
-                res = worker.execute_compute_unit(obj)
-                composer.receive(res)
+                unit_id, res = worker.execute_compute_unit(obj)
+                composer.receive(composer.compose_result(unit_id, res))
 
         self.assertEqual(composer.get_result()._obj, cirq_n_rz(composed_toffoli_circuit))
 
@@ -178,8 +178,8 @@ class TestCachedRzCollection(unittest.TestCase):
                     composer.cache_request(obj)
             else:
                 composer.submit(obj)
-                res = worker.execute_compute_unit(obj)
-                composer.receive(composer.compose_result(obj.unit_id, res))
+                unit_id, res = worker.execute_compute_unit(obj)
+                composer.receive(composer.compose_result(unit_id, res))
 
         self.assertEqual(composer.get_result()._obj, cirq_n_rz(composed_toffoli_circuit))
 
@@ -233,8 +233,8 @@ class TestCachedRzCollection(unittest.TestCase):
                     composer.cache_request(obj)
             else:
                 composer.submit(obj)
-                res = worker.execute_compute_unit(obj)
-                composer.receive(composer.compose_result(obj.unit_id, res))
+                unit_id, res = worker.execute_compute_unit(obj)
+                composer.receive(composer.compose_result(unit_id, res))
 
         self.assertEqual(composer.get_result()._obj, cirq_n_rz(composed_toffoli_circuit))
 
@@ -295,8 +295,8 @@ class TestCachedRzCollection(unittest.TestCase):
                     composer.cache_request(obj)
             else:
                 composer.submit(obj)
-                res = worker.execute_compute_unit(obj)
-                composer.receive(composer.compose_result(obj.unit_id, res))
+                unit_id, res = worker.execute_compute_unit(obj)
+                composer.receive(composer.compose_result(unit_id, res))
 
         # We expect to see the hashes for both the toffoli and the single rz
         self.assertEqual(len(seen_cache_hashes), 2)
@@ -355,8 +355,8 @@ class TestCachedRzCollection(unittest.TestCase):
                     composer.cache_request(obj)
             else:
                 composer.submit(obj)
-                res = worker.execute_compute_unit(obj)
-                composer.receive(composer.compose_result(obj.unit_id, res))
+                unit_id, res = worker.execute_compute_unit(obj)
+                composer.receive(composer.compose_result(unit_id, res))
 
         # We have two forms of the cacheable toffoli, should see two distinct hashes
         # when accessing cache
@@ -413,8 +413,8 @@ class TestCachedRzCollection(unittest.TestCase):
                     composer.cache_request(obj)
             else:
                 composer.submit(obj)
-                res = worker.execute_compute_unit(obj)
-                composer.receive(composer.compose_result(obj.unit_id, res))
+                unit_id, res = worker.execute_compute_unit(obj)
+                composer.receive(composer.compose_result(unit_id, res))
 
         self.assertEqual(composer.get_result()._obj, cirq_n_rz(composed_toffoli_circuit))
 
@@ -442,8 +442,8 @@ class TestCachedRzCollection(unittest.TestCase):
                     composer.cache_request(obj)
             else:
                 composer.submit(obj)
-                res = worker.execute_compute_unit(obj)
-                composer.receive(composer.compose_result(obj.unit_id, res))
+                unit_id, res = worker.execute_compute_unit(obj)
+                composer.receive(composer.compose_result(unit_id, res))
 
         self.assertEqual(composer.get_result()._obj, cirq_n_rz(longer_composed_toffoli_circuit))
 
@@ -514,8 +514,8 @@ class TestCachedRzCollection(unittest.TestCase):
                     composer.cache_request(obj)
             else:
                 composer.submit(obj)
-                res = worker.execute_compute_unit(obj)
-                composer.receive(composer.compose_result(obj.unit_id, res))
+                unit_id, res = worker.execute_compute_unit(obj)
+                composer.receive(composer.compose_result(unit_id, res))
 
         # We have two forms of the cacheable toffoli,
         # per two forms of cacheable composed toffoli,
