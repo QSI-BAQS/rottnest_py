@@ -442,7 +442,8 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
                     timeout=SEGFAULT_SENTINEL_TIMEOUT_SECS
                 )
 
-        except:
+        except Exception as e:
+            print(e)
             print(f"Aborting, sentinel secs reached at {self.n_received}/{self.n_submitted} received ({self.n_error} errors)")
             print(f"Unaccounted items: {self.n_submitted - self.n_received - self.n_error}")
 
@@ -471,24 +472,21 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         obj = self.worker_result_queue.get(
             timeout=timeout
         )
-        print(obj)
-        return 
-        unit_id, result = self.worker_result_queue.get(
-            timeout=timeout
-        )
-        print('Result:', unit_id, result, type(result))
 
-        if result.get('status', 'error') == 'error':
-            print(result)
-            return
+        #unit_id, result = self.worker_result_queue.get(
+        #    timeout=timeout
+        #)
+        print('Result:', obj, type(obj))
+
+        #if result.get('status', 'error') == 'error':
+        #    print(result)
+        #    return
 
         # Composer takes result to reportable 
-        self.composer.receive(
-            unit_id,
-            result
-        )
+        self.composer.receive(obj)
 
-        self.manager_completion_queue.put(result)
+        self.manager_completion_queue.put(obj)
+        # TODO: Batch
         self.n_received += 1
 
         return
