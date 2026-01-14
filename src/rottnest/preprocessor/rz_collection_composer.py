@@ -1,18 +1,17 @@
 '''
     Results composer implementing Rz counting
     This is useful for preprocessing and determining Rz precisions
-    and T factory fidelties 
+    and T factory fidelties
 '''
 
 from rottnest.architecture_interface import rottnest_composer
 
-RZ_COUNTS = 'rz_counts' 
+RZ_COUNTS = 'rz_counts'
 
 class RzCollectionResultsComposer(rottnest_composer.ResultsComposer):
     def __init__(self, result_obj=None, n_obj=1, unit_id=None):
-
         if result_obj is None:
-            result_obj = {}
+            result_obj = dict()
 
         super().__init__(
             result_obj = result_obj,
@@ -22,11 +21,10 @@ class RzCollectionResultsComposer(rottnest_composer.ResultsComposer):
 
 
     def __add__(self, other):
-
-
         base_obj = dict(self._obj)
-        for key, value in other.values():
-            base_obj[key] = base_obj.get(key, 0) + value   
+
+        for key, value in other._obj.items():
+            base_obj[key] = base_obj.get(key, 0) + value
 
         res = RzCollectionResultsComposer(
             result_obj = base_obj,
@@ -40,7 +38,9 @@ class RzCollectionResultsComposer(rottnest_composer.ResultsComposer):
     def __iadd__(self, other):
         self._unit_ids += other._unit_ids
         self._n_obj += other._n_obj
-        self._obj[RZ_COUNTS] += other._obj[RZ_COUNTS]
+
+        for key, value in other._obj.items():
+            self._obj[key] = self._obj.get(key, 0) + value
 
         return self
 
@@ -49,22 +49,23 @@ class RzCollectionResultsComposer(rottnest_composer.ResultsComposer):
             Tracks an rz
         '''
         if tag in self._obj:
-            self._obj[tag] += num 
+            self._obj[tag] += num
         else:
             self._obj[tag] = num
+
         return
 
     def get_tagged_rz_counts(self):
         '''
             Gets tagged rz counts
         '''
-        return self._obj[RZ_COUNTS]
+        return self._obj
 
     def get_n_rz(self):
         '''
             Gets the total number of rz_gates
         '''
-        return sum(self.get_tagged_rz_counts().values()) 
+        return sum(self.get_tagged_rz_counts().values())
 
     # TODO : Non-dummy value?
     def get_tocks(self):
