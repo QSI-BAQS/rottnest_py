@@ -4,29 +4,32 @@
     and T factory fidelties 
 '''
 
-from collections import Counter
-
 from rottnest.architecture_interface import rottnest_composer
-
 
 RZ_COUNTS = 'rz_counts' 
 
 class RzCollectionResultsComposer(rottnest_composer.ResultsComposer):
-    def __init__(self, result_dict=None, n_obj=1, unit_id=None):
+    def __init__(self, result_obj=None, n_obj=1, unit_id=None):
 
-        if result_dict is None:
-            result_dict = { RZ_COUNTS: Counter() }
+        if result_obj is None:
+            result_obj = {}
 
         super().__init__(
-            result_obj = result_dict,
+            result_obj = result_obj,
             n_obj = n_obj,
             unit_id = unit_id
         )
 
 
     def __add__(self, other):
+
+
+        base_obj = dict(self._obj)
+        for key, value in other.values():
+            base_obj[key] = base_obj.get(key, 0) + value   
+
         res = RzCollectionResultsComposer(
-            result_dict = { RZ_COUNTS: self._obj[RZ_COUNTS] + other._obj[RZ_COUNTS]},
+            result_obj = base_obj,
             n_obj = self._n_obj + other._n_obj
         )
 
@@ -68,7 +71,10 @@ class RzCollectionResultsComposer(rottnest_composer.ResultsComposer):
         return 0
 
     def to_args(self):
-        return f'{{{RZ_COUNTS}: {dict(self._obj[RZ_COUNTS])} }}'
+        '''
+            Serialisation
+        '''
+        return str(self._obj)
 
     @classmethod
     def from_args(cls, results_dict, unit_id = None):

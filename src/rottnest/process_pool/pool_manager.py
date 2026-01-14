@@ -58,7 +58,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         # TODO: Move this into the composer
         self.non_participatory_stack = [0]
         self.cache_hash_stack = [None]
-        self.compute_unit_result_cache = defaultdict(dict)
 
         # Manager Communication queues
         self.manager_task_queue = manager_task_queue
@@ -401,9 +400,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         self.compute_unit_counts = defaultdict(int)
         self.compute_unit_totals = defaultdict(int)
 
-        if None in self.compute_unit_result_cache:
-            del self.compute_unit_result_cache[None]
-
         self.sequencer_time = 0
         self.cache_time = 0
 
@@ -453,9 +449,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
         print("Totals:")
 
-        print(self.compute_unit_result_cache)
 
-        # print(compute_unit_counts, compute_unit_totals, compute_unit_result_cache)
 
         self.manager_completion_queue.put(symbols.DONE)
 
@@ -491,6 +485,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         self.n_received += 1
 
         return
+
         # Probably an error, dump to stdout
         if result.get('status', 'error') == 'error':
             print(result)
@@ -537,9 +532,10 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
             Asynch sending of totals
         '''
-        totals = self.compute_unit_result_cache[None]
-        totals['cu_id'] = cu_id
-        self.manager_completion_queue.put(totals)
+        print("Stack Frame: ", self.composer.stack_frames[0].result.to_args())
+        #totals = self.compute_unit_result_cache[None]
+        #totals['cu_id'] = cu_id
+        #self.manager_completion_queue.put(totals)
 
     def _task_get_results(self, *args, **kwargs):
         '''

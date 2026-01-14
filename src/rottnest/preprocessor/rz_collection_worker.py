@@ -25,7 +25,8 @@ class RzCollectionWorker(RottnestWorker):
             widget_json: dict,
             rz_tag_tracker_dict: dict
         ):
-        # TODO : Is it possible to map widget (JSON) back to gates?
+        # TODO : Is it possible to map widget (JSON) 
+        # back to gates?
         raise NotImplementedError
 
     def execute_compute_unit(
@@ -44,7 +45,7 @@ class RzCollectionWorker(RottnestWorker):
                     rz_counter.tally(
                         rz_tracker[op.rz.tag]
                     ) 
-        return compute_unit.unit_id, rz_counter
+        return compute_unit.unit_id, rz_counter.to_args()
     
     def set_precision(self, precision):
         '''
