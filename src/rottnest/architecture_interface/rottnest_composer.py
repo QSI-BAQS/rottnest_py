@@ -229,12 +229,10 @@ class RottnestComposer(abc.ABC):
             Default implementation reduces
             More complex implementations may do active management of these IDs and layouts
         '''
-        #stack_frame = self.active_compute_units[unit_id]
-        result = self.results_composer_constructor()(result)
-
-        # Pass to both the stack frame, and the global total
-        #self.stack_frames[stack_frame].compose_result(result)
-        #self.active_compute_units.pop(unit_id)
+        result = self.results_composer_constructor()(
+            result,
+            unit_id = unit_id
+        )
         return result
 
     def cache_request(self, cache_obj) -> bool:
