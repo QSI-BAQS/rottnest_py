@@ -334,16 +334,13 @@ class ComposerStackFrame:
             Checks if the compilation of this stack frame is complete
             At that point it can be used as a cache element
         '''
-        if self.compilation_complete:
-            return True
-        if not self.all_submitted:
-            # This lock works to prevent a situation where not all are
-            # submitted but recv == submitted
-            # It also blocks recursion
-            return False
-        if self.n_submitted == self.n_received:
-            self.compilation_complete = True
-        return True
+        if not self.compilation_complete:
+            self.compilation_complete = (
+                self.all_submitted 
+                and self.n_submitted == self.n_received
+            )
+        return self.compilation_complete
+
 
 class MemoryManager:
     '''
