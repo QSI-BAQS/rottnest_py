@@ -125,7 +125,7 @@ class MPIPoolManager(ComputeUnitExecutorPoolManager):
         self.pool_running = False
 
 
-    def process_elem_obj(self, obj: 'ComputeUnit', composer: 'RottnestComposer'):
+    def process_elem_obj(self, obj: 'ComputeUnit'):
         '''
             Triggers compilation of a compute unit
 
@@ -146,7 +146,7 @@ class MPIPoolManager(ComputeUnitExecutorPoolManager):
             self.worker_result_queue.qsize()
                 > RESULT_INTERVAL
             ):
-            self.post_result_queue(composer)
+            self.post_result_queue()
 
         submitted = False
         while not submitted:
@@ -159,7 +159,7 @@ class MPIPoolManager(ComputeUnitExecutorPoolManager):
             if not self.worker_task_queue.full():
 
                 # Inform the composer
-                composer.submit(obj)
+                self.composer.submit(obj)
 
                 # Send job to worker
                 self.worker_task_queue.put(
