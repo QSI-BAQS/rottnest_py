@@ -428,7 +428,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         # This loops and blocks up to SEGFAULT_SENTINEL_TIMEOUT_SECS
         # Note that priority tasks are not processed if this blocks
         try:
-            while self.n_received < self.n_submitted:
+            while not self.composer.cache_resolved or self.n_received < self.n_submitted:
                 # Trigger priority task check
                 self.check_run_priority()
                 self.check_priority_result()
@@ -559,23 +559,11 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             self.composer.cache_entry_start(cache_obj)
 
         elif cache_obj.request_type == CACHED.END:
-            # TEMP : Block on CACHE END rather than request
-            # to prevent issues with deferred merges
-            self.composer.cache_entry_close(cache_obj)
-            while not self.composer.cache_check(cache_obj):
-                print(f"Spinning waiting for cache completion for {cache_obj.cache_hash()}")
-                self.process_result_elem()
             self.composer.cache_entry_end(cache_obj)
 
         elif cache_obj.request_type == CACHED.REQUEST:
             # Process result from cache
-            cache_hash = cache_obj.cache_hash()
-            while not self.composer.cache_request(
-                cache_obj
-            ):
-                # Barrier until we can resolve this
-                # cache request
-                self.process_result_elem()
+            self.composer.cache_request(cache_obj)
 
         self.cache_time += time.time() - cache_start
 

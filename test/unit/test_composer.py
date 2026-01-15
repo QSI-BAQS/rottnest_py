@@ -354,7 +354,7 @@ class CompositionTests(unittest.TestCase):
             ie.
                                 A --- B      <- subsequently requested here
                                 |
-                             B --- B         <- hits cache here
+                             B --- B         <- populates cache here
         '''
         composer = generic_composer()
         composer.reset_result()
@@ -402,6 +402,191 @@ class CompositionTests(unittest.TestCase):
             composer.cache_entry_end(cachable)
 
         self.assertEqual(composer.get_result()._obj['val'], sum(range(1, 10)))
+
+
+    def test_cache_end_before_completion(self):
+        '''
+            Test receiving the end of cache interrupt before
+            all corresponding results have been composed
+        '''
+        composer = generic_composer()
+        composer.reset_result()
+
+        test_pairs = list(unit_res_pair({'val': i}, i) for i in range(10))
+
+        cachable = MockCachable(1)
+
+        composer.cache_entry_start(cachable)
+
+        for i in range(5):
+            unit, res = test_pairs.pop()
+            composer.submit(unit)
+            composer.receive(res)
+
+        # Remaining results aren't received immediately
+        for unit, res in test_pairs:
+            composer.submit(unit)
+
+        composer.cache_entry_end(cachable)
+
+        for unit, res in test_pairs:
+            composer.receive(res)
+
+        self.assertEqual(composer.get_result()._obj['val'], sum(range(1, 10)))
+
+
+    def test_cache_request_deferred(self):
+        '''
+            Test completing a cache object, and requesting it,
+            well before it is actually complete
+
+                    A
+                    |
+                C - C - C
+
+                    ^
+                Cache population is only completed
+                after the second C is requested
+        '''
+        composer = generic_composer()
+        composer.reset_result()
+
+        deferred_unit, deferred_res = unit_res_pair({'val': 1}, 1)
+
+        cachable = MockCachable(1)
+
+        composer.cache_entry_start(cachable)
+
+        composer.submit(deferred_unit)
+        for unit, res in (unit_res_pair({'val': i}, i) for i in range(2, 10)):
+            composer.submit(unit)
+            composer.receive(res)
+
+        composer.cache_entry_end(cachable)
+
+        # Request before completion
+        composer.cache_request(cachable)
+
+        composer.receive(deferred_res)
+
+        # Confirm that there are no outstanding deferences
+        self.assertTrue(composer.cache_resolved())
+
+        # Request after completion
+        composer.cache_request(cachable)
+
+        # Final result is 3x C
+        self.assertEqual(composer.get_result()._obj['val'], 3 * sum(range(1, 10)))
+
+
+    def test_cache_request_nested_defer(self):
+        '''
+            Tests layered deference of the form
+            (lower denotes incomplete at time of cache end/hit,
+            d is a non-cachable)
+
+                    A
+                    |
+                b - B - c - d   (c completes after full submission)
+                |   |
+                c   c
+
+            Where b = 50 + c, c = sum(range(1, 10), d = 1 + 2
+                  a = 2b + c + d = 3c + 3 + 100
+        '''
+        composer = generic_composer()
+        composer.reset_result()
+
+        b_cachable = MockCachable('b')
+        c_cachable = MockCachable('c')
+
+        # Start b
+        composer.cache_entry_start(b_cachable)
+
+        # Submit 50 for b
+        b_unit, b_res = unit_res_pair({'val': 50}, 50)
+
+        composer.submit(b_unit)
+
+        # Start c
+        composer.cache_entry_start(c_cachable)
+
+        # Submit all of c
+        for i in range(10):
+            composer.submit(MockComputeUnit(i))
+
+        # Receive some of c
+        for i in range(5):
+            composer.receive(ResultsComposer({'val': i}, unit_id=i))
+
+        # End c
+        composer.cache_entry_end(c_cachable)
+
+        self.assertFalse(composer.cache_resolved())
+
+        # End b
+        composer.cache_entry_end(b_cachable)
+
+        self.assertFalse(composer.cache_resolved())
+
+        # Request a b
+        composer.cache_request(b_cachable)
+
+        # Complete b (still waiting for c)
+        composer.receive(b_res)
+
+        self.assertFalse(composer.cache_resolved())
+
+        # Request a c
+        composer.cache_request(c_cachable)
+
+        self.assertFalse(composer.cache_resolved())
+
+        # Submit misc units making up a d
+        composer.submit(MockComputeUnit(100))
+        composer.receive(ResultsComposer({'val': 1}, unit_id=100))
+        composer.submit(MockComputeUnit(101))
+        composer.receive(ResultsComposer({'val': 2}, unit_id=101))
+
+        # Submit following c units
+        for i in range(5, 10):
+            composer.receive(ResultsComposer({'val': i}, unit_id=i))
+
+        # Confirm that everything has resolved
+        self.assertTrue(composer.cache_resolved())
+
+        # Check the result
+        self.assertEqual(composer.get_result()._obj['val'], 3 * sum(range(1, 10)) + 100 + 3)
+
+
+    def test_cache_request_deeply_nested_defer(self):
+        composer = generic_composer()
+        composer.reset_result()
+
+        deferred_unit, deferred_res = unit_res_pair({'val': 10}, 10)
+
+        cache_layers = []
+
+        for i in range(10):
+            cachable = MockCachable(i)
+            composer.cache_entry_start(cachable)
+            cache_layers.append(cachable)
+
+        composer.submit(deferred_unit)
+        for unit, res in (unit_res_pair({'val': i}, i) for i in range(10)):
+            composer.submit(unit)
+            composer.receive(res)
+
+        for i in range(10):
+            cachable = cache_layers.pop()
+            composer.cache_entry_end(cachable)
+            self.assertFalse(composer.cache_resolved())
+
+        composer.receive(deferred_res)
+        self.assertTrue(composer.cache_resolved())
+
+        self.assertEqual(composer.get_result()._obj['val'], sum(range(1, 11)))
+
 
 if __name__ == "__main__":
     unittest.main()
