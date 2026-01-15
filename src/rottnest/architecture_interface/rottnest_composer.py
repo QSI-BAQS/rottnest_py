@@ -175,8 +175,27 @@ class RottnestComposer(abc.ABC):
 
         old_frame.last_submitted()
 
+        # Frame hasn't received everything, or possibly has its own deferred cache
+        # if not old_frame.complete():
+        #     self.StackFrame.register_deference(self.stack_frames[-1], old_frame)
+        # else:
         # Compose into caller
         self.stack_frames[-1].compose_stack_frames(old_frame)
+
+
+    def cache_entry_close(self, cache_obj):
+        '''
+            TEMP : Marks a cache entry as having all submitted,
+            but waiting for results
+        '''
+        if self.stack_frames[-1].cache_hash() != cache_obj.cache_hash():
+            raise Exception(
+                "Received unmatched cache_end in stream",
+                cache_obj.cache_hash(),
+                self.cache_hash_stack
+            )
+
+        self.stack_frames[-1].last_submitted()
 
 
     def get_result(self):
@@ -239,18 +258,30 @@ class RottnestComposer(abc.ABC):
             Returns true if success, false if blocking on previously submitted compute units
         '''
         if not RottnestComposer.result_cache[cache_obj.cache_hash()].complete():
+            #self.StackFrame.register_deference(self.stack_frames[-1], RottnestComposer.result_cache[cache_obj.cache_hash()])
             return False
+        else:
+            # Compose the cache request result into the active frame
+            self.stack_frames[-1].compose_stack_frames(RottnestComposer.result_cache[cache_obj.cache_hash()])
+            return True
 
-        # Compose the cache request result into the active frame
-        self.stack_frames[-1].compose_stack_frames(RottnestComposer.result_cache[cache_obj.cache_hash()])
+    def complete_composition(self) -> bool:
+        '''
+            Checks final composition status
+        '''
+        return RottnestComposer.result_cache[RottnestComposer.__start].complete()
 
-        return True
+    # TEMP : Means to query cache WITHOUT merging (used pre cache-defer system)
+    def cache_check(self, cache_obj) -> bool:
+        return RottnestComposer.result_cache[cache_obj.cache_hash()].complete()
 
 
 class ComposerStackFrame:
     '''
         Stack frame instance for the composer
     '''
+    # Map cached frames waiting on completion to frames that depend on them
+    # cache_deferences = dict()
 
     def __init__(self,
             rottnest_hash,
@@ -279,6 +310,38 @@ class ComposerStackFrame:
         # Qubits that are not passed to a called function
         self.non_participatory_qubits = 0
         self.idle_volume = 0
+
+    #     # Deferred merges
+    #     self.deferred_merges = set()
+
+
+    # @classmethod
+    # def resolve_deferences(cls, frame):
+    #     '''
+    #         Given a frame that is complete, attempt to resolve
+    #         any cache defereneces
+    #     '''
+    #     if frame in cls.cache_deferences:
+    #         outer_frames = cls.cache_deferences.pop(frame)
+    #         for outer_frame in outer_frames:
+    #             outer_frame.compose_stack_frames(frame)
+    #             outer_frame.deferred_merges.discard(frame)
+
+    #         for outer_frame in outer_frames:
+    #             # Resolving a deference might complete an outer frame,
+    #             # meaning it also needs to be resolved over
+    #             # We do this after the initial pass to ensure all outer frames
+    #             # are fully resolved for the initial frame first
+    #             if outer_frame.complete():
+    #                 cls.resolve_deferences(outer_frame)
+
+    # @classmethod
+    # def register_deference(cls, outer_frame, inner_frame):
+    #     if inner_frame not in cls.cache_deferences:
+    #         cls.cache_deferences[inner_frame] = [outer_frame,]
+    #     else:
+    #         cls.cache_deferences[inner_frame].append(outer_frame)
+
 
     def cache_hash(self):
         return self.rottnest_hash
@@ -321,6 +384,9 @@ class ComposerStackFrame:
         self.result += result
         self.n_received += result.get_n_compute_units()
 
+        # if self.complete():
+        #     ComposerStackFrame.resolve_deferences(self)
+
     def last_submitted(self):
         '''
             Last submitted
@@ -334,8 +400,9 @@ class ComposerStackFrame:
         '''
         if not self.compilation_complete:
             self.compilation_complete = (
-                self.all_submitted 
+                self.all_submitted
                 and self.n_submitted == self.n_received
+                # and not self.deferred_merges
             )
         return self.compilation_complete
 
@@ -418,6 +485,9 @@ class ResultsComposer:
         self._obj = result_obj
 
         # Used for tracking batching of results
+        # TODO : Batching will result in massive
+        # lists - provide a way to drop the ids once
+        # the result hits cache
         self._unit_ids = []
         if unit_id is not None:
             self._unit_ids.append(unit_id)
