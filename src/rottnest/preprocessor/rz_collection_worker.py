@@ -25,7 +25,7 @@ class RzCollectionWorker(RottnestWorker):
             widget_json: dict,
             rz_tag_tracker_dict: dict
         ):
-        # TODO : Is it possible to map widget (JSON) 
+        # TODO : Is it possible to map widget (JSON)
         # back to gates?
         raise NotImplementedError
 
@@ -36,7 +36,7 @@ class RzCollectionWorker(RottnestWorker):
         '''
             For an rz collector, execution is just counting rz by tag
         '''
-        rz_counter = RzCollectionResultsComposer()
+        rz_counter = RzCollectionResultsComposer(unit_id=compute_unit.unit_id)
         rz_tracker = compute_unit.extract_rz_tracker()
         for seq in compute_unit.sequences:
             for op in seq:
@@ -44,9 +44,9 @@ class RzCollectionWorker(RottnestWorker):
                     # Map tag back to actual angle
                     rz_counter.tally(
                         rz_tracker[op.rz.tag]
-                    ) 
+                    )
         return compute_unit.unit_id, rz_counter.to_args()
-    
+
     def set_precision(self, precision):
         '''
             No need to set precision

@@ -20,6 +20,8 @@ from rottnest.input_parsers.interrupt import INTERRUPT, CACHED
 
 from rottnest.monkey_patchers.pyliqtr_patcher import hash_function_patchers
 
+from rottnest.architecture_interface.rottnest_composer import RottnestComposer
+
 from rottnest.preprocessor.rz_collection_worker import RzCollectionWorker
 from rottnest.preprocessor.rz_collection_composer import RzCollectionComposer, RzCollectionResultsComposer
 
@@ -35,20 +37,11 @@ except ModuleNotFoundError:
     from .utils.arch_factory import build_arch, build_designer
 
 
-arch_name = "RzCollection"
-designer_name = "DummyDesigner"
 mem_bound = "mem_bound"
 default_mem_bound = 1000
 
-rz_collection_arch = build_arch(arch_name,
-    build_designer(designer_name, get_mem_bound=lambda s,l: l[mem_bound]),
-    RzCollectionComposer,
-    RzCollectionWorker
-)
-
-architectures._options[arch_name] = rz_collection_arch
-
-architectures.set_current_architecture(arch_name)
+# Use the Rz Counter from the preprocessor
+architectures.set_current_architecture("Rz Counter")
 
 
 class TestCachedRzCollection(unittest.TestCase):
@@ -92,6 +85,54 @@ class TestCachedRzCollection(unittest.TestCase):
         self.assertTrue(cache_hit)
 
 
+    def test_cache_single_toffoli(self):
+        layout = { mem_bound: default_mem_bound }
+        LayoutProxy.add_layout_with_id(0, layout)
+
+        # Convert existing toffoli to a gate
+        toffoli_gate_cls = cirq_circuit_to_gate(cirq_circuits["toffoli"], 3)
+        # Hash value doesn't matter here as long as it
+        # agrees for identical instances
+        toffoli_gate_cls._rottnest_hash = lambda s, so: 3
+
+        # NOTE : One layer of toffolis would be insufficient
+        # as we hit an initial one-layer decomp
+        composed_toffoli_gate_cls = cirq_circuit_to_gate(cirq.Circuit(
+            toffoli_gate_cls().on(cirq_qubits[0], cirq_qubits[1], cirq_qubits[2])
+        ), 3)
+
+        composed_toffoli_circuit = cirq.Circuit(
+            composed_toffoli_gate_cls().on(cirq_qubits[0], cirq_qubits[1], cirq_qubits[2])
+        )
+
+        # Patch tracking of toffolis into parser
+        rottnest_cacheable(toffoli_gate_cls)
+
+        worker = RzCollectionWorker()
+        composer = RzCollectionComposer((layout,), [cirq_qubits[0], cirq_qubits[1], cirq_qubits[2]])
+        composer.reset_result()
+
+        parser = PyliqtrParser(composed_toffoli_circuit)
+        seq = Sequencer(0)
+        parser.parse()
+        it = seq.sequence_pyliqtr(parser)
+
+        for obj in it:
+            if obj == INTERRUPT:
+                if obj.request_type == CACHED.START:
+                    composer.cache_entry_start(obj)
+                elif obj.request_type == CACHED.END:
+                    composer.cache_entry_end(obj)
+                elif obj.request_type == CACHED.REQUEST:
+                    composer.cache_request(obj)
+            else:
+                composer.submit(obj)
+                unit_id, res = worker.execute_compute_unit(obj)
+                composer.receive(composer.compose_result(unit_id, res))
+
+        self.assertEqual(composer.get_result()._obj, cirq_n_rz(composed_toffoli_circuit))
+
+
     def test_cache_composition(self):
         '''
             Ensure that result of composing over cache is the same as without composing
@@ -120,6 +161,7 @@ class TestCachedRzCollection(unittest.TestCase):
 
         worker = RzCollectionWorker()
         composer = RzCollectionComposer((layout,), [cirq_qubits[0], cirq_qubits[1], cirq_qubits[2]])
+        composer.reset_result()
 
         parser = PyliqtrParser(composed_toffoli_circuit)
         seq = Sequencer(0)
@@ -136,10 +178,10 @@ class TestCachedRzCollection(unittest.TestCase):
                     composer.cache_request(obj)
             else:
                 composer.submit(obj)
-                res = worker.execute_compute_unit(obj)
-                composer.receive(obj.unit_id, res)
+                unit_id, res = worker.execute_compute_unit(obj)
+                composer.receive(composer.compose_result(unit_id, res))
 
-        self.assertEqual(composer.get_result()._obj["rz_counts"], cirq_n_rz(composed_toffoli_circuit))
+        self.assertEqual(composer.get_result()._obj, cirq_n_rz(composed_toffoli_circuit))
 
 
     def test_cache_composition_mixed(self):
@@ -174,6 +216,7 @@ class TestCachedRzCollection(unittest.TestCase):
 
         worker = RzCollectionWorker()
         composer = RzCollectionComposer((layout,), [cirq_qubits[0], cirq_qubits[1], cirq_qubits[2]])
+        composer.reset_result()
 
         parser = PyliqtrParser(composed_toffoli_circuit)
         seq = Sequencer(0)
@@ -190,10 +233,10 @@ class TestCachedRzCollection(unittest.TestCase):
                     composer.cache_request(obj)
             else:
                 composer.submit(obj)
-                res = worker.execute_compute_unit(obj)
-                composer.receive(obj.unit_id, res)
+                unit_id, res = worker.execute_compute_unit(obj)
+                composer.receive(composer.compose_result(unit_id, res))
 
-        self.assertEqual(composer.get_result()._obj["rz_counts"], cirq_n_rz(composed_toffoli_circuit))
+        self.assertEqual(composer.get_result()._obj, cirq_n_rz(composed_toffoli_circuit))
 
 
     def test_multi_cache_circuit(self):
@@ -232,6 +275,7 @@ class TestCachedRzCollection(unittest.TestCase):
 
         worker = RzCollectionWorker()
         composer = RzCollectionComposer((layout,), [cirq_qubits[0], cirq_qubits[1], cirq_qubits[2]])
+        composer.reset_result()
 
         parser = PyliqtrParser(composed_toffoli_circuit)
         seq = Sequencer(0)
@@ -251,12 +295,12 @@ class TestCachedRzCollection(unittest.TestCase):
                     composer.cache_request(obj)
             else:
                 composer.submit(obj)
-                res = worker.execute_compute_unit(obj)
-                composer.receive(obj.unit_id, res)
+                unit_id, res = worker.execute_compute_unit(obj)
+                composer.receive(composer.compose_result(unit_id, res))
 
         # We expect to see the hashes for both the toffoli and the single rz
         self.assertEqual(len(seen_cache_hashes), 2)
-        self.assertEqual(composer.get_result()._obj["rz_counts"], cirq_n_rz(composed_toffoli_circuit))
+        self.assertEqual(composer.get_result()._obj, cirq_n_rz(composed_toffoli_circuit))
 
 
     def test_circuit_multi_form(self):
@@ -291,6 +335,7 @@ class TestCachedRzCollection(unittest.TestCase):
 
         worker = RzCollectionWorker()
         composer = RzCollectionComposer((layout,), [cirq_qubits[0], cirq_qubits[1], cirq_qubits[2]])
+        composer.reset_result()
 
         parser = PyliqtrParser(composed_toffoli_circuit)
         seq = Sequencer(0)
@@ -310,13 +355,13 @@ class TestCachedRzCollection(unittest.TestCase):
                     composer.cache_request(obj)
             else:
                 composer.submit(obj)
-                res = worker.execute_compute_unit(obj)
-                composer.receive(obj.unit_id, res)
+                unit_id, res = worker.execute_compute_unit(obj)
+                composer.receive(composer.compose_result(unit_id, res))
 
         # We have two forms of the cacheable toffoli, should see two distinct hashes
         # when accessing cache
         self.assertEqual(len(seen_cache_hashes), 2)
-        self.assertEqual(composer.get_result()._obj["rz_counts"], cirq_n_rz(composed_toffoli_circuit))
+        self.assertEqual(composer.get_result()._obj, cirq_n_rz(composed_toffoli_circuit))
 
 
     def test_sequential_composition(self):
@@ -351,6 +396,7 @@ class TestCachedRzCollection(unittest.TestCase):
 
         worker = RzCollectionWorker()
         composer = RzCollectionComposer((layout,), [cirq_qubits[0], cirq_qubits[1], cirq_qubits[2]])
+        composer.reset_result()
 
         parser = PyliqtrParser(composed_toffoli_circuit)
         seq = Sequencer(0)
@@ -367,10 +413,10 @@ class TestCachedRzCollection(unittest.TestCase):
                     composer.cache_request(obj)
             else:
                 composer.submit(obj)
-                res = worker.execute_compute_unit(obj)
-                composer.receive(obj.unit_id, res)
+                unit_id, res = worker.execute_compute_unit(obj)
+                composer.receive(composer.compose_result(unit_id, res))
 
-        self.assertEqual(composer.get_result()._obj["rz_counts"], cirq_n_rz(composed_toffoli_circuit))
+        self.assertEqual(composer.get_result()._obj, cirq_n_rz(composed_toffoli_circuit))
 
         composer.reset_result()
 
@@ -396,10 +442,10 @@ class TestCachedRzCollection(unittest.TestCase):
                     composer.cache_request(obj)
             else:
                 composer.submit(obj)
-                res = worker.execute_compute_unit(obj)
-                composer.receive(obj.unit_id, res)
+                unit_id, res = worker.execute_compute_unit(obj)
+                composer.receive(composer.compose_result(unit_id, res))
 
-        self.assertEqual(composer.get_result()._obj["rz_counts"], cirq_n_rz(longer_composed_toffoli_circuit))
+        self.assertEqual(composer.get_result()._obj, cirq_n_rz(longer_composed_toffoli_circuit))
 
 
     def test_circuit_vertical_cache(self):
@@ -448,6 +494,7 @@ class TestCachedRzCollection(unittest.TestCase):
 
         worker = RzCollectionWorker()
         composer = RzCollectionComposer((layout,), [cirq_qubits[0], cirq_qubits[1], cirq_qubits[2]])
+        composer.reset_result()
 
         parser = PyliqtrParser(final_circuit)
         seq = Sequencer(0)
@@ -467,15 +514,15 @@ class TestCachedRzCollection(unittest.TestCase):
                     composer.cache_request(obj)
             else:
                 composer.submit(obj)
-                res = worker.execute_compute_unit(obj)
-                composer.receive(obj.unit_id, res)
+                unit_id, res = worker.execute_compute_unit(obj)
+                composer.receive(composer.compose_result(unit_id, res))
 
         # We have two forms of the cacheable toffoli,
         # per two forms of cacheable composed toffoli,
         # per two instances of said toffoli with different qubits
         # for 2^3 == 8
         self.assertEqual(len(seen_cache_hashes), 8)
-        self.assertEqual(composer.get_result()._obj["rz_counts"], cirq_n_rz(final_circuit))
+        self.assertEqual(composer.get_result()._obj, cirq_n_rz(final_circuit))
 
 
 if __name__ == "__main__":

@@ -109,20 +109,18 @@ class RottnestComposer(abc.ABC):
         '''
             Receiving a result from a compilation
         '''
-        print("RES: ", result_composer)
         if result_composer.end_computation():
         #    # TODO set pending remaining compute units
             return
 
         #result = self.ResultsComposer(result)
-        compute_unit_ids = result_composer.get_compute_unit_ids() 
+        compute_unit_ids = result_composer.get_compute_unit_ids()
 
         print("UNIT IDs", compute_unit_ids)
-        return
 
         # All units should belong to the same stack frame
         stack_frame = self.unhook_compute_unit(compute_unit_ids[0])
-        stack_frame.receive(compute_unit_ids[0], result_composer)
+        stack_frame.receive(result_composer)
 
     def cache_entry_start(self, cache_obj):
         '''
@@ -424,7 +422,7 @@ class ResultsComposer:
         if unit_id is not None:
             self._unit_ids.append(unit_id)
         self._n_obj = n_obj
-        
+
         self._end_computation = end_computation
 
     def end_computation(self):
@@ -484,8 +482,8 @@ class ResultsComposer:
             self.__class__.from_args(self.to_args()) == self
         '''
         raise NotImplementedError
-   
-    @staticmethod 
+
+    @staticmethod
     def from_args(self, *args, **kwargs):
         '''
             Constructor from args

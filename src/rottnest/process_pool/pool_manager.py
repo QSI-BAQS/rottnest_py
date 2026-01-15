@@ -182,6 +182,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
     def initialise_composer(self, layouts, executable):
         arch = self._architectures.get_current_architecture()
         self.composer = arch.composer(layouts, list(executable.get_qubits()))
+        self.composer.reset_result()
 
     def _task_start_workers(self, *args):
         '''
@@ -335,7 +336,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         params = args[0]
         self._executables.set_executable_params(**params)
 
-    def distribute_compilation(self, it: typing.Iterator, composer: "RottnestComposer"):
+    def distribute_compilation(self, it: typing.Iterator):
         '''
             Consumes the iterator and distributes
             compilation among the workers
@@ -347,15 +348,15 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         for obj in it:
             # Interupts trigger cache updates
             if obj == INTERRUPT:
-                self.process_elem_cache(obj, composer)
+                self.process_elem_cache(obj)
             else:
                 # Non interrupts trigger compilation
-                self.process_elem_obj(obj, composer)
+                self.process_elem_obj(obj)
 
             # Update reports after each interval
             update_counter -= 1
             if update_counter < 0:
-                self.post_result_queue(composer)
+                self.post_result_queue()
                 update_counter = REPORT_INTERVAL
                 self.send_total()
 
@@ -415,12 +416,10 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         layouts = list(LayoutProxy.get_layouts())
         self.initialise_composer(layouts, executable)
 
-        composer = architecture.composer(layouts, executable.get_qubits())
-
         it = generate_compute_units(arch_ids, architecture, executable)
 
         # Consume the iterator to distribute jobs to workers
-        self.distribute_compilation(it, composer)
+        self.distribute_compilation(it)
         print("all submitted!")
         print("last non-cache job at", self.submit_time, "delta", self.submit_time - self.run_seq_start)
         print("sequencer time:", self.sequencer_time, "cache_time:", self.cache_time)
@@ -470,7 +469,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         unit_id, result = self.worker_result_queue.get(
             timeout=timeout
         )
-        print('Result:', unit_id, result, type(result))
+        print('Result:', unit_id, str(result), type(result))
 
         result_obj = self.composer.compose_result(unit_id, result)
 
@@ -548,8 +547,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
     def process_elem_cache(
         self,
-        cache_obj,
-        composer
+        cache_obj
     ):
         '''
             Cache message
@@ -558,20 +556,20 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
         # Process cache command
         if cache_obj.request_type == CACHED.START:
-            composer.cache_entry_start(cache_obj)
+            self.composer.cache_entry_start(cache_obj)
 
         elif cache_obj.request_type == CACHED.END:
-            composer.cache_entry_end(cache_obj)
+            self.composer.cache_entry_end(cache_obj)
 
         elif cache_obj.request_type == CACHED.REQUEST:
             # Process result from cache
             cache_hash = cache_obj.cache_hash()
-            while not composer.cache_request(
+            while not self.composer.cache_request(
                 cache_obj
             ):
                 # Barrier until we can resolve this
                 # cache request
-                self.process_result_elem(composer)
+                self.process_result_elem()
 
         self.cache_time += time.time() - cache_start
 
@@ -619,18 +617,17 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             )
             self.pool[i].start()
 
-    def post_result_queue(self, composer):
+    def post_result_queue(self):
         '''
         Drain the result queue and post
         '''
         while not self.worker_result_queue.empty():
             # Drain result queue
-            self.process_result_elem(composer)
+            self.process_result_elem()
 
     def process_elem_obj(
         self,
         obj: "ComputeUnit",
-        composer: "RottnestComposer"
     ):
         '''
             Triggers compilation of a compute unit
@@ -648,7 +645,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             self.worker_result_queue.qsize()
                 > RESULT_INTERVAL
             ):
-            self.post_result_queue(composer)
+            self.post_result_queue()
 
         # Restart dead processes and tally errors
         # TODO
@@ -665,7 +662,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             if not self.worker_task_queue.full():
 
                 # Inform the composer
-                composer.submit(obj)
+                self.composer.submit(obj)
 
                 # Send job to worker
                 self.worker_task_queue.put(
