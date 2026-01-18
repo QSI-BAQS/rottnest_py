@@ -196,7 +196,11 @@ class RottnestComposer(abc.ABC):
         '''
             Checks if the program is complete
         '''
-        return self._all_submitted and self.stack_frames[0].complete()
+        # To be complete;
+        # - All units have been submitted
+        # - The only stack frame left is the top-level frame
+        # - The top-level frame is complete
+        return self._all_submitted and len(self.stack_frames) == 1 and self.stack_frames[0].complete()
 
     def get_result(self):
         '''
@@ -327,7 +331,7 @@ class ComposerStackFrame:
             self.compose_stack_frames(frame)
 
         if self.complete():
-            self.complete_parent_defers()
+            self.complete_parent_deferences()
 
 
     def register_cache_deference(self, child_frame):

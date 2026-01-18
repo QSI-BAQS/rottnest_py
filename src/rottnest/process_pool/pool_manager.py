@@ -431,7 +431,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         # This loops and blocks up to SEGFAULT_SENTINEL_TIMEOUT_SECS
         # Note that priority tasks are not processed if this blocks
         try:
-            while not self.composer.cache_resolved or self.n_received < self.n_submitted:
+            while not self.composer.complete() or self.n_received < self.n_submitted:
                 # Trigger priority task check
                 self.check_run_priority()
                 self.check_priority_result()

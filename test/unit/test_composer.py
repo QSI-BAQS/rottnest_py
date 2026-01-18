@@ -462,6 +462,8 @@ class CompositionTests(unittest.TestCase):
             composer.submit(unit)
             composer.receive(res)
 
+        composer.all_submitted()
+
         composer.cache_entry_end(cachable)
 
         # Request before completion
@@ -470,7 +472,7 @@ class CompositionTests(unittest.TestCase):
         composer.receive(deferred_res)
 
         # Confirm that there are no outstanding deferences
-        self.assertTrue(composer.cache_resolved())
+        self.assertTrue(composer.complete())
 
         # Request after completion
         composer.cache_request(cachable)
@@ -522,12 +524,12 @@ class CompositionTests(unittest.TestCase):
         # End c
         composer.cache_entry_end(c_cachable)
 
-        self.assertFalse(composer.cache_resolved())
+        self.assertFalse(composer.complete())
 
         # End b
         composer.cache_entry_end(b_cachable)
 
-        self.assertFalse(composer.cache_resolved())
+        self.assertFalse(composer.complete())
 
         # Request a b
         composer.cache_request(b_cachable)
@@ -535,12 +537,12 @@ class CompositionTests(unittest.TestCase):
         # Complete b (still waiting for c)
         composer.receive(b_res)
 
-        self.assertFalse(composer.cache_resolved())
+        self.assertFalse(composer.complete())
 
         # Request a c
         composer.cache_request(c_cachable)
 
-        self.assertFalse(composer.cache_resolved())
+        self.assertFalse(composer.complete())
 
         # Submit misc units making up a d
         composer.submit(MockComputeUnit(100))
@@ -548,12 +550,14 @@ class CompositionTests(unittest.TestCase):
         composer.submit(MockComputeUnit(101))
         composer.receive(ResultsComposer({'val': 2}, unit_id=101))
 
-        # Submit following c units
+        composer.all_submitted()
+
+        # Receive following c units
         for i in range(5, 10):
             composer.receive(ResultsComposer({'val': i}, unit_id=i))
 
         # Confirm that everything has resolved
-        self.assertTrue(composer.cache_resolved())
+        self.assertTrue(composer.complete())
 
         # Check the result
         self.assertEqual(composer.get_result()._obj['val'], 3 * sum(range(1, 10)) + 100 + 3)
@@ -577,15 +581,20 @@ class CompositionTests(unittest.TestCase):
             composer.submit(unit)
             composer.receive(res)
 
+        composer.all_submitted()
+
         for i in range(10):
             cachable = cache_layers.pop()
             composer.cache_entry_end(cachable)
-            self.assertFalse(composer.cache_resolved())
+            self.assertFalse(composer.complete())
 
         composer.receive(deferred_res)
-        self.assertTrue(composer.cache_resolved())
+        self.assertTrue(composer.complete())
 
         self.assertEqual(composer.get_result()._obj['val'], sum(range(1, 11)))
+
+
+    # TODO : Antagonistic deference scenarios
 
 
 if __name__ == "__main__":
