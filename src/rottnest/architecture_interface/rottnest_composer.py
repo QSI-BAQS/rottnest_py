@@ -80,6 +80,7 @@ class RottnestComposer(abc.ABC):
 
         # Maps active ids to stack frames
         self.active_compute_units = {}
+        self._all_submitted = False
 
 
     def reset_result(self):
@@ -94,6 +95,7 @@ class RottnestComposer(abc.ABC):
             self.ResultsComposer,
             qubit_map={}
         )
+        self._all_submitted = False
 
         # TODO : Maybe reset cache deferences?
 
@@ -181,6 +183,20 @@ class RottnestComposer(abc.ABC):
             # Compose into caller
             self.stack_frames[-1].compose_stack_frames(old_frame)
 
+    def all_submitted(self):
+        '''
+            All compute unit objects submitted
+        '''
+        self._all_submitted = True
+
+        # All jobs for top level stack frame are now outstanding
+        self.stack_frames[0].last_submitted()
+
+    def complete(self):
+        '''
+            Checks if the program is complete
+        '''
+        return self._all_submitted and self.stack_frames[0].complete()
 
     def cache_entry_close(self, cache_obj):
         '''

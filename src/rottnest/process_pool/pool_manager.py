@@ -420,6 +420,9 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
         # Consume the iterator to distribute jobs to workers
         self.distribute_compilation(it)
+
+        # Sets composer state
+        self.composer.all_submitted()
         print("all submitted!")
         print("last non-cache job at", self.submit_time, "delta", self.submit_time - self.run_seq_start)
         print("sequencer time:", self.sequencer_time, "cache_time:", self.cache_time)
