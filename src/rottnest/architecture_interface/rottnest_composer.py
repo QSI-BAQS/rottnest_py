@@ -176,25 +176,10 @@ class RottnestComposer(abc.ABC):
 
         # Frame hasn't received everything, or possibly has its own deferred cache
         if not old_frame.complete():
-            self.StackFrame.register_deference(self.stack_frames[-1], old_frame)
+            self.stack_frames[-1].register_cache_deference(old_frame)
         else:
             # Compose into caller
             self.stack_frames[-1].compose_stack_frames(old_frame)
-
-
-    def cache_entry_close(self, cache_obj):
-        '''
-            TEMP : Marks a cache entry as having all submitted,
-            but waiting for results
-        '''
-        if self.stack_frames[-1].cache_hash() != cache_obj.cache_hash():
-            raise Exception(
-                "Received unmatched cache_end in stream",
-                cache_obj.cache_hash(),
-                self.cache_hash_stack
-            )
-
-        self.stack_frames[-1].last_submitted()
 
 
     def get_result(self):
@@ -256,32 +241,19 @@ class RottnestComposer(abc.ABC):
             Requests an element from the cache
             Returns true if success, false if blocking on previously submitted compute units
         '''
-        if not RottnestComposer.result_cache[cache_obj.cache_hash()].complete():
-            self.StackFrame.register_deference(self.stack_frames[-1], RottnestComposer.result_cache[cache_obj.cache_hash()])
+        if not (cached_frame := RottnestComposer.result_cache[cache_obj.cache_hash()]).complete():
+            self.stack_frames[-1].register_cache_deference(cached_frame)
             return False
         else:
             # Compose the cache request result into the active frame
             self.stack_frames[-1].compose_stack_frames(RottnestComposer.result_cache[cache_obj.cache_hash()])
             return True
 
-    def cache_resolved(self) -> bool:
-        '''
-            Checks if (at present) there are no outstanding cache deferences
-        '''
-        return not self.StackFrame.cache_deferences
-
-    # TEMP : Means to query cache WITHOUT merging (used pre cache-defer system)
-    def cache_check(self, cache_obj) -> bool:
-        return RottnestComposer.result_cache[cache_obj.cache_hash()].complete()
-
 
 class ComposerStackFrame:
     '''
         Stack frame instance for the composer
     '''
-    # Map cached frames waiting on completion to frames that depend on them
-    cache_deferences = dict()
-
     def __init__(self,
             rottnest_hash,
             results_composer_constructor: Type,
@@ -310,39 +282,44 @@ class ComposerStackFrame:
         self.non_participatory_qubits = 0
         self.idle_volume = 0
 
-        # Deferred merges
-        self.deferred_merges = set()
+        # Frames that depend on this frame
+        self.parent_frames = set()
+
+        # A map frame -> n for the frames this frame depends on
+        self.deferred_frames = dict()
 
 
-    @classmethod
-    def resolve_deferences(cls, frame):
+    def complete_parent_deferences(self):
         '''
-            Given a frame that is complete, attempt to resolve
-            any cache defereneces
+            Iterate through a frame's registered parents,
+            informing them of its completion
         '''
-        if frame in cls.cache_deferences:
-            outer_frames = cls.cache_deferences.pop(frame)
-            for outer_frame in outer_frames:
-                outer_frame.compose_stack_frames(frame)
-                outer_frame.deferred_merges.discard(frame)
+        for parent in self.parent_frames:
+            parent.resolve_deferred_child(self)
 
-            for outer_frame in outer_frames:
-                # Resolving a deference might complete an outer frame,
-                # meaning it also needs to be resolved over
-                # We do this after the initial pass to ensure all outer frames
-                # are fully resolved for the initial frame first
-                if outer_frame.complete():
-                    cls.resolve_deferences(outer_frame)
+        self.parent_frames = set()
 
-    @classmethod
-    def register_deference(cls, outer_frame, inner_frame):
-        if outer_frame == inner_frame:
-            raise Exception("Cannot register infinite recursive deference")
-        outer_frame.deferred_merges.add(inner_frame)
-        if inner_frame not in cls.cache_deferences:
-            cls.cache_deferences[inner_frame] = [outer_frame,]
-        else:
-            cls.cache_deferences[inner_frame].append(outer_frame)
+
+    def resolve_deferred_child(self, frame):
+        '''
+            Resolve a child frame's completion, merging it into this frame
+        '''
+        if frame not in self.deferred_frames:
+            raise Exception(f"Cache resolution triggered merging non-child frame {frame.cache_hash()} into {self.cache_hash()}")
+
+        for i in range(self.deferred_frames.pop(frame)):
+            self.compose_stack_frames(frame)
+
+        if self.complete():
+            self.complete_parent_defers()
+
+
+    def register_cache_deference(self, child_frame):
+        '''
+            Registers a deferred frame with a parent
+        '''
+        self.deferred_frames[child_frame] = self.deferred_frames.get(child_frame, 0) + 1
+        child_frame.parent_frames.add(self)
 
 
     def cache_hash(self):
@@ -387,7 +364,7 @@ class ComposerStackFrame:
         self.n_received += result.get_n_compute_units()
 
         if self.complete():
-            self.__class__.resolve_deferences(self)
+            self.complete_parent_deferences()
 
     def last_submitted(self):
         '''
@@ -404,7 +381,7 @@ class ComposerStackFrame:
             self.compilation_complete = (
                 self.all_submitted
                 and self.n_submitted == self.n_received
-                and not self.deferred_merges
+                and not self.deferred_frames
             )
         return self.compilation_complete
 
