@@ -2,6 +2,8 @@ import abc
 import cirq
 import numpy as np
 
+from typing import Iterable
+
 from functools import reduce
 
 from rottnest.rz_decomposer.angle_to_rational import angle_to_rational
@@ -14,6 +16,8 @@ class RottnestExecutable(abc.ABC):
     '''
         Interface for Rottnest Executable objects 
     '''
+
+    NO_ANALYTICAL_METHOD = object()
 
     RZ_PREC = 'prec_rz'
     base_params = {RZ_PREC: (int, DEFAULT_PRECISION)}
@@ -28,7 +32,7 @@ class RottnestExecutable(abc.ABC):
         Loads all parameters from all child classes and sets them to their default value
         :: pandora : bool :: Enables or disables pandora caching 
         '''
-        self.pandora = pandora
+        self._pandora = pandora
 
         if prec_rz is None:
              prec_rz = DEFAULT_PRECISION
@@ -55,17 +59,44 @@ class RottnestExecutable(abc.ABC):
         '''
         raise NotImplementedError
 
-    def precompute(self, *args, **kwargs):
+    def precompute(self, *args, **kwargs) -> Iterable:
         '''
-            Precomputation of elements 
-            of the circuit
+            Dynamic dispatch of precomputation of circuit
+             elements. 
+            This dispatch method also handles pandora 
+             switching logic
+            Defers to _precompute for inheritance  
         '''
-        pass
+        if not self._pandora:
+            return dict() 
+        return self._precompute()
 
-    def get_rz_precision(self):
+    def _precompute(self) -> Iterable:
         '''
+            Generates an iterable of hashes and pre
+             computation objects to pass to Pandora   
         '''
-        return self.prec_rz
+        return dict()
+
+
+    def get_rz_counts(self) -> object | dict:
+        '''
+Method to get the rz precision
+If it returns NO_ANALYTICAL_METHOD then this will default 
+ to an Rz counter in the preprocessing pass
+Otherwise returns a dict of keys as angles and integers
+ as counts 
+        '''
+        return self.NO_ANALYTICAL_METHOD
+
+    def get_t_fidelity(self) -> object | float:
+        '''
+Method to get the magic state fidelity
+If this method returns NO_ANALYTICAL_METHOD then it will
+default to a counter in the preprocessing pass 
+        '''
+        return self.NO_ANALYTICAL_METHOD
+
 
     def  __call__(self, *args, **kwargs): 
         '''
