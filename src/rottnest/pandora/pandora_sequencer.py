@@ -2,6 +2,7 @@ from itertools import cycle
 
 from cabaliser.operation_sequence import OperationSequence
 from pandora.pandora import Pandora, PandoraConfig
+from pandora.gates import PandoraGate
 
 from rottnest.input_parsers.qubit_label_tracker import QubitLabelTracker
 from rottnest.input_parsers.rz_tag_tracker import RzTagTracker
@@ -155,19 +156,34 @@ class PandoraSequencer():
         )
 
         for pandora_widget in widgets:
+            print(f"[PANDORA] : Widget {pandora_widget}")
             pandora_translator.translate_batch(
                 pandora_widget,
                 operation_sequence,
                 qubit_labels,
                 rz_tags
             )
+
+            print(f"[PANDORA] : Seq {operation_sequence}")
+
             gate_count += len(operation_sequence)
 
             compute_unit.append(operation_sequence)
+
+            # Compute context information
+            n_inputs = len(qubit_labels)
+            n_rz_gates = rz_tags.n_rz_gates
+            n_qubits = 2 * n_inputs + n_rz_gates
+            n_outputs = n_inputs
+            rz_tracker = rz_tags.to_dict()
+            label_tracker = qubit_labels._labels
+
             compute_unit.add_context(
-                len(qubit_labels),
-                rz_tags.n_rz_gates,
-                len(qubit_labels),
+                n_inputs=n_inputs,
+                n_qubits=n_qubits,
+                n_outputs=n_outputs,
+                rz_tracker_dict=rz_tracker,
+                qubit_labels=label_tracker,
             )
 
             if compute_unit.n_gates == 0:
