@@ -26,7 +26,7 @@ TASK_WIDGETIZE = "WIDGETIZE"
 TASK_ADD_CACHE = "ADD_CACHE"
 
 
-def mpi_pandora_cache_dispatch(op, do_hash=False, hash_override=None, *args, **kwargs):
+def mpi_pandora_cache_dispatch(op, *args, do_hash=False, hash_override=None, **kwargs):
     '''
         Trivial dispatch method matching the signature required by pandora_cache,
         to be enabled as the cache dispatch method
@@ -190,7 +190,7 @@ class MPIPandoraDBConnection():
                     add_gin_per_widget
                 )
             ),
-            rank = self.client_rank,
+            dest = self.client_rank,
             tag = TAG_PANDORA_TASK
         )
 

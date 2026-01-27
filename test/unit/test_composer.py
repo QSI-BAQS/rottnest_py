@@ -594,8 +594,6 @@ class CompositionTests(unittest.TestCase):
         self.assertEqual(composer.get_result()._obj['val'], sum(range(1, 11)))
 
 
-    # TODO : Antagonistic deference scenarios
-
 
 if __name__ == "__main__":
     unittest.main()

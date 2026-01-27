@@ -47,13 +47,13 @@ architectures.set_current_architecture("Rz Counter")
 class TestCachedRzCollection(unittest.TestCase):
     def test_cache_hit(self):
         '''
-            Ensure that cache is hit with a cachable cirq circuit of toffolis
+            Ensure that cache is hit with a cacheable cirq circuit of toffolis
         '''
         layout = { mem_bound: default_mem_bound }
         LayoutProxy.add_layout_with_id(0, layout)
 
         # Convert existing toffoli to a gate
-        toffoli_gate_cls = cirq_circuit_to_gate(cirq_circuits["toffoli"], 3)
+        toffoli_gate_cls = cirq_circuit_to_gate(cirq_circuits["toffoli"], 3, name="Toffoli")
         # Hash value doesn't matter here as long as it
         # agrees for identical instances
         toffoli_gate_cls._rottnest_hash = lambda s, so: 3
@@ -62,7 +62,7 @@ class TestCachedRzCollection(unittest.TestCase):
         # as we hit an initial one-layer decomp
         composed_toffoli_gate_cls = cirq_circuit_to_gate(cirq.Circuit(
             toffoli_gate_cls().on(cirq_qubits[0], cirq_qubits[1], cirq_qubits[2]) for i in range(5)
-        ), 3)
+        ), 3, name="ComposedToffoli")
 
         composed_toffoli_circuit = cirq.Circuit(
             composed_toffoli_gate_cls().on(cirq_qubits[0], cirq_qubits[1], cirq_qubits[2]) for i in range(5)

@@ -79,7 +79,7 @@ class PandoraCache:
         self.class_cache[type(circuit.gate)] = table_name
 
 
-    def bind_hash(self, op, hsh=None, *args, **kwargs):
+    def bind_hash(self, op, *args, hsh=None, **kwargs):
         circuit = op(*args, **kwargs)
 
         if hsh is None:
@@ -115,7 +115,7 @@ class PandoraCache:
         table_name, circuit_type = self.cache_dispatch(op, do_hash=False, *args, **kwargs)
         self.class_cache[circuit_type] = table_name
 
-    def dispatch_bind_hash(self, op, hsh=None, *args, **kwargs):
+    def dispatch_bind_hash(self, op, *args, hsh=None, **kwargs):
         if self.cache_dispatch is None:
             raise Exception("A cache dispatch handler must be attached before attempting a dispatched bind")
         table_name, res_hsh = self.cache_dispatch(op, do_hash=True, hash_override=hsh, *args, **kwargs)
