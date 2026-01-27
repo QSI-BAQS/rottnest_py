@@ -77,7 +77,7 @@ class PandoraTranslator:
     def translate_widget(self, wid, qubit_labels, rz_tags):
         '''
             Translates a widget (__iter__ -> gates) to an iterator of
-            cabaliser objects
+            tuples of representations of cabaliser objects
         '''
         translator = lambda g: self.translate_gate(g, qubit_labels, rz_tags)
         return filter(lambda x: x is not None, map(translator, wid))

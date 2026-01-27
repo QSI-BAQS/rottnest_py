@@ -7,6 +7,7 @@ from rottnest.pandora.pandora_pg import pandora_pg_config_load, pandora_pg_defau
 # via `<module_name>.conn`
 # (ie. importing the `conn` symbol gets a version corresponding to the
 # AT-IMPORT value, which will most likely still be None)
+# FUTURE: Wrap this so that it can be accessed w/out global and is mediated via a getter
 conn = None
 
 def load_pandora_connection(config_path=None):

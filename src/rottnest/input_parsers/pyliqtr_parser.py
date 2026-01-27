@@ -16,6 +16,8 @@ from pyLIQTR.utils.circuit_decomposition import circuit_decompose_multi
 
 import networkx as nx
 
+from types import MethodType
+
 import pyLIQTR
 import qualtran
 import qualtran.bloqs
@@ -374,7 +376,7 @@ def rottnest_cacheable(cls, hash_fn=None):
     else:
         if hasattr(cls, "_rottnest_hash") and hash_fn is not cls._rottnest_hash:
             raise TypeError(f"Class {cls} implements _rottnest_hash, but a different function was passed as its hashing function.\nEither implement its hash function as _rottnest_hash, or do not define your own separate _rottnest_hash")
-        cls._rottnest_hash = hash_fn
+        cls._rottnest_hash = MethodType(hash_fn)
     pyliqtr_patcher.hash_function_patchers[cls] = cls._rottnest_hash
     PyliqtrParser.tracking_targets.add(cls)
 
