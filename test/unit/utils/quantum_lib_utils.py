@@ -77,6 +77,9 @@ def cirq_n_rz(circuit):
 def cirq_circuit_to_gate(circuit, n_qubits, hash_fn=None, name: str = 'CircuitAsGate'):
     '''
         Converts a circuit into an equivalent gate class for composition
+
+        TODO: Allow providing a fixed qubit ordering (would make this usable for
+        actual purposes?)
     '''
     def decompose(self, qubits):
         qubit_map = dict()
@@ -92,6 +95,7 @@ def cirq_circuit_to_gate(circuit, n_qubits, hash_fn=None, name: str = 'CircuitAs
                 yield operation.gate(*map(lambda v: qubit_map[v], operation.qubits))
 
     c = type(name, (cirq.Gate,), dict(
+        name = name,
         _num_qubits_ = lambda *a, **ka: n_qubits,
         _circuit_diagram_info_ = lambda *a, **ka: [name] * n_qubits,
     ))

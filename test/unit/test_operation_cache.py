@@ -460,7 +460,7 @@ class TestCachedRzCollection(unittest.TestCase):
         # Hash value doesn't matter here as long as it
         # agrees for identical instances
         toffoli_gate_cls._rottnest_hash = lambda s, so: MD5.new(
-            so.gate.__name__.encode('ascii')
+            so.gate.name.encode('ascii')
             + b''.join(str(qb).encode('ascii') for qb in so.qubits)
         ).digest()
 
@@ -470,7 +470,7 @@ class TestCachedRzCollection(unittest.TestCase):
             toffoli_gate_cls().on(cirq_qubits[2], cirq_qubits[1], cirq_qubits[0])
         ), 3, name="ComposedToffoliGate")
         composed_toffoli_gate_cls._rottnest_hash = lambda s, so: MD5.new(
-            so.gate.__name__.encode('ascii')
+            so.gate.name.encode('ascii')
             + b''.join(str(qb).encode('ascii') for qb in so.qubits)
         ).digest()
 
