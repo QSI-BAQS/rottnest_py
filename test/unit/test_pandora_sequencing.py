@@ -1,3 +1,8 @@
+'''
+    Testcases related to parsing and sequencing a circuit,
+    using pandora to cache circuit components
+'''
+
 import cirq
 import numpy as np
 from types import MethodType
@@ -71,8 +76,8 @@ class ToffoliExecutable(T_RZ_RottnestExecutable):
         rottnest_cacheable(self.layered_toffoli())
 
     def single_toffoli(self):
-        if self._single_toffoli is None:
-            self._single_toffoli =  cirq_circuit_to_gate(
+        if ToffoliExecutable._single_toffoli is None:
+            ToffoliExecutable._single_toffoli =  cirq_circuit_to_gate(
                 cirq.Circuit(
                     cirq.H(self._qb[0]),
                     cirq.CNOT(self._qb[1], self._qb[0]),
@@ -91,14 +96,17 @@ class ToffoliExecutable(T_RZ_RottnestExecutable):
                     cirq.H(self._qb[0])
                 ), 3, lambda s, so: "single_toffoli", "single_toffoli"
             )
-        return self._single_toffoli
+        return ToffoliExecutable._single_toffoli
 
     def layered_toffoli(self):
+        # if ToffoliExecutable._layered_toffoli is None:
         if self._layered_toffoli is None:
+            # ToffoliExecutable._layered_toffoli = cirq_circuit_to_gate(
             self._layered_toffoli = cirq_circuit_to_gate(
                 cirq.Circuit(self.single_toffoli()().on(*self._qb) for i in range(2)),
                 3, lambda s, so: "layered_toffoli", "layered_toffoli"
             )
+        # return ToffoliExecutable._layered_toffoli
         return self._layered_toffoli
 
     def instantiate(self, fn):
@@ -190,6 +198,32 @@ def test_standalone_toffoli():
     assert n_cache_interactions == 5, f"Got {n_cache_interactions} cache interactions, expected 5"
 
 
+def test_repeat_toffoli():
+    '''
+        Test repeating the request for a toffoli, to ensure pandora-level cache can be accessed
+    '''
+    executable = ToffoliExecutable()
+
+    architecture = PreprocessorArchitecture
+    architectures._force_set_current_architecture(PreprocessorArchitecture)
+
+    # Force cache reset
+    PyliqtrParser.set_cache_tag([])
+    PyliqtrParser.set_cache_tag([layout_id])
+
+    parser = PyliqtrParser(executable())
+    parser.parse()
+
+    seq = Sequencer(layout_id)
+    it = seq.sequence_pyliqtr(parser)
+
+    # Trigger sequencing, just to ensure sequencing works
+    for obj in it:
+        pass
+
+
 if __name__ == "__main__":
     pandora_connection.load_pandora_connection()
     test_standalone_toffoli()
+    print(f"---- Repeating Toffoli ----")
+    test_repeat_toffoli()

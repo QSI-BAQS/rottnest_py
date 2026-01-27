@@ -1,5 +1,5 @@
 '''
-    Testcases related to the caching of circuits
+    Testcases related to the caching of circuits (without pandora)
 '''
 
 import unittest
@@ -39,6 +39,9 @@ except ModuleNotFoundError:
 
 mem_bound = "mem_bound"
 default_mem_bound = 1000
+layout_id = 0
+generic_layout = { mem_bound: default_mem_bound }
+LayoutProxy.add_layout_with_id(layout_id, layout)
 
 # Use the Rz Counter from the preprocessor
 architectures.set_current_architecture("Rz Counter")
@@ -49,11 +52,8 @@ class TestCachedRzCollection(unittest.TestCase):
         '''
             Ensure that cache is hit with a cacheable cirq circuit of toffolis
         '''
-        layout = { mem_bound: default_mem_bound }
-        LayoutProxy.add_layout_with_id(0, layout)
-
         # Convert existing toffoli to a gate
-        toffoli_gate_cls = cirq_circuit_to_gate(cirq_circuits["toffoli"], 3, name="Toffoli")
+        toffoli_gate_cls = cirq_circuit_to_gate(cirq_circuits["toffoli"], 3)
         # Hash value doesn't matter here as long as it
         # agrees for identical instances
         toffoli_gate_cls._rottnest_hash = lambda s, so: 3
@@ -72,7 +72,7 @@ class TestCachedRzCollection(unittest.TestCase):
         rottnest_cacheable(toffoli_gate_cls)
 
         parser = PyliqtrParser(composed_toffoli_circuit)
-        seq = Sequencer(0)
+        seq = Sequencer(layout_id)
         parser.parse()
         it = seq.sequence_pyliqtr(parser)
 
@@ -86,9 +86,6 @@ class TestCachedRzCollection(unittest.TestCase):
 
 
     def test_cache_single_toffoli(self):
-        layout = { mem_bound: default_mem_bound }
-        LayoutProxy.add_layout_with_id(0, layout)
-
         # Convert existing toffoli to a gate
         toffoli_gate_cls = cirq_circuit_to_gate(cirq_circuits["toffoli"], 3)
         # Hash value doesn't matter here as long as it
@@ -113,7 +110,7 @@ class TestCachedRzCollection(unittest.TestCase):
         composer.reset_result()
 
         parser = PyliqtrParser(composed_toffoli_circuit)
-        seq = Sequencer(0)
+        seq = Sequencer(layout_id)
         parser.parse()
         it = seq.sequence_pyliqtr(parser)
 
@@ -137,9 +134,6 @@ class TestCachedRzCollection(unittest.TestCase):
         '''
             Ensure that result of composing over cache is the same as without composing
         '''
-        layout = { mem_bound: default_mem_bound }
-        LayoutProxy.add_layout_with_id(0, layout)
-
         # Convert existing toffoli to a gate
         toffoli_gate_cls = cirq_circuit_to_gate(cirq_circuits["toffoli"], 3)
         # Hash value doesn't matter here as long as it
@@ -164,7 +158,7 @@ class TestCachedRzCollection(unittest.TestCase):
         composer.reset_result()
 
         parser = PyliqtrParser(composed_toffoli_circuit)
-        seq = Sequencer(0)
+        seq = Sequencer(layout_id)
         parser.parse()
         it = seq.sequence_pyliqtr(parser)
 
@@ -189,9 +183,6 @@ class TestCachedRzCollection(unittest.TestCase):
             Tests composition over cache with some cacheable and some primitive circuit
             components
         '''
-        layout = { mem_bound: default_mem_bound }
-        LayoutProxy.add_layout_with_id(0, layout)
-
         # Convert existing toffoli to a gate
         toffoli_gate_cls = cirq_circuit_to_gate(cirq_circuits["toffoli"], 3)
         # Hash value doesn't matter here as long as it
@@ -219,7 +210,7 @@ class TestCachedRzCollection(unittest.TestCase):
         composer.reset_result()
 
         parser = PyliqtrParser(composed_toffoli_circuit)
-        seq = Sequencer(0)
+        seq = Sequencer(layout_id)
         parser.parse()
         it = seq.sequence_pyliqtr(parser)
 
@@ -243,9 +234,6 @@ class TestCachedRzCollection(unittest.TestCase):
         '''
             Tests a circuit with multiple distinct cacheable components
         '''
-        layout = { mem_bound: default_mem_bound }
-        LayoutProxy.add_layout_with_id(0, layout)
-
         # Convert existing toffoli to a gate
         toffoli_gate_cls = cirq_circuit_to_gate(cirq_circuits["toffoli"], 3)
         # Hash value doesn't matter here as long as it
@@ -278,7 +266,7 @@ class TestCachedRzCollection(unittest.TestCase):
         composer.reset_result()
 
         parser = PyliqtrParser(composed_toffoli_circuit)
-        seq = Sequencer(0)
+        seq = Sequencer(layout_id)
         parser.parse()
         it = seq.sequence_pyliqtr(parser)
 
@@ -307,9 +295,6 @@ class TestCachedRzCollection(unittest.TestCase):
         '''
             Tests a circuit composed of the same sub-circuit on different qubits (differnet cache hash)
         '''
-        layout = { mem_bound: default_mem_bound }
-        LayoutProxy.add_layout_with_id(0, layout)
-
         # Convert existing toffoli to a gate
         toffoli_gate_cls = cirq_circuit_to_gate(cirq_circuits["toffoli"], 3, name="ToffoliGate")
         # Hash value doesn't matter here as long as it
@@ -338,7 +323,7 @@ class TestCachedRzCollection(unittest.TestCase):
         composer.reset_result()
 
         parser = PyliqtrParser(composed_toffoli_circuit)
-        seq = Sequencer(0)
+        seq = Sequencer(layout_id)
         parser.parse()
         it = seq.sequence_pyliqtr(parser)
 
@@ -368,9 +353,6 @@ class TestCachedRzCollection(unittest.TestCase):
         '''
             Attempts to use the same composer for two cached compositions in a row
         '''
-        layout = { mem_bound: default_mem_bound }
-        LayoutProxy.add_layout_with_id(0, layout)
-
         # Convert existing toffoli to a gate
         toffoli_gate_cls = cirq_circuit_to_gate(cirq_circuits["toffoli"], 3, name="ToffoliGate")
         # Hash value doesn't matter here as long as it
@@ -399,7 +381,7 @@ class TestCachedRzCollection(unittest.TestCase):
         composer.reset_result()
 
         parser = PyliqtrParser(composed_toffoli_circuit)
-        seq = Sequencer(0)
+        seq = Sequencer(layout_id)
         parser.parse()
         it = seq.sequence_pyliqtr(parser)
 
@@ -428,7 +410,7 @@ class TestCachedRzCollection(unittest.TestCase):
         )
 
         parser = PyliqtrParser(longer_composed_toffoli_circuit)
-        seq = Sequencer(0)
+        seq = Sequencer(layout_id)
         parser.parse()
         it = seq.sequence_pyliqtr(parser)
 
@@ -452,9 +434,6 @@ class TestCachedRzCollection(unittest.TestCase):
         '''
             Tests a circuit composed of cacheable circuits that are themselves composed of cacheable circuits
         '''
-        layout = { mem_bound: default_mem_bound }
-        LayoutProxy.add_layout_with_id(0, layout)
-
         # Convert existing toffoli to a gate
         toffoli_gate_cls = cirq_circuit_to_gate(cirq_circuits["toffoli"], 3, name="ToffoliGate")
         # Hash value doesn't matter here as long as it
@@ -497,7 +476,7 @@ class TestCachedRzCollection(unittest.TestCase):
         composer.reset_result()
 
         parser = PyliqtrParser(final_circuit)
-        seq = Sequencer(0)
+        seq = Sequencer(layout_id)
         parser.parse()
         it = seq.sequence_pyliqtr(parser)
 
