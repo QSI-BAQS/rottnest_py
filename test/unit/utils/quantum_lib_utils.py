@@ -4,6 +4,8 @@
 import cirq
 import qualtran.bloqs.basic_gates as qual_gates
 
+from types import MethodType
+
 from collections import Counter
 
 def cirq_len(circuit):
@@ -72,34 +74,41 @@ def cirq_n_rz(circuit):
     return res
 
 
-def cirq_circuit_to_gate(circuit, n_qubits, name: str = 'CircuitAsGate'):
+def cirq_circuit_to_gate(circuit, n_qubits, hash_fn=None, name: str = 'CircuitAsGate'):
     '''
         Converts a circuit into an equivalent gate class for composition
+
+        TODO: Allow providing a fixed qubit ordering (would make this usable for
+        actual purposes?)
     '''
-    class CircuitAsGate(cirq.Gate):
-        __name__ = name
+    def decompose(self, qubits):
+        qubit_map = dict()
+        qubit_idx = 0
+        for moment in circuit.moments:
+            for operation in moment:
+                # Greedily allocate qubits from the circuit
+                # to input qubits (destroys parameter ordering)
+                for qb in operation.qubits:
+                    if qb not in qubit_map.keys():
+                        qubit_map[qb] = qubits[qubit_idx]
+                        qubit_idx += 1
+                yield operation.gate(*map(lambda v: qubit_map[v], operation.qubits))
 
-        def __init__(self):
-            super(CircuitAsGate, self)
+    c = type(name, (cirq.Gate,), dict(
+        name = name,
+        _num_qubits_ = lambda *a, **ka: n_qubits,
+        _circuit_diagram_info_ = lambda *a, **ka: [name] * n_qubits,
+    ))
 
-        def _num_qubits_(self):
-            return n_qubits
+    def init(self):
+        super(c, self)
 
-        def _decompose_(self, qubits):
-            qubit_map = dict()
-            qubit_idx = 0
-            for moment in circuit.moments:
-                for operation in moment:
-                    # Greedily allocate qubits from the circuit
-                    # to input qubits
-                    # NOTE : may destroy ordering. For testcases, this doesn't matter
-                    for qb in operation.qubits:
-                        if qb not in qubit_map.keys():
-                            qubit_map[qb] = qubits[qubit_idx]
-                            qubit_idx += 1
-                    yield operation.gate(*map(lambda v: qubit_map[v], operation.qubits))
+    c.__init__ = MethodType(init, c)
 
-        def _circuit_diagram_info_(self, args):
-            return ["CircuitGate"] * self.num_qubits()
+    c._decompose_ = MethodType(decompose, c)
 
-    return CircuitAsGate
+    if hash_fn is not None:
+        c._rottnest_hash = MethodType(hash_fn, c)
+
+    return c
+

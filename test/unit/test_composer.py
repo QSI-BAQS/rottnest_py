@@ -1,8 +1,13 @@
+'''
+    Tests the functionality of a composer and the stack frames it uses internally
+    Ensures that deferred caching works as expected
+'''
+
 import unittest
 
 from rottnest.architecture_interface.rottnest_composer import ComposerStackFrame, RottnestComposer, ResultsComposer
 
-# Patch over result composer get_tocks()
+# Patch over result composer get_tocks() so that it can be used as-is
 ResultsComposer.get_tocks = lambda *a, **ka: 1
 
 class MockComputeUnit():
@@ -593,8 +598,6 @@ class CompositionTests(unittest.TestCase):
 
         self.assertEqual(composer.get_result()._obj['val'], sum(range(1, 11)))
 
-
-    # TODO : Antagonistic deference scenarios
 
 
 if __name__ == "__main__":

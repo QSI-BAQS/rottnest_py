@@ -76,13 +76,13 @@ def count_gates_composed(worker, compute_unit):
     '''
     # Count the gates in the compute_unit
     n_gates = reduce(lambda x, y: x + len(y), compute_unit.sequences, 0)
-    return {'n_gates': n_gates}
+    return compute_unit.unit_id, {'n_gates': n_gates}
 
 class GateCtrResultsComposer(rottnest_composer.ResultsComposer):
     '''
         Results composer that combines gate counter descriptions
     '''
-    def __init__(self, result_dict=None, n_obj=1, comp_unit=None):
+    def __init__(self, result_dict=None, n_obj=1, comp_unit=None, unit_id=None):
         super().__init__()
 
         if result_dict is None:
@@ -186,8 +186,8 @@ class TestWorkerCircuitCounting(unittest.TestCase):
                         # ^ Ignore cache events
                         # v Pass the sequenced sections of the parsed circuit to the
                         # worker
-                        res = worker.execute_compute_unit(obj)
-                        res_composer += composer.compose_result(obj.unit_id, res)
+                        unit_id, res = worker.execute_compute_unit(obj)
+                        res_composer += composer.compose_result(unit_id, res)
 
                 self.assertEqual(res_composer.get_gate_count(), cirq_len(circuit))
 
@@ -222,8 +222,8 @@ class TestWorkerCircuitCounting(unittest.TestCase):
                         # ^ Ignore cache events
                         # v Pass the sequenced sections of the parsed circuit to the
                         # worker
-                        res = worker.execute_compute_unit(obj)
-                        res_composer += composer.compose_result(obj.unit_id, res)
+                        unit_id, res = worker.execute_compute_unit(obj)
+                        res_composer += composer.compose_result(unit_id, res)
 
                 self.assertEqual(res_composer.get_gate_count(), cirq_len(circuit))
 
@@ -282,8 +282,8 @@ class TestWorkerCircuitCounting(unittest.TestCase):
                 # ^ Ignore cache events
                 # v Pass the sequenced sections of the parsed circuit to the
                 # worker
-                res = worker.execute_compute_unit(obj)
-                res_composer += composer.compose_result(obj.unit_id, res)
+                unit_id, res = worker.execute_compute_unit(obj)
+                res_composer += composer.compose_result(unit_id, res)
 
         self.assertEqual(res_composer.get_gate_count(), cirq_len(circuit))
 
@@ -300,8 +300,6 @@ class TestWorkerRzCollection(unittest.TestCase):
             with self.subTest(circuit=circuit):
                 composer = RzCollectionComposer(LayoutProxy.get_layout(layout_id), [])
 
-                res_composer = composer.results_composer_constructor()()
-
                 # Sequence the given circuit
                 parser = PyliqtrParser(circuit)
                 seq = Sequencer(layout_id)
@@ -315,11 +313,11 @@ class TestWorkerRzCollection(unittest.TestCase):
                         # ^ Ignore cache events
                         # v Pass the sequenced sections of the parsed circuit to the
                         # worker
-                        res = worker.execute_compute_unit(obj)
-                        res_composer += composer.compose_result(obj.unit_id, res)
+                        unit_id, res = worker.execute_compute_unit(obj)
+                        res_composer += composer.compose_result(unit_id, res)
 
                 validation_count = cirq_n_rz(circuit)
-                for angle, count in res_composer._obj["rz_counts"].items():
+                for angle, count in res_composer._obj.items():
                     self.assertEqual(
                         count,
                         validation_count[angle]

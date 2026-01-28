@@ -25,6 +25,7 @@ class MPIPoolManager(ComputeUnitExecutorPoolManager):
                  manager_task_queue, manager_completion_queue,
                  manager_priority_task_queue, manager_priority_completion_queue,
                  comm, worker=None):
+        self.submit_time = time.time() # TEMP : This is accessed before being set?
         # ------ Same as base ------
         # Internal import to for instantiation
         from rottnest.plugins import architectures, executables

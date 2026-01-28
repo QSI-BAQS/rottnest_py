@@ -83,7 +83,8 @@ class CirqParser:
 
         # This needs to be better
         if isinstance(circ_iter, PandoraSequencer):
-            return circ_iter.to_operation_sequence()
+            yield from circ_iter.to_operation_sequence()
+            return
 
         op = OperationSequence(max(self.sequence_length, cirq_patcher.MIN_SEQUENCE_LEN))
 
