@@ -14,6 +14,9 @@ class StartPoolStage(stage.RottnestCompilerStage):
         super().__init__(tag=tag, dependencies=dependencies)
 
     def execute(self, environment):
+        '''
+            Synchronises and starts the workers
+        '''
         pool = get_pool()
         pool.synchronise()
         pool.start_workers()

@@ -10,5 +10,8 @@ class StartPoolManagerStage(stage.RottnestCompilerStage):
         super().__init__()
 
     def execute(self, environment):
+        '''
+            Starts the pool manager task
+        '''
         pool = get_pool()
         pool.start()
