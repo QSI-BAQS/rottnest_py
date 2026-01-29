@@ -70,6 +70,8 @@ Constructor for a stage
         if dependencies is None:
             dependencies = list()
         self._dependencies = dependencies 
+        self._complete = False
+
 
     def get_tag(self) -> str:
         '''
@@ -109,3 +111,22 @@ Constructor for a stage
             are in the environment namespace        
         '''
         ...
+
+    def complete(self):
+        '''
+            Function to singal that the stage is complete
+            This is used in particular for asynch methods
+        '''
+        return self._complete
+
+    def poll(self):
+        '''
+            Function to perform or re-trigger some incremental work for the stage
+        '''
+        pass
+
+    def asynch(self):
+        '''
+            Does this stage need to be polled for asynchronous completion
+        '''
+        return False
