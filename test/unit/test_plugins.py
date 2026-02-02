@@ -10,12 +10,15 @@ from typing import Type, Callable
 from unittest.case import SkipTest
 
 # --[ Rottnest Imports ]---
-from rottnest.plugins import executables, architectures
+
+from rottnest import config as rottnest_config
+# Disable default config path
+rottnest_config.configuration_locations = []
+
 from rottnest.architecture_interface import rottnest_architecture, rottnest_designer, rottnest_composer, rottnest_worker
 from rottnest.plugins.architecture_plugins import ArchitecturePlugins
 from rottnest.plugins.executable_plugins import ExecutablePlugins
 
-from rottnest import config as rottnest_config
 
 # --[ Testing Utilities ]---
 # Used to test architecture imports
@@ -30,8 +33,6 @@ def get_path_relative(target):
         return f"{SELF_PATH}/{target}"
     return target
 
-# Disable default config path
-rottnest_config.coniguration_locations = []
 
 
 class TestArchitectureLoading(unittest.TestCase):
