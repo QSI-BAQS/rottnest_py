@@ -92,7 +92,7 @@ def h_pow():
                             *qubit_labels.gets(*self.qubits)
             )
             # TODO
-            #raise Exception("Not Implemented")
+            raise Exception("Not Implemented")
     return _wrap, 1
 
 

@@ -73,7 +73,6 @@ class ProcessPoolTests(unittest.TestCase):
         print("Triggered shutdown")
         return
 
-
     def test_process_pool_singleton(self):
         '''
             Tests executing the process pool with an Rz counter architecture 

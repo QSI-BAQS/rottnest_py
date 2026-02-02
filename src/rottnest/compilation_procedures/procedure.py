@@ -54,11 +54,17 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
             Returns if execution has completed
         '''
         if self.complete():
+            # Catches asynch completion of all stages 
+            # Single pass is set by the asynch handler
             if single_pass:
                 return True
+
+            # Non-Asynch call triggers an exception
             raise exceptions.DoubleExecutionError() 
 
-        unresolved = {tag: stage for tag, stage in self._stages.items() if tag not in self._stages_complete}
+        # Iterate over unresolved stages
+        # Also skip stages that are running asynchronously
+        unresolved = {tag: stage for tag, stage in self._stages.items() if tag not in self._stages_complete and stage not in self._current_asynchronous_stages}
 
         while not self.complete():
 
@@ -67,19 +73,20 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
 
             for tag, stage in unresolved.items():
 
+                # Tag is already complete
+                # This may occur on an asynchronous stage  
                 if tag in self._stages_complete:
                     continue            
 
                 if stage.dependencies_resolved(self): 
-
-                    if not stage.complete():
-                        stage.execute(self)
+                    print("Executing: ", stage)
+                    stage.execute(self)
                    
                     if stage.is_asynchronous():
+                        # Start and register asynch stage
                         self._current_asynchronous_stages.add(stage)
                         self.__setattr__(tag, stage)
                         continue
-
  
                     # Inject completed stage into namespace
                     self.__setattr__(tag, stage)
@@ -118,6 +125,7 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
             if stage.complete():
                 dequeue.append(stage)
             else: 
+                print(f"Polling: {stage.get_tag()}")
                 stage.poll(self)
                 if stage.complete():
                     dequeue.append(stage)

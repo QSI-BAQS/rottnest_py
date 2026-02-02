@@ -1,9 +1,9 @@
 from rottnest.compilation_procedures import stage
 
-PANDORA_LOAD_TAG = 'Pandora Load'
+STAGE_TAG = 'Pandora Load'
 
 class PandoraLoadStage(stage.RottnestCompilerStage):
-    TAG = PANDORA_LOAD_TAG
+    TAG = STAGE_TAG 
 
     def __init__(self):
         super().__init__()

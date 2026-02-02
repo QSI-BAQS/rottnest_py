@@ -99,7 +99,7 @@ class ComputeUnitExecutorPool(StatusTracked):
 
     @status_update(
         PoolStatus.SYNCHRONISING, 
-        PoolStatus.IDLE
+        PoolStatus.SYNCHRONISED
     )
     def synch_from_singletons(self):
         '''
@@ -145,8 +145,8 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
 
     @status_update(
-        PoolStatus.SYNCHRONISING,
-        PoolStatus.IDLE
+        PoolStatus.STARTING,
+        PoolStatus.STARTED
     )
     def start(self):
         '''
@@ -174,7 +174,7 @@ class ComputeUnitExecutorPool(StatusTracked):
 
     @status_update(
         PoolStatus.SYNCHRONISING, 
-        PoolStatus.IDLE
+        PoolStatus.SYNCHRONISED
     )
     def synchronise_modules(self):
         '''
@@ -192,7 +192,7 @@ class ComputeUnitExecutorPool(StatusTracked):
 
     @status_update(
         PoolStatus.SYNCHRONISING, 
-        PoolStatus.IDLE
+        PoolStatus.SYNCHRONISED
     )
     def synchronise_precision(self):
         '''
@@ -210,7 +210,7 @@ class ComputeUnitExecutorPool(StatusTracked):
 
     @status_update(
         PoolStatus.SYNCHRONISING, 
-        PoolStatus.IDLE
+        PoolStatus.SYNCHRONISED
     )
     def synchronise_layouts(self):
         '''
@@ -226,6 +226,10 @@ class ComputeUnitExecutorPool(StatusTracked):
         )
         return
 
+    @status_update(
+        PoolStatus.STARTING_WORKERS, 
+        PoolStatus.STARTED_WORKERS
+    )
     def start_workers(self):
         '''
            Spins up the workers

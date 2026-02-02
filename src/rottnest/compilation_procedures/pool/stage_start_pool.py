@@ -1,5 +1,6 @@
 from rottnest.compilation_procedures import stage
 from rottnest.process_pool.singleton import get_pool
+from rottnest.process_pool.pool_status import PoolStatus
 
 from . import stage_start_pool_manager
 
@@ -11,12 +12,25 @@ class StartPoolStage(stage.RottnestCompilerStage):
     def __init__(self, *, tag=None, dependencies=None):
         if dependencies is None:
             dependencies = [stage_start_pool_manager.STAGE_TAG] 
-        super().__init__(tag=tag, dependencies=dependencies)
+        self._complete = False
+    
+        super().__init__(
+            tag=tag, 
+            dependencies=dependencies,
+            asynchronous=False
+        )
 
     def execute(self, environment):
         '''
             Synchronises and starts the workers
         '''
         pool = get_pool()
-        pool.synchronise()
         pool.start_workers()
+
+    def poll(self, environment):
+        pool = get_pool()
+        self._complete = (pool.poll() == PoolStatus.STARTED_WORKERS)
+
+
+    def complete(self):
+        return self._complete
