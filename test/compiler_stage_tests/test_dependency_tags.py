@@ -30,6 +30,32 @@ class CompilerStageTest(unittest.TestCase):
 
 
 
+    def test_asynch(self):
+        class AsynchStage(stage.RottnestCompilerStage):
+            def __init__(self, tag=None, dependencies=None):
+                self._complete = False
+                super().__init__(
+                    tag=tag,
+                    dependencies=dependencies,
+                    asynchronous=True
+                )
+
+            def poll(self, obj):
+                self._complete = True
+
+            def execute(self, obj):
+                return False
+
+            def complete(self):
+                return self._complete
+
+        obj = AsynchStage() 
+        assert obj.execute(object()) is False
+        assert obj.is_asynchronous() is True
+        assert obj.complete() is False
+
+        obj.poll(object())
+        assert obj.complete() is True 
 
 
 if __name__ == '__main__':

@@ -5,8 +5,6 @@ from rottnest.compilation_procedures import procedure, stage, exceptions
 class CompilerStageTest(unittest.TestCase):
 
     def get_stage_class(self, *, fn=None): 
-
-
         def execute(self, obj):
             ...
 
@@ -27,6 +25,31 @@ class CompilerStageTest(unittest.TestCase):
         Stage.execute = fn
 
         return Stage
+
+    def get_asynch_stage_class(self, *, fn=None):
+        class AsynchStage(stage.RottnestCompilerStage):
+            def __init__(self, tag=None, dependencies=None):
+                self._complete = False
+                super().__init__(
+                    tag=tag,
+                    dependencies=dependencies,
+                    asynchronous=True
+                )
+
+            def poll(self, obj):
+                self._complete = self._fn() 
+
+            def execute(self, obj):
+                return False
+            
+            def _fn(self):
+                return True
+
+            def complete(self):
+                return self._complete
+
+        return AsynchStage
+
 
     def test_no_dependencies(self):
 
@@ -182,10 +205,59 @@ class CompilerStageTest(unittest.TestCase):
             caught = True
         assert caught
 
+    def test_single_pass_dependencies(self):
+
+        stage = self.get_asynch_stage_class()
+
+        class Environment(procedure.RottnestCompilerProcedure): 
+            def __init__(self):
+                stage_class = stage
+                stages = [
+                    stage_class(tag="one"),
+                    stage_class(tag="two", dependencies=["one"]),
+                    stage_class(tag="three", dependencies=["two"])
+
+                 ]
+                super().__init__(None, stages) 
+
+        env = Environment()
+        env.execute(single_pass=True)
+        assert env.one
+        assert not env.one.complete()
+      
+        trip = False 
+        try:
+            env.two
+        except AttributeError:
+            trip = True 
+        assert trip
+
+        env.poll()
+ 
+        assert env.one.complete()
+        assert env.two
+        assert not env.two.complete()
+
+    
+        trip = False 
+        try:
+            env.three
+        except AttributeError:
+            trip = True 
+        assert trip
+
+        env.poll()
+ 
+        assert env.two.complete()
+        assert env.three
+        assert not env.three.complete()
+        env.poll()
+
+        assert env.complete()
 
 
 if __name__ == '__main__':
     tst = CompilerStageTest()
-    tst.test_no_dependencies()
+    tst.test_single_pass_dependencies()
 
     #unittest.main()

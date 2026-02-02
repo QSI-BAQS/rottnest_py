@@ -49,7 +49,8 @@ class RottnestCompilerStage(abc.ABC):
         self,
         *,
         tag: str = None,
-        dependencies: list[str | type] = None
+        dependencies: list[str | type] = None,
+        asynchronous: bool = False
     ): 
         '''
 Constructor for a stage
@@ -58,6 +59,7 @@ Constructor for a stage
   the name of the parent class
 :: dependencies : list[str | type] :: Tags on which
   this stage depends 
+:: asynchronous : bool :: Does this stage execute asynchronously
         '''
         
         # Default to whatever is passed in
@@ -72,6 +74,7 @@ Constructor for a stage
         self._dependencies = dependencies 
         self._complete = False
 
+        self._asynchronous = asynchronous
 
     def get_tag(self) -> str:
         '''
@@ -84,6 +87,12 @@ Constructor for a stage
             Getter for the dependencies
         '''
         return self._dependencies
+
+    def is_asynchronous(self) -> bool:
+        '''
+            Getter for asynchronous tag
+        '''
+        return self._asynchronous
 
     def dependencies_resolved(
         self,
@@ -125,8 +134,9 @@ Constructor for a stage
         '''
         pass
 
-    def asynch(self):
+    def is_asynchronous(self):
         '''
-            Does this stage need to be polled for asynchronous completion
+            Asynch getter
         '''
-        return False
+        return self._asynchronous
+

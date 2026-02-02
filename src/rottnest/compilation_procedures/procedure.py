@@ -26,6 +26,8 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
         self._stages = dict() 
         self._stages_complete = set() 
 
+        self._current_asynchronous_stages = set()
+
         for stage in stages:
             tag = stage.get_tag()
             if tag in self._stages:
@@ -41,7 +43,7 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
             dependencies=dependencies
         )
 
-    def execute(self, reporting=True): 
+    def execute(self, reporting=True, single_pass=False) -> bool: 
         '''
             Executes the stages
             Raises an exception if the dependencies
@@ -49,11 +51,14 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
 
             Naive quadratic method
             Can be improved with a priority queue 
+            Returns if execution has completed
         '''
-        if len(self._stages_complete) > 0:
+        if self.complete():
+            if single_pass:
+                return True
             raise exceptions.DoubleExecutionError() 
 
-        unresolved = dict(self._stages) 
+        unresolved = {tag: stage for tag, stage in self._stages.items() if tag not in self._stages_complete}
 
         while not self.complete():
 
@@ -66,19 +71,63 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
                     continue            
 
                 if stage.dependencies_resolved(self): 
-                    stage.execute(self)
 
-                    # Inject completed stage into 
+                    if not stage.complete():
+                        stage.execute(self)
+                   
+                    if stage.is_asynchronous():
+                        self._current_asynchronous_stages.add(stage)
+                        self.__setattr__(tag, stage)
+                        continue
+
+ 
+                    # Inject completed stage into namespace
                     self.__setattr__(tag, stage)
                     self._stages_complete.add(tag)
 
                     resolved_on_pass = True
                     unresolved_nxt.pop(tag)
 
+            # Don't run to completion
+            if single_pass:
+            
+                # Check that we are not in an invalid state
+                if (
+                    len(self._current_asynchronous_stages) == 0
+                and not resolved_on_pass
+                and not self.complete()):
+                    raise exceptions.UnresolvableDependencyError()
+
+                # Single pass completed, break
+                break
+
             if not resolved_on_pass: 
                 # Nothing resolved, throw an error
                 raise exceptions.UnresolvableDependencyError()
             unresolved = unresolved_nxt
+
+            return self.complete() 
+            
+
+    def poll(self, environment = None):
+        '''
+            Polling function during asynchronous execution
+        '''
+        dequeue = []
+        for stage in self._current_asynchronous_stages:
+            if stage.complete():
+                dequeue.append(stage)
+            else: 
+                stage.poll(self)
+                if stage.complete():
+                    dequeue.append(stage)
+
+        for stage in dequeue: 
+            self._current_asynchronous_stages.remove(stage)
+            self._stages_complete.add(stage.get_tag())
+
+
+        self.execute(single_pass=True)
 
     def complete(self) -> bool:
         '''
