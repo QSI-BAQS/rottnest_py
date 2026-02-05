@@ -31,6 +31,38 @@ LayoutProxy.add_layout_with_id(layout_id, layout)
 
 class ProcessPoolTests(unittest.TestCase):
 
+    def test_pool_status(self):
+        '''
+            Test setting and getting executables and architectures
+        '''
+
+        rz_counter = 'Rz Counter'
+        sample = 'Sample Executable'
+
+        executables.load_modules_from_strings(test_utils.__file__)
+        executables.set_current_executable(SampleExecutable.get_name())
+
+
+        pool = get_pool() 
+        pool.start()
+
+        status = pool.get_synchronisation_status()
+        assert status[:2] == [None, None]
+
+        architectures.set_current_architecture(
+            rz_counter 
+        )
+        executables.set_current_executable(
+            sample 
+        )
+
+        pool.synchronise()
+
+        status = pool.get_synchronisation_status()
+        assert status[:2] == [rz_counter, sample]
+
+        pool.shutdown()
+
     def test_process_pool(self):
         '''
             Tests executing the process pool with an Rz counter architecture 
@@ -38,6 +70,10 @@ class ProcessPoolTests(unittest.TestCase):
 
         executables.load_modules_from_strings(test_utils.__file__)
         executables.set_current_executable(SampleExecutable.get_name())
+        architectures.set_current_architecture(
+            'Rz Counter' 
+        )
+
 
         pool = ComputeUnitExecutorPool() 
         pool.start()
@@ -73,13 +109,14 @@ class ProcessPoolTests(unittest.TestCase):
         print("Triggered shutdown")
         return
 
-    def test_process_pool_singleton(self):
+    def test_process_pool_from_singletons(self):
         '''
             Tests executing the process pool with an Rz counter architecture 
         '''
 
         executables.load_modules_from_strings(test_utils.__file__)
         executables.set_current_executable(SampleExecutable.get_name())
+        architectures.set_current_architecture('Rz Counter')
 
         pool = get_pool() 
         pool.start()
@@ -89,15 +126,6 @@ class ProcessPoolTests(unittest.TestCase):
        
         # Synch pool state 
         pool.synchronise()
-
-        # Setup the pool
-        pool.set_architecture_module(
-            'Rz Counter' 
-        )
-        pool.set_executable(
-            'Sample Executable'
-        )
-        pool.set_executable_params({})
 
         # Start workers
         pool.start_workers()
@@ -118,4 +146,5 @@ class ProcessPoolTests(unittest.TestCase):
 
 if __name__ == '__main__':
     obj = ProcessPoolTests()
-    obj.test_process_pool()
+    obj.test_pool_status()
+    #obj.test_process_pool_from_singletons()
