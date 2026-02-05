@@ -80,6 +80,8 @@ class ExecutablePlugins(PluginManager):
         '''
             Getter for the current executable
         '''
+        if self._current_option is None:
+            return None
         return self._current_option(**self.get_executable_params())
 
     def get_executables(self):
