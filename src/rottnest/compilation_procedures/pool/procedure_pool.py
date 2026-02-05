@@ -16,13 +16,13 @@ class PoolProcedure(procedure.RottnestCompilerProcedure):
         )
         shutdown = pool.stage_shutdown_pool.ShutdownPoolStage(
             dependencies = [run.get_tag()]
-    )
+        )
         stages = [
             manager,
             synch,
             workers,
-#            run,
-#            shutdown
+            run,
+            shutdown
         ]
         super().__init__(None, stages=stages, tag=tag, dependencies=dependencies)
 
