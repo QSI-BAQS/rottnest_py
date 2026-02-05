@@ -334,8 +334,8 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
             Checks that the manager is alive
         '''
-        arch = self._architectures.get_currnent_architecture()
-        exe = self._executables.get_currnent_executable()
+        arch = self._architectures.get_current_architecture()
+        exe = self._executables.get_current_executable()
 
         if arch is not None:
             arch = arch.get_name()
