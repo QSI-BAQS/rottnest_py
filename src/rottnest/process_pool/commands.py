@@ -23,6 +23,9 @@ SYNCHRONISE_MODULES = 'synchronise_modules'
 # Synchronises layouts with the manager process
 SYNCHRONISE_LAYOUTS = 'synchronise_layouts'
 
+# Debug command for getting status of elements
+SYNCHRONISATION_STATUS = 'synchronisation_status'
+
 # Sends current results to the manager 
 # Priority task
 GET_CURRENT_RESULTS = 'get_current_results'

@@ -101,18 +101,19 @@ class ComputeUnitExecutorPool(StatusTracked):
         PoolStatus.SYNCHRONISING, 
         PoolStatus.SYNCHRONISED
     )
-    def synch_from_singletons(self):
+    def synchronise_options(self):
         '''
             Synchronises from singletons
         '''
         architecture = architectures.get_current_architecture()
-        self._pool.set_architecture_module(architecture)
+        self.set_architecture_module(architecture.get_name())
 
         executable = executables.get_current_executable()
-        self._pool.set_executable(executable)
+        self.set_executable(executable.get_name())
 
-        executable_params = executables.get_executable_params()
-        self._pool.set_exectuable_params(executable_params)
+        # TODO: Fix this
+        #executable_params = executables.get_executable_params()
+        #self.set_exectuable_params(executable_params)
 
 
 
@@ -165,17 +166,26 @@ class ComputeUnitExecutorPool(StatusTracked):
         self.manager.start()
         self.synchronise_modules()
 
+    @status_update(
+        PoolStatus.SYNCHRONISING, 
+        PoolStatus.SYNCHRONISED
+    )
     def synchronise(self):
+        '''
+            Wrapper synchronisation function
+        '''
+        self.synchronise_modules_and_layouts()
+        self.synchronise_options()
+        # TODO:
+        # self.synchronise_precision
+
+    def synchronise_modules_and_layouts(self):
         '''
             Calls synchronisation functions
         '''
         self.synchronise_modules()
         self.synchronise_layouts()
 
-    @status_update(
-        PoolStatus.SYNCHRONISING, 
-        PoolStatus.SYNCHRONISED
-    )
     def synchronise_modules(self):
         '''
             Attempts to synchronise all architecure and
@@ -190,10 +200,7 @@ class ComputeUnitExecutorPool(StatusTracked):
         )
         return
 
-    @status_update(
-        PoolStatus.SYNCHRONISING, 
-        PoolStatus.SYNCHRONISED
-    )
+
     def synchronise_precision(self):
         '''
             Synchronises the Rz precision with the queue 
@@ -273,6 +280,15 @@ class ComputeUnitExecutorPool(StatusTracked):
             )
         )
         self.synchronise_precision()
+
+    def get_synchronisation_status(self) -> dict:
+        '''
+            Getter for worker and manager status
+        '''
+        self.manager_task_queue.put((commands.SYNCHRONISATION_STATUS,))
+        resp = self.manager_completion_queue.get()
+        return resp
+
 
     def set_executable_params(self, params: dict):
         '''

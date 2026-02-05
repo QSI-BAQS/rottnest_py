@@ -113,8 +113,11 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             commands.STOP_WORKERS: self._task_stop_workers,
             commands.TERMINATE: self._task_terminate,
             commands.RUN_SEQUENCE: self._task_run_sequence,
+
             commands.SYNCHRONISE_MODULES: self._task_synchronise_modules,
             commands.SYNCHRONISE_LAYOUTS: self._task_synchronise_layouts,
+            commands.SYNCHRONISATION_STATUS: self._task_synchronisation_status,
+
 
             commands.SET_ARCHITECTURE_MODULE: self._task_set_architecture_module,
             commands.SET_EXECUTABLE: self._task_set_executable,
@@ -325,6 +328,24 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
         key = args[0]
         self._executables.set_current_executable(key)
+
+
+    def _task_synchronisation_status(self, *args):
+        '''
+            Checks that the manager is alive
+        '''
+        arch = self._architectures.get_currnent_architecture()
+        exe = self._executables.get_currnent_executable()
+
+        if arch is not None:
+            arch = arch.get_name()
+        if exe is not None:
+            exe = exe.get_name()
+
+        return [arch, exe]
+
+
+
 
     def _task_set_precision(self, *args):
         '''
