@@ -53,7 +53,7 @@ class ArchitecturePlugins(PluginManager):
         '''
             Getter for architecture objects
         '''
-        return self._options
+        return self._options        
 
     def set_current_architecture(self, key):
         '''
@@ -78,3 +78,20 @@ class ArchitecturePlugins(PluginManager):
            that the front-end can select from.
         '''
         return list(self._options.keys())
+
+
+    def get_architecture_params(self):
+        '''
+           Gets the architecture parameters
+           TODO: This has not been implemented 
+        '''
+        # TODO: Implement the params method, this is currently missing
+        return {}
+
+    def set_architecture_params(self, **kwags):
+        '''
+           Sets the new parameters adn updates the
+           architecture information 
+        '''
+        # TODO: Update the architecture parameters as needed
+        #       This still needs to be implemented

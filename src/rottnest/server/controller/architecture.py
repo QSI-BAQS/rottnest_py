@@ -19,6 +19,16 @@ class ArchitectureInterface(RouteInterface):
         Interface for the architecture controllers
     '''
 
+    SELECTION_DEFAULT_NONE = ['NoArch', {
+        "apimap": {
+            "mask": "",
+            "routes": []
+        },
+        "schema": {
+            "name": "NoArch"
+        }
+    }]    
+    
     ARCHITECTURE_KEY = 'architecture_key'
     ARCHITECTURE_CONFIG = 'architecture_config'
     _module_prefix = MODULE_PREFIX
@@ -29,14 +39,20 @@ class ArchitectureInterface(RouteInterface):
         '''
             Gets the list of architectures
         '''
-        return model.get_architecture_list()
+        return list(map(lambda a : a,
+                        model.get_architecture_list()))
 
     @RouteInterface.bind_route(MODULE_PREFIX, GET_CURRENT_ARCHITECTURE)
     @classmethod
     def get_current_architecture(cls, message, **kwargs) -> Result:
         '''
-           Gets the current architecture 
+           Gets the current architecture -> Returns a string
         '''
+        result = model.get_current_architecture()
+        if result is None:
+            return ArchitectureInterface.SELECTION_DEFAULT_NONE
+        else:
+            return result
 
     @RouteInterface.bind_route(MODULE_PREFIX, SET_CURRENT_ARCHITECTURE)
     @classmethod
@@ -44,11 +60,13 @@ class ArchitectureInterface(RouteInterface):
         '''
            Sets the current architecture
         '''
-        return cls.load_and_model_call(
+        # NOTE: Possibly to send back data from this method
+        cls.load_and_model_call(
             message,
             cls.ARCHITECTURE_KEY,
-            model.set_current_executable
+            model.set_current_architecture
         )
+        return cls.get_current_architecture(message, **kwargs)
 
     @RouteInterface.bind_route(MODULE_PREFIX, GET_ARCHITECTURE_CONFIG)
     @classmethod
@@ -64,8 +82,10 @@ class ArchitectureInterface(RouteInterface):
         '''
            Sets an architecture config
         '''
-        return cls.load_and_model_call(
+        # NOTE: Possibly to send back data from this method
+        cls.load_and_model_call(
             message,
             cls.ARCHITECTURE_CONFIG,
             model.set_current_config            
         )
+        return cls.get_architecture_config(message, **kwargs)
