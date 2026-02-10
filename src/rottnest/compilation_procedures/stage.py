@@ -50,6 +50,7 @@ class RottnestCompilerStage(abc.ABC):
         *,
         tag: str = None,
         dependencies: list[str | type] = None,
+        co_dependencies: list[str | type] = None,
         asynchronous: bool = False
     ): 
         '''
@@ -59,6 +60,8 @@ Constructor for a stage
   the name of the parent class
 :: dependencies : list[str | type] :: Tags on which
   this stage depends 
+::: codependencies : list[str | type :: Tags which should be running 
+  simultaneously to this stage 
 :: asynchronous : bool :: Does this stage execute asynchronously
         '''
         
@@ -71,7 +74,14 @@ Constructor for a stage
     
         if dependencies is None:
             dependencies = list()
+
+        if co_dependencies is None:
+            co_dependencies = list()
+
+
         self._dependencies = dependencies 
+        self._co_dependencies = co_dependencies 
+
         self._complete = False
 
         self._asynchronous = asynchronous
@@ -88,11 +98,24 @@ Constructor for a stage
         '''
         return self._dependencies
 
+    def get_co_dependencies(self) -> list:
+        '''
+            Getter for the dependencies
+        '''
+        return self._co_dependencies
+
     def is_asynchronous(self) -> bool:
         '''
             Getter for asynchronous tag
         '''
         return self._asynchronous
+
+    def is_codependent(self) -> bool:
+        '''
+            Getter for asynchronous tag
+        '''
+        return len(self._co_dependencies) > 0 
+
 
     def dependencies_resolved(
         self,
@@ -106,6 +129,17 @@ Constructor for a stage
             if not compiler_environment.resolved(
                 dependency
                 ):
+                return False
+        return True
+
+    def codependencies_resolved(
+        self,
+        compiler_environment: "RottnestCompilerPass"
+    ):
+        for co_depdendency in self.get_co_dependencies():
+            if not compiler_environment.current_asynchronous_stages(
+                co_dependency 
+            ): 
                 return False
         return True
 

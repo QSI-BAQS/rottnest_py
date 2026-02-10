@@ -22,17 +22,14 @@ class PoolProcedureTest(unittest.TestCase):
 
     def test_full_run(self):
 
-        # Setup the pool
-        architectures.set_current_architecture(
-            'Rz Counter' 
-        )
-
         executables.load_modules_from_strings(test_utils.__file__)
         executables.set_current_executable(
             SampleExecutable.get_name() 
         )
 
-        procedure = pool.PoolProcedure()
+
+
+        procedure = preprocesssor.PreprocessorProcedure()
         procedure.execute()
 
         while not procedure.complete():
