@@ -20,13 +20,15 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
         stages: list['RottnestCompilerStage'],
         *,
         tag = None,
-        dependencies: list[str | type] = None 
+        dependencies: list[str | type] = None,
+        co_dependencies: list[str | type] = None 
         ):
         
         self._stages = dict() 
         self._stages_complete = set() 
 
-        self._current_asynchronous_stages = set()
+        self._current_asynchronous_stages = dict() 
+        self._current_codepenent_stages = dict() 
 
         for stage in stages:
             tag = stage.get_tag()
@@ -40,10 +42,17 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
 
         super().__init__(
             tag=tag,
-            dependencies=dependencies
+            dependencies=dependencies,
+            co_dependencies=co_dependencies
         )
 
-    def execute(self, reporting=True, single_pass=False) -> bool: 
+    def execute(
+            self,
+            *,
+            compiler_environment = None
+            reporting=True,
+            single_pass=False
+        ) -> bool: 
         '''
             Executes the stages
             Raises an exception if the dependencies
@@ -64,7 +73,12 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
 
         # Iterate over unresolved stages
         # Also skip stages that are running asynchronously
-        unresolved = {tag: stage for tag, stage in self._stages.items() if tag not in self._stages_complete and stage not in self._current_asynchronous_stages}
+        unresolved = {
+            tag: stage 
+            for tag, stage in self._stages.items()
+            if tag not in self._stages_complete 
+                and tag not in self._current_asynchronous_stages
+        }
 
         while not self.complete():
 
@@ -78,13 +92,19 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
                 if tag in self._stages_complete:
                     continue            
 
-                if stage.dependencies_resolved(self): 
+                if (
+                    stage.dependencies_resolved(self) 
+                    and stage.codependencies_resolved(self)
+                    ):
                     print("Executing: ", stage)
                     stage.execute(self)
-                   
+                  
+                    if stage.is_codependent(self):
+                        self._current_codependent_stages[tag] = stage
+ 
                     if stage.is_asynchronous():
                         # Start and register asynch stage
-                        self._current_asynchronous_stages.add(stage)
+                        self._current_asynchronous_stages[tag] = stage
                         self.__setattr__(tag, stage)
                         continue
  
@@ -121,8 +141,9 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
             Polling function during asynchronous execution
         '''
         dequeue = []
-        for stage in self._current_asynchronous_stages:
+        for tag, stage in self._current_asynchronous_stages.items():
             if stage.complete():
+                print("COMPLETE: ", stage)
                 dequeue.append(stage)
             else: 
                 print(f"Polling: {stage.get_tag()}")
@@ -131,9 +152,8 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
                     dequeue.append(stage)
 
         for stage in dequeue: 
-            self._current_asynchronous_stages.remove(stage)
+            self._current_asynchronous_stages.pop(tag)
             self._stages_complete.add(stage.get_tag())
-
 
         self.execute(single_pass=True)
 
@@ -148,6 +168,12 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
             Check if a tag is resolved
         '''
         return tag in self._stages_complete
+
+    def current_asynchronous_stages(self, tag): 
+        '''
+            Check if a tag is currently executing asynchronously
+        '''
+        return tag in self._current_asynchronous_stages 
 
     def validate_dependencies(self) -> bool:
         '''
