@@ -7,7 +7,7 @@
 from rottnest.plugins import architectures as singleton 
 from rottnest.server.responder import Result
 
-def get_architectures() -> list:
+def get_architecture_list() -> list:
     '''
         Returns architectures from the singleton instance
     '''

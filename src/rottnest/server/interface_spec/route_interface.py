@@ -27,7 +27,7 @@ class Routes(type):
         '''
         # Prepend module
         route = f"{cls._rottnest_prefix}.{module_prefix}.{route}"
-
+        print(route)
         if cls._routes.get(route, None) is not None: 
             raise DuplicateRouteException(interface=cls, route=route)
         cls._routes[route] = fn
@@ -85,7 +85,8 @@ class RouteInterface(metaclass=Routes):
         '''
         Wraps the payload unloader avoiding messy strings
         '''
-        return message[Routes.PAYLOAD]
+        # NOTE: Modified this from Routes to RouteInterface
+        return message[RouteInterface.PAYLOAD]
 
     @staticmethod
     def load_and_model_call(message, field, model_function):
@@ -93,6 +94,6 @@ class RouteInterface(metaclass=Routes):
             Fills a common pattern of loading and calling 
             to a model function with a simple param
         '''
-        msg = self.load(message)
-        var = msg[field]
-        return model_function(field)
+        msg = RouteInterface.load(message)
+        data = msg[field]
+        return model_function(data)

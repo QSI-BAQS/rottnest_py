@@ -13,6 +13,11 @@ from rottnest.server.controller.arch import meta, callgraph
 from rottnest.server.controller import data
 
 
+from rottnest.server.controller.architecture import ArchitectureInterface
+from rottnest.server.controller.executable import ExecutableInterface
+from rottnest.server.controller_mapper import ControllerMapper
+
+
 import json
 
 resp = responder
@@ -36,7 +41,15 @@ def handle_websocket():
     DebugMonitor.current().get_console().set_app(app)
     DebugMonitor.with_obj('Assigning a new app context', __name__)
 
-    socket_binds = responder.fullqual_map()
+    
+    #socket_binds = responder.fullqual_map()
+    socket_binds = ControllerMapper.assemble() \
+        .attach(ArchitectureInterface) \
+        .attach(ExecutableInterface) \
+        .build()
+    
+    print('==============')
+    print(ArchitectureInterface)
 
     try:
         while True:
@@ -51,6 +64,7 @@ def handle_websocket():
                 # Expect: {'message': <cmd here>, 'payload': 
                 # <arguments here>}
 
+                # cmd_func = socket_binds.get(message['message'], err)
                 cmd_func = socket_binds.get(message['message'], err)
                 DebugMonitor.with_obj(cmd_func, 'SocketHandler::cmd_func')
                 print("Dispatch", cmd_func)
