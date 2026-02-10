@@ -2,7 +2,7 @@ from rottnest.compilation_procedures import stage
 from rottnest.process_pool.singleton import get_pool
 from rottnest.process_pool.pool_status import PoolStatus
 
-from . import stage_start_pool_manager
+from . import stage_synchronise
 
 STAGE_TAG = 'Start Pool'
 
@@ -11,7 +11,7 @@ class StartPoolStage(stage.RottnestCompilerStage):
 
     def __init__(self, *, tag=None, dependencies=None):
         if dependencies is None:
-            dependencies = [stage_start_pool_manager.STAGE_TAG] 
+            dependencies = [stage_synchronise.STAGE_TAG] 
         self._complete = False
     
         super().__init__(

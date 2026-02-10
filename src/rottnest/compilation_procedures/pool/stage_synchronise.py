@@ -29,9 +29,8 @@ class SynchronisePoolStage(stage.RottnestCompilerStage):
 
     def poll(self, environment):
         pool = get_pool()
-        self._complete = (pool.poll() == PoolStatus.SYNCHRONISED)
-
-
+        status = pool.get_status()
+        self._complete = (pool.get_status() == PoolStatus.SYNCHRONISED)
 
     def complete(self):
         return self._complete

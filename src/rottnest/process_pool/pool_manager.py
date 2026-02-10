@@ -254,7 +254,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         if task is None:
             raise Exception(f"Unknown task: {task_name}")
         else:
-            print(task, args)
             result = task(*args)
             # If a response occurs, pass it back
             if result is not None:
@@ -309,7 +308,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
             Synchronises loaded modules
         '''
-        print("Synching: ", args)
         architectures = args[0]
         executables = args[1]
         self._architectures.load_modules_from_strings(*architectures)

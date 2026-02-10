@@ -1,8 +1,20 @@
 from rottnest.compilation_procedures import pool, procedure 
 
+from rottnest.compute_units.layout_proxy import LayoutProxy
+
+STAGE_TAG = 'pool_procedure'
+
 class PoolProcedure(procedure.RottnestCompilerProcedure): 
 
+    TAG = STAGE_TAG
+
     def __init__(self, *, tag=None, dependencies=None):
+
+        layout_id = 0
+        memory_bound = 1000
+        layout = {'mem_bound': memory_bound}
+        LayoutProxy.add_layout_with_id(layout_id, layout)
+
 
         manager = pool.stage_start_pool_manager.StartPoolManagerStage()
         synch = pool.stage_synchronise.SynchronisePoolStage(

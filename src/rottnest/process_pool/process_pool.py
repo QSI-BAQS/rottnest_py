@@ -97,10 +97,6 @@ class ComputeUnitExecutorPool(StatusTracked):
     def set_status(self, status):
         self._status = status
 
-    @status_update(
-        PoolStatus.SYNCHRONISING, 
-        PoolStatus.SYNCHRONISED
-    )
     def synchronise_options(self):
         '''
             Synchronises from singletons
@@ -215,10 +211,6 @@ class ComputeUnitExecutorPool(StatusTracked):
         )
         return
 
-    @status_update(
-        PoolStatus.SYNCHRONISING, 
-        PoolStatus.SYNCHRONISED
-    )
     def synchronise_layouts(self):
         '''
             Synchronises all loaded layouts with the
@@ -310,7 +302,6 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
             Puts a run sequence to the worker queue
         '''
-        print(layout_ids)
         self.manager_task_queue.put(
             (
                 commands.RUN_SEQUENCE,
@@ -326,8 +317,6 @@ class ComputeUnitExecutorPool(StatusTracked):
 
         self.manager_priority_task_queue.put((commands.POLL,))
         status = self.manager_priority_completion_queue.get()
-
-        self.set_status(status)
         return status 
     
 
