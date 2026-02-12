@@ -1,6 +1,6 @@
 import unittest
 
-from rottnest.compilation_procedures import pool
+from rottnest.procedures import pool
 
 
 

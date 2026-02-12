@@ -1,4 +1,4 @@
-from rottnest.compilation_procedures import stage
+from rottnest.procedures import stage
 from rottnest.process_pool.singleton import get_pool
 
 STAGE_TAG = 'Start Pool Manager'

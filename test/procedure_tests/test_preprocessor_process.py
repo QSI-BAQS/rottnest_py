@@ -7,8 +7,8 @@ print("LOADED")
 
 import unittest
 
-from rottnest.compilation_procedures import pool
-from rottnest.compilation_procedures import stage
+from rottnest.procedures import pool
+from rottnest.procedures import stage
 
 #from rottnest.plugins import architectures, executables
 

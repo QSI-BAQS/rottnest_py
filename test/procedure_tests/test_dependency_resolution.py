@@ -1,6 +1,6 @@
 import unittest
 
-from rottnest.compilation_procedures import procedure, stage, exceptions
+from rottnest.procedures import procedure, stage, exceptions
 
 class CompilerStageTest(unittest.TestCase):
 

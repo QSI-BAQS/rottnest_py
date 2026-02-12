@@ -1,6 +1,6 @@
 import unittest
 
-from rottnest.compilation_procedures import procedure, stage 
+from rottnest.procedures import procedure, stage 
 class CompilerStageTest(unittest.TestCase):
 
     def test_stage_constructor_tag(self):

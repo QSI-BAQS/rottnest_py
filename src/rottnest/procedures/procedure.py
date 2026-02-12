@@ -49,7 +49,7 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
     def execute(
             self,
             *,
-            compiler_environment = None
+            compiler_environment = None,
             reporting=True,
             single_pass=False
         ) -> bool: 
@@ -99,7 +99,7 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
                     print("Executing: ", stage)
                     stage.execute(self)
                   
-                    if stage.is_codependent(self):
+                    if stage.is_codependent():
                         self._current_codependent_stages[tag] = stage
  
                     if stage.is_asynchronous():

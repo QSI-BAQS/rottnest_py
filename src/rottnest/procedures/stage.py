@@ -61,7 +61,7 @@ Constructor for a stage
 :: dependencies : list[str | type] :: Tags on which
   this stage depends 
 ::: codependencies : list[str | type :: Tags which should be running 
-  simultaneously to this stage 
+  simultaneously to this stage. Co-dependencies may not be circular
 :: asynchronous : bool :: Does this stage execute asynchronously
         '''
         
@@ -160,7 +160,15 @@ Constructor for a stage
             Function to singal that the stage is complete
             This is used in particular for asynch methods
         '''
+        if self._complete():
+            self.finalise() 
         return self._complete
+
+    def finalise(self):
+        '''
+            Helper function called before complete returned
+            This performs any last lingering tasks that need to be cleared
+        '''
 
     def poll(self):
         '''

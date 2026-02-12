@@ -1,7 +1,7 @@
 import unittest
 
-from rottnest.compilation_procedures.preprocessor import stage_pandora_store
-from rottnest.compilation_procedures import stage
+from rottnest.procedures.preprocessor import stage_pandora_store
+from rottnest.procedures import stage
 
  
 class PreprocessorStageTest(unittest.TestCase):

@@ -1,4 +1,4 @@
-from rottnest.compilation_procedures import pool, procedure 
+from rottnest.procedures import pool, procedure 
 
 from rottnest.compute_units.layout_proxy import LayoutProxy
 
