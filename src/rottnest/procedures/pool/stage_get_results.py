@@ -4,7 +4,7 @@ from rottnest.process_pool.pool_status import PoolStatus
 
 from . import stage_synchronise
 
-STAGE_TAG = 'results'
+STAGE_TAG = 'get_results'
 
 class GetResultsPoolStage(stage.RottnestCompilerStage):
     TAG = STAGE_TAG
@@ -27,6 +27,12 @@ class GetResultsPoolStage(stage.RottnestCompilerStage):
         '''
         pool = get_pool()
         self._results = pool.get_results()
+
+    def __call__(self):
+        '''
+            Warpper for get_results
+        '''
+        return self.get_results()
 
     def get_results(self):
         '''

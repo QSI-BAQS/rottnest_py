@@ -32,10 +32,10 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
         self._current_codepenent_stages = dict() 
 
         for stage in stages:
-            tag = stage.get_tag()
-            if tag in self._stages:
+            stage_tag = stage.get_tag()
+            if stage_tag in self._stages:
                 raise exceptions.DuplicateStageTagError(tag)
-            self._stages[tag] = stage 
+            self._stages[stage_tag] = stage 
 
         # Check that dependencies are valid
         valid_dependencies, err = self.validate_dependencies()
@@ -115,6 +115,7 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
                     if stage.is_asynchronous():
                         # Start and register asynch stage
                         self._current_asynchronous_stages[tag] = stage
+                        print("ASYNCH TAG: ", self.get_tag(), tag)
                         self.__setattr__(tag, stage)
                         continue
  

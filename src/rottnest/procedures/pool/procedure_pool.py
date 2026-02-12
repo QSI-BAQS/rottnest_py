@@ -33,7 +33,6 @@ class PoolProcedure(procedure.RottnestCompilerProcedure):
            dependencies = [run.get_tag()]
         )
 
-
         shutdown = pool.stage_shutdown_pool.ShutdownPoolStage(
             dependencies = [results.get_tag()]
         )

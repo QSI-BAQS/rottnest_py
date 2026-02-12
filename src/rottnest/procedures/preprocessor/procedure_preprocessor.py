@@ -2,6 +2,8 @@ from rottnest.procedures import pool, procedure
 
 from . import stage_set_preproc_architecture
 from . import stage_reset_preproc_architecture
+from . import stage_rz_count
+
 
 from rottnest.compute_units.layout_proxy import LayoutProxy
 
@@ -32,10 +34,14 @@ class PreprocessorProcedure(procedure.RottnestCompilerProcedure):
             dependencies = [preprocessing_pool.get_tag()]
         )
 
+        rz_count = stage_rz_count.RzCountStage(
+            dependencies = [reset_arch.get_tag()]
+        )
+
         stages = [
             swap_arch,
             preprocessing_pool,
-            reset_arch
+            reset_arch,
+            rz_count
         ]
         super().__init__(None, stages=stages, tag=tag, dependencies=dependencies)
-
