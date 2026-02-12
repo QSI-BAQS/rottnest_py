@@ -10,7 +10,13 @@ class DebugConsoleHandler:
         self.app = app
         self.stdin = sys.stdin
         self.selector = selectors.DefaultSelector()
-        self.selector.register(self.stdin, selectors.EVENT_READ, DebugConsoleHandler.stdin_event)
+        # NOTE: pytest doesn't like stdin capture, we want to
+        # ensure we don't conflict with it
+        # 
+        # Make sure you mock `self.stdin` inside your test
+        # cases
+        if 'pytest' not in sys.modules:
+            self.selector.register(self.stdin, selectors.EVENT_READ, DebugConsoleHandler.stdin_event)
 
 
     @staticmethod

@@ -6,12 +6,17 @@
 import sys
 import json
 
+from collections.abc import Callable
+from typing import Self, Any
+from rottnest.server.interface_spec.route_interface import RouteInterface
+from rottnest.server.app.application import RottnestApplication
+
 class ControllerBuilder:
     '''
        Builder of the controllers 
     '''
 
-    def __init__(self, mapper, serializer=json.dumps):
+    def __init__(self, mapper: Any, serializer=json.dumps):
         '''
             Initialises the builder
         '''
@@ -19,18 +24,17 @@ class ControllerBuilder:
         self.serializer = serializer
 
 
-    def attach(self, route_class):
+    def attach(self, route_class: type[RouteInterface]) -> Self:
         '''
             Adds another set of routes to the builder    
         '''
         serialize = self.serializer
         routes = route_class.get_routes()
 
-        def __class_route_constructor(route_method, route_class):
-            def __route_fn_instance(app, message, *args, **kwargs):
+        def __class_route_constructor(route_method: classmethod, route_class: type[RouteInterface]):
+            def __route_fn_instance(app: RottnestApplication, message: dict, *args, **kwargs):
                 obj = route_method.__func__(route_class, message, **kwargs)
-                print(obj.items())
-                serial_data = serialize(dict(obj.items()))
+                serial_data = serialize(obj)
                 return serial_data
 
             return __route_fn_instance
@@ -59,21 +63,34 @@ class ControllerMapper:
     '''
 
 
-    def __init__(self):
+    def __init__(self, serialiser=json.dumps):
         '''
            Initialises the controller mapper
            type, holds a dictionary with string to function call 
         '''
         self._route_dict = {}
+        self.serialiser = serialiser
 
 
-    def update_routes(self, routes):
+    def update_routes(self, routes: 'RouteInterface') -> None:
         '''
            Updates the dictionary with another set of routes 
         '''
         self._route_dict.update(routes)
 
-    def get(self, message, err):
+    def set_serialiser_object(self, serialiser: Callable[[Any], str]) -> None:
+        '''
+           Sets the serialiser object  
+        '''
+        self.serialiser = serialiser
+
+    def get_serialiser_object(self) -> Callable[[Any], str]:
+        '''
+           Gets the serialiser object associated with the mapper 
+        '''
+        return self.serialiser
+    
+    def get(self, message: str, err: Callable[[], None]) -> Any:
         '''
            Will get the callback based on the message name itself 
         '''
@@ -83,12 +100,12 @@ class ControllerMapper:
         return self._route_dict[message]
     
     @staticmethod
-    def assemble():
+    def assemble() -> ControllerBuilder:
         '''
            Returns the builder for the mapper
            so the routes can be used 
         '''
         mapper = ControllerMapper()
-        return ControllerBuilder(mapper)
+        return ControllerBuilder(mapper, mapper.serialiser)
     
     

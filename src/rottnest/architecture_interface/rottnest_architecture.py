@@ -6,6 +6,7 @@ import abc
 
 from .rottnest_worker import RottnestWorker
 from .rottnest_composer import RottnestComposer
+from .rottnest_designer import RottnestDesigner
 from types import FunctionType
 from typing import Type
 
