@@ -2,7 +2,7 @@
     Stage for hotswapping architectures
 '''
 from rottnest.plugins import architectures, executables
-from rottnest.compilation_procedures import stage
+from rottnest.procedures import stage
 
 from . import stage_start_pool_manager
 

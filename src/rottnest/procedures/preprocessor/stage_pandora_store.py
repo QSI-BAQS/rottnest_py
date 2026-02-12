@@ -1,4 +1,4 @@
-from rottnest.compilation_procedures import stage
+from rottnest.procedures import stage
 
 STAGE_TAG = 'Pandora Load'
 
