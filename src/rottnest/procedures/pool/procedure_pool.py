@@ -28,14 +28,21 @@ class PoolProcedure(procedure.RottnestCompilerProcedure):
         run = pool.stage_run_pool.RunPoolStage(
             dependencies = [workers.get_tag()] 
         )
+
+        results = pool.stage_get_results.GetResultsPoolStage(
+           dependencies = [run.get_tag()]
+        )
+
+
         shutdown = pool.stage_shutdown_pool.ShutdownPoolStage(
-            dependencies = [run.get_tag()]
+            dependencies = [results.get_tag()]
         )
         stages = [
             manager,
             synch,
             workers,
             run,
+            results,
             shutdown
         ]
         super().__init__(None, stages=stages, tag=tag, dependencies=dependencies, asynchronous=asynchronous)
