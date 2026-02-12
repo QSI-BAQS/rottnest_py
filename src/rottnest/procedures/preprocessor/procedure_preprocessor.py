@@ -1,0 +1,41 @@
+from rottnest.procedures import pool, procedure
+
+from . import stage_set_preproc_architecture
+from . import stage_reset_preproc_architecture
+
+from rottnest.compute_units.layout_proxy import LayoutProxy
+
+STAGE_TAG = 'preprocessor_procedure'
+
+class PreprocessorProcedure(procedure.RottnestCompilerProcedure): 
+
+    TAG = STAGE_TAG
+
+    def __init__(self, *, tag=None, dependencies=None):
+
+
+        # TODO: Replace this with dynamic loads
+
+        layout_id = 0
+        memory_bound = 1000
+        layout = {'mem_bound': memory_bound}
+        LayoutProxy.add_layout_with_id(layout_id, layout)
+   
+        
+        swap_arch = stage_set_preproc_architecture.SetPreprocessingArchitectureStage()
+ 
+        preprocessing_pool = pool.procedure_pool.PoolProcedure(
+            dependencies = [swap_arch.get_tag()],
+            asynchronous = True
+        )
+        reset_arch = stage_reset_preproc_architecture.ResetPreprocessingArchitectureStage(
+            dependencies = [preprocessing_pool.get_tag()]
+        )
+
+        stages = [
+            swap_arch,
+            preprocessing_pool,
+            reset_arch
+        ]
+        super().__init__(None, stages=stages, tag=tag, dependencies=dependencies)
+

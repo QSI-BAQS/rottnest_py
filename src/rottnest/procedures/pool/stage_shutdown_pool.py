@@ -13,6 +13,6 @@ class ShutdownPoolStage(stage.RottnestCompilerStage):
             dependencies = [stage_run_pool.STAGE_TAG] 
         super().__init__(tag=tag, dependencies=dependencies)
 
-    def execute(self, environment):
+    def execute(self, compiler_environment):
         pool = get_pool()
         pool.shutdown()

@@ -8,7 +8,9 @@ class PoolProcedure(procedure.RottnestCompilerProcedure):
 
     TAG = STAGE_TAG
 
-    def __init__(self, *, tag=None, dependencies=None):
+    def __init__(self, *, tag=None, dependencies=None, asynchronous=True):
+
+        # TODO: Replace this with dynamic loads
 
         layout_id = 0
         memory_bound = 1000
@@ -36,5 +38,5 @@ class PoolProcedure(procedure.RottnestCompilerProcedure):
             run,
             shutdown
         ]
-        super().__init__(None, stages=stages, tag=tag, dependencies=dependencies)
+        super().__init__(None, stages=stages, tag=tag, dependencies=dependencies, asynchronous=asynchronous)
 

@@ -20,7 +20,7 @@ class ResetPreprocessingArchitectureStage(stage.RottnestCompilerStage):
 
         if dependencies is None:
             dependencies = [
-                stage_set_preproc_architecture.STAGE_TAG
+                stage_set_preproc_architecture.STAGE_TAG,
                 procedure_pool.STAGE_TAG
             ] 
 

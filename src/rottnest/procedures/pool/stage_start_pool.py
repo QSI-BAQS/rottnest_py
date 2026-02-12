@@ -20,7 +20,7 @@ class StartPoolStage(stage.RottnestCompilerStage):
             asynchronous=False
         )
 
-    def execute(self, environment):
+    def execute(self, compiler_environment):
         '''
             Synchronises and starts the workers
         '''

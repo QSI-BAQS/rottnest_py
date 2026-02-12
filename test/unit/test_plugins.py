@@ -28,28 +28,34 @@ except ModuleNotFoundError:
     from .dummy_arch.dummy_arch import DummyWorker, DummyDesigner, DummyComposer
 
 
+SELF_PATH = os.path.dirname(sys.argv[0])
 def get_path_relative(target):
     if SELF_PATH != "":
         return f"{SELF_PATH}/{target}"
     return target
 
-
-
 class TestArchitectureLoading(unittest.TestCase):
     '''
         Testcases related to loading modules (providing architectures)
     '''
-    def setUp(self):
+    def __init__(self, *args, **kwargs):
         self.arch_plugins = ArchitecturePlugins()
         self.base_plugin_len = len(self.arch_plugins)
-
+        super().__init__(*args, **kwargs)
+    
     def test_architecture_from_string(self):
         '''
             @INTERNAL
             Load a module from a string
         '''
-        module = self.arch_plugins._load_module_from_module_string("dummy_arch")
+        try:
+            module = self.arch_plugins._load_module_from_module_string("dummy_arch")
+        except:
+            print("pwd:", os.getcwd())
+            module = self.arch_plugins._load_module_from_module_string("dummy_arch")
+
         self.assertEqual(len(module.rottnest_architectures), 1)
+
 
     def test_architecture_from_path(self):
         '''
@@ -113,6 +119,9 @@ class TestArchitectureLoading(unittest.TestCase):
         '''
         self.arch_plugins.load_config(get_path_relative("test_data/arch_mixed_validity.conf"))
         self.assertEqual(len(self.arch_plugins), self.base_plugin_len + 1)
+
+
+
 
     def test_plugin_architecture_from_string(self):
         '''
@@ -322,11 +331,12 @@ class TestDummyArchitecture(unittest.TestCase):
     def test_get_set_arch(self):
         self.arch_plugins.set_current_architecture("Dummy")
         self.assertTrue(self.arch_plugins["Dummy"] is self.arch_plugins.get_current_architecture())
-
+    
 
 if __name__ == "__main__":
-    SELF_PATH = os.path.dirname(sys.argv[0])
     unittest.main()
+    #tst = TestArchitectureLoading()
+    #tst.test_architecture_from_string()
 else:
     # We skip non-main since imports don't play nicely
     # with testing frameworks

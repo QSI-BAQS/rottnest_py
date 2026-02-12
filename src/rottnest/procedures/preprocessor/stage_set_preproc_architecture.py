@@ -4,8 +4,6 @@
 from rottnest.plugins import architectures, executables
 from rottnest.procedures import stage
 
-from . import stage_start_pool_manager
-
 STAGE_TAG = 'hotswap_architecture'
 
 class SetPreprocessingArchitectureStage(stage.RottnestCompilerStage):
@@ -22,7 +20,7 @@ class SetPreprocessingArchitectureStage(stage.RottnestCompilerStage):
             asynchronous=False
         )
 
-    def execute(self, environment):
+    def execute(self, compiler_environment):
         '''
             Swaps the current rottnest architecture 
         '''

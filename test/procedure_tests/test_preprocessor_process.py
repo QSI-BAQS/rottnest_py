@@ -7,7 +7,7 @@ print("LOADED")
 
 import unittest
 
-from rottnest.procedures import pool
+from rottnest.procedures import preprocessor 
 from rottnest.procedures import stage
 
 #from rottnest.plugins import architectures, executables
@@ -17,7 +17,7 @@ from rottnest.test_utils.executable import SampleExecutable
 from rottnest import test_utils
 from rottnest.test_utils.plugin_support import add_executable, add_architecture
 
-class PoolProcedureTest(unittest.TestCase):
+class PreprocessorProcedureTest(unittest.TestCase):
 
 
     def test_full_run(self):
@@ -29,7 +29,7 @@ class PoolProcedureTest(unittest.TestCase):
 
 
 
-        procedure = preprocesssor.PreprocessorProcedure()
+        procedure = preprocessor.PreprocessorProcedure()
         procedure.execute()
 
         while not procedure.complete():
@@ -37,7 +37,7 @@ class PoolProcedureTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    tst = PoolProcedureTest()
+    tst = PreprocessorProcedureTest()
     tst.test_full_run()
 
     #unittest.main()

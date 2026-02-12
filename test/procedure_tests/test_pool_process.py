@@ -20,6 +20,15 @@ from rottnest.test_utils.plugin_support import add_executable, add_architecture
 class PoolProcedureTest(unittest.TestCase):
 
 
+    def test_asynch(self):
+        '''
+            Checks that asynch is collected properly
+        '''
+
+        procedure = pool.PoolProcedure()
+        assert procedure.is_asynchronous()
+
+
     def test_full_run(self):
 
         # Setup the pool

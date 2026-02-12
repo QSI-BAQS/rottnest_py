@@ -21,7 +21,8 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
         *,
         tag = None,
         dependencies: list[str | type] = None,
-        co_dependencies: list[str | type] = None 
+        co_dependencies: list[str | type] = None,
+        asynchronous = False
         ):
         
         self._stages = dict() 
@@ -36,19 +37,28 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
                 raise exceptions.DuplicateStageTagError(tag)
             self._stages[tag] = stage 
 
+        # Check that dependencies are valid
         valid_dependencies, err = self.validate_dependencies()
         if not valid_dependencies:
             raise exceptions.UnspecifiedDependencyError(err)
+   
+        # Check if asynchronous execution is needed 
+        asynchronous = asynchronous or any(
+            map(
+                lambda x: x.is_asynchronous(),
+                stages
+            )
+        )
 
         super().__init__(
             tag=tag,
             dependencies=dependencies,
-            co_dependencies=co_dependencies
+            co_dependencies=co_dependencies,
+            asynchronous = asynchronous
         )
 
     def execute(
             self,
-            *,
             compiler_environment = None,
             reporting=True,
             single_pass=False

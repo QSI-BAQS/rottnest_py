@@ -19,12 +19,12 @@ class RunPoolStage(stage.RottnestCompilerStage):
 
 
 
-    def execute(self, environment):
+    def execute(self, compiler_environment):
         # TODO: load layout IDs
         pool = get_pool()
         pool.run_sequence([0])
 
-    def poll(self, environment):
+    def poll(self, compiler_environment):
         '''
             Checks if the pool has finished
         '''
