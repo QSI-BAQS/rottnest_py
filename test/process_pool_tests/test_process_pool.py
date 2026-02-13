@@ -31,6 +31,62 @@ LayoutProxy.add_layout_with_id(layout_id, layout)
 
 class ProcessPoolTests(unittest.TestCase):
 
+    def test_ping(self):
+        '''
+            Tests ping through ipc
+        '''
+
+        executables.load_modules_from_strings(test_utils.__file__)
+        executables.set_current_executable(SampleExecutable.get_name())
+        architectures.set_current_architecture(
+            'Rz Counter' 
+        )
+
+
+        pool = ComputeUnitExecutorPool() 
+        pool.start()
+
+        # Asserts correctness in here
+        pool.ping_manager()
+        pool.shutdown()
+       
+    def test_ping_workers(self):
+        '''
+            Tests ping through ipc
+        '''
+
+        executables.load_modules_from_strings(test_utils.__file__)
+        executables.set_current_executable(SampleExecutable.get_name())
+        architectures.set_current_architecture(
+            'Rz Counter' 
+        )
+
+        pool = ComputeUnitExecutorPool() 
+        pool.start()
+
+        # Asserts correctness in here
+        pool.ping_manager()
+       
+        # Synch pool state 
+        pool.synchronise()
+
+        # Setup the pool
+        pool.set_architecture_module(
+            'Rz Counter' 
+        )
+        pool.set_executable(
+            'Sample Executable'
+        )
+        pool.set_executable_params({})
+
+        # Start workers
+        pool.start_workers()
+
+        # Asserts correctness in here
+        pool.ping()
+        pool.shutdown()
+
+
     def test_pool_status(self):
         '''
             Test setting and getting executables and architectures
@@ -146,5 +202,9 @@ class ProcessPoolTests(unittest.TestCase):
 
 if __name__ == '__main__':
     obj = ProcessPoolTests()
+    obj.test_ping()
+    obj.test_ping_workers()
     obj.test_pool_status()
+
+    #obj.test_pool_status()
     #obj.test_process_pool_from_singletons()

@@ -256,8 +256,10 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         else:
             result = task(*args)
             # If a response occurs, pass it back
+            # Prepend the name of the task
             if result is not None:
-                completion_queue.put(result)
+                print("Manager: ", task_name, result)
+                completion_queue.put((task_name, result))
 
     def run_priority_task(self):
         '''
@@ -554,9 +556,8 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             Asynch sending of totals
         '''
         print("Stack Frame: ", self.composer.stack_frames[0].result.to_args())
-        #totals = self.compute_unit_result_cache[None]
-        #totals['cu_id'] = cu_id
-        #self.manager_completion_queue.put(totals)
+        totals = self.composer.stack_frames[0].result.to_args()
+        self.manager_completion_queue.put(totals)
 
     def _task_get_results(self, *args, **kwargs):
         '''

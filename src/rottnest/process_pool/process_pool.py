@@ -23,6 +23,7 @@ from .pool_manager import ComputeUnitExecutorPoolManager
 from .symbols import TOTAL, SPAWN_CONTEXT
 
 from .pool_status import PoolStatus
+from .ipc_manager import IPCManager
 
 
 # result_manager = mp.Manager()
@@ -90,6 +91,10 @@ class ComputeUnitExecutorPool(StatusTracked):
         self.manager_priority_completion_queue = self.ctx.Queue()
 
         self._status = PoolStatus.UNSTARTED 
+
+        self.ipc = IPCManager(self.manager_completion_queue) 
+        self.priority_ipc = IPCManager(self.manager_completion_queue) 
+
 
     def get_status(self):
         return self._status
@@ -278,7 +283,12 @@ class ComputeUnitExecutorPool(StatusTracked):
             Getter for worker and manager status
         '''
         self.manager_task_queue.put((commands.SYNCHRONISATION_STATUS,))
-        resp = self.manager_completion_queue.get()
+
+        resp = self.ipc.fetch(
+            commands.SYNCHRONISATION_STATUS,
+            blocking = True
+        )
+
         return resp
 
 
@@ -313,10 +323,11 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
             Checks the state of the running job
         '''
-        # TODO - get status from backend
-
         self.manager_priority_task_queue.put((commands.POLL,))
-        status = self.manager_priority_completion_queue.get()
+        resp = self.ipc.fetch(
+            commands.POLL,
+            blocking=True
+        )
         return status 
     
 
@@ -333,7 +344,11 @@ class ComputeUnitExecutorPool(StatusTracked):
             Checks for worker life
         '''
         self.manager_task_queue.put((commands.PING_MANAGER,))
-        resp = self.manager_completion_queue.get()
+        # Assumes that it will be fetched shortly
+        resp = self.ipc.fetch(
+            commands.PING_MANAGER,
+            blocking=True
+        )
         assert resp == symbols.PONG
 
     def ping(self):
@@ -341,19 +356,47 @@ class ComputeUnitExecutorPool(StatusTracked):
             Checks for worker life
         '''
         self.manager_task_queue.put((commands.PING,))
-        resp = self.manager_completion_queue.get()
+
+        # Assumes that it will be fetched shortly
+        resp = self.ipc.fetch(
+            commands.PING,
+            blocking=True
+        )
         assert resp == symbols.PONG
 
     def get_results(self):
         '''
-            Testing function
             Requests results from the pool manager 
         '''
+        resp = self.ipc.get_item(
+            commands.GET_CURRENT_RESULTS
+        )
+        if resp is not IPCManager.NOT_FOUND: 
+            return resp
+
         self.manager_task_queue.put(
             (commands.GET_CURRENT_RESULTS,)
         ) 
-        print("Awaiting")
-        resp = self.manager_completion_queue.get()
+        resp = self.ipc.get_item(
+            commands.GET_CURRENT_RESULTS,
+            blocking=True
+        )
+        return resp
+
+    def get_final_results(self):
+        '''
+            Gets final results
+            This is only guaranteed to work if the 
+            backend has stopped emitting results objects
+        '''
+        # Flush any remaining results
+        self.ipc.flush()
+        self.ipc.batch_get(commands.GET_CURRENT_RESULTS)
+        
+        resp = self.ipc.fetch(
+            commands.GET_CURRENT_RESULTS,
+            blocking=True
+        )
         return resp
 
     #######
