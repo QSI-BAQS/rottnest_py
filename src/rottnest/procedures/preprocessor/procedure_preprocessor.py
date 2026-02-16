@@ -5,6 +5,8 @@ from . import stage_reset_preproc_architecture
 from . import stage_rz_count
 from . import stage_set_rz_precision
 from . import stage_t_count
+from . import stage_t_fidelity
+
 
 
 from rottnest.compute_units.layout_proxy import LayoutProxy
@@ -47,6 +49,10 @@ class PreprocessorProcedure(procedure.RottnestCompilerProcedure):
         t_count = stage_t_count.TCountStage(
             dependencies = [rz_precision.get_tag()]
         )
+        t_fidelity = stage_t_fidelity.TFidelityStage(
+                    dependencies = [t_count.get_tag()]
+        )
+
 
         stages = [
             swap_arch,
@@ -54,6 +60,7 @@ class PreprocessorProcedure(procedure.RottnestCompilerProcedure):
             reset_arch,
             rz_count,
             rz_precision,
-            t_count
+            t_count,
+            t_fidelity
         ]
         super().__init__(None, stages=stages, tag=tag, dependencies=dependencies)

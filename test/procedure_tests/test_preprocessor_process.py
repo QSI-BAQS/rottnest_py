@@ -40,6 +40,7 @@ class PreprocessorProcedureTest(unittest.TestCase):
 
         assert procedure.get_t_count() == 1680 
 
+        print(procedure.get_t_fidelity())
 
 
 if __name__ == '__main__':

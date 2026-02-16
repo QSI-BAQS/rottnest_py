@@ -9,12 +9,16 @@ from rottnest.procedures import stage
 from rottnest.rz_decomposer import get_rz_decomposer
 from rottnest.rz_decomposer.angle_to_rational import trivial_angle_filters_float, angle_to_rational
 
-from . import stage_reset_preproc_architecture
+from . import stage_set_rz_precision
 
 
 STAGE_TAG = 'get_t_count'
 
 class TCountStage(stage.RottnestCompilerStage):
+    '''
+        Stage for counting T gates
+        Depends on Rz evaluation
+    '''
     TAG = STAGE_TAG
 
     def __init__(self, *, tag=None, dependencies=None):
@@ -23,7 +27,7 @@ class TCountStage(stage.RottnestCompilerStage):
 
         if dependencies is None:
             dependencies = [
-                stage_reset_preproc_architecture.STAGE_TAG
+                stage_set_rz_precision.STAGE_TAG
             ] 
 
         super().__init__(
@@ -41,17 +45,26 @@ class TCountStage(stage.RottnestCompilerStage):
         rz_counts = environment.pool_procedure.get_results()
 
         # Get the precision in bits
-        # TODO: Move to arbitrary precision here
         decomposer = get_rz_decomposer() 
         precision_bits = decomposer.get_precision()
+
+        # Precision as a float
         precision = 2 ** (-1 * precision_bits)
 
+        # Count the T states in the table
         t_count = 0
         for angle, count in rz_counts.items():
 
+            # Convert the angle 
             numerator, denominator = angle_to_rational(angle, precision=precision)
+
+            # Construct the sequence
             seq = decomposer.z_theta_instruction(numerator, denominator)
-            t_count += sum((1 for i in seq if i == 'T')) * count
+
+            # Count T gates
+            t_count += count * sum(
+                (1 for i in seq if i == 'T')
+            )
 
         self._t_count = t_count
         self._complete = True
