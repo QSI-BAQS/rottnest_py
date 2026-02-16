@@ -38,6 +38,9 @@ class PreprocessorProcedureTest(unittest.TestCase):
         assert procedure.get_rz_count() == 1680 
         assert procedure.set_rz_precision() == 25 
 
+        assert procedure.get_t_count() == 1680 
+
+
 
 if __name__ == '__main__':
     tst = PreprocessorProcedureTest()

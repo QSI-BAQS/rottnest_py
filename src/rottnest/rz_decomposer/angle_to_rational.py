@@ -25,21 +25,35 @@ def trivial_angle_filters(
 
     approx_angle = (numerator / denominator) % I_ANGLE
 
-    if approx_angle < eps:
-        return None, []
+    outcome, gate = trivial_angle_filters_float(
+            approx_angle,
+            eps
+    ) 
 
-    if abs((approx_angle % Z_ANGLE) - S_ANGLE) < eps:
-        return None, ['S']
-
-    if abs((approx_angle % S_ANGLE) - T_ANGLE) < eps:
-        return None, ['T']
+    if outcome is None:
+        return outcome, gate
 
     return numerator, denominator
+
+def trivial_angle_filters_float(angle: float, eps: float):
+    '''
+        Trivial angle filters over float
+    '''
+    if angle < eps:
+        return None, []
+
+    if abs((angle % Z_ANGLE) - S_ANGLE) < eps:
+        return None, ['S']
+
+    if abs((angle % S_ANGLE) - T_ANGLE) < eps:
+        return None, ['T']
+
+    return True, [] 
 
 def angle_to_rational(
     angle: float,
     *,
-    precision: int,
+    precision: int = None,
     delta: int = 3,
     ) -> (int, int): 
     '''
@@ -49,7 +63,7 @@ def angle_to_rational(
 
     angle = Decimal(angle) % I_ANGLE 
     # Increasing the precision by 2 ** 3 bounded the error on the conversion to rational   
-    denominator = 2 ** (precision + delta) 
+    denominator = Decimal(2 ** (precision + delta))
 
     numerator = int(angle * denominator)
 

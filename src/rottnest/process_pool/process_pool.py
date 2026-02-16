@@ -408,15 +408,16 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
         # Flush any remaining results
         self.ipc.flush()
-        print("Flush")
         results = self.ipc.batch_get(commands.GET_CURRENT_RESULTS)
         if len(results) > 0:
             return results[-1]
+
+        # Todo, make this stateful
+        # At the moment the command gets dropped
         resp = self.ipc.get_item(
             commands.GET_CURRENT_RESULTS,
             blocking=True
         )
-        print("Final Results:", resp)
         return resp
 
     #######

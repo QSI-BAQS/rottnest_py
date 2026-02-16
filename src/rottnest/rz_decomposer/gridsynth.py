@@ -57,7 +57,7 @@ class Gridsynth(rz_decomposer.RzDecomposer):
         self.precision = precision
         self.precision_decimal = Decimal(2) ** Decimal(-1 * precision)
 
-    def get_precision(self, precision):
+    def get_precision(self):
         '''
             Gets the current precision
         '''
