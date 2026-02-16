@@ -1,8 +1,7 @@
-from abc
 '''
     Error Budget base class and interface
 '''
-
+import abc
 
 class ErrorBudget(abc.ABC):
     '''
@@ -12,7 +11,7 @@ class ErrorBudget(abc.ABC):
     def __init__(
             self,
             p_physical: float,
-            target_err: float
+            target_error: float
         ): 
         '''
             Error budget base class
@@ -45,19 +44,19 @@ class ErrorBudget(abc.ABC):
         '''
         self._target_error = target_error
 
-    @abc.abstractclassmethod
-    def validate(self, **errs):
+    def validate(self, rz_err=None, t_err=None, stv_err=None):
         '''
             Validates that all errors are less than
             budget targets
         '''
+        # TODO - decide a nice implementation
  
     @abc.abstractclassmethod
     def get_rz_precision_budget(self) -> float:
         ...
 
     @abc.abstractclassmethod
-    def get_t_fidelity_budget(self) -> float:
+    def get_t_infidelity_budget(self) -> float:
         ...
                
     @abc.abstractclassmethod

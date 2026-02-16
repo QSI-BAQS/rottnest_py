@@ -24,7 +24,7 @@ class EvenDistribution(ErrorBudget):
         '''
         return self.get_target_error() / 4
 
-    def get_t_fidelity_budget(self) -> float:
+    def get_t_infidelity_budget(self) -> float:
         '''
             Sets an even split
         '''

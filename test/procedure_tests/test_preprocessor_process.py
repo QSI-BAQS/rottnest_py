@@ -2,7 +2,6 @@
     Tests pool process
 '''
 from rottnest.plugins import architectures, executables
-print("LOADED")
 
 
 import unittest
@@ -16,6 +15,8 @@ from rottnest.test_utils.executable import SampleExecutable
 
 from rottnest import test_utils
 from rottnest.test_utils.plugin_support import add_executable, add_architecture
+
+
 
 class PreprocessorProcedureTest(unittest.TestCase):
 
@@ -36,11 +37,12 @@ class PreprocessorProcedureTest(unittest.TestCase):
             procedure.poll()
 
         assert procedure.get_rz_count() == 1680 
-        assert procedure.set_rz_precision() == 25 
+        
+        assert procedure.set_rz_precision() == 20 
 
         assert procedure.get_t_count() == 1680 
 
-        print(procedure.get_t_fidelity())
+        print(procedure.get_t_infidelity())
 
 
 if __name__ == '__main__':

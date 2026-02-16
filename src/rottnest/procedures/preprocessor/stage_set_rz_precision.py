@@ -7,6 +7,7 @@ from rottnest.plugins import architectures, executables
 from rottnest.procedures import stage
 
 from rottnest.rz_decomposer import get_rz_decomposer
+from rottnest.error_budgets import get_error_budget
 
 from . import stage_rz_count 
 
@@ -40,8 +41,8 @@ class RzPrecisionStage(stage.RottnestCompilerStage):
         rz_counts = environment.get_rz_count()  
 
         # Error budget for rz
-        # TODO load this from an environment stage
-        err = 1e-4
+        budget = get_error_budget()
+        err = budget.get_rz_precision_budget() 
     
         self._prec_rz = int(
             np.ceil(
