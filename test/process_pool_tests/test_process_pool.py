@@ -202,9 +202,8 @@ class ProcessPoolTests(unittest.TestCase):
 
 if __name__ == '__main__':
     obj = ProcessPoolTests()
-    obj.test_ping()
-    obj.test_ping_workers()
-    obj.test_pool_status()
-
+    #obj.test_ping()
+    #obj.test_ping_workers()
     #obj.test_pool_status()
-    #obj.test_process_pool_from_singletons()
+    #obj.test_pool_status()
+    obj.test_process_pool_from_singletons()

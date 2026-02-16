@@ -34,7 +34,6 @@ class IPCManager:
                 break
 
             header, args = self._pipe.get()
-            print("Recv: ", target, header, args)
             if header not in self._msg_queues:
                 self._msg_queues[header] = list() 
 
@@ -90,7 +89,8 @@ class IPCManager:
         if None is not (queue := self._msg_queues.get(target, None)):
             if len(queue) > 0:
                 # Item is enqueued, fetch
-                return queue.pop(0)
+                item = queue.pop(0)
+                return item 
 
         # Queue not populated, attempt to fetch
         return self.fetch(

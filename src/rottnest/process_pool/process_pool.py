@@ -97,9 +97,15 @@ class ComputeUnitExecutorPool(StatusTracked):
 
 
     def get_status(self):
+        '''
+            Getter for the current status of the pool
+        '''
         return self._status
 
     def set_status(self, status):
+        '''
+            Setter for the current status of the pool
+        '''
         self._status = status
 
     def synchronise_options(self):
@@ -288,7 +294,6 @@ class ComputeUnitExecutorPool(StatusTracked):
             commands.SYNCHRONISATION_STATUS,
             blocking = True
         )
-
         return resp
 
 
@@ -324,12 +329,24 @@ class ComputeUnitExecutorPool(StatusTracked):
             Checks the state of the running job
         '''
         self.manager_priority_task_queue.put((commands.POLL,))
-        resp = self.ipc.fetch(
+        print("POLLING POOL")
+        status = self.ipc.get_item(
             commands.POLL,
             blocking=True
         )
+        print("STATUS", status)
         return status 
     
+    def complete(self):
+        '''
+            Checks if a job has finished
+        '''
+        status = self.ipc.fetch(
+            symbols.END_COMPUTATION,
+            blocking=False
+        )
+        return status == symbols.END_COMPUTATION
+
 
     def shutdown(self):
         '''
@@ -391,12 +408,15 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
         # Flush any remaining results
         self.ipc.flush()
-        self.ipc.batch_get(commands.GET_CURRENT_RESULTS)
-        
-        resp = self.ipc.fetch(
+        print("Flush")
+        results = self.ipc.batch_get(commands.GET_CURRENT_RESULTS)
+        if len(results) > 0:
+            return results[-1]
+        resp = self.ipc.get_item(
             commands.GET_CURRENT_RESULTS,
             blocking=True
         )
+        print("Final Results:", resp)
         return resp
 
     #######

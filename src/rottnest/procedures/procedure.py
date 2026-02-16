@@ -106,7 +106,6 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
                     stage.dependencies_resolved(self) 
                     and stage.codependencies_resolved(self)
                     ):
-                    print("Executing: ", stage)
                     stage.execute(self)
                   
                     if stage.is_codependent():
@@ -115,7 +114,6 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
                     if stage.is_asynchronous():
                         # Start and register asynch stage
                         self._current_asynchronous_stages[tag] = stage
-                        print("ASYNCH TAG: ", self.get_tag(), tag)
                         self.__setattr__(tag, stage)
                         continue
  
@@ -154,10 +152,8 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
         dequeue = []
         for tag, stage in self._current_asynchronous_stages.items():
             if stage.complete():
-                print("COMPLETE: ", stage)
                 dequeue.append(stage)
             else: 
-                print(f"Polling: {stage.get_tag()}")
                 stage.poll(self)
                 if stage.complete():
                     dequeue.append(stage)

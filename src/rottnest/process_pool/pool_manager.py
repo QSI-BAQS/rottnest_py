@@ -33,6 +33,8 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         Manages communications with process pool workers
     '''
 
+    TIMEOUT = 5
+
     def __init__(self,
                  manager_task_queue: mp.Queue,
                  manager_completion_queue: mp.Queue,
@@ -147,9 +149,9 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             select.select(
                 self.manager_task_fds,
                 [],
-                []
+                [],
+                self.TIMEOUT
             )
-
             # TODO: Do priority override here
             if not self.manager_priority_task_queue.empty():
                 self.run_priority_task()
@@ -260,6 +262,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             if result is not None:
                 print("Manager: ", task_name, result)
                 completion_queue.put((task_name, result))
+        print("Manager Task Complete")
 
     def run_priority_task(self):
         '''
@@ -275,9 +278,9 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
             Terminate the pool
         '''
+        self._task_stop_workers()
+
         self.manager_running = False
-        self.pool_running = False
-        # TODO, incorporate worker shutdown
         return None
 
     def _task_ping_manager(self, *args):
@@ -292,6 +295,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
            Gets manager status
         '''
         # This should not block
+        print("MANAGER GETTING STATUS:", self.get_status())
         return self.get_status()
 
     def _task_ping(self, *args):
@@ -470,14 +474,15 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         self.send_total()
         self.send_total(symbols.END_COMPUTATION)
 
-        print("Totals:")
-
-
-
-        self.manager_completion_queue.put(symbols.DONE)
+        # Pre-emptive polling
+        self.manager_completion_queue.put((
+            commands.POLL, PoolStatus.FINISHED
+        ))
+        self.set_status(PoolStatus.FINISHED)
 
         print("All Received")
         print("time:", time.time() - self.run_seq_start)
+        return
 
 
     def process_result_elem(self, timeout=None):
@@ -502,7 +507,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             result_obj
         )
 
-        self.manager_completion_queue.put(result_obj)
+        self.manager_completion_queue.put((commands.GET_CURRENT_RESULTS, result_obj))
 
         # TODO: Batch
         self.n_received += 1
@@ -557,7 +562,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
         print("Stack Frame: ", self.composer.stack_frames[0].result.to_args())
         totals = self.composer.stack_frames[0].result.to_args()
-        self.manager_completion_queue.put(totals)
+        self.manager_completion_queue.put((commands.GET_CURRENT_RESULTS, totals))
 
     def _task_get_results(self, *args, **kwargs):
         '''
@@ -597,7 +602,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
         for proc in self.pool:
             proc.terminate()
-            proc.wait()
+            #proc.wait()
 
         self.pool_running = False
 
@@ -705,7 +710,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
         output = deepcopy(self.compute_unit_result_cache[cache_hash])
         output['cache_hash_hex'] = cache_hash.hex()
-        self.manager_completion_queue.put(output)
+        self.manager_completion_queue.put(commands.GET_CURRENT_RESULTS, output)
 
         tock_dict = output.get('tocks', {})
         np_dur = tock_dict.get('bell', 0) + tock_dict.get('t_schedule', 0) + tock_dict.get('bell2', 0)
@@ -779,6 +784,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
                 print("received priority", self.priority_received_count)
                 self.priority_received_count += 1
 
+                print("PRIOR")
                 self.manager_priority_completion_queue.put(result)
             except queue.Empty:
                 break

@@ -26,15 +26,15 @@ class GetResultsPoolStage(stage.RottnestCompilerStage):
             Synchronises and starts the workers
         '''
         pool = get_pool()
-        self._results = pool.get_results()
+        self._results = pool.get_final_results()
 
-    def __call__(self):
+    def __call__(self) -> "ResultsComposer":
         '''
-            Warpper for get_results
+            Wrapper for get_results
         '''
         return self.get_results()
 
-    def get_results(self):
+    def get_results(self) -> "ResultsComposer":
         '''
             Getter for the results object
         '''

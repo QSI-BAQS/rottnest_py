@@ -29,8 +29,9 @@ class RunPoolStage(stage.RottnestCompilerStage):
             Checks if the pool has finished
         '''
         pool = get_pool()
+        status = pool.poll()
         self._complete = (
-            pool.poll() == PoolStatus.FINISHED
+            status == PoolStatus.FINISHED
         )
 
     def complete(self):

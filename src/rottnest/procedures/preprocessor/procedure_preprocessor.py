@@ -3,6 +3,8 @@ from rottnest.procedures import pool, procedure
 from . import stage_set_preproc_architecture
 from . import stage_reset_preproc_architecture
 from . import stage_rz_count
+from . import stage_set_rz_precision
+
 
 
 from rottnest.compute_units.layout_proxy import LayoutProxy
@@ -38,10 +40,16 @@ class PreprocessorProcedure(procedure.RottnestCompilerProcedure):
             dependencies = [reset_arch.get_tag()]
         )
 
+        rz_precision = stage_set_rz_precision.RzPrecisionStage(
+            dependencies = [rz_count.get_tag()]
+        )
+
+
         stages = [
             swap_arch,
             preprocessing_pool,
             reset_arch,
-            rz_count
+            rz_count,
+            rz_precision
         ]
         super().__init__(None, stages=stages, tag=tag, dependencies=dependencies)
