@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from rottnest.server.responder import Result
+from rottnest.server.util.result import Result
 
 class ResultTypeTests(unittest.TestCase):
     '''

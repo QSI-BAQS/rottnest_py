@@ -1,5 +1,7 @@
 from rottnest.server.model import plugin_architecture
-from rottnest.server.responder import responder, Result
+from rottnest.server.responder import responder
+
+from rottnest.server.util.result import Result
 
 @responder.register('get_root_graph')
 def get_root_graph(app, message, **kwargs): 
@@ -7,7 +9,7 @@ def get_root_graph(app, message, **kwargs):
     wsock_sem = app.wsock_sem
     #gobj = message['payload']
     plugin_architecture.get_root_graph(wsock, wsock_sem=wsock_sem)
-    return Result.Alt('debug', 'get_root_graph pending')
+    return Result.Alternate('debug', 'get_root_graph pending')
 
 
 @responder.register('get_graph')

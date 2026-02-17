@@ -5,7 +5,7 @@
 '''
 
 from rottnest.plugins import executables as singleton
-from rottnest.server.responder import Result
+from rottnest.server.util.result import Result
 
 def get_executables() -> Result:
     '''

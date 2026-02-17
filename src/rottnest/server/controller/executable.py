@@ -12,7 +12,9 @@ from rottnest.server.interface_spec.specs.executable_spec import (
 )
 
 from rottnest.server.model import executable as model 
-from rottnest.server.responder import responder, Result
+from rottnest.server.responder import responder
+
+from rottnest.server.util.result import Result
 
 
 class ExecutableInterface(RouteInterface):

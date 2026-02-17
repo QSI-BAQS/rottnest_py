@@ -12,7 +12,9 @@ from rottnest.server.interface_spec.specs.callgraph_spec import (
 ) 
   
 from rottnest.server.model import plugin_architecture
-from rottnest.server.responder import responder, Result
+from rottnest.server.responder import responder
+
+from rottnest.server.util.result import Result
 
 
 class CallGraphInterface(RouteInterface):

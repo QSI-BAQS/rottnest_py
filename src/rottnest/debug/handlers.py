@@ -1,12 +1,38 @@
-import selectors
+import os
 import sys
+import selectors
+
+class SelectorComposite:
+    '''
+       SelectorComposite is used to have an object with
+       pid, file-descriptor and handler function upon event 
+    '''
+    def __init__(self, pid, fileobject, operfn, selector):
+        self.pid = pid
+        self.fileobject = fileobject
+        self.operfn = operfn
+        self.selector = selector
+
+    def as_tup(self):
+        '''
+           Returns the fields as a tuple 
+        '''
+        return (self.pid, self.fileobject, self.operfn, self.selector)
 
 class DebugConsoleHandler:
     '''
         Used as part of stdin interaction
     '''
-    def __init__(self, app=None):
+    def __init__(self, *, app=None, monitor=None):
+        '''
+            Initialisation but also needs to handle the
+            possibility that when forked, the handler could be
+            listening for stdin and likely trigger multiple consumer issues
+        '''
+        
+        self.pid = os.getpid() # Needed for disengaging if hooked with fork
         self.handlers = {}
+        self.monitor = monitor
         self.app = app
         self.stdin = sys.stdin
         self.selector = selectors.DefaultSelector()
@@ -15,8 +41,29 @@ class DebugConsoleHandler:
         # 
         # Make sure you mock `self.stdin` inside your test
         # cases
+
+        selector_data = SelectorComposite(self.pid, sys.stdin, \
+                                      DebugConsoleHandler.stdin_event, \
+                                      self.selector)
+
+        def _event_hook(data, mask):
+            '''
+               Closure constructed to not disrupt too much
+               in the other parts of the codebase 
+            '''
+            sel_data = selector_data
+            (pid, fileobject, operfn, selector) = sel_data.as_tup()
+
+            npid = os.getpid()
+
+            if npid != pid:
+                # Deregister from selector
+                selector.unregister(fileobject)
+            else:
+                return operfn(sel_data.as_tup(), mask)
+        
         if 'pytest' not in sys.modules:
-            self.selector.register(self.stdin, selectors.EVENT_READ, DebugConsoleHandler.stdin_event)
+            self.selector.register(self.stdin, selectors.EVENT_READ, _event_hook)
 
 
     @staticmethod
@@ -38,6 +85,7 @@ class DebugConsoleHandler:
            Sets the application if it is initialised late 
         '''
         self.app = app
+        return self
 
     def get_handler(self, key):
         '''
@@ -61,6 +109,12 @@ class DebugConsoleHandler:
            Gets all the handlers attached 
         '''
         return self.handlers
+
+    def get_monitor(self):
+        '''
+          Gets the monitor, assuming it has been hooked correctly  
+        '''
+        return self.monitor
 
     def selector_interact(self):
         '''

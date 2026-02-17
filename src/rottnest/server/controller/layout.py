@@ -5,7 +5,9 @@ from rottnest.server.interface_spec.route_interface import RouteInterface
 from rottnest.server.interface_spec.specs.layout_spec import MODULE_PREFIX, SET_LAYOUT, RUN_LAYOUT
 
 from rottnest.server.model import layout as model 
-from rottnest.server.responder import responder, Result
+from rottnest.server.responder import responder
+
+from rottnest.server.util.result import Result
 
 
 class LayoutInterface(RouteInterface):

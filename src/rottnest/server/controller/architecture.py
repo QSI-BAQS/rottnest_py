@@ -12,7 +12,7 @@ from rottnest.server.interface_spec.specs.architecture_spec import (
 # from rottnest.server.model import plugin_architecture
 
 from rottnest.server.model import architecture as model 
-from rottnest.server.responder import Result
+from rottnest.server.util.result import Result
 
 class ArchitectureInterface(RouteInterface):
     '''

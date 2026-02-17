@@ -4,55 +4,55 @@ from threading import Semaphore
 
 from rottnest.debug.monitor import DebugMonitor
 from rottnest.server.app.application import RottnestApplication
-from rottnest.server.responder import responder
 
+# TODO: This is marked for removal
 # These are used register routes which are core
-# TODO: We need to revise this component
-from rottnest.server.controller import prgs
-from rottnest.server.controller.arch import meta, callgraph
-from rottnest.server.controller import data
+# from rottnest.server.responder import responder
+# from rottnest.server.controller import prgs
+# from rottnest.server.controller.arch import meta, callgraph
+# from rottnest.server.controller import data
 
 
 from rottnest.server.controller.architecture import ArchitectureInterface
 from rottnest.server.controller.executable import ExecutableInterface
 from rottnest.server.controller_mapper import ControllerMapper
-
+from rottnest.debug.util import with_debug_log
 
 import json
 
-# TODO: Not sure why this is being set here, only for it to be
-# over-ridden and not used?
-# 
-# resp = responder
 
-def register_routes(app):
+@with_debug_log()
+def websocket_register_routes(app):
     
     DebugMonitor.with_obj('Registering routes', __name__)
-    app.route("/websocket", callback=handle_websocket)
+    app.route("/websocket", callback=websocket_handle)
 
-# TODO: Register architecture object
-def handle_websocket():
-
-    DebugMonitor.with_obj('handle_websocket started', __name__)
+@with_debug_log()
+def websocket_construct():
     wsock = request.environ.get('wsgi.websocket')
     wsock_sem = Semaphore()
-    if not wsock:
-        abort(400, 'Expected WebSocket request.')
 
+    if not wsock:
+        abort(400, 'Expected WebScoket request.')
+
+    return (wsock, wsock_sem)
+
+@with_debug_log()
+def websocket_handle():
+    
+    wsock, wsock_sem = websocket_construct()
     
     app = RottnestApplication(wsock, wsock_sem)
-    DebugMonitor.current().get_console().set_app(app)
-    DebugMonitor.with_obj('Assigning a new app context', __name__)
+    DebugMonitor  \
+        .current()\
+        .set_console_context(app)
 
     
-    #socket_binds = responder.fullqual_map()
     socket_binds = ControllerMapper.assemble() \
         .attach(ArchitectureInterface) \
         .attach(ExecutableInterface) \
         .build()
     
-    print('==============')
-    print(ArchitectureInterface)
 
     try:
         while True:
@@ -90,6 +90,7 @@ def handle_websocket():
         pass
         # cu_executor_pool.terminate()
 
+@with_debug_log()
 def websocket_response_callback(ws, message_type):
     def _callback(payload, err=False):
         if not err:
@@ -106,6 +107,7 @@ def websocket_response_callback(ws, message_type):
         ws.send(resp)
     return _callback
 
+@with_debug_log()
 def err(app, message, *args, **kwargs):
     print(str(message))
     return json.dumps({

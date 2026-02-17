@@ -5,7 +5,7 @@
 '''
 
 from rottnest.plugins import architectures as singleton 
-from rottnest.server.responder import Result
+from rottnest.server.util.result import Result
 
 def get_architecture_list() -> list:
     '''
