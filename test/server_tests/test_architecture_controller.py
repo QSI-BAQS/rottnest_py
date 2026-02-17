@@ -50,7 +50,6 @@ class ArchitectureControllerTests(unittest.TestCase):
                                               ArchitectureControllerTests.err_fn)
             # NOTE: Will reserve this for other test objects
             mapobj = mapper_fn(ArchitectureInterface, message)
-
             assert mapper_fn is not None
             assert hasattr(mapper_fn, '__call__')
             assert mapobj is not None
@@ -73,7 +72,7 @@ class ArchitectureControllerTests(unittest.TestCase):
         result = controller_callable(messageobj)
 
         assert result is not None
-        assert isinstance(json.dumps(result), str)
+        assert isinstance(result.serialize(lambda r : json.dumps(r)), str)
 
     def test_mapper_get_all_serialisable(self):
         '''
@@ -82,8 +81,10 @@ class ArchitectureControllerTests(unittest.TestCase):
            serialised 
         '''
         
-        endpoints = map(lambda e : e, ArchitectureControllerTests.ENDPOINT_DATA_MAP.items())
-        ArchitectureControllerTests.endpoint_check(endpoints, [ArchitectureInterface])
+        endpoints = map(lambda e : e, ArchitectureControllerTests.ENDPOINT_DATA_MAP\
+                        .items())
+        ArchitectureControllerTests.endpoint_check(endpoints,
+                                                   [ArchitectureInterface])
         
     
     def test_get_list_and_serialisable(self):
