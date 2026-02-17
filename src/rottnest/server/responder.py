@@ -102,6 +102,12 @@ class Result:
         """
         return self.message
 
+    def serialize(self, serialiser):
+        '''
+            Transforms the object to a dictionary that would
+            allow it to be serialisable. 
+        '''
+        return serialiser(self.obj)
 
 class ResponseValidationException(Exception):
     """
@@ -133,7 +139,7 @@ class Responder:
            Initialises the response map, will allow strings (message kinds)
            to be assigned to functions 
         """
-        self.response_map = {}
+        self.response_map: dict = {}
         self.fullqual_resp_map = {}
         self.full_namespace = cfg['full_namespace']
         self.namespace_mask = cfg['namespace_mask']
@@ -231,10 +237,10 @@ class Responder:
         resp_map = {}
         if not self.full_namespace:
             modmask = self.namespace_mask
-            module_name = module_name.replace(modmask, '')
+            module_name: str = module_name.replace(modmask, '')
 
         if self.convert_dots:
-            module_name = module_name.replace('.', '_')
+            module_name: str = module_name.replace('.', '_')
 
         if not self.namespace_prefix:
             resp_map = self.response_map

@@ -9,7 +9,7 @@ from rottnest.server.interface_spec.specs.architecture_spec import (
     SET_CURRENT_ARCHITECTURE, GET_ARCHITECTURE_CONFIG,
     SET_ARCHITECTURE_CONFIG)
 
-from rottnest.server.model import plugin_architecture
+# from rottnest.server.model import plugin_architecture
 
 from rottnest.server.model import architecture as model 
 from rottnest.server.responder import Result
@@ -39,8 +39,8 @@ class ArchitectureInterface(RouteInterface):
         '''
             Gets the list of architectures
         '''
-        return list(map(lambda a : a,
-                        model.get_architecture_list()))
+        return Result.Ok(list(map(lambda a : a,
+                        model.get_architecture_list())))
 
     @RouteInterface.bind_route(MODULE_PREFIX, GET_CURRENT_ARCHITECTURE)
     @classmethod
@@ -50,9 +50,9 @@ class ArchitectureInterface(RouteInterface):
         '''
         result = model.get_current_architecture()
         if result is None:
-            return ArchitectureInterface.SELECTION_DEFAULT_NONE
+            return Result.Error(ArchitectureInterface.SELECTION_DEFAULT_NONE)
         else:
-            return result
+            return Result.Ok(result)
 
     @RouteInterface.bind_route(MODULE_PREFIX, SET_CURRENT_ARCHITECTURE)
     @classmethod
@@ -74,7 +74,7 @@ class ArchitectureInterface(RouteInterface):
         '''
            Gets an architecture config
         '''
-        return model.get_current_config()
+        return Result.Ok(model.get_current_config())
 
     @RouteInterface.bind_route(MODULE_PREFIX, SET_ARCHITECTURE_CONFIG)
     @classmethod

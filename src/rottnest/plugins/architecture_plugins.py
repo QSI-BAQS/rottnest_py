@@ -23,7 +23,7 @@ class ArchitecturePlugins(PluginManager):
 
         # Preprocessor achitecture is a default in rottnest
         if modules is None:
-            modules = (rottnest,)
+            modules = [rottnest]
         else:
             modules = [rottnest] + modules
 

@@ -4,7 +4,7 @@ import numpy as np
 
 from typing import Iterable
 
-from functools import reduce
+# from functools import reduce
 
 from rottnest.rz_decomposer.angle_to_rational import angle_to_rational
 from rottnest.rz_decomposer.gridsynth import Gridsynth 
@@ -122,7 +122,7 @@ default to a counter in the preprocessing pass
         params = {}
         # Collect parameters from subclasses
         for base in cls.__bases__:
-            print(base, base.get_parameters())
+            # print(base, base.get_parameters())
             if issubclass(base, RottnestExecutable) and base is not object:
                 # Recurse
                 params |= base.get_parameters() 
@@ -184,12 +184,27 @@ default to a counter in the preprocessing pass
         '''
             Number of Rz gates
         '''
+        raise NotImplementedError('Currently not implemented: '
+                                  + self.n_rz.__name__)
+        return 0
 
     def bound_rz(self) -> int:
         '''
             Upper bounds the number of Rz gates
         '''
         return self.n_rz()
+
+    def target_prec_rz(self):
+        '''
+            NOTE: This is being called but it is unknown
+                what this should be 
+            TODO: This method should probably be
+                completed and it looks like it is wanting
+                a count
+        '''
+        raise NotImplementedError('Not currently implemented: '
+                                  + self.target_prec_rz.__name__)
+        return 0
 
     def precision_rz(self) -> int:
         '''
@@ -199,7 +214,8 @@ default to a counter in the preprocessing pass
         '''
         if self._prec_rz is None:
             n_rz = self.bound_rz()
-            self._prec_rz = int(np.ceil(-1 * np.log2(self.target_prec_rz() / n_rz)))
+            self._prec_rz = int(np.ceil(-1 * np.log2( \
+                self.target_prec_rz() / n_rz)))
         return self._prec_rz
 
     def magic_states_supported(self) -> str:
@@ -208,6 +224,18 @@ default to a counter in the preprocessing pass
             Default to 'T', as CCZ can be decomposed
         '''
         return ('T')
+
+    def n_T(self) -> int:
+        '''
+            NOTE: This is being called but it is unknown
+                what this should be 
+            TODO: This method should probably be
+                completed and it looks like it is wanting
+                a count
+        '''
+        raise NotImplementedError('Not currently implemented: '
+                                  + self.n_T.__name__)
+        return 0
 
     def bound_T(self):
         '''
@@ -220,7 +248,7 @@ default to a counter in the preprocessing pass
             Dipatch method for magic state counting
         '''
 
-    def count_t_cirq(self, qc: cirq.Circuit, precision: int = None) -> int:
+    def count_t_cirq(self, qc: cirq.Circuit, precision: int | None = None) -> int:
         '''
             Naive T counting
             :: qc : cirq.Circuit :: Cirq circuit to perform T counting over 
@@ -243,7 +271,7 @@ default to a counter in the preprocessing pass
         return t_count
 
     @staticmethod
-    def count_rz_cirq(qc, precision: int = None):
+    def count_rz_cirq(qc, precision: int | None = None):
         '''
         Counts the number of rz gates in a cirq circuit
         :: qc : cirq.Circuit :: Cirq circuit to perform Rz counting over

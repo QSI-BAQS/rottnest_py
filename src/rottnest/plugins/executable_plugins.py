@@ -7,7 +7,7 @@ from .plugin_manager import PluginManager
 
 from rottnest.rz_decomposer import DEFAULT_PRECISION
 
-class ExecutablePlugins(PluginManager):
+class ExecutablePlugins(PluginManager[RottnestExecutable]):
     '''
        Executable Plugin manager
     '''
@@ -16,11 +16,12 @@ class ExecutablePlugins(PluginManager):
     def __init__(self, modules=None, config_path=None):
         '''
            Creates a new Plugin that can be used by
-           rottnest, this plugin
+           rottnest, this manager that will hold objects
+           that represent executables usable within the system
         '''
 
         if modules is None:
-            modules = tuple()
+            modules = list()
 
         # Load from config
         super().__init__(
@@ -30,13 +31,26 @@ class ExecutablePlugins(PluginManager):
         )
 
     @staticmethod
-    def from_config_or_default(path):
-
+    def from_config_or_default(path) -> 'ExecutablePlugins':
+        '''
+           Loading config or default, gets the executable plugins instance 
+        '''
         modules = []
         plugins = ExecutablePlugins(modules=modules, config_path=path)
         
         return plugins
+
+    @staticmethod
+    def with_modules(modules: list[str]) -> 'ExecutablePlugins':
+        '''
+           Loadable variant which just expects modules to be
+           push into it
+        '''
+        plugins = ExecutablePlugins(modules=modules, config_path=None)
         
+        return plugins
+        
+    
     def get_executable_params(self):
         '''
             Parameters for executable
@@ -52,20 +66,20 @@ class ExecutablePlugins(PluginManager):
             DEFAULT_PRECISION
         )
 
-    def set_executable_params(self, **params):
+    def set_executable_params(self, **params) -> None:
         '''
            Sets executable parameters 
         '''
         self.set_parameters(params)
 
-    def set_executable_params_from_dict(self, params: dict):
+    def set_executable_params_from_dict(self, params: dict) -> None:
         '''
            Sets executable parameters 
            This method only exists to skip unpacking and repacking
         '''
         self.set_parameters(params)
 
-    def __process_default_params(self, params:dict):
+    def __process_default_params(self, params:dict) -> dict:
         '''
             Strips type information from default param dicts
         '''
@@ -76,7 +90,7 @@ class ExecutablePlugins(PluginManager):
 
         return stripped_params
 
-    def get_current_executable(self):
+    def get_current_executable(self) -> RottnestExecutable | None:
         '''
             Getter for the current executable
         '''
@@ -84,29 +98,38 @@ class ExecutablePlugins(PluginManager):
             return None
         return self._current_option(**self.get_executable_params())
 
-    def get_executables(self):
+    def get_executables(self) -> dict:
         '''
             Getter for executable objects
         '''
         return self._options
 
-    def set_current_executable(self, key):
+    def set_current_executable(self, key) -> bool:
         '''
             Setter method for the current executable
             Treats this class as the sole interface for
             passing executable information to the
             front end
+
+            If the current option is not selected, it should return `False`
+            for the caller
         '''
         self._set_current_option(key)
 
-        # Sets default params
-        self.set_executable_params_from_dict(
-            self.__process_default_params(
-                self._current_option.get_parameters()
+        if self._current_option is not None:
+            current_option: RottnestExecutable = self._current_option        
+    
+            # Sets default params
+            self.set_executable_params_from_dict(
+                self.__process_default_params(
+                    current_option.get_parameters()
+                )
             )
-        )
+            return True
+        else:
+            return False
 
-    def get_executable_names(self):
+    def get_executable_names(self) -> list[str]:
         '''
            Retrieves a list of dtos of the executables
            that the front-end can select from.

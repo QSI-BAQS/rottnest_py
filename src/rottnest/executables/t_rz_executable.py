@@ -15,8 +15,8 @@ class T_RZ_RottnestExecutable(RottnestExecutable):
         Useful for smaller circuits, but will not scale well
     '''
 
-    _n_rz = None
-    _n_T = None
+    _n_rz: int | None = None
+    _n_T: int | None = None
     _cache_layer = 1
 
     def n_T(self) -> int:
@@ -27,8 +27,8 @@ class T_RZ_RottnestExecutable(RottnestExecutable):
         '''
         if self._n_T is None:
             qc = self._generate_circuit()
-            self._n_rz = self.count_rz_cirq(qc)
-        return self._n_rz
+            self._n_T = self.count_t_cirq(qc)
+        return self._n_T
 
 
     def n_rz(self) -> int:
@@ -45,13 +45,13 @@ class T_RZ_RottnestExecutable(RottnestExecutable):
         '''
             Collects all hashed operations and injects them into Pandora
         '''
-        if self.pandora:
+        if self._pandora:
             circuit = self._generate_circuit()
             for layer in circuit_decompose_multi(circuit, self._cache_layer):
                 for op in layer:
                     if type(op.gate) in pyliqtr_patcher.hash_function_patchers:
-
                         if not pandora_cache.in_cache(op):
                             hsh = op._rottnest_hash()
+                            # NOTE: This apparently
                             pandora_cache.bind_hash(op)
 

@@ -20,7 +20,10 @@ from rottnest.server.controller_mapper import ControllerMapper
 
 import json
 
-resp = responder
+# TODO: Not sure why this is being set here, only for it to be
+# over-ridden and not used?
+# 
+# resp = responder
 
 def register_routes(app):
     

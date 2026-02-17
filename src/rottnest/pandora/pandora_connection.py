@@ -8,7 +8,7 @@ from rottnest.pandora.pandora_pg import pandora_pg_config_load, pandora_pg_defau
 # (ie. importing the `conn` symbol gets a version corresponding to the
 # AT-IMPORT value, which will most likely still be None)
 # FUTURE: Wrap this so that it can be accessed w/out global and is mediated via a getter
-conn = None
+conn: Pandora | None = None
 
 def load_pandora_connection(config_path=None):
     '''
@@ -27,7 +27,7 @@ def load_pandora_connection(config_path=None):
 
     try:
         conn = Pandora(pandora_config=config, max_time=3600, decomposition_window_size=1000000)
-    except:
+    except BaseException:
         conn = None
         return False
 

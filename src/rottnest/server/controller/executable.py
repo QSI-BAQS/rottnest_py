@@ -29,7 +29,7 @@ class ExecutableInterface(RouteInterface):
             Gets the list of currently loaded executables
             Loads from the singleton instance
         '''
-        return model.get_executables()
+        return Result.Ok(model.get_executables())
 
     @RouteInterface.bind_route(MODULE_PREFIX, GET_EXECUTABLE_CURRENT) 
     @classmethod
@@ -37,7 +37,7 @@ class ExecutableInterface(RouteInterface):
         '''
             Gets the currently loaded executable
         '''
-        return model.get_current_executable()
+        return Result.Ok(model.get_current_executable())
 
     @RouteInterface.bind_route(MODULE_PREFIX, SET_EXECUTABLE_CURRENT) 
     @classmethod
@@ -45,11 +45,11 @@ class ExecutableInterface(RouteInterface):
         '''
             Sets the current executable
         '''
-        return cls.load_and_model_call(
+        return Result.Ok(cls.load_and_model_call(
             message,
             cls.EXECUTABLE_KEY,
             model.set_current_executable
-        )
+        ))
 
     @RouteInterface.bind_route(MODULE_PREFIX, GET_EXECUTABLE_CONFIG) 
     @classmethod
@@ -58,7 +58,7 @@ class ExecutableInterface(RouteInterface):
             Gets the configuration options for the 
              current executable
         '''
-        return model.get_current_config()
+        return Result.Ok(model.get_current_params())
 
     @RouteInterface.bind_route(MODULE_PREFIX, SET_EXECUTABLE_CONFIG) 
     @classmethod
@@ -67,8 +67,8 @@ class ExecutableInterface(RouteInterface):
             Sets the configuration options for the 
              current executable
         '''
-        return cls.load_and_model_call(
+        return Result.Ok(cls.load_and_model_call(
             message,
             cls.EXECUTABLE_CONFIG,
-            model.set_current_config            
-        )
+            model.set_current_params            
+        ))

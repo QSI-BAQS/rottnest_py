@@ -9,7 +9,7 @@ class DebugMonitorMessage:
        and the data associated 
     '''
 
-    def __init__(self, message, kind='', tabsize=4, charcount=56):
+    def __init__(self, message, kind='', tabsize=4, charcount=56, use_decorator=True):
         '''
            message itself along with generating the timestamp 
         '''
@@ -18,7 +18,21 @@ class DebugMonitorMessage:
         self.timestamp = time()
         self.tabsize = tabsize
         self.charcount = charcount
+        self.use_decorator = use_decorator
 
+    def is_using_decorator(self):
+        '''
+           Outlines if the decorator methods are being used
+           for functions and methods 
+        '''
+
+        return self.use_decorator
+
+    def set_use_decorator(self, to_use: bool):
+        '''
+           Simple setter to show if the decorator is being used 
+        '''
+        self.use_decorator = to_use
 
     def fmtstr(self):
 

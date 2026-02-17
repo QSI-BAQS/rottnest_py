@@ -21,16 +21,17 @@ class LayoutInterface(RouteInterface):
         '''
             Gets the list of currently loaded layouts
         '''
-        return cls.load_and_model_call(
+        return Result.Ok(cls.load_and_model_call(
             message,
             cls.SET_LAYOUT_KEY,
             model.set_layout
-        )
+        ))
 
     @RouteInterface.bind_route(MODULE_PREFIX, RUN_LAYOUT) 
     @classmethod
     def run_layout(cls, message, **kwargs) -> Result:
         '''
-            Gets the list of currently loaded layouts
+            Runs the layout that has been designed against a circuit
         '''
+        # TODO: This needs to completed!
         model.run_layout()

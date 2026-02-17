@@ -11,12 +11,12 @@ def get_executables() -> Result:
     '''
         Returns executables from the singleton instance
     '''
-    return singleton.get_executables()
+    return singleton.get_synchronisation_strings()
 
 
 def get_current_executable() -> Result:
     '''
-       Returns the currently loaded executable from the singleton
+        Returns the currently loaded executable from the singleton
         instance
     '''
     return singleton.get_current_executable()
@@ -24,7 +24,9 @@ def get_current_executable() -> Result:
 
 def set_current_executable(name: str) -> Result:
     '''
-       Returns the currently loaded executable from the singleton
+        It sets the executable using a string name
+        
+        Returns the currently loaded executable from the singleton
         instance
     '''
     return singleton.set_current_executable(name)
@@ -42,3 +44,4 @@ def set_current_params(params: dict) -> Result:
         Sets the executable parameters
     '''
     singleton.set_executable_params(**params)
+    return get_current_params()

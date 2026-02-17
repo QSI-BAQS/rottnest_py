@@ -34,7 +34,7 @@ class ControllerBuilder:
         def __class_route_constructor(route_method: classmethod, route_class: type[RouteInterface]):
             def __route_fn_instance(app: RottnestApplication, message: dict, *args, **kwargs):
                 obj = route_method.__func__(route_class, message, **kwargs)
-                serial_data = serialize(obj)
+                serial_data = obj.serialize(serialize)
                 return serial_data
 
             return __route_fn_instance
