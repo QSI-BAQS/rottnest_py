@@ -9,8 +9,6 @@ import unittest
 from rottnest.procedures import preprocessor 
 from rottnest.procedures import stage
 
-#from rottnest.plugins import architectures, executables
-
 from rottnest.test_utils.executable import SampleExecutable 
 
 from rottnest import test_utils
