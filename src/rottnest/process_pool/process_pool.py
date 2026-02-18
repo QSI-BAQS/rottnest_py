@@ -112,45 +112,18 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
             Synchronises from singletons
         '''
+        # Synch architecture
         architecture = architectures.get_current_architecture()
         self.set_architecture_module(architecture.get_name())
 
+        # Synch executable
         executable = executables.get_current_executable()
         self.set_executable(executable.get_name())
 
-        # TODO: Fix this
-        #executable_params = executables.get_executable_params()
-        #self.set_exectuable_params(executable_params)
+        # Synch parameters
+        executable_params = executables.get_executable_params()
+        self.set_executable_params(executable_params)
 
-
-
-    def synch_and_start_from_singletons(self):
-        '''
-            Loads singleton parameters then launches the pool
-        '''
-
-        arch = architectures.get_current_architecture()
-        arch_params = executables.get_current_executable_args()
-
-        executable = executables.get_current_executable()
-        exec_params = executables.get_current_executable_args()
-        layouts = LayoutProxy.get_layouts()
-
-        self.synch_and_start(arch, executable, layouts, executable_params=exec_params)
-
-
-    def synch_and_start(
-        self,
-        architecture: "RottnestArchitecture",
-        executable: "RottnestExecutable",
-        layouts: dict,
-        *,
-        architecture_params: dict = None,
-        executable_params: dict = None,
-        ):
-        '''
-            Wraps the synchronisation and start functions
-        '''
 
     @status_update(
         PoolStatus.STARTING,
