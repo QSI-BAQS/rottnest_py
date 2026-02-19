@@ -2,6 +2,8 @@ from rottnest.procedures import pool, procedure
 
 from . import stage_set_preproc_architecture
 from . import stage_reset_preproc_architecture
+from . import stage_set_preproc_layout
+from . import stage_reset_preproc_layout
 from . import stage_rz_count
 from . import stage_set_rz_precision
 from . import stage_t_count
@@ -21,25 +23,27 @@ class PreprocessorProcedure(procedure.RottnestCompilerProcedure):
 
 
         # TODO: Replace this with dynamic loads
-
-        layout_id = 0
-        memory_bound = 1000
-        layout = {'mem_bound': memory_bound}
-        LayoutProxy.add_layout_with_id(layout_id, layout)
-   
         
         swap_arch = stage_set_preproc_architecture.SetPreprocessingArchitectureStage()
+
+        swap_layout = stage_set_preproc_layout.SetPreprocessingLayoutStage(
+            dependencies = [swap_arch.get_tag()]
+        )
  
         preprocessing_pool = pool.procedure_pool.PoolProcedure(
-            dependencies = [swap_arch.get_tag()],
+            dependencies = [swap_layout.get_tag()],
             asynchronous = True
         )
         reset_arch = stage_reset_preproc_architecture.ResetPreprocessingArchitectureStage(
             dependencies = [preprocessing_pool.get_tag()]
         )
 
-        rz_count = stage_rz_count.RzCountStage(
+        reset_layout = stage_reset_preproc_layout.ResetPreprocessingLayoutStage(
             dependencies = [reset_arch.get_tag()]
+        )
+
+        rz_count = stage_rz_count.RzCountStage(
+            dependencies = [reset_layout.get_tag()]
         )
 
         rz_precision = stage_set_rz_precision.RzPrecisionStage(
@@ -56,8 +60,10 @@ class PreprocessorProcedure(procedure.RottnestCompilerProcedure):
 
         stages = [
             swap_arch,
+            swap_layout,
             preprocessing_pool,
             reset_arch,
+            reset_layout,
             rz_count,
             rz_precision,
             t_count,
