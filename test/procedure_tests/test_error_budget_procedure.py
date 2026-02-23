@@ -5,7 +5,7 @@ from rottnest.plugins import architectures, executables
 
 import unittest
 
-from rottnest.procedures import error_budget 
+#from rottnest.procedures import error_budget 
 
 from rottnest.test_utils.executable import SampleExecutable 
 
@@ -14,7 +14,7 @@ from rottnest.test_utils.plugin_support import add_executable, add_architecture
 
 class ErrorTargetProcedureTest(unittest.TestCase):
 
-
+    # TODO
     def test_asynch(self):
         '''
             Checks that asynch is collected properly

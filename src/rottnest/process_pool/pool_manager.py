@@ -560,7 +560,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
             Asynch sending of totals
         '''
-        print("Stack Frame: ", self.composer.stack_frames[0].result.to_args())
         totals = self.composer.stack_frames[0].result.to_args()
         self.manager_completion_queue.put((commands.GET_CURRENT_RESULTS, totals))
 

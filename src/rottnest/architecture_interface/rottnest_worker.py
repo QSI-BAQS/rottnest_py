@@ -51,7 +51,7 @@ class RottnestWorker(abc.ABC):
         self.worker_tasks = {
             PING: self.ping,
             SET_PRECISION: self.set_precision,
-            EXEC_COMPUTE_UNIT: self.execute_compute_unit,
+            EXEC_COMPUTE_UNIT: self.task_execute_compute_unit,
             EXEC_GRAPH_STATE: self.task_execute_graph_state,
             GET_GRAPH: self.get_graph,
             LOAD_LAYOUT: self.load_layout,
@@ -110,6 +110,7 @@ class RottnestWorker(abc.ABC):
         self.running = True
         while self.running:
             task, *args = task_queue.get()
+            print("WORKER TASK:", task)
             response = self.worker_tasks[task](*args)
             if response is not None:
                 worker_results_queue.put(response)
@@ -185,10 +186,22 @@ class RottnestWorker(abc.ABC):
         '''
         raise NotImplementedError
 
+    def task_execute_compute_unit(
+            self,
+            compute_unit: "ComputeUnit",
+        ) -> dict:
+        '''
+            Simple dispatch wrapper
+        '''
+        unit_id, result = self.execute_compute_unit(
+            compute_unit
+        ) 
+        return unit_id, result.to_args()
+
     def execute_compute_unit(
             self,
             compute_unit: "ComputeUnit",
-        ):
+        ) -> dict:
         '''
             Executes a sequence of instructions
             This performs the graph state compilation
@@ -206,8 +219,7 @@ class RottnestWorker(abc.ABC):
             widget.json(),
             rz_tag_tracker.to_dict()
         )
-
-        return unit_id, result.to_args() 
+        return unit_id, result
 
     def task_execute_graph_state( 
             self,
@@ -215,7 +227,7 @@ class RottnestWorker(abc.ABC):
             layout_id: int,
             widget: "Widget",
             rz_tag_tracker: RzTagTracker
-        ) -> "ResultComposer":
+        ) -> dict:
         '''
             Task wrapper to execute a graph state
             This handles return arguments
@@ -233,7 +245,7 @@ class RottnestWorker(abc.ABC):
             layout_id: int,
             widget: "Widget",
             rz_tag_tracker: RzTagTracker,
-        ):
+        ) -> "ResultComposer":
         '''
             Executes a graph node
             This performs the graph state

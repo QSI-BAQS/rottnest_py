@@ -9,7 +9,13 @@ from rottnest.architecture_interface import rottnest_composer
 RZ_COUNTS = 'rz_counts'
 
 class RzCollectionResultsComposer(rottnest_composer.ResultsComposer):
+    '''
+        Composer for Rz tags
+    '''
     def __init__(self, result_obj=None, n_obj=1, unit_id=None):
+        '''
+            Constructor
+        '''
         if result_obj is None:
             result_obj = dict()
 
@@ -21,6 +27,10 @@ class RzCollectionResultsComposer(rottnest_composer.ResultsComposer):
 
 
     def __add__(self, other):
+        '''
+            Overloaded add operator
+            Performs linear composition of Results
+        '''
         base_obj = dict(self._obj)
 
         for key, value in other._obj.items():
@@ -36,6 +46,9 @@ class RzCollectionResultsComposer(rottnest_composer.ResultsComposer):
         return res
 
     def __iadd__(self, other):
+        '''
+            Iadd using add
+        '''
         self._unit_ids += other._unit_ids
         self._n_obj += other._n_obj
 

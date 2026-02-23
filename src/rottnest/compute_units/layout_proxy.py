@@ -63,6 +63,29 @@ class LayoutProxy:
         return cls.saved_layouts.items()
 
     @classmethod
+    def flush(cls):
+        '''
+            Flushes all saved layouts
+            Returns the layouts
+        '''
+        layouts = cls.saved_layouts
+
+        cls.curr_layout_id = 0
+        cls.saved_layouts = {}
+        cls.saved_proxies = {} 
+        return layouts
+
+
+    @classmethod
+    def reload_layouts(cls, layouts): 
+        '''
+            Reloads a collection of layouts
+        '''
+        for idx, layout in layouts.items():
+            cls.add_layout_with_id(idx, layout) 
+        return
+
+    @classmethod
     def get_layout(cls, layout_id) -> dict:
         return cls.saved_layouts.get(layout_id, None)
 

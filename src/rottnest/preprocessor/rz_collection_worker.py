@@ -36,7 +36,9 @@ class RzCollectionWorker(RottnestWorker):
         '''
             For an rz collector, execution is just counting rz by tag
         '''
-        rz_counter = RzCollectionResultsComposer(unit_id=compute_unit.unit_id)
+        rz_counter = RzCollectionResultsComposer(
+            unit_id=compute_unit.unit_id
+        )
         rz_tracker = compute_unit.extract_rz_tracker()
         for seq in compute_unit.sequences:
             for op in seq:
@@ -45,7 +47,7 @@ class RzCollectionWorker(RottnestWorker):
                     rz_counter.tally(
                         rz_tracker[op.rz.tag]
                     )
-        return compute_unit.unit_id, rz_counter.to_args()
+        return compute_unit.unit_id, rz_counter
 
     def set_precision(self, precision):
         '''
