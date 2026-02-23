@@ -3,8 +3,20 @@
     Abstract base class for a compiler stage
 '''
 import abc
+from typing import Protocol
 
-def stage_tag(stage: object):
+class StageInterface(Protocol):
+    
+    TAG: str
+
+
+    def get_tag(self):
+        '''
+            Retrieves the tag held by the stage_tag object
+        '''
+        ...
+
+def stage_tag(stage: StageInterface):
     '''
         Helper method that maps stage objects to tags
     '''
@@ -34,7 +46,7 @@ def stage_tag(stage: object):
         raise Exception(f"{stage} is not a tagged objedt")
 
 
-class RottnestCompilerStage(abc.ABC):
+class RottnestCompilerStage(abc.ABC, StageInterface):
     '''
         RottnestCompilerStage
         Interface for compiler stages
@@ -48,21 +60,25 @@ class RottnestCompilerStage(abc.ABC):
     def __init__(
         self,
         *,
-        tag: str = None,
-        dependencies: list[str | type] = None,
-        co_dependencies: list[str | type] = None,
+        tag: str | None = None,
+        dependencies: list[str | type] | None = None,
+        co_dependencies: list[str | type] | None = None,
         asynchronous: bool = False
     ): 
         '''
-Constructor for a stage
-:: tag : str :: Tag for this object 
-  defaults to None, in which case it collects
-  the name of the parent class
-:: dependencies : list[str | type] :: Tags on which
-  this stage depends 
-::: codependencies : list[str | type :: Tags which should be running 
-  simultaneously to this stage. Co-dependencies may not be circular
-:: asynchronous : bool :: Does this stage execute asynchronously
+        Constructor for a stage
+
+        :: tag : str :: Tag for this object 
+            defaults to None, in which case it collects
+            the name of the parent class
+
+        :: dependencies : list[str | type] :: Tags on which
+            this stage depends 
+
+        :: codependencies : list[str | type :: Tags which should be running 
+            simultaneously to this stage. Co-dependencies may not be circular
+
+        :: asynchronous : bool :: Does this stage execute asynchronously
         '''
         
         # Default to whatever is passed in
@@ -82,11 +98,11 @@ Constructor for a stage
         self._dependencies = dependencies 
         self._co_dependencies = co_dependencies 
 
-        self._complete = False
+        self._complete: bool = False
 
         self._asynchronous = asynchronous
 
-    def get_tag(self) -> str:
+    def get_tag(self) -> str | None:
         '''
             Getter for the stage tag
         '''
@@ -117,9 +133,10 @@ Constructor for a stage
         return len(self._co_dependencies) > 0 
 
 
+    # NOTE: I'm assuming CompilerPass is meant to be CompilerStage?
     def dependencies_resolved(
         self,
-        compiler_environment: "RottnestCompilerPass"
+        compiler_environment: type["RottnestCompilerStage"] 
     ) -> bool:
         '''
             Checks that the environment has resolved 
@@ -134,19 +151,30 @@ Constructor for a stage
 
     def codependencies_resolved(
         self,
-        compiler_environment: "RottnestCompilerPass"
+        compiler_environment: "RottnestCompilerStage"
     ):
-        for co_depdendency in self.get_co_dependencies():
+        for co_dependency in self.get_co_dependencies():
             if not compiler_environment.current_asynchronous_stages(
                 co_dependency 
             ): 
                 return False
         return True
 
-    @abc.abstractclassmethod
+
+    def current_asynchronous_stages(self, tag): 
+        '''
+            As part of procedure requiring this method, itself calling inside
+            the codependencies_resolved component should result in an error
+            if not implemented
+        '''
+        return NotImplementedError 
+
+    # NOTE: Ty - Recommended method instead of deprecated abstractclass method
+    @classmethod
+    @abc.abstractmethod
     def execute(
         self,
-        compiler_environment: "RottnestCompilerPass"
+        compiler_environment: "RottnestCompilerStage"
     ):
         '''
             Per-stage abstract execution method
@@ -160,7 +188,8 @@ Constructor for a stage
             Function to singal that the stage is complete
             This is used in particular for asynch methods
         '''
-        if self._complete():
+        # NOTE: I'm assuming this is meant to be a literal?
+        if self._complete:
             self.finalise() 
         return self._complete
 
@@ -169,6 +198,7 @@ Constructor for a stage
             Helper function called before complete returned
             This performs any last lingering tasks that need to be cleared
         '''
+        pass
 
     def poll(self):
         '''
@@ -176,9 +206,10 @@ Constructor for a stage
         '''
         pass
 
-    def is_asynchronous(self):
-        '''
-            Asynch getter
-        '''
-        return self._asynchronous
+    # NOTE: This was a redefinition, it didn't make sense to redefine
+    # def is_asynchronous(self):
+    #     '''
+    #         Asynch getter
+    #     '''
+    #     return self._asynchronous
 

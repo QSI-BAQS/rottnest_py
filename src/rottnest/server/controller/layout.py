@@ -5,7 +5,6 @@ from rottnest.server.interface_spec.route_interface import RouteInterface
 from rottnest.server.interface_spec.specs.layout_spec import MODULE_PREFIX, SET_LAYOUT, RUN_LAYOUT
 
 from rottnest.server.model import layout as model 
-from rottnest.server.responder import responder
 
 from rottnest.server.util.result import Result
 
@@ -16,6 +15,7 @@ class LayoutInterface(RouteInterface):
     '''
 
     SET_LAYOUT_KEY = 'layout'
+    RUN_LAYOUT_KEY = 'layout_id'
    
     @RouteInterface.bind_route(MODULE_PREFIX, SET_LAYOUT) 
     @classmethod
@@ -34,6 +34,11 @@ class LayoutInterface(RouteInterface):
     def run_layout(cls, message, **kwargs) -> Result:
         '''
             Runs the layout that has been designed against a circuit
+
+            Given a particular id retrieved from the 
         '''
-        # TODO: This needs to completed!
-        model.run_layout()
+        return Result.Ok(cls.load_and_model_call(
+            message,
+            cls.RUN_LAYOUT_KEY,
+            model.run_layout                     
+        ))

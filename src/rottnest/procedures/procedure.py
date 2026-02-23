@@ -3,7 +3,8 @@
     Eventually these will be exposed to the front 
      end via some interface
 '''
-from .stage import RottnestCompilerStage, stage_tag
+# NOTE: Commented out stage_tag, it was being redefined and unsued...?
+from .stage import RottnestCompilerStage #,stage_tag
 from . import exceptions
 
 class RottnestCompilerProcedure(RottnestCompilerStage):
@@ -19,9 +20,9 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
         executable,
         stages: list['RottnestCompilerStage'],
         *,
-        tag = None,
-        dependencies: list[str | type] = None,
-        co_dependencies: list[str | type] = None,
+        tag: str | None = None,
+        dependencies: list[str | type] | None = None,
+        co_dependencies: list[str | type] | None = None,
         asynchronous = False
         ):
         
@@ -32,10 +33,10 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
         self._current_codepenent_stages = dict() 
 
         for stage in stages:
-            stage_tag = stage.get_tag()
-            if stage_tag in self._stages:
+            stagetag = stage.get_tag() #NOTE: stage_tag in imports vs local?
+            if stagetag in self._stages:
                 raise exceptions.DuplicateStageTagError(tag)
-            self._stages[stage_tag] = stage 
+            self._stages[stagetag] = stage 
 
         # Check that dependencies are valid
         valid_dependencies, err = self.validate_dependencies()
@@ -62,7 +63,7 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
             compiler_environment = None,
             reporting=True,
             single_pass=False
-        ) -> bool: 
+        ) -> bool | None: 
         '''
             Executes the stages
             Raises an exception if the dependencies
@@ -109,7 +110,8 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
                     stage.execute(self)
                   
                     if stage.is_codependent():
-                        self._current_codependent_stages[tag] = stage
+                        # NOTE: Ty - This was named incorrectly
+                        self._current_codepenent_stages[tag] = stage
  
                     if stage.is_asynchronous():
                         # Start and register asynch stage
@@ -182,7 +184,7 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
         '''
         return tag in self._current_asynchronous_stages 
 
-    def validate_dependencies(self) -> bool:
+    def validate_dependencies(self) -> tuple[bool, object | None]:
         '''
             Checks if all dependencies have a pattern that resolves them
         '''
