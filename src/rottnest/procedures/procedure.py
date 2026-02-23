@@ -3,7 +3,6 @@
     Eventually these will be exposed to the front 
      end via some interface
 '''
-# NOTE: Commented out stage_tag, it was being redefined and unsued...?
 from .stage import RottnestCompilerStage #,stage_tag
 from . import exceptions
 
@@ -33,7 +32,7 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
         self._current_codepenent_stages = dict() 
 
         for stage in stages:
-            stagetag = stage.get_tag() #NOTE: stage_tag in imports vs local?
+            stagetag = stage.get_tag()
             if stagetag in self._stages:
                 raise exceptions.DuplicateStageTagError(tag)
             self._stages[stagetag] = stage 
@@ -110,7 +109,6 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
                     stage.execute(self)
                   
                     if stage.is_codependent():
-                        # NOTE: Ty - This was named incorrectly
                         self._current_codepenent_stages[tag] = stage
  
                     if stage.is_asynchronous():

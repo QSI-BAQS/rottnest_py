@@ -133,7 +133,6 @@ class RottnestCompilerStage(abc.ABC, StageInterface):
         return len(self._co_dependencies) > 0 
 
 
-    # NOTE: I'm assuming CompilerPass is meant to be CompilerStage?
     def dependencies_resolved(
         self,
         compiler_environment: type["RottnestCompilerStage"] 
@@ -169,7 +168,6 @@ class RottnestCompilerStage(abc.ABC, StageInterface):
         '''
         return NotImplementedError 
 
-    # NOTE: Ty - Recommended method instead of deprecated abstractclass method
     @classmethod
     @abc.abstractmethod
     def execute(
@@ -188,7 +186,6 @@ class RottnestCompilerStage(abc.ABC, StageInterface):
             Function to singal that the stage is complete
             This is used in particular for asynch methods
         '''
-        # NOTE: I'm assuming this is meant to be a literal?
         if self._complete:
             self.finalise() 
         return self._complete
@@ -206,7 +203,6 @@ class RottnestCompilerStage(abc.ABC, StageInterface):
         '''
         pass
 
-    # NOTE: This was a redefinition, it didn't make sense to redefine
     # def is_asynchronous(self):
     #     '''
     #         Asynch getter
