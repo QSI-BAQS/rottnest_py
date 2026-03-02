@@ -5,16 +5,11 @@ from threading import Semaphore
 from rottnest.debug.monitor import DebugMonitor
 from rottnest.server.app.application import RottnestApplication
 
-# TODO: This is marked for removal
-# These are used register routes which are core
-# from rottnest.server.responder import responder
-# from rottnest.server.controller import prgs
-# from rottnest.server.controller.arch import meta, callgraph
-# from rottnest.server.controller import data
-
-
 from rottnest.server.controller.architecture import ArchitectureInterface
 from rottnest.server.controller.executable import ExecutableInterface
+from rottnest.server.controller.callgraph import CallGraphInterface
+from rottnest.server.controller.layout import LayoutInterface
+from rottnest.server.controller.data import RunResultDataInterface
 from rottnest.server.controller_mapper import ControllerMapper
 from rottnest.debug.util import with_debug_log
 
@@ -51,44 +46,66 @@ def websocket_handle():
     socket_binds = ControllerMapper.assemble() \
         .attach(ArchitectureInterface) \
         .attach(ExecutableInterface) \
+        .attach(LayoutInterface) \
+        .attach(CallGraphInterface) \
+        .attach(RunResultDataInterface) \
         .build()
-    
 
     try:
         while True:
-
             DebugMonitor.with_obj('Listening and waiting for messages', __name__)
             try:
                 message_raw = wsock.receive()
-                if message_raw is None:
-                    continue
-                DebugMonitor.with_obj(message_raw, __name__)
-                message = json.loads(message_raw)
-                # Expect: {'message': <cmd here>, 'payload': 
-                # <arguments here>}
+                success, message = websocket_message_deserialize(message_raw)
 
-                # cmd_func = socket_binds.get(message['message'], err)
-                cmd_func = socket_binds.get(message['message'], err)
-                DebugMonitor.with_obj(cmd_func, 'SocketHandler::cmd_func')
-                print("Dispatch", cmd_func)
-                DebugMonitor.with_obj(message, 'Dispatch')
+                if success:
+                    websocket_dispatch_handle(wsock, wsock_sem, \
+                                              app, message, \
+                                              socket_binds)
 
-                resp = cmd_func(app, message,
-                                callback=websocket_response_callback(
-                                    wsock, message.get('message', 'err')))
-
-                with wsock_sem:
-                    wsock.send(resp)
-            except WebSocketError:
+            except WebSocketError as wse:
+                DebugMonitor.dump(wse.format_exc())
                 break
             except Exception as e:
                 import traceback
                 traceback.print_exc()
+                DebugMonitor.dump(traceback.format_exc())
                 wsock.send(json.dumps({'message': 'err', 
                                        'desc': f"{e}"}))
     finally:
         pass
         # cu_executor_pool.terminate()
+
+@with_debug_log()
+def websocket_message_deserialize(message_raw) -> tuple[bool, dict]:
+    '''
+        Wraps the deserialisation of the messages received 
+    '''
+    message = dict()
+    
+    if message_raw is None: # Early return if the message is empty
+        return (False, {})
+
+    try:
+        message = json.loads(message_raw)
+    except json.JSONDecodeError as jde:
+        DebugMonitor.dump(jde.msg)
+        return (False, {})
+    return (True, message)
+
+
+@with_debug_log()
+def websocket_dispatch_handle(wsock, wsock_sem, app, message, socket_binds):
+    '''
+       Handling of the websocket when a message is received 
+    '''
+    cmd_func = socket_binds.get(message['message'], err)
+    resp = cmd_func(app, message,
+                    callback=websocket_response_callback(
+                        wsock, message.get('message', 'err')))
+    with wsock_sem:
+        wsock.send(resp)
+
 
 @with_debug_log()
 def websocket_response_callback(ws, message_type):

@@ -81,11 +81,14 @@ class DebugMonitor:
     '''
 
     def __init__(self, use_stdin=True, stdout_output=True, to_file=None,\
-                  use_decorator=True):
+                  use_decorator=True, error_filepath: str | None =None):
         '''
            Initialises the debug monitor to ensure we can
            interaction and retrieve the log or dump it to a file 
         '''
+        self.error_filepath: str = f"debug_error-{time()}.log" \
+            if error_filepath is None else error_filepath
+
         self.use_stdin = use_stdin
         self.stdout_output = stdout_output
         self.to_file = to_file
@@ -98,7 +101,7 @@ class DebugMonitor:
         
 
     @staticmethod
-    def current():
+    def current() -> 'DebugMonitor':
         '''
            Gets the global singleton instance 
         '''
@@ -144,6 +147,25 @@ class DebugMonitor:
             Enable the global debug monitor
         '''
         __debug_monitor.disaled = False
+
+    @staticmethod
+    def dump(message: str):
+        '''
+           Static method version of the dump_error,
+           Ends up calling the singleton instance 
+        '''
+        inst = DebugMonitor.current()
+        inst.dump_error(message)
+
+    def dump_error(self, message: str):
+        '''
+           Will dump an error log to the file
+           This is a buffered operation but will call flush/close
+           after write is called 
+        '''
+        with open(self.error_filepath, 'a') as f:
+            f.write(f"{time()}{message}\n")
+            
 
     def set_console_context(self, app):
         '''

@@ -1,9 +1,15 @@
 """
     Rottnest application class
 """
-
 from rottnest.server.app.app_config import ApplicationConfig, AppExtensions
 from rottnest.debug.monitor import DebugMonitor
+
+class RottnestApplicationUnavailableException(BaseException):
+
+    UnavailableMessage = "Unable to retrieve instance when no object has been made"
+    
+    def __init__(self, message=UnavailableMessage):
+        super().__init__(message)
 
 class RottnestApplication:
     """
@@ -11,6 +17,9 @@ class RottnestApplication:
         Acts as a simple map 
         To have more concrete information provided later
     """
+
+    _appinstance: type['RottnestApplication'] | None = None
+    
     def __init__(
             self,
             wsock,
@@ -30,6 +39,22 @@ class RottnestApplication:
         self.app_extensions = AppExtensions()
         apploader.load_and_attach(self.app_extensions)
         DebugMonitor.current().get_console().set_app(self)
+
+        if RottnestApplication._appinstance is None:
+            RottnestApplication._appinstance = self
+        
+        
+
+    @classmethod
+    def get_instance(cls):
+        '''
+            Retrieves a singleton instance from this object
+            Will throw an exception if the object has not been instantiated before
+        '''
+        if cls._appinstance is None:
+            raise RottnestApplicationUnavailableException()
+        else:
+            return cls._appinstance
 
     def get_websocket(self):
         '''
