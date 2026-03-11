@@ -15,9 +15,7 @@ from rottnest import test_utils
 from rottnest.test_utils.plugin_support import add_executable, add_architecture
 
 
-
 class PreprocessorProcedureTest(unittest.TestCase):
-
 
     def test_full_run(self):
 
@@ -25,7 +23,6 @@ class PreprocessorProcedureTest(unittest.TestCase):
         executables.set_current_executable(
             SampleExecutable.get_name() 
         )
-
 
         procedure = preprocessor.PreprocessorProcedure()
         procedure.execute()
