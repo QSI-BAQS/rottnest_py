@@ -91,6 +91,7 @@ class PyliqtrParser:
     cirq_decomposing_targets = frozenset((
         cirq.ControlledGate,
         qualtran.bloqs.mcmt.and_bloq.And,
+        cirq.CCXPowGate,
     ))
 
     '''
@@ -163,14 +164,20 @@ class PyliqtrParser:
             parser = PyliqtrParser(tmp, op=gate, cache=self._caching)
             if rottnest_hash is not None:
                 parser.rottnest_hash = rottnest_hash
-                non_participatory = len(
+
+                non_participatory = (
                     self.circuit.all_qubits().difference(tmp.all_qubits())
                 )
+
+                participatory = (
+                    tmp.all_qubits()
+                )
+
                 yield CACHED(
                     rottnest_hash,
                     request_type=CACHED.START,
                     op=gate,
-                    non_participatory_qubits=non_participatory
+                    non_participatory_qubits=len(non_participatory)
                 )
 
                 op = parser.op
