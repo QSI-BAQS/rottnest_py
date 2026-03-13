@@ -71,17 +71,19 @@ class RottnestWorker(abc.ABC):
             self,
             task_queue: mp.Queue,
             worker_results_queue: mp.Queue,
+            worker_comms_queue: mp.Queue,
             ):
         '''
             Dispatch method for the main worker loop
         '''
-        return self.main(task_queue, worker_results_queue)
+        return self.main(task_queue, worker_results_queue, worker_comms_queue)
 
     @classmethod
     def entrypoint(
             cls,
             task_queue: mp.Queue,
             worker_results_queue: mp.Queue,
+            worker_comms_queue: mp.Queue,
             layouts=None,
             rz_precision=DEFAULT_PRECISION,
             priority=False,
@@ -100,17 +102,23 @@ class RottnestWorker(abc.ABC):
             debug=debug
         )
 
-        worker(task_queue, worker_results_queue)
+        worker(task_queue, worker_results_queue, worker_comms_queue)
 
-    def main(self, task_queue: mp.Queue, worker_results_queue: mp.Queue):
+    def main(self, task_queue: mp.Queue, worker_results_queue: mp.Queue, comms_queue):
         '''
             Worker loop - queries
         '''
         print("Worker started:", mp.current_process().name, flush=True)
         self.running = True
         while self.running:
-            task, *args = task_queue.get()
-            print("WORKER TASK:", task)
+
+            if not comms_queue.empty():
+                queue = comms_queue
+            elif not task_queue.empty():
+                queue = task_queue
+            else:
+                continue
+            task, *args = queue.get()
             response = self.worker_tasks[task](*args)
             if response is not None:
                 worker_results_queue.put(response)
