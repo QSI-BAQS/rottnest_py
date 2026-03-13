@@ -26,3 +26,9 @@ def get_rz_precision():
         Simple getter for the precision, without loading the decomposer outside of the context
     '''
     return get_rz_decomposer().get_precision()
+
+def set_rz_precision(precision):
+    '''
+    '''
+    decomp = get_rz_decomposer()
+    decomp.set_precision(precision)

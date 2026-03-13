@@ -73,6 +73,7 @@ class Gridsynth(rz_decomposer.RzDecomposer):
 
         approx_angle = Decimal(p) / Decimal(q)
         if abs(approx_angle) % self.DEC_Z < self.precision_decimal:
+
             return []
 
         if abs(self.DEC_S - (approx_angle % self.DEC_Z)) < self.precision_decimal:
