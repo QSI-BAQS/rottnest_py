@@ -50,17 +50,16 @@ class TCountStage(stage.RottnestCompilerStage):
 
         # Precision as a float
         precision = 2 ** (-1 * precision_bits)
-
         # Count the T states in the table
         t_count = 0
         for angle, count in rz_counts.items():
 
             # Convert the angle 
-            numerator, denominator = angle_to_rational(angle, precision=precision)
+            numerator, denominator = angle_to_rational(angle, precision=precision_bits)
 
             # Construct the sequence
-            seq = decomposer.z_theta_instruction(numerator, denominator)
-
+            seq = decomposer.z_theta_instruction(numerator, denominator, precision=precision_bits)
+            
             # Count T gates
             t_count += count * sum(
                 (1 for i in seq if i == 'T')
