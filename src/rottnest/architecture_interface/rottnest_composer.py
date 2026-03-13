@@ -132,12 +132,14 @@ class RottnestComposer(abc.ABC):
         # Memory management
         for cu_id in compute_unit_ids:
             compute_unit = self._compute_units[cu_id]
+    
+            self.memory_manager.idle(id(stack_frame), result_composer.get_tocks())
             self.memory_manager.store(id(stack_frame), self._compute_units[cu_id].get_qubit_labels().keys())
             self._compute_units.pop(cu_id)
 
     def cache_entry_start(self, cache_obj):
         '''
-            Creates a new stack frame
+            managerCreates a new stack frame
         '''
         # Store all qubits to create clean cache context
 
@@ -149,7 +151,6 @@ class RottnestComposer(abc.ABC):
         # Example only
         qubit_map = {}
 
-        print("QUBIT MAP", input_qubits)
         #qubit_map = {self.stack_frames[-1].qubit_map[qubit] for qubit in input_qubits}
         #self.mem_load(input_qubits)
 
@@ -163,7 +164,7 @@ class RottnestComposer(abc.ABC):
 
         # Prev Frame
         prev_frame = self.stack_frames[-1]
-        prev_frame.non_participatory_qubits += cache_obj.non_participatory_qubits
+        #prev_frame.non_participatory_qubits += cache_obj.non_participatory_qubits
 
         # Stack frame goes on the bottom
         self.stack_frames.append(stack_frame)
@@ -198,8 +199,14 @@ class RottnestComposer(abc.ABC):
             mem_cost = self.memory_manager.frame_delete(id(old_frame), [])
 
             # Compose costs from memory unit with the frame
+
             old_frame.parallel_compose(mem_cost)
             self.stack_frames[-1].compose_stack_frames(old_frame)
+            # Idle the memory manager's next stack frame
+            self.memory_manager.idle(
+                id(self.stack_frames[-1]),
+                old_frame.get_tocks()
+            )
 
 
     def all_submitted(self):
@@ -317,10 +324,6 @@ class ComposerStackFrame:
         # Number of qubits
         self.n_qubits_in_frame = len(qubit_map)
 
-        # Qubits that are not passed to a called function
-        self.non_participatory_qubits = 0
-        self.idle_volume = 0
-
         # Frames that depend on this frame
         self.parent_frames = set()
 
@@ -385,7 +388,8 @@ class ComposerStackFrame:
         '''
             Adds idle volume to this stack frame
         '''
-        self.idle_volume = n_cycles * self.non_participatory_qubits
+        #self.idle_volume = n_cycles * self.non_participatory_qubits
+        #self.memory_unit.idle(n_cycles)
 
     def get_tocks(self):
         '''
@@ -476,7 +480,7 @@ class MemoryManager:
         '''
         return self.ResultsComposer()
 
-    def idle(self, n_cycles: int) -> "ResultsComposer":
+    def idle(self, frame_id: int, n_cycles: int) -> "ResultsComposer":
         '''
             Costs idling for n cycles
         '''
