@@ -6,14 +6,12 @@
 
 '''
 import abc
-from collections import defaultdict
 
 from typing import Type
-from types import GeneratorType
 
-from itertools import cycle
 
 from rottnest.compute_units.layout_proxy import LayoutProxy
+# from rottnest.architecture_interface.rottnest_composer import ResultsComposer
 
 class RottnestComposer(abc.ABC):
     '''
@@ -131,10 +129,12 @@ class RottnestComposer(abc.ABC):
         # Store all qubits to create clean cache context
         self.memory_manager.store_all()
 
-        operation = cache_obj.op
+        # TODO: Not completed?
+        # operation = cache_obj.op
 
         # Get qubits that are pulled
-        input_qubits = operation.qubits
+        # TODO: Not completed?
+        # input_qubits = operation.qubits
 
         # Example only
         qubit_map = {}
@@ -164,11 +164,12 @@ class RottnestComposer(abc.ABC):
             called unless all compute units for the stack frame are
             compiled
         '''
+        # NOTE: Work around for the meantime
         if self.stack_frames[-1].cache_hash() != cache_obj.cache_hash():
             raise Exception(
                 "Received unmatched cache_end in stream",
                 cache_obj.cache_hash(),
-                self.cache_hash_stack
+                self.cache_hash_stack # ty: ignore NOTE: This appears unresolved?
             )
 
         # Remove frame from stack
@@ -226,7 +227,7 @@ class RottnestComposer(abc.ABC):
             Generator over get next layout
             Used by the sequencer
         '''
-        while None != (layout := self.get_next_layout()):
+        while None is not (layout := self.get_next_layout()):
             yield layout
 
     def hook_compute_unit(self, compute_unit):
@@ -443,10 +444,11 @@ class MemoryManager:
         '''
         return self.ResultsComposer()
 
-    def idle(self, n_cycles: int) -> "ResultsComposer":
+    def idle(self, n_cycles: int):
         '''
             Costs idling for n cycles
         '''
+        return None
 
 
 class ResultsComposer:
@@ -471,7 +473,7 @@ class ResultsComposer:
 
     def __init__(
         self,
-        result_obj: dict = None,
+        result_obj: dict | None = None,
         n_obj = 1,
         unit_id = None,
         end_computation = False
@@ -533,7 +535,7 @@ class ResultsComposer:
             contained within another
         '''
         tmp_ids = self._unit_ids
-        tmp_recv = self._n_obj
+        # tmp_recv = self._n_obj # NOTE: Does not appear to be used?
 
         self.__iadd__(other)
         self._unit_ids = tmp_ids

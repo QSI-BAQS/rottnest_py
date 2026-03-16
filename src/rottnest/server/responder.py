@@ -3,7 +3,6 @@
     Responder object
     Handles communication with the websocket
 '''
-
 from rottnest.server.util.result import Result
 import inspect
 import json
@@ -176,7 +175,7 @@ class Responder:
         self.response_map[fullname] = respfn
         self.fullqual_resp_map[fullname] = respfn
 
-    def retrive_with_fullqual(self, mapkey):
+    def retrieve_with_fullqual(self, mapkey):
         """
             Uses the fullqualified name to retrieve the
             response function

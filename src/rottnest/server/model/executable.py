@@ -7,19 +7,29 @@
 from rottnest.plugins import executables as singleton
 from rottnest.server.util.result import Result
 
-def get_executables() -> Result:
+def get_executables() -> tuple[dict, list]:
     '''
         Returns executables from the singleton instance
     '''
-    return singleton.get_synchronisation_strings()
+    return (get_current_executable(), singleton.get_executable_names())
 
 
-def get_current_executable() -> Result:
+def get_current_executable() -> dict:
     '''
         Returns the currently loaded executable from the singleton
         instance
     '''
-    return singleton.get_current_executable()
+    exec_data = singleton.get_current_executable()
+    # kv[0]    - Name
+    # kv[1][0] - Type
+    # kv[1][1] - Argument 
+    exec_params = list(map(lambda kv: [kv[0], kv[1][0].__name__, kv[1][1]],\
+                           exec_data.get_parameters().items()))
+    exec_dict = {
+        "name": exec_data.get_name(),
+        "parameters": exec_params
+    }
+    return exec_dict
 
 
 def set_current_executable(name: str) -> Result:

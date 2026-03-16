@@ -1,7 +1,7 @@
 '''
     This interface handles the architecture controllers
 '''
-
+from rottnest.architecture_interface.rottnest_architecture import RottnestArchitecture
 from rottnest.server.interface_spec.route_interface import RouteInterface
 from rottnest.server.interface_spec.specs.architecture_spec import (
     MODULE_PREFIX,
@@ -39,8 +39,16 @@ class ArchitectureInterface(RouteInterface):
         '''
             Gets the list of architectures
         '''
-        return Result.Ok(list(map(lambda a : a,
-                        model.get_architecture_list())))
+        # NOTE: Send the current and list of architectures
+        
+        current, arch_list = model.get_architecture_list()        
+        if current is not None:
+            current = current.designer.get_designer_metadata()
+        res = list(map(lambda a : a, arch_list))
+        return Result.Ok({
+                             "current_architecture" : current,
+                             "architectures": res
+                         })
 
     @RouteInterface.bind_route(MODULE_PREFIX, GET_CURRENT_ARCHITECTURE)
     @classmethod
@@ -48,11 +56,11 @@ class ArchitectureInterface(RouteInterface):
         '''
            Gets the current architecture -> Returns a string
         '''
-        result = model.get_current_architecture()
+        result: RottnestArchitecture = model.get_current_architecture()
         if result is None:
             return Result.Error(ArchitectureInterface.SELECTION_DEFAULT_NONE)
         else:
-            return Result.Ok(result)
+            return Result.Ok(result.designer.get_designer_metadata())
 
     @RouteInterface.bind_route(MODULE_PREFIX, SET_CURRENT_ARCHITECTURE)
     @classmethod
@@ -60,7 +68,6 @@ class ArchitectureInterface(RouteInterface):
         '''
            Sets the current architecture
         '''
-        # NOTE: Possibly to send back data from this method
         cls.load_and_model_call(
             message,
             cls.ARCHITECTURE_KEY,

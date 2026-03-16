@@ -243,9 +243,9 @@ class RottnestWorker(abc.ABC):
             self,
             unit_id: int,
             layout_id: int,
-            widget: "Widget",
-            rz_tag_tracker: RzTagTracker,
-        ) -> "ResultComposer":
+            widget_json,
+            rz_tag_tracker,
+        ):
         '''
             Executes a graph node
             This performs the graph state

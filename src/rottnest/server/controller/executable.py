@@ -12,7 +12,6 @@ from rottnest.server.interface_spec.specs.executable_spec import (
 )
 
 from rottnest.server.model import executable as model 
-from rottnest.server.responder import responder
 
 from rottnest.server.util.result import Result
 
@@ -31,7 +30,12 @@ class ExecutableInterface(RouteInterface):
             Gets the list of currently loaded executables
             Loads from the singleton instance
         '''
-        return Result.Ok(model.get_executables())
+        current, exec_list = model.get_executables()            
+        return Result.Ok({
+                             "current_executable" : current,
+                             "executables": exec_list
+                         })
+        
 
     @RouteInterface.bind_route(MODULE_PREFIX, GET_EXECUTABLE_CURRENT) 
     @classmethod
@@ -47,11 +51,12 @@ class ExecutableInterface(RouteInterface):
         '''
             Sets the current executable
         '''
-        return Result.Ok(cls.load_and_model_call(
+        cls.load_and_model_call(
             message,
             cls.EXECUTABLE_KEY,
             model.set_current_executable
-        ))
+        )
+        return Result.Ok(model.get_current_executable())
 
     @RouteInterface.bind_route(MODULE_PREFIX, GET_EXECUTABLE_CONFIG) 
     @classmethod

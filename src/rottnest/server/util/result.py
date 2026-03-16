@@ -1,4 +1,3 @@
-import json
 from typing import Callable
 
 class Result:
@@ -138,3 +137,14 @@ class Result:
         return serialiser(self.obj)
 
 
+    def serialize_with_tags(self, tagkvs, object_tag, serialiser):
+        '''
+           Introduces tags that can be used within the component here
+           It will be associated with the object 
+        '''
+        msgdict = {}
+        for key, val in tagkvs:
+            msgdict[key] = val
+
+        msgdict[object_tag] = self.obj
+        return serialiser(msgdict)

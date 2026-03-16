@@ -56,7 +56,6 @@ def program_load_list(app, message, **kwargs):
     for k, e in prgmap.get_executables().items():
 
         newparams = list(map(lambda f: (f[0], str(f[1][0].__name__), f[1][1]), e.get_parameters().items()))
-        print(newparams)
         obj = {
             'prgname': k,
             'prgparams': newparams
@@ -104,8 +103,6 @@ def program_set(app, message, **kwargs):
     
     prgmap = app.get_extensions().get_exe_map()
 
-    print(prg_name)
-    print(prg_args)
     prgmap.set_current_executable(prg_name)
 
     nprg_args = {}

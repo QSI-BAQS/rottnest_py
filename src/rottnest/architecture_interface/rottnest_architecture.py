@@ -21,7 +21,7 @@ class RottnestArchitecture(abc.ABC):
     '''
 
     @staticmethod
-    def get_name(self) -> str:
+    def get_name() -> str:
         '''
             Gets the name of the architecture object
             This will be used as a key for a selector
@@ -36,7 +36,7 @@ class RottnestArchitecture(abc.ABC):
         widgets and emit serialisable objects that 
         composers may ingest  
         '''
-        return cls.worker.entrypoint 
+        return cls.worker.entrypoint  # ty: ignore NOTE: Appears to be unresolved
 
     @staticmethod
     def worker(*args, **kwargs) -> Type["RottnestWorker"]:

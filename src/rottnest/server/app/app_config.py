@@ -1,10 +1,11 @@
 from rottnest.server.responder import responder
 
-
+import os
 # from rottnest.debug.monitor import DebugMonitor
 
 ARCHITECTURE_REGISTRY_CFG = 'architectures'
 PROGRAM_REGISTRY_CFG = 'executables'
+RESPONDER_REF = 'responder_ref'
 
 class AppExtensions:
     '''
@@ -54,12 +55,9 @@ class AppComponentLoader:
 
         
         getter_name = 'get_{}'.format(self.attr_name)
-        
         if ref_obj is not None:
             setattr(target, self.attr_name, ref_obj)
             setattr(target, getter_name, getter_fn)
-        # else:
-        #     DebugMonitor.with_obj('Unable to load component', 'AppComponentLoader')
 
 class ApplicationConfig:
     '''
@@ -117,6 +115,13 @@ class ApplicationConfig:
                                arch_plugin_loader
                                
                            )
+        ).add_loader(
+            AppComponentLoader(
+                               RESPONDER_REF,
+                               'responder_ref',
+                               lambda p: responder
+                               
+                           )
         )
 
 def exec_plugin_loader(pth: str):
@@ -142,6 +147,7 @@ def arch_plugin_loader(pth: str):
     '''
 
     from rottnest.plugins import architectures
+
     for key, arch in architectures.get_architectures().items():
         desobj = arch.designer.get_designer_data()
         apimap = desobj['api']
@@ -152,7 +158,6 @@ def arch_plugin_loader(pth: str):
             sk, sr = sp
             fullname = f"{mask}.{sk}"
             sfn = sr
-            print(key, mask, fullname)
             responder.register_directly(fullname, sfn)
         
     return architectures

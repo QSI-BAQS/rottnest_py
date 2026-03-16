@@ -138,8 +138,8 @@ class PluginManager(typing.Generic[T]):
             superclass
         '''
         options = self._load_options_from_config(filepath)
-        if options is not dict:
-            return FileNotFoundError
+        if options is None:
+            raise FileNotFoundError
         else:
             self._options |= options
         return None
@@ -198,7 +198,8 @@ class PluginManager(typing.Generic[T]):
                 *modules
             )
             return module_objects
-        except FileNotFoundError:
+        except FileNotFoundError as fe:
+            print(str(fe))
             return FileNotFoundError
 
     @staticmethod
@@ -252,8 +253,8 @@ class PluginManager(typing.Generic[T]):
                 )
                 self._modules.add(module)
                 continue  
-            except BaseException:
-                pass
+            except Exception as e:
+                print(str(e))
 
             # Attempt to treat it as a file path
             try:
@@ -265,8 +266,8 @@ class PluginManager(typing.Generic[T]):
                 if module not in self._file_paths:
                     self._modules.add(module)
                     self._file_paths[module] = entry
-            except BaseException:
-                pass
+            except Exception as e:
+                print(str(e))
 
         # Force reload
         self.load_options_from_modules()
@@ -349,6 +350,6 @@ def _load_default_config(conf_name, plugin_obj):
         if os.path.isfile(config_path):
             try:
                 plugin_obj.load_options_from_config(config_path)
-            except BaseException:
-                pass
+            except Exception as e:
+                print(str(e))
 

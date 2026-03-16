@@ -59,7 +59,7 @@ class RouteInterfaceSpecification:
         self._responder = responder
 
         bindings = self.collect_route_bindings(cons)
-        self.bind_routes(responder, bindings)
+        # self.bind_routes(responder, bindings)
 
     def collect_route_bindings(self, cons) -> dict: 
         '''

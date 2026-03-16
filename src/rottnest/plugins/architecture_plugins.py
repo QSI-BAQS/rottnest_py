@@ -53,7 +53,7 @@ class ArchitecturePlugins(PluginManager):
         '''
             Getter for architecture objects
         '''
-        return self._options        
+        return self._options
 
     def set_current_architecture(self, key):
         '''

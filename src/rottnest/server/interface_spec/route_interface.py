@@ -27,7 +27,7 @@ class Routes(type):
         '''
         # Prepend module
         route = f"{cls._rottnest_prefix}.{module_prefix}.{route}"
-        print(route)
+        # print(route)
         if cls._routes.get(route, None) is not None: 
             raise DuplicateRouteException(interface=cls, route=route)
         cls._routes[route] = fn

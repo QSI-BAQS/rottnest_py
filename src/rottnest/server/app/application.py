@@ -38,6 +38,7 @@ class RottnestApplication:
         self.app_state_map = {}
         self.app_extensions = AppExtensions()
         apploader.load_and_attach(self.app_extensions)
+        DebugMonitor.current().set_console_context(self)
         DebugMonitor.current().get_console().set_app(self)
 
         if RottnestApplication._appinstance is None:
@@ -67,6 +68,13 @@ class RottnestApplication:
            Sets the websocket connection 
         '''
         self.wsock = wsock
+
+    def get_responder_ref(self):
+        exts = self.get_extensions()
+        if exts.get_responder_ref is not None:
+            return exts.get_responder_ref()
+        else:
+            return None
 
     def get_extensions(self):
         '''

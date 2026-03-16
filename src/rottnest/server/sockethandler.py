@@ -36,14 +36,9 @@ def websocket_construct():
 def websocket_handle():
     
     wsock, wsock_sem = websocket_construct()
-    
     app = RottnestApplication(wsock, wsock_sem)
-    DebugMonitor  \
-        .current()\
-        .set_console_context(app)
 
-    
-    socket_binds = ControllerMapper.assemble() \
+    socket_binds = ControllerMapper.assemble(app.get_responder_ref()) \
         .attach(ArchitectureInterface) \
         .attach(ExecutableInterface) \
         .attach(LayoutInterface) \
@@ -53,7 +48,6 @@ def websocket_handle():
 
     try:
         while True:
-            DebugMonitor.with_obj('Listening and waiting for messages', __name__)
             try:
                 message_raw = wsock.receive()
                 success, message = websocket_message_deserialize(message_raw)
@@ -64,7 +58,7 @@ def websocket_handle():
                                               socket_binds)
 
             except WebSocketError as wse:
-                DebugMonitor.dump(wse.format_exc())
+                DebugMonitor.dump(str(wse))
                 break
             except Exception as e:
                 import traceback
@@ -95,11 +89,11 @@ def websocket_message_deserialize(message_raw) -> tuple[bool, dict]:
 
 
 @with_debug_log()
-def websocket_dispatch_handle(wsock, wsock_sem, app, message, socket_binds):
+def websocket_dispatch_handle(wsock, wsock_sem, app, message, cntrlmapper):
     '''
        Handling of the websocket when a message is received 
     '''
-    cmd_func = socket_binds.get(message['message'], err)
+    cmd_func = cntrlmapper.get(message['message'], err)
     resp = cmd_func(app, message,
                     callback=websocket_response_callback(
                         wsock, message.get('message', 'err')))
@@ -120,13 +114,13 @@ def websocket_response_callback(ws, message_type):
                 'message': 'err',
                 'payload': payload
             })
-        print("In callback: ", end='')
+        # print("In callback: ", end='')
         ws.send(resp)
     return _callback
 
 @with_debug_log()
 def err(app, message, *args, **kwargs):
-    print(str(message))
+    # print(str(message))
     return json.dumps({
         'message': 'err',
         'desc': f"Error: {message['message']} not recognised"
