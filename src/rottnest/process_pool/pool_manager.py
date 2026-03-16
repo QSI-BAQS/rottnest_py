@@ -11,6 +11,7 @@ from rottnest.config import REPORT_INTERVAL, RESULT_INTERVAL
 from rottnest.architecture_interface import rottnest_worker
 
 from rottnest.rz_decomposer.rz_decomposer import DEFAULT_PRECISION
+from rottnest.rz_decomposer import set_rz_precision, get_rz_precision
 
 from rottnest.compute_units.compilation_producers import generate_compute_units
 
@@ -76,6 +77,13 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         self.worker_task_queue = self.ctx.Queue(
             maxsize = 4 * N_PROCESSES
         )
+
+        # For per-worker comms
+        self.worker_comms_queue = [self.ctx.Queue(
+                maxsize = 4
+            )
+            for _ in range(N_PROCESSES + 1)
+        ]
         self.worker_result_queue = self.ctx.Queue()
 
         # Entrypoints
@@ -212,6 +220,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             args=(
                 self.priority_task_queue,
                 self.priority_result_queue,
+                self.worker_comms_queue[-1],
                 layouts,
                 self._rz_precision
                 ),
@@ -224,6 +233,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
                         args=(
                             self.worker_task_queue,
                             self.worker_result_queue,
+                            self.worker_comms_queue[i],
                             layouts
                         ),
                         daemon=True)
@@ -251,7 +261,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             completion_queue = self.manager_completion_queue
 
         task_name, *args = task_queue.get()
-        print("Running: ", task_name, args)
         task = self._tasks.get(task_name, None)
         if task is None:
             raise Exception(f"Unknown task: {task_name}")
@@ -260,9 +269,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             # If a response occurs, pass it back
             # Prepend the name of the task
             if result is not None:
-                print("Manager: ", task_name, result)
                 completion_queue.put((task_name, result))
-        print("Manager Task Complete")
 
     def run_priority_task(self):
         '''
@@ -295,7 +302,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
            Gets manager status
         '''
         # This should not block
-        print("MANAGER GETTING STATUS:", self.get_status())
         return self.get_status()
 
     def _task_ping(self, *args):
@@ -350,12 +356,20 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
 
 
-
     def _task_set_precision(self, *args):
         '''
             Sets the precision of the manager
         '''
+        print("PRECISION SET: ", args[0])
         self._precision = args[0]
+        set_rz_precision(self._precision)
+
+    def synchronise_rz_precision(self):
+        '''
+            Synchronise precision on workers
+        '''
+        for queue in self.worker_comms_queue:
+            queue.put((rottnest_worker.SET_PRECISION, self._precision))
 
     def _task_set_executable_params(self, *args):
         params = args[0]
@@ -423,6 +437,9 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         self.n_received = 0
         self.n_error = 0
 
+        # Synchronise precision with workers
+        self.synchronise_rz_precision()
+
         self.compute_unit_counts = defaultdict(int)
         self.compute_unit_totals = defaultdict(int)
 
@@ -474,6 +491,10 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         self.send_total()
         self.send_total(symbols.END_COMPUTATION)
 
+        print("TOTAL: ", self.composer.stack_frames[0].result.to_args())
+
+        #print("Width: ", self.composer.memory_manager.stack_frames[0].width, )
+
         # Pre-emptive polling
         self.manager_completion_queue.put((
             commands.POLL, PoolStatus.FINISHED
@@ -490,7 +511,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         Blocking read from worker_result_queue and
             process result
         '''
-        print("Processing result")
+        #print("Processing result")
         #obj = self.worker_result_queue.get(
         #    timeout=timeout
         #)
@@ -498,7 +519,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         unit_id, result = self.worker_result_queue.get(
             timeout=timeout
         )
-        print('Result:', unit_id, str(result), type(result))
+        #print('Result:', unit_id, str(result), type(result))
 
         result_obj = self.composer.compose_result(unit_id, result)
 

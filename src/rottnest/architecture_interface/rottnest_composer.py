@@ -78,6 +78,7 @@ class RottnestComposer(abc.ABC):
 
         # Maps active ids to stack frames
         self.active_compute_units = {}
+        self._compute_units = {}
         self._all_submitted = False
 
 
@@ -106,14 +107,18 @@ class RottnestComposer(abc.ABC):
         '''
         stack_frame = self.hook_compute_unit(compute_unit)
         stack_frame.submit(compute_unit)
+        self.memory_manager.load(id(stack_frame), compute_unit.get_qubit_labels().keys())
+
+        # Hook this one for later
+        self._compute_units[compute_unit.unit_id] = compute_unit
 
     def receive(self, result_composer: "ResultsComposer"):
         '''
             Receiving a result from a compilation
         '''
-        if result_composer.end_computation():
+        #if result_composer.end_computation():
         #    # TODO set pending remaining compute units
-            return
+        #    return
 
         #result = self.ResultsComposer(result)
         compute_unit_ids = result_composer.get_compute_unit_ids()
@@ -122,12 +127,19 @@ class RottnestComposer(abc.ABC):
         stack_frame = self.unhook_compute_unit(compute_unit_ids[0])
         stack_frame.receive(result_composer)
 
+        # Memory management
+        for cu_id in compute_unit_ids:
+            compute_unit = self._compute_units[cu_id]
+    
+            self.memory_manager.idle(id(stack_frame), result_composer.get_tocks())
+            self.memory_manager.store(id(stack_frame), self._compute_units[cu_id].get_qubit_labels().keys())
+            self._compute_units.pop(cu_id)
+
     def cache_entry_start(self, cache_obj):
         '''
-            Creates a new stack frame
+            managerCreates a new stack frame
         '''
         # Store all qubits to create clean cache context
-        self.memory_manager.store_all()
 
         # TODO: Not completed?
         # operation = cache_obj.op
@@ -138,6 +150,7 @@ class RottnestComposer(abc.ABC):
 
         # Example only
         qubit_map = {}
+
         #qubit_map = {self.stack_frames[-1].qubit_map[qubit] for qubit in input_qubits}
         #self.mem_load(input_qubits)
 
@@ -147,10 +160,11 @@ class RottnestComposer(abc.ABC):
             self.ResultsComposer,
             qubit_map=qubit_map
         )
+        self.memory_manager.frame_create(id(stack_frame), input_qubits)
 
         # Prev Frame
         prev_frame = self.stack_frames[-1]
-        prev_frame.non_participatory_qubits += cache_obj.non_participatory_qubits
+        #prev_frame.non_participatory_qubits += cache_obj.non_participatory_qubits
 
         # Stack frame goes on the bottom
         self.stack_frames.append(stack_frame)
@@ -182,7 +196,19 @@ class RottnestComposer(abc.ABC):
             self.stack_frames[-1].register_cache_deference(old_frame)
         else:
             # Compose into caller
+            # TODO: Get labels 
+            mem_cost = self.memory_manager.frame_delete(id(old_frame), [])
+
+            # Compose costs from memory unit with the frame
+
+            old_frame.parallel_compose(mem_cost)
             self.stack_frames[-1].compose_stack_frames(old_frame)
+            # Idle the memory manager's next stack frame
+            self.memory_manager.idle(
+                id(self.stack_frames[-1]),
+                old_frame.get_tocks()
+            )
+
 
     def all_submitted(self):
         '''
@@ -299,10 +325,6 @@ class ComposerStackFrame:
         # Number of qubits
         self.n_qubits_in_frame = len(qubit_map)
 
-        # Qubits that are not passed to a called function
-        self.non_participatory_qubits = 0
-        self.idle_volume = 0
-
         # Frames that depend on this frame
         self.parent_frames = set()
 
@@ -334,7 +356,6 @@ class ComposerStackFrame:
         if self.complete():
             self.complete_parent_deferences()
 
-
     def register_cache_deference(self, child_frame):
         '''
             Registers a deferred frame with a parent
@@ -342,12 +363,19 @@ class ComposerStackFrame:
         self.deferred_frames[child_frame] = self.deferred_frames.get(child_frame, 0) + 1
         child_frame.parent_frames.add(self)
 
-
     def cache_hash(self):
         return self.rottnest_hash
 
     def get_result(self):
         return self.result
+
+
+    def parallel_compose(self, other: "Result"):
+        '''
+            Composes memory results
+            This differs from stack frame composition
+        '''
+        self.get_result().parallel_compose(other)
 
     def compose_stack_frames(self, other: "ComposerStackFrame"):
         '''
@@ -361,7 +389,8 @@ class ComposerStackFrame:
         '''
             Adds idle volume to this stack frame
         '''
-        self.idle_volume = n_cycles * self.non_participatory_qubits
+        #self.idle_volume = n_cycles * self.non_participatory_qubits
+        #self.memory_unit.idle(n_cycles)
 
     def get_tocks(self):
         '''
@@ -379,7 +408,7 @@ class ComposerStackFrame:
 
     def receive(self, result):
         '''
-            Compute units received that are part of this stack frame
+            Compute units received that are part of this stack fram
         '''
         self.result += result
         self.n_received += result.get_n_compute_units()
@@ -415,6 +444,7 @@ class MemoryManager:
 
         The initial empty construction is identical to an arbitrary
         connectivity between an arbitrary number of devices
+        this is not the best model for minimising qubit counts
 
         Idling costs are accounted by the stack frame management
         To restrict the hypothetical number of
@@ -426,29 +456,36 @@ class MemoryManager:
         '''
         self.ResultsComposer = results_composer_constructor
 
-    def load_operation(self, indices: list):
+    def frame_create(self, frame_id: int, labels: list):
         '''
-            Costs loading memory
+            Costs memory movement to create a frame context 
         '''
         return self.ResultsComposer()
 
-    def store_all(self):
+    def frame_delete(self, frame_id: int, labels: list):
         '''
-            Stores all qubits
+            Frame context finished
+            The labels passed should be preserved, the rest may be dropped
         '''
-        pass
+        return self.ResultsComposer()
 
-    def store_operation(self, indices: list):
+    def store(self, frame_id: int, labels: list):
+        '''
+            Costs storing memory 
+        '''
+        return self.ResultsComposer()
+
+    def load(self, frame_id: int, labels: list):
         '''
             Costs storing memory
         '''
         return self.ResultsComposer()
 
-    def idle(self, n_cycles: int):
+    def idle(self, frame_id: int, n_cycles: int) -> "ResultsComposer":
         '''
             Costs idling for n cycles
         '''
-        return None
+        return self.ResultsComposer()
 
 
 class ResultsComposer:
@@ -469,6 +506,7 @@ class ResultsComposer:
     '''
 
     # A useful symbol
+    # TODO Check if this is used
     END_COMPUTATION = 'END_COMPUTATION'
 
     def __init__(
@@ -540,6 +578,14 @@ class ResultsComposer:
         self.__iadd__(other)
         self._unit_ids = tmp_ids
         self._n_obj = other._n_obj
+
+    def parallel_compose(self, other):
+        '''
+            Composition of operation in parallel
+            Useful for memory unit operations
+        '''
+        pass
+        
 
     def get_n_compute_units(self):
         '''

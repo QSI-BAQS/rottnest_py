@@ -17,6 +17,8 @@ from rottnest.compute_units.layout_proxy import LayoutProxy
 
 from rottnest.plugins import architectures, executables
 
+from rottnest.rz_decomposer import get_rz_precision
+
 from .status_decorator import status_update, StatusTracked  
 from .pool_manager import ComputeUnitExecutorPoolManager
 
@@ -156,8 +158,7 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
         self.synchronise_modules_and_layouts()
         self.synchronise_options()
-        # TODO:
-        # self.synchronise_precision
+        self.synchronise_precision()
 
     def synchronise_modules_and_layouts(self):
         '''
@@ -185,12 +186,11 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
             Synchronises the Rz precision with the queue 
         '''
-        prec = executables.get_precision()
-
+        precision = get_rz_precision()
         self.manager_task_queue.put(
             (
                 commands.SET_PRECISION,
-                prec
+                precision
             )
         )
         return
@@ -255,7 +255,6 @@ class ComputeUnitExecutorPool(StatusTracked):
                 executable
             )
         )
-        self.synchronise_precision()
 
     def get_synchronisation_status(self) -> dict:
         '''
@@ -302,12 +301,10 @@ class ComputeUnitExecutorPool(StatusTracked):
             Checks the state of the running job
         '''
         self.manager_priority_task_queue.put((commands.POLL,))
-        print("POLLING POOL")
         status = self.ipc.get_item(
             commands.POLL,
             blocking=True
         )
-        print("STATUS", status)
         return status 
     
     def complete(self):

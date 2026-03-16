@@ -8,6 +8,9 @@ from rottnest.compute_units.sequencer import Sequencer
 from rottnest.compute_units.layout_proxy import LayoutProxy 
 from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
 
+from rottnest.rz_decomposer import get_rz_precision
+
+
 def compile_from_modules(layout, compile_from_graph=True):
     '''
         Assumes that all params and module loads have occurred
@@ -46,7 +49,9 @@ def compile(
 
     for layout_id, layout in zip(layout_ids, layouts):
         worker.load_layout(layout_id, layout)
-    worker.set_precision(executable.get_rz_precision())
+
+
+    worker.set_precision(get_rz_precision())
 
     parser = PyliqtrParser(executable())
 
@@ -107,7 +112,7 @@ def process_elem_obj(
         # Register compute unit with composer
 
         # Compile using the widget
-        res = worker.execute_graph_state(
+        unit_id, res = worker.task_execute_graph_state(
             compute_unit.unit_id,
             compute_unit.layout_id,
             widget_json,
@@ -115,13 +120,14 @@ def process_elem_obj(
         )
     else:
         # Compile from the sequence in the compute unit
-        res = worker.execute_compute_unit(compute_unit)
+        unit_id, res = worker.task_execute_compute_unit(compute_unit)
 
     # Unregister
     # This makes more sense when using the process pool
+    result_obj = composer.compose_result(unit_id, res)
+
     composer.receive(
-        compute_unit.unit_id,
-        res
+        result_obj
     )
 
 def compile_from_sequences(

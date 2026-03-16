@@ -105,6 +105,12 @@ class ComputeUnit():
         widget.decompose()
         return widget
 
+    def get_qubit_labels(self):
+        '''
+            Returns the qubit labels
+        '''
+        return self._qubit_labels
+
     def export(self):
         return {
             'n_inputs': self.n_inputs,
