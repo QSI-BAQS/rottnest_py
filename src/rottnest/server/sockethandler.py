@@ -28,7 +28,7 @@ def websocket_construct():
     wsock_sem = Semaphore()
 
     if not wsock:
-        abort(400, 'Expected WebScoket request.')
+        abort(400, 'Expected WebSocket request.')
 
     return (wsock, wsock_sem)
 
@@ -45,6 +45,7 @@ def websocket_handle():
         .attach(CallGraphInterface) \
         .attach(RunResultDataInterface) \
         .build()
+
 
     try:
         while True:
@@ -70,6 +71,11 @@ def websocket_handle():
         pass
         # cu_executor_pool.terminate()
 
+@with_debug_log()
+def websocket_send_message(app):
+
+
+    
 @with_debug_log()
 def websocket_message_deserialize(message_raw) -> tuple[bool, dict]:
     '''
@@ -114,7 +120,6 @@ def websocket_response_callback(ws, message_type):
                 'message': 'err',
                 'payload': payload
             })
-        # print("In callback: ", end='')
         ws.send(resp)
     return _callback
 
