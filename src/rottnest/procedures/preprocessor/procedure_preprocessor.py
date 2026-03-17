@@ -9,8 +9,6 @@ from . import stage_set_rz_precision
 from . import stage_t_count
 from . import stage_t_fidelity
 
-
-
 from rottnest.compute_units.layout_proxy import LayoutProxy
 
 STAGE_TAG = 'preprocessor_procedure'

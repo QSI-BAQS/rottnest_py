@@ -15,7 +15,9 @@ class LayoutInterface(RouteInterface):
     '''
 
     SET_LAYOUT_KEY = 'layout'
-    RUN_LAYOUT_KEY = 'layout_id'
+    # RUN_LAYOUT_KEY = 'layout_id' # TODO: Revert this afterward id management
+                                   #       has been implemented
+    RUN_LAYOUT_KEY = 'layout'
    
     @RouteInterface.bind_route(MODULE_PREFIX, SET_LAYOUT) 
     @classmethod

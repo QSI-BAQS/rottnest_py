@@ -144,11 +144,11 @@ class RottnestComposer(abc.ABC):
         # Store all qubits to create clean cache context
 
         # TODO: Not completed?
-        # operation = cache_obj.op
+        operation = cache_obj.op
 
         # Get qubits that are pulled
         # TODO: Not completed?
-        # input_qubits = operation.qubits
+        input_qubits = operation.qubits
 
         # Example only
         qubit_map = {}
