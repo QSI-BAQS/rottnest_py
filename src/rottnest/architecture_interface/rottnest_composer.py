@@ -68,7 +68,8 @@ class RottnestComposer(abc.ABC):
             self.StackFrame(
                 RottnestComposer.__START,
                 self.ResultsComposer,
-                qubit_map={}
+                qubit_map={},
+                memory_manager=self.memory_manager
             )
         ]
 
@@ -92,7 +93,8 @@ class RottnestComposer(abc.ABC):
         self.stack_frames[0] = self.StackFrame(
             RottnestComposer.__START,
             self.ResultsComposer,
-            qubit_map={}
+            qubit_map={},
+            memory_manager=self.memory_manager
         )
         self._all_submitted = False
 
@@ -107,7 +109,7 @@ class RottnestComposer(abc.ABC):
         '''
         stack_frame = self.hook_compute_unit(compute_unit)
         stack_frame.submit(compute_unit)
-        self.memory_manager.load(id(stack_frame), compute_unit.get_qubit_labels().keys())
+        self.memory_manager.load(stack_frame.get_id(), compute_unit.get_qubit_labels().keys())
 
         # Hook this one for later
         self._compute_units[compute_unit.unit_id] = compute_unit
@@ -131,8 +133,8 @@ class RottnestComposer(abc.ABC):
         for cu_id in compute_unit_ids:
             compute_unit = self._compute_units[cu_id]
     
-            self.memory_manager.idle(id(stack_frame), result_composer.get_tocks())
-            self.memory_manager.store(id(stack_frame), self._compute_units[cu_id].get_qubit_labels().keys())
+            self.memory_manager.idle(stack_frame.get_id(), result_composer.get_tocks())
+            self.memory_manager.store(stack_frame.get_id(), self._compute_units[cu_id].get_qubit_labels().keys())
             self._compute_units.pop(cu_id)
 
     def cache_entry_start(self, cache_obj):
@@ -158,9 +160,10 @@ class RottnestComposer(abc.ABC):
         stack_frame = self.StackFrame(
             cache_obj.cache_hash(),
             self.ResultsComposer,
-            qubit_map=qubit_map
+            qubit_map=qubit_map,
+            memory_manager=self.memory_manager
         )
-        self.memory_manager.frame_create(id(stack_frame), input_qubits)
+        self.memory_manager.frame_create(stack_frame.get_id(), input_qubits)
 
         # Prev Frame
         prev_frame = self.stack_frames[-1]
@@ -197,7 +200,7 @@ class RottnestComposer(abc.ABC):
         else:
             # Compose into caller
             # TODO: Get labels 
-            mem_cost = self.memory_manager.frame_delete(id(old_frame), [])
+            mem_cost = self.memory_manager.frame_delete(old_frame.get_id(), [])
 
             # Compose costs from memory unit with the frame
 
@@ -205,7 +208,7 @@ class RottnestComposer(abc.ABC):
             self.stack_frames[-1].compose_stack_frames(old_frame)
             # Idle the memory manager's next stack frame
             self.memory_manager.idle(
-                id(self.stack_frames[-1]),
+                self.stack_frames[-1].get_id(),
                 old_frame.get_tocks()
             )
 
@@ -235,6 +238,12 @@ class RottnestComposer(abc.ABC):
             This just pulls the top level stack frame
         '''
         return RottnestComposer.result_cache[RottnestComposer.__START].get_result()
+
+    def get_logical_patches(self):
+        '''
+            Get number of logical patches needed
+        '''
+        return self.memory_manager.logical_patches()
 
     def get_next_layout(self) -> int | object:
         '''
@@ -301,18 +310,26 @@ class ComposerStackFrame:
     '''
         Stack frame instance for the composer
     '''
+    CTR = 0
+
     def __init__(self,
             rottnest_hash,
             results_composer_constructor: Type,
             qubit_map: dict,
-
+            memory_manager
         ):
 
         # Tracks current qubits
         self.qubit_map = qubit_map
 
+        self._id = ComposerStackFrame.CTR
+        ComposerStackFrame.CTR += 1 
+
         self.rottnest_hash = rottnest_hash
         self.ResultsComposer = results_composer_constructor
+        
+        self.memory_manager = memory_manager
+
 
         self.result = self.ResultsComposer()
 
@@ -331,6 +348,11 @@ class ComposerStackFrame:
         # A map frame -> n for the frames this frame depends on
         self.deferred_frames = dict()
 
+    def get_id(self):
+        '''
+            Simple unique ID system
+        '''
+        return self._id
 
     def complete_parent_deferences(self):
         '''
@@ -350,8 +372,27 @@ class ComposerStackFrame:
         if frame not in self.deferred_frames:
             raise Exception(f"Cache resolution triggered merging non-child frame {frame.cache_hash()} into {self.cache_hash()}")
 
+        first_instance = True
+        # Loop over the number of times this frame is a child 
+        # Compose each instance
         for i in range(self.deferred_frames.pop(frame)):
+
+            # First instance of a deferred frame, resolve its memory
+            if first_instance:
+                mem_cost = self.memory_manager.frame_delete(frame.get_id(), [])
+
+                # Compose costs from memory unit with the frame
+                frame.parallel_compose(mem_cost)
+
+                # Idle the memory manager's next stack frame
+                self.memory_manager.idle(
+                    self.get_id(),
+                    frame.get_tocks()
+                )
+                first_instance = False
+
             self.compose_stack_frames(frame)
+
 
         if self.complete():
             self.complete_parent_deferences()
@@ -487,6 +528,11 @@ class MemoryManager:
         '''
         return self.ResultsComposer()
 
+    def logical_patches(self) -> int:
+        '''
+            Number of logical patches needed so far 
+        '''
+        return 0
 
 class ResultsComposer:
     '''
