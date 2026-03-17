@@ -491,10 +491,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         self.send_total()
         self.send_total(symbols.END_COMPUTATION)
 
-        print("TOTAL: ", self.composer.stack_frames[0].result.to_args())
-
-        #print("Width: ", self.composer.memory_manager.stack_frames[0].width, )
-
         # Pre-emptive polling
         self.manager_completion_queue.put((
             commands.POLL, PoolStatus.FINISHED
