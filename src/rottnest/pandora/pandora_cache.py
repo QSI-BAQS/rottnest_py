@@ -1,4 +1,7 @@
 import pyLIQTR
+
+from pandora.targeted_decomposition import add_cache_db
+
 from rottnest.pandora.pandora_sequencer import pandora_connection, PandoraSequencer
 from rottnest.compute_units.architecture_proxy import ArchitectureProxy
 
@@ -13,12 +16,12 @@ class PandoraCache:
         self.hash_cache = {}
         self.class_cache = {}
 
-    def in_cache(self, other, hash_obj=None): 
+    def in_cache(self, other, hash_obj=None):
         obj = None
         if hash_obj is not None:
             obj = self.hash_cache.get(hash_obj, None)
 
-        # Fallback to class cache 
+        # Fallback to class cache
         if obj is None:
             obj = self.class_cache.get(other, None)
         print(obj, other, hash_obj)
@@ -26,21 +29,22 @@ class PandoraCache:
 
     def add_class(self, class_obj, obj):
         self.class_cache[class_obj] = obj
-       
-    def add_hash(self, hash_obj, obj): 
+
+    def add_hash(self, hash_obj, obj):
         self.hash_cache[hash_obj] = obj
 
-pandora_cache = PandoraCache() 
+pandora_cache = PandoraCache()
 
 lcu = pyLIQTR.BlockEncodings.PauliStringLCU.PauliStringLCU
 string = 'lcu'
 
 def attach_class(db_name, class_obj):
     '''
-        Attaches a class hook to the cache 
+        Attaches a class hook to the cache
     '''
-    class_str = class_obj.__name__ 
-    conn = pandora_connection.spawn(db_name) 
+    class_str = class_obj.__name__
+    # conn = pandora_connection.spawn(db_name)
+    conn = add_cache_db(pandora_connection, class_obj, db_name)
     seq = PandoraSequencer(conn=conn)
     pandora_cache.add_class(class_str, seq)
 
@@ -52,7 +56,7 @@ def architecture_bind(arch_id: int):
     # TODO move to convex bound model in Pandora
     arch = ArchitectureProxy(arch_id)
     n_registers = arch.mem_bound()
-    max_t = n_registers 
+    max_t = n_registers
     max_d = n_registers
     batch_size = n_registers
     update_sequencer(max_t=max_t, max_d=max_d, batch_size=batch_size)
@@ -75,10 +79,12 @@ from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
 from qualtran._infra.adjoint import Adjoint
 
 # Skip if pandora is not enabled
-# This should be promoted to a module for each circuit that is to be constructed and run  
+# This should be promoted to a module for each circuit that is to be constructed and run
 if pandora_connection is not None:
-
-    #attach_class('adjoint', Adjoint)
-    attach_class('lcu', PauliStringLCU)
+    pass
+    # ^ Pandora disabled because current handling is incorrect
+    # attach_class('adjoint', Adjoint)
+    #attach_class('lcu', PauliStringLCU)
     #attach_class('prepare_lcu', prepare_pauli_lcu)
-    #attach_class('qsp', QSP_Prepare)
+    # attach_class('qsp', QSP_Prepare)
+

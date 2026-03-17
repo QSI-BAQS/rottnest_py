@@ -2,14 +2,14 @@
 '''
     pyLIQTR gates trigger the call-graph tracker
     Each pyLIQTR gate is decomposed into the following
-     - Clifford Shim layer : This will either be a 
-        compiled widget, or a set of local operations 
+     - Clifford Shim layer : This will either be a
+        compiled widget, or a set of local operations
      - Abstracted compilation sequence : Wrapper for
-        the compiled gate   
-    If the gate contains no pyLIQTR gates then it is 
-    handed off to the widgetiser 
+        the compiled gate
+    If the gate contains no pyLIQTR gates then it is
+    handed off to the widgetiser
     Otherwise, each child pyLIQTR gate is independently
-    compiled 
+    compiled
 '''
 
 from pyLIQTR.utils.circuit_decomposition import circuit_decompose_multi
@@ -21,32 +21,23 @@ import qualtran.bloqs
 import qualtran.bloqs.mcmt
 import cirq
 
-# TODO
-# This function breaks on particular matplotlib versions with an unimplemented exception 
-def _blank(*args, **kwargs):
-    return ''
-import matplotlib as mpl 
-mpl.get_backend = _blank
-#plt.switch_backend = _blank
-#plot_helpers.plot_func_error = None
-
 from pyLIQTR.qubitization import qsvt, qubitized_gates
-from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU 
+from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU
 from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
 from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
 from cirq.ops.raw_types import _InverseCompositeGate
 
-from rottnest.pandora.pandora_sequencer import PandoraSequencer 
+from rottnest.pandora.pandora_sequencer import PandoraSequencer
 
 from . import cirq_parser
 from rottnest.monkey_patchers import pyliqtr_patcher, qualtran_patcher
 from rottnest.pandora.pandora_cache import pandora_cache
 
 # pyLIQTR gates include cirq gates
-known_gates = dict(cirq_parser.known_gates) 
+known_gates = dict(cirq_parser.known_gates)
 
-# Used to cache results 
-local_cache = set() 
+# Used to cache results
+local_cache = set()
 local_cache_tag = None
 
 # Todo: move this to a pandora module
@@ -56,12 +47,12 @@ from rottnest.input_parsers.interrupt import INTERRUPT, CACHED, NON_CACHING
 # Difficult to assert uniqueness of hash function
 def cmp_qsvt(self, other):
    return (self._phis == other._phis
-        and self._ ) 
+        and self._ )
 
 '''
 All pyLIQTR gates should be decomposed into their call graph
 
-Each gate is then bound as a shim and a re-usable component 
+Each gate is then bound as a shim and a re-usable component
 '''
 class PyliqtrParser:
     tracking_targets = frozenset((
@@ -78,7 +69,7 @@ class PyliqtrParser:
     _InverseCompositeGate,
     ))
 
-    # Targets to decompose on the spot 
+    # Targets to decompose on the spot
     cirq_decomposing_targets = frozenset((
         cirq.ControlledGate,
         qualtran.bloqs.mcmt.and_bloq.And,
@@ -92,14 +83,14 @@ class PyliqtrParser:
         self.op = op
         self.sequence_length = sequence_length
         self.gate = gate
-        
+
         self.circuit = circuit_decompose_multi(circuit, 1)
-        self.n_qubits = len(self.circuit.all_qubits()) 
+        self.n_qubits = len(self.circuit.all_qubits())
 
         self.shims = [] # Shims represent non-pyliqtr sequences
         self.handles = {} # Handles represent callable representations of pyliqtr objects
         self.sequence = []
-        
+
         self.decompositions = {}
         self.fully_decomposed = None
         self._caching = True
@@ -119,11 +110,11 @@ class PyliqtrParser:
         '''
             TODO: docstring
         '''
-        # Sequence is a valid ordering of the operations 
+        # Sequence is a valid ordering of the operations
         for shim, gate in zip(self.shims, self.sequence):
 
             # Yield shim
-            if len(shim) > 0: 
+            if len(shim) > 0:
                 yield shim
 
             if gate is None:
@@ -132,7 +123,7 @@ class PyliqtrParser:
             # Cache check
             rottnest_hash = gate._rottnest_hash()
             if rottnest_hash is not None and self._caching:
-                if rottnest_hash in local_cache:  
+                if rottnest_hash in local_cache:
                     non_participatory = len(
                         self.circuit.all_qubits().difference(gate._qubits)
                     )
@@ -154,7 +145,7 @@ class PyliqtrParser:
                 yield CACHED(rottnest_hash, request_type=CACHED.START, non_participatory_qubits=non_participatory)
                 op = parser.op
                 if op is not None:
-                    # Use the operation as a key for the pandora cache 
+                    # Use the operation as a key for the pandora cache
                     op = type(op.gate).__name__
                 pandora_seq = pandora_cache.in_cache(op, hash_obj = parser.rottnest_hash)
                 if pandora_seq is not None:
@@ -174,12 +165,12 @@ class PyliqtrParser:
     def draw_graph(self):
         graph, gates = self.graph()
         nx.draw_kamada_kawai(graph, labels={i:str(i) for i in gates})
-                
+
     def parse(self, circuit=None):
         # This is the decomposition
         self.fully_decomposed = True
 
-        _curr_shim = cirq_parser.CirqShim() 
+        _curr_shim = cirq_parser.CirqShim()
 
         if circuit is None:
             circuit = self.circuit
@@ -198,9 +189,9 @@ class PyliqtrParser:
 
                     _curr_shim.set_parent(operation)
                     self.shims.append(_curr_shim)
-                    _curr_shim = cirq_parser.CirqShim() 
-            
-                    # If this is created then 
+                    _curr_shim = cirq_parser.CirqShim()
+
+                    # If this is created then
                     self.fully_decomposed = False
 
                 elif operation.gate.__class__ in self.cirq_decomposing_targets:
@@ -213,18 +204,18 @@ class PyliqtrParser:
 
                             _curr_shim.set_parent(operation)
                             self.shims.append(_curr_shim)
-                            _curr_shim = cirq_parser.CirqShim() 
-                                                    
+                            _curr_shim = cirq_parser.CirqShim()
+
                             self.fully_decomposed = False
                         else:
                             _curr_shim.append(g)
 
                 else:
                     # Operation is directly added to the shim
-                    _curr_shim.append(operation)      
+                    _curr_shim.append(operation)
         # Terminating shim for any remaining operations
         self.shims.append(_curr_shim)
-        
+
         # Terminal none on the sequence
         self.sequence.append(None)
 
@@ -242,26 +233,26 @@ class PyliqtrParser:
             r.parse()
             # TODO: re-wrangle this
             if r == INTERRUPT:
-                if (r.cache_hash() is NON_CACHING 
-                    or r.request_type is CACHED.START 
-                    or r.request_type is CACHED.END): 
+                if (r.cache_hash() is NON_CACHING
+                    or r.request_type is CACHED.START
+                    or r.request_type is CACHED.END):
                         continue
 
                 yield GraphWrapper(
                     f"{prefix}{handle_idx}c",
                     name=None,
                     rottnest_hash = r.cache_hash()
-                ) 
+                )
                 handle_idx += 1
                 continue
 
             if isinstance(r, cirq_parser.CirqShim):
-                shim_id = f"{prefix}{handle_idx}s" 
+                shim_id = f"{prefix}{handle_idx}s"
                 yield GraphWrapper(shim_id, str(r), parser=r)
                 continue
 
             if isinstance(r, PandoraSequencer):
-                shim_id = f"{prefix}{handle_idx}p" 
+                shim_id = f"{prefix}{handle_idx}p"
                 yield GraphWrapper(shim_id, str(r), parser=r)
                 continue
 
@@ -291,11 +282,11 @@ class PyliqtrParser:
 
     def traverse_all(self):
         '''
-        Dump the whole circuit 
+        Dump the whole circuit
         '''
         parser = CirqParser(self.sequence_length)
-        for circuit in self.traverse(): 
-            for ops in parser.parse(circuit): 
+        for circuit in self.traverse():
+            for ops in parser.parse(circuit):
                 yield ops
 
 class GraphWrapper():
@@ -304,11 +295,12 @@ class GraphWrapper():
     '''
     def __init__(self, handle_id, name, description="", parser=None, rottnest_hash=None):
         self.handle_id = handle_id
-        self.rottnest_hash = rottnest_hash 
+        self.rottnest_hash = rottnest_hash
 
         self.name = name
         self.description = description
-        self.parser = parser 
+        self.parser = parser
 
-    def get_graph(self): 
+    def get_graph(self):
         return self.parser
+

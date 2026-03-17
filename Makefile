@@ -1,47 +1,33 @@
 GHC = ghc
 
 SRCDIR := src/rottnest/gridsynth
-SRCDIRb := src/rottnest/rz_decomposer
-
 
 SRCFILES := $(wildcard ${SRCDIR}/*.hs)
-
 OBJFILES := $(patsubst ${SRCDIR}/%.hs, ${SRCDIR}/%, ${SRCFILES})
-OBJFILESb := $(patsubst ${SRCDIR}/%.hs, ${SRCDIRb}/%, ${SRCFILES})
-
 HIFILES := $(patsubst ${SRCDIR}/%.hs, ${SRCDIR}/%.hi, ${SRCFILES})
-
 EXES := $(patsubst ${SRCDIR}/%.hs, ${SRCDIR}/%, ${SRCFILES})
 
 
 .PHONY: all package test clean gridsynth build
 
-all: package 
+all: package
 
 package: gridsynth
-	pip install -r requirements.txt
 	pip install -e .
 
-gridsynth:  ${OBJFILES} ${OBJFILESb}
+gridsynth : ${OBJFILES}
 
-build: package
+build: gridsynth package
 
 ${SRCDIR}/% : ${SRCDIR}/%.hs
-	$(GHC) -package random -package newsynth $^
-
-${SRCDIRb}/% : ${SRCDIRb}/%.hs
-	$(GHC) -package random -package newsynth $^
-
+	$(GHC) $^
 
 test:
 	pytest
 
-clean: 
-	rm $(OBJFILES) || true
-	rm $(EXES) || true
-	rm $(HIFILES) || true
+clean :
+	rm $(OBJFILES)
+	rm $(EXES)
+	rm $(HIFILES)
 	pip uninstall rottnest
 
-update: 
-	git pull
-	${MAKE} build

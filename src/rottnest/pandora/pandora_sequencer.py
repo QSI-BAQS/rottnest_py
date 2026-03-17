@@ -4,7 +4,7 @@ from cabaliser.operation_sequence import OperationSequence
 from pandora.pandora import Pandora, PandoraConfig
 
 from rottnest.input_parsers.qubit_label_tracker import QubitLabelTracker
-from rottnest.input_parsers.rz_tag_tracker import RzTagTracker 
+from rottnest.input_parsers.rz_tag_tracker import RzTagTracker
 from rottnest.input_parsers.interrupt import INTERRUPT, NON_CACHING
 from rottnest.compute_units.compute_unit import ComputeUnit
 from rottnest.compute_units.architecture_proxy import ArchitectureProxy
@@ -19,13 +19,19 @@ from rottnest.pandora.pandora_pg import pandora_pg_config_load, pandora_pg_defau
 is_from_file, pgcfg = pandora_pg_config_load(pandora_pg_default_path)
 config = PandoraConfig(**pgcfg)
 
-#try:
-pandora_connection = Pandora(pandora_config=config,
+
+"""
+Try-Except case here is to catch when the config is not available and attempt to use a basic
+    variant before ultimately quitting
+
+"""
+try:
+    pandora_connection = Pandora(pandora_config=config,
           max_time=3600,
           decomposition_window_size=1000000)
-#except:
-#    pandora_connection = None
-#print("Connection to Pandora failed")
+except:
+    pandora_connection = None
+    print("Connection to Pandora failed")
 
 
 class PandoraGate:
@@ -54,18 +60,18 @@ class PandoraSequencer():
         self.op = PandoraGate(name)
 
         if conn is None:
-            conn = pandora_connection    
-        self.pandora_connection = conn 
+            conn = pandora_connection
+        self.pandora_connection = conn
 
         if len(architectures) == 0:
             self._architecture_proxies = [None]
         else:
             self._architecture_proxies = list(map(ArchitectureProxy, architectures))
-        self.sequence_length = sequence_length 
+        self.sequence_length = sequence_length
         if rz_tags is None:
-            rz_tags = RzTagTracker() 
+            rz_tags = RzTagTracker()
         self.rz_tags = rz_tags
-    
+
         self.max_t = max_t
         self.max_d = max_d
         self.batch_size = batch_size
@@ -78,25 +84,25 @@ class PandoraSequencer():
 
     def set_max_t(self, max_t: int):
         '''
-            Setter for max_t 
+            Setter for max_t
         '''
         self.max_t = max_t
-       
+
     def set_max_t(self, max_t: int):
         '''
-            Setter for max_t 
+            Setter for max_t
         '''
         self.max_t = max_t
 
     def set_max_d(self, max_d: int):
         '''
-            Setter for max_d 
+            Setter for max_d
         '''
         self.max_d = max_d
 
     def set_batch_size(self, batch_size: int):
         '''
-            Setter for batch_size 
+            Setter for batch_size
         '''
         self.batch_size = batch_size
 
@@ -111,16 +117,16 @@ class PandoraSequencer():
             Multi-parameter setter
         '''
 
-        if sequence_length is not None: 
+        if sequence_length is not None:
             self.sequence_length = sequence_length
 
-        if max_t is not None: 
+        if max_t is not None:
             self.max_t = max_t
 
-        if max_d is not None: 
+        if max_d is not None:
             self.max_d = max_d
 
-        if batch_size is not None: 
+        if batch_size is not None:
             self.batch_size = batch_size
 
     def traverse(self):
@@ -129,7 +135,7 @@ class PandoraSequencer():
         '''
         for compute_unit in self.sequence_pandora():
             yield ProxyCirqParser(compute_unit.op_seq, len(compute_unit))
-          
+
     def parse(self):
         '''
             No further parsing needed
@@ -152,34 +158,36 @@ class PandoraSequencer():
         # Execution context
         architecture = next(architectures)
         if architecture is not None:
-            compute_unit = ComputeUnit(architecture.to_json())       
+            compute_unit = ComputeUnit(architecture.to_json())
         else:
-            compute_unit = ComputeUnit(None)       
+            compute_unit = ComputeUnit(None)
         qubit_labels = PandoraQubitLabelTracker()
-        rz_tags = self.rz_tags 
+        rz_tags = self.rz_tags
         operation_sequence = OperationSequence(5000)
 
         pandora_translator = PandoraTranslator()
- 
+
         gate_count = 0
 
         widgets = self.pandora_connection.widgetize(
             max_t=self.max_t,
-            max_d=self.max_d, 
-            batch_size=self.batch_size, 
+            max_d=self.max_d,
+            batch_size=self.batch_size,
             add_gin_per_widget=True
         )
 
         for pandora_widget in widgets:
-            pandora_translator.translate_batch(
+            pandora_translator.translate_into(
                 pandora_widget,
-                operation_sequence,
                 qubit_labels,
-                rz_tags
+                rz_tags,
+                operation_sequence
             )
-            gate_count += len(operation_sequence)
-          
-            compute_unit.append(operation_sequence) 
+
+            # if len(operation_sequence) > 0:
+            #     yield operation_sequence
+
+            compute_unit.append(operation_sequence)
             compute_unit.add_context(
                 len(qubit_labels),
                 rz_tags.n_rz_gates,
@@ -195,7 +203,61 @@ class PandoraSequencer():
             # Reset context
             compute_unit = ComputeUnit(
                 next(architectures).to_json()
-            ) 
+            )
             qubit_labels = PandoraQubitLabelTracker()
+
             rz_tags.reset()
-            operation_sequence = OperationSequence(5000) 
+            operation_sequence = OperationSequence(5000)
+        # architectures = cycle(self._architecture_proxies)
+
+        # # Execution context
+        # architecture = next(architectures)
+        # if architecture is not None:
+        #     compute_unit = ComputeUnit(architecture.to_json())
+        # else:
+        #     compute_unit = ComputeUnit(None)
+        # qubit_labels = PandoraQubitLabelTracker()
+        # rz_tags = self.rz_tags
+        # operation_sequence = OperationSequence(5000)
+
+        # pandora_translator = PandoraTranslator()
+
+        # gate_count = 0
+
+        # widgets = self.pandora_connection.widgetize(
+        #     max_t=self.max_t,
+        #     max_d=self.max_d,
+        #     batch_size=self.batch_size,
+        #     add_gin_per_widget=True
+        # )
+
+        # for pandora_widget in widgets:
+        #     pandora_translator.translate_batch(
+        #         pandora_widget,
+        #         operation_sequence,
+        #         qubit_labels,
+        #         rz_tags
+        #     )
+        #     gate_count += len(operation_sequence)
+
+        #     compute_unit.append(operation_sequence)
+        #     compute_unit.add_context(
+        #         len(qubit_labels),
+        #         rz_tags.n_rz_gates,
+        #         len(qubit_labels),
+        #     )
+
+        #     if compute_unit.n_gates == 0:
+        #         continue
+
+        #     print(f"Unit: {len(compute_unit.sequences[0])}")
+        #     yield compute_unit
+
+        #     # Reset context
+        #     compute_unit = ComputeUnit(
+        #         next(architectures).to_json()
+        #     )
+        #     qubit_labels = PandoraQubitLabelTracker()
+        #     rz_tags.reset()
+        #     operation_sequence = OperationSequence(5000)
+

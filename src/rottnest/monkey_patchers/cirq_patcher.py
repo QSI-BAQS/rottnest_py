@@ -34,6 +34,8 @@ from cabaliser.operation_sequence import OperationSequence
 from rottnest.input_parsers.qubit_label_tracker import QubitLabelTracker
 from rottnest.input_parsers.rz_tag_tracker import RzTagTracker
 
+MIN_SEQUENCE_LENGTH = 5
+
 '''
 Format for monkey patching:
     # gate parsing operation
@@ -387,7 +389,7 @@ def wrapper_fn():
         return operation.gate._parse_cabaliser(operation, operation_sequence, qubit_labels, rz_tags)
     return _wrap, 1
 
-# Not currently supported: non-standard angles on these gates 
+# Not currently supported: non-standard angles on these gates
 # TODO: Write up decompositions
 cx_pow = partial(simple_operator, cabaliser_gates.CNOT)
 cz_pow = partial(simple_operator, cabaliser_gates.CZ)
@@ -446,3 +448,4 @@ def _monkey_patch():
 
 # Perform the monkey patching
 _monkey_patch()
+

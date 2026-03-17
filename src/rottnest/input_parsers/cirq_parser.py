@@ -9,8 +9,8 @@ from rottnest.input_parsers.qubit_label_tracker import QubitLabelTracker
 from rottnest.input_parsers.rz_tag_tracker import RzTagTracker
 
 # Load and run the monkey patcher for cirq objects
-from rottnest.monkey_patchers import cirq_patcher 
-from rottnest.monkey_patchers.cirq_patcher import known_gates 
+from rottnest.monkey_patchers import cirq_patcher
+from rottnest.monkey_patchers.cirq_patcher import known_gates
 from rottnest.input_parsers.interrupt import INTERRUPT, NON_CACHING
 
 from rottnest.pandora.pandora_sequencer import PandoraSequencer
@@ -30,35 +30,38 @@ class CirqParser:
         self._qubit_labels = QubitLabelTracker()
 
         if rz_tracker is None:
-            global shared_rz_tag_tracker 
-            rz_tracker = shared_rz_tag_tracker 
+            global shared_rz_tag_tracker
+            rz_tracker = shared_rz_tag_tracker
 
-        self._rz_tracker = rz_tracker 
+        self._rz_tracker = rz_tracker
 
     def __len__(self):
         '''
             Returns the amount of memory currently in use
         '''
-        return len(self._qubit_labels) + self._rz_tracker.n_rz_gates 
+        return len(self._qubit_labels) + self._rz_tracker.n_rz_gates
 
     def reset_context(self, *sequences):
         '''
             Resets local context
         '''
-        prev_context = self._qubit_labels 
+        prev_context = self._qubit_labels
 
         self._qubit_labels = QubitLabelTracker()
         self._rz_tracker.reset()
         return prev_context
 
-    def extract_context(self): 
+    def curr_mem(self):
+        return len(self._qubit_labels) * 2 + self._rz_tracker.n_rz_gates
+
+    def extract_context(self):
         '''
-        TODO: Tighten this 
+        TODO: Tighten this
         '''
         n_inputs = len(self._qubit_labels)
-        n_rz_gates = self._rz_tracker.n_rz_gates 
-        n_qubits = 2 * n_inputs + n_rz_gates 
-        n_outputs = n_inputs 
+        n_rz_gates = self._rz_tracker.n_rz_gates
+        n_qubits = 2 * n_inputs + n_rz_gates
+        n_outputs = n_inputs
         return n_inputs, n_qubits, n_outputs
 
     def parse(
@@ -69,7 +72,8 @@ class CirqParser:
 
         # This needs to be better
         if isinstance(circ_iter, PandoraSequencer):
-            return circ_iter.to_operation_sequence()
+            yield from circ_iter.to_operation_sequence()
+            return
 
         op = OperationSequence(self.sequence_length)
         for moment in circ_iter.decompose():
@@ -82,20 +86,20 @@ class CirqParser:
                 if operation == INTERRUPT:
                     if operation.cache_hash() != NON_CACHING:
                         yield operation
-                        continue 
+                        continue
                     # Non Caching, immediately interrupt
-                    yield op 
+                    yield op
                     op = OperationSequence(self.sequence_length)
                     continue
 
                 # Classically controlled gate
                 if operation.gate is None:
-                    operation = operation.without_classical_controls() 
+                    operation = operation.without_classical_controls()
 
-                if operation.gate._n_cabaliser_ops + len(op) > self.sequence_length:  
+                if operation.gate._n_cabaliser_ops + len(op) > self.sequence_length:
                     yield op
                     op = OperationSequence(self.sequence_length)
-                operation.gate._parse_cabaliser(operation, op, self._qubit_labels, self._rz_tracker) 
+                operation.gate._parse_cabaliser(operation, op, self._qubit_labels, self._rz_tracker)
         if len(op) > 0:
             yield op
         return
@@ -105,15 +109,15 @@ class CirqShim:
     '''
         Ducktyped proxy for wrapping gates into a circuit-like object
     '''
-    
-    def __init__(self): 
+
+    def __init__(self):
         # List of gates object
-        self._lst = [] 
+        self._lst = []
         self.fully_decomposed = True
         self._parent_str = None
 
     def cache_hash(self):
-        return None 
+        return None
 
     def append(self, obj):
         self._lst.append(obj)
@@ -122,14 +126,14 @@ class CirqShim:
         '''
             Each gate appears as a moment
         '''
-        for element in self._lst: 
+        for element in self._lst:
             yield (element,)
 
     def to_operation_sequence(self):
-        return iter(self._lst) 
+        return iter(self._lst)
 
     def traverse(self):
-        yield self 
+        yield self
 
     def flatten(self):
         return iter(self._lst)
@@ -138,7 +142,7 @@ class CirqShim:
         return f"Shim: {self._parent_str}"
 
     def set_parent(self, operation):
-        self._parent_str = str(operation.gate.__class__) 
+        self._parent_str = str(operation.gate.__class__)
 
     def decompose(self):
         return iter(self)
@@ -151,3 +155,4 @@ class CirqShim:
 
     def __len__(self):
         return len(self._lst)
+
