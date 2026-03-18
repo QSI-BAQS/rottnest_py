@@ -38,8 +38,6 @@ class Sequencer():
 
         architecture = next(architectures)
         compute_unit = ComputeUnit(architecture.to_json(), mem_bound=architecture.mem_bound())
-        print(compute_unit.memory_bound)
-
         cirq_parser = CirqParser(self.sequence_length)
         # Discard lingering global context
         cirq_parser.reset_context()
@@ -74,6 +72,15 @@ class Sequencer():
                     elif cirq_parser.curr_mem() > compute_unit.memory_bound - MIN_SEQUENCE_LENGTH:
                         yield_unit = True
 
+                if op_seq is not None:
+                    gate_count += len(op_seq)
+                    compute_unit.append(op_seq)
+                    cirq_parser.sequence_length = (self.sequence_length * 4 - cirq_parser.curr_mem()) // 4
+                    if cirq_parser.sequence_length <= MIN_SEQUENCE_LENGTH:
+                        compute_unit.append(op_seq)
+                        yield_unit = True
+                        op_seq = None
+
                 if yield_unit:
                     local_context = cirq_parser.extract_context()
                     compute_unit.add_context(*local_context)
@@ -85,12 +92,6 @@ class Sequencer():
                     compute_unit = ComputeUnit(architecture.to_json(), mem_bound=architecture.mem_bound())
                     cirq_parser.reset_context(op_seq)
                     cirq_parser.sequence_length = self.sequence_length
-
-                if op_seq is not None:
-                    gate_count += len(op_seq)
-
-                    compute_unit.append(op_seq)
-                    cirq_parser.sequence_length = (self.sequence_length * 4 - cirq_parser.curr_mem()) // 4
 
         if len(compute_unit) > 0:
             local_context = cirq_parser.extract_context()

@@ -357,6 +357,6 @@ if __name__ == '__main__':
     #       n_qubits = int(sys.argv[1])
     st = TestSequencer()
     #   x = st.test_fh(N=n_qubits)
-    st.test_fh_gate_count(N=3)
+    st.test_fh_gate_count(N=10)
     #   # st.test_fh_validate()
 #
