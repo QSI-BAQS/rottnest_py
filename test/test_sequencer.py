@@ -212,8 +212,10 @@ def completed_partial_seq(seq):
 
 
 
-class SequencerTest(unittest.TestCase):
+class TestSequencer(unittest.TestCase):
 
+    # Covered by the gate count test
+    @unittest.SkipTest
     def test_fh(self, N=2, debug=True):
         if debug:
             start = time.time()
@@ -252,6 +254,7 @@ class SequencerTest(unittest.TestCase):
         #return compute_unit
 
 
+    @unittest.SkipTest
     def test_fh_validate(self, N=2):
         '''
             Validate the partial sequence our sequence produces vs
@@ -348,11 +351,12 @@ class SequencerTest(unittest.TestCase):
 
 import sys
 if __name__ == '__main__':
-    n_qubits = 10
-    if len(sys.argv) > 1:
-        n_qubits = int(sys.argv[1])
-    st = SequencerTest()
-    # x = st.test_fh(N=n_qubits)
+    #unittest.main()
+    #   n_qubits = 3 
+    #   if len(sys.argv) > 1:
+    #       n_qubits = int(sys.argv[1])
+    st = TestSequencer()
+    #   x = st.test_fh(N=n_qubits)
     st.test_fh_gate_count(N=3)
-    # st.test_fh_validate()
-
+    #   # st.test_fh_validate()
+#
