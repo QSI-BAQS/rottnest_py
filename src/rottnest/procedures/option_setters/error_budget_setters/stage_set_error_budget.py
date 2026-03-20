@@ -4,9 +4,9 @@
 '''
 
 from rottnest.procedures import stage
-from rottnest.error_budgets import set_target_error, set_p_phys 
+from rottnest.error_budgets import set_target_error, set_p_physical 
 
-STAGE_TAG = 'set_error_targets'
+STAGE_TAG = 'set_error_budget'
 
 class SetErrorBudgetStage(stage.RottnestCompilerStage):
     TAG = STAGE_TAG
@@ -33,12 +33,11 @@ class SetErrorBudgetStage(stage.RottnestCompilerStage):
             Synchronises and starts the workers
         '''
 
-        err_obj = get_error_budget()
         if self._target_error is not None:
-            set.target_error(self._target_error) 
+            set_target_error(self._target_error) 
 
         if self._p_phys is not None:
-            set.p_phys(self._p_phys) 
+            set_p_physical(self._p_phys) 
 
 
         self._complete = True

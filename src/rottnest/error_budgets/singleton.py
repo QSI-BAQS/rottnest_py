@@ -6,7 +6,7 @@ from .even_distribution import EvenDistribution
 
 error_budget_object = EvenDistribution()
 
-def get_error_budget():
+def get_error_budget() -> "ErrorBudget":
     '''
         Getter for the singleton instance
     '''

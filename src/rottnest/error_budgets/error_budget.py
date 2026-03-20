@@ -24,7 +24,7 @@ class ErrorBudget(abc.ABC):
         '''
             Get the physical error rate
         '''
-        return self.p_physical
+        return self._p_physical
   
     def set_p_physical(self, p_physical):
         '''
