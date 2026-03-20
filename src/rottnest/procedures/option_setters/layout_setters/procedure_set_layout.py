@@ -1,4 +1,4 @@
-from rottnest.procedures import pool, procedure
+from rottnest.procedures import procedure
 
 from . import stage_set_layout
 
