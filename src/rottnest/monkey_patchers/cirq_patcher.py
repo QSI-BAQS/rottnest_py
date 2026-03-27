@@ -34,7 +34,14 @@ from cabaliser.operation_sequence import OperationSequence
 from rottnest.input_parsers.qubit_label_tracker import QubitLabelTracker
 from rottnest.input_parsers.rz_tag_tracker import RzTagTracker
 
+
+from .default_hashes import cirq_hashes
+
 MIN_SEQUENCE_LEN = 5
+
+# Meeting interface spec
+# This dict should always be empty 
+hash_function_patchers = {} | cirq_hashes.TARGETS 
 
 '''
 Format for monkey patching:
@@ -435,7 +442,7 @@ def _parse_cabaliser(self, *args, **kwargs):
     # operation class
     return self.gate._parse_cabaliser(self, *args, **kwargs)
 
-def _monkey_patch():
+def monkey_patch():
     '''
         Injects the parsers into the cirq objects
         Linters will complain about this
@@ -451,4 +458,4 @@ def _monkey_patch():
             gate_type._n_cabaliser_ops = n_gates
 
 # Perform the monkey patching
-_monkey_patch()
+monkey_patch()

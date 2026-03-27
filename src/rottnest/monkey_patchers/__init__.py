@@ -7,3 +7,4 @@ All callable patches are promoted to MethodTypes objects.
 
 '''
 
+from singleton import add_hash_patcher, get_hash_patcher 
