@@ -1,6 +1,9 @@
 """
     Rottnest application class
 """
+from io import StringIO
+from geventwebsocket.websocket import WebSocket
+from threading import Semaphore
 from rottnest.server.app.app_config import ApplicationConfig, AppExtensions
 from rottnest.debug.monitor import DebugMonitor
 
@@ -24,7 +27,8 @@ class RottnestApplication:
             self,
             wsock,
             wsock_sem,
-            apploader=ApplicationConfig.default()
+            apploader=ApplicationConfig.default(),
+            is_uninit=False
         ):
         """
             Initialises an application
@@ -35,16 +39,28 @@ class RottnestApplication:
         """
         self.wsock = wsock
         self.wsock_sem = wsock_sem
+        self.is_uninit = is_uninit
         self.app_state_map = {}
         self.app_extensions = AppExtensions()
         apploader.load_and_attach(self.app_extensions)
         DebugMonitor.current().set_console_context(self)
         DebugMonitor.current().get_console().set_app(self)
 
-        if RottnestApplication._appinstance is None:
+        if RottnestApplication._appinstance is None \
+            or RottnestApplication._appinstance.is_uninit:
             RottnestApplication._appinstance = self
-        
-        
+            
+
+    @staticmethod
+    def get_uninitialised_instance():
+        '''
+           Do note, this mechanism is only for testing and mock devices
+           that are to provide some level of introspection within the system
+           itself
+        '''
+        wsock = WebSocket(None, StringIO(''), None) # NOTE: Un-init'd
+        wsock_sem = Semaphore()
+        return RottnestApplication(wsock, wsock_sem, is_uninit=True)
 
     @classmethod
     def get_instance(cls):

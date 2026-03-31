@@ -1,13 +1,33 @@
+from enum import Enum
 from rottnest.procedures.stage import RottnestCompilerStage
-from rottnest.server.app.application import RottnestApplication
+from rottnest.server.app.application import RottnestApplication, \
+    RottnestApplicationUnavailableException
 from rottnest.debug.util import with_debug_log
 from threading import Thread
 import queue
 
+class ProcedureExecutionStateTag(Enum):
+    '''
+       Tag for the execution state 
+    '''
+    INACTIVE = 1
+    QUEUED = 2
+    ACTIVE = 3
+
+
+class ProcedureExecutionContext:
+    '''
+       When executing a procedure asynchronously, information about
+       the context and what is being executed is worth knowing 
+    '''
+
+    def __init__(self, proc_id: int | None = None):
+        self.proc_id = proc_id
+        self.state_tag = ProcedureExecutionStateTag.INACTIVE
 
 class ProcedureManager(RottnestCompilerStage):
     '''
-       ProcedureManager class,
+        ProcedureManager class,
             * Single Instance object that will manage
             * procedures given to it of different qualities
                * async - Executed on a separate thread/process
@@ -22,12 +42,15 @@ class ProcedureManager(RottnestCompilerStage):
               for the procedure to run properly.
     '''
 
+    # class object for maintaining the current id
+    NEXT_ID = 1
+
     # Singleton Instance
     _manager = None
 
-    @with_debug_log()
+
     def __init__(self, app: RottnestApplication, \
-                 track_stage_completion=False):
+                 track_stage_completion=False, queue_timeout=3):
         '''
            Initialises the manager
                * app - access to the application which has
@@ -39,16 +62,26 @@ class ProcedureManager(RottnestCompilerStage):
                    completed. Not used by default
         '''
         self.app = app
-        
+        self.id_set: set[int] = set()
         self.track_stage_completion = track_stage_completion
-        self.queue_timeout = 10
-        self.queued_tasks: queue.Queue[RottnestCompilerStage] = queue.Queue()
-        self.completed_tasks = list()
+        self.queue_timeout = queue_timeout
+        self.queued_tasks: queue.Queue[tuple[int, RottnestCompilerStage]] = queue.Queue()
+        self.completed_tasks = list() # NOTE: NOT USED
         self.should_stop = False
+        self.app_instance_is_uninit = False
+        self.exec_context = ProcedureExecutionContext()
 
-    
+    @with_debug_log()
+    def get_enqueued_size(self) -> int:
+        '''
+            Gets the number of elements currently enqueued
+            within the procedure manager
+        '''
+        return len(self.id_set)
+      
     @classmethod
-    def get_instance():
+    @with_debug_log()
+    def get_instance(cls) -> type['ProcedureManager']:
         '''
            Singleton object that can be retrieved
            by the procedures
@@ -56,10 +89,18 @@ class ProcedureManager(RottnestCompilerStage):
            _manager is the singleton instance here
         '''
         if ProcedureManager._manager is None:
-            app = RottnestApplication.get_instance()
+            app = None # Just scoping it
+            is_uninit = False
+            try:
+                app = RottnestApplication.get_instance()
+            except RottnestApplicationUnavailableException as _e:
+                app = RottnestApplication.get_uninitialised_instance()
+                is_uninit = True
+
             ProcedureManager._manager = ProcedureManager(app)
-        else:
-            return ProcedureManager._manager
+            ProcedureManager._manager.app_instance_is_uninit = is_uninit
+            
+        return ProcedureManager._manager
 
     @with_debug_log()
     def execute_immediate(self, stage: RottnestCompilerStage):
@@ -75,7 +116,7 @@ class ProcedureManager(RottnestCompilerStage):
            Defers the execution to the queue
                Will be executed when time is available 
         '''
-        self.queued_tasks.put(stage)
+        self.enqueue_procedure(stage)
         return True
 
 
@@ -87,7 +128,7 @@ class ProcedureManager(RottnestCompilerStage):
         self.should_stop = True
     
     @with_debug_log()
-    def start_manager_in_thread(self):
+    def start_manager_in_thread(self) -> Thread:
         '''
            Will create a thread and invoke start_loop
            for it to run until the loop is meant to finish 
@@ -100,6 +141,17 @@ class ProcedureManager(RottnestCompilerStage):
         return thread_joinhandler
 
     @with_debug_log()
+    def dequeue_and_execute(self):
+        '''
+            Dequeue a procedure and execute it by also providing the
+            manager as context
+        '''
+        id, proc = self.queued_tasks.get(True, self.queue_timeout)
+        proc.execute(self)
+        self.id_set.discard(id)
+        self.queued_tasks.task_done()
+
+    @with_debug_log()
     def start_loop(self):
         '''
            Starts te event loop, will await for tasks to be
@@ -110,10 +162,9 @@ class ProcedureManager(RottnestCompilerStage):
             # Blocks until 10 seconds and throws an exception
             # or has data available
             try:
-                proc = self.queued_tasks.get(True, self.queue_timeout)
-                proc.execute(self)
-                self.queued_tasks.task_done()
+                self.dequeue_and_execute()
             except queue.Empty:
+                print("Timeout Reached or Invalid Queue Operation")
                 pass
 
     @with_debug_log()
@@ -129,4 +180,52 @@ class ProcedureManager(RottnestCompilerStage):
         self.start_loop()
         return None
         
+    @with_debug_log()
+    def get_rottnest_application(self):
+        '''
+            Gets the rottnest application data that it has
+            attached, this will icnlude websockets and plugins
 
+            This is a safe wrapped for checking to see if
+            application is now initialised
+        '''
+        retapp = self.app
+        try:
+            app_potentially_init = RottnestApplication.get_instance()
+            self.app = app_potentially_init
+            retapp = self.app
+        except RottnestApplicationUnavailableException as _e:
+            pass
+
+        return retapp
+
+
+    @with_debug_log()
+    def get_active_procedure_ids(self):
+        '''
+           Retrieves a list of the current enqueued procedures
+            - Note: Was originally going to be computed but we keep a dict
+                for keeping track of them now
+        '''
+        return list(self.id_set)
+
+    @with_debug_log()
+    def enqueue_procedure(self, stage):
+        '''
+           Enqueues the procedure with a global id associated
+           - This is a tuple 
+        '''
+        stage_id = ProcedureManager.next_global_id()
+        id_stage_tuple = (stage_id, stage)
+        self.id_set.add(stage_id)
+        self.queued_tasks.put(id_stage_tuple)
+    
+    @classmethod
+    @with_debug_log()
+    def next_global_id(cls):
+        '''
+           Generates the next integer id - Class level object
+        '''
+        current = ProcedureManager.NEXT_ID
+        ProcedureManager.NEXT_ID += 1
+        return current

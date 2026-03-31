@@ -257,7 +257,4 @@ class CompilerStageTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    tst = CompilerStageTest()
-    tst.test_single_pass_dependencies()
-
-    #unittest.main()
+    unittest.main()

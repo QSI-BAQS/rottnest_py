@@ -30,7 +30,7 @@ def server_start(hostname="localhost", port=8080):
 def rottnestpy_start():
     monitor_obj = DebugMonitor.default()\
         .get_console()\
-        .set_app(RottnestApplication(None, None))\
+        .set_app(RottnestApplication.get_uninitialised_instance())\
         .get_monitor()
         
     cu_executor_pool.start()

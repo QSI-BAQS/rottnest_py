@@ -73,7 +73,7 @@ def websocket_handle():
 
 @with_debug_log()
 def websocket_send_message(app):
-
+    pass
 
     
 @with_debug_log()
