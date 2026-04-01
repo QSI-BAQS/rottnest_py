@@ -5,8 +5,9 @@
     on common integer sequences
 '''
 from types import MethodType
+import cirq
 
-from .decomposition_targets import rottnest_hash, hash_function_patchers
+from .decomposition_targets import rottnest_hash, get_hash_patcher 
 
 from .default_hashes import pyliqtr_hashes
 
@@ -19,7 +20,7 @@ def monkey_patch():
         Linters will complain about this
     '''
     parse_method = MethodType(rottnest_hash, cirq.ops.gate_operation.GateOperation)
-    cirq.ops.gate_operation.GateOperation._rottnest_hash = _rottnest_hash
+    cirq.ops.gate_operation.GateOperation._rottnest_hash = rottnest_hash
     cirq.ops.controlled_operation.ControlledOperation._rottnest_hash = rottnest_hash
 
     cirq.ops.gate_operation.GateOperation._cached_rottnest_hash = None

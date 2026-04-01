@@ -1,15 +1,13 @@
 '''
     Synchronsied singleton instance of patchers
 '''
-import functools
-from . import pyliqtr_patcher, qualtran_patcher, circ_patcher
-
+from functools import reduce
+from . import pyliqtr_patcher, qualtran_patcher, cirq_patcher
 
 class PatchingSingleton: 
     '''
         This is a singleton instance used for scoping
     '''
-
     hash_function_patchers = {}
     patching_modules = [pyliqtr_patcher, qualtran_patcher, cirq_patcher]
 
@@ -35,16 +33,18 @@ class PatchingSingleton:
         for module in cls.patching_modules:
             module.monkey_patch()
 
-        cls.hash_function_patcher = reduce(
+        # Composition rather than assignment maintains the address
+        # of the object
+        cls.hash_function_patchers |= reduce(
             lambda x, y: x | y.hash_function_patchers,
             cls.patching_modules,
             dict() 
         )
-        return cls.hash_function_patcher
+        return cls.hash_function_patchers
 
     @classmethod
     def get_hash_patcher(cls) -> dict:
-        return cls.hash_function_patcher
+        return cls.hash_function_patchers
 
 
 # Singleton instance
@@ -55,23 +55,25 @@ def add_pyliqtr_hash(patcher, function):
         Singleton dispatch method
         Adds a pyliqtr hash
     '''
-    patching_singleton.add_pyliqtr_hash(patcher, function):
+    patching_singleton.add_pyliqtr_hash(patcher, function)
 
 def add_qualtran_hash(patcher, function):
     '''
         Singleton dispatch method
         Adds a pyliqtr hash
     '''
-    patching_singleton.add_qualtran_hash(patcher, function):
+    patching_singleton.add_qualtran_hash(patcher, function)
 
 def add_cirq_hash(patcher, function):
     '''
         Singleton dispatch method
         Adds a cirq hash
     '''
-    patching_singleton.add_cirq_hash(patcher, function):
+    patching_singleton.add_cirq_hash(patcher, function)
 
 def get_hash_patcher() -> dict:
+    '''
+    '''
     return patching_singleton.get_hash_patcher()
 
 def load_hash_patcher() -> dict:

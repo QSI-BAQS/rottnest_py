@@ -33,7 +33,7 @@ def monkey_patch(patchers=None):
         Injects the parsers into the cirq objects
         Linters will complain about this
     '''
-    if patcher is None:
+    if patchers is None:
         patchers = hash_function_patchers
 
     for gate_type, fn in patchers.items():

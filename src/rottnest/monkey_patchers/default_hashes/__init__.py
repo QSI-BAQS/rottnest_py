@@ -1,4 +1,4 @@
-from . import pyliqtr_hashes, cirq_hashes, qualtran_hashe
+from . import pyliqtr_hashes, cirq_hashes, qualtran_hashes
 
 from functools import reduce
 
