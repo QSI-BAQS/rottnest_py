@@ -387,5 +387,4 @@ def update_tracking_targets(targets):
     '''
         Singleton dispatch
     '''
-    print("UPDATED")
     PyliqtrParser.update_tracking_targets(targets)
