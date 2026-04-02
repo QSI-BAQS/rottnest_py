@@ -10,6 +10,8 @@ class PoolProcedure(procedure.RottnestCompilerProcedure):
 
     def __init__(self, *, tag=None, dependencies=None, asynchronous=True):
 
+        # Patch the parser
+        # This needs to be reflected by the pool manager 
         patchers = decomposition_patchers.DecompositionPatchProcedure()
 
         manager = pool.stage_start_pool_manager.StartPoolManagerStage(
