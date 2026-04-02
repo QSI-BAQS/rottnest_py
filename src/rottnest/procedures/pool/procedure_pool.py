@@ -1,3 +1,4 @@
+from rottnest.procedures import decomposition_patchers
 from rottnest.procedures import pool, procedure 
 
 
@@ -9,9 +10,11 @@ class PoolProcedure(procedure.RottnestCompilerProcedure):
 
     def __init__(self, *, tag=None, dependencies=None, asynchronous=True):
 
-        # TODO:
-        # This depends on layout proxy
-        manager = pool.stage_start_pool_manager.StartPoolManagerStage()
+        patchers = decomposition_patchers.DecompositionPatchProcedure()
+
+        manager = pool.stage_start_pool_manager.StartPoolManagerStage(
+            dependencies=[patchers.get_tag()] 
+        )
         synch = pool.stage_synchronise.SynchronisePoolStage(
             dependencies = [manager.get_tag()]
         )
@@ -30,6 +33,7 @@ class PoolProcedure(procedure.RottnestCompilerProcedure):
             dependencies = [results.get_tag()]
         )
         stages = [
+            patchers,
             manager,
             synch,
             workers,

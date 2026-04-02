@@ -43,9 +43,23 @@ class PatchingSingleton:
         return cls.hash_function_patchers
 
     @classmethod
+    def clear_hash_patcher(cls):
+        '''
+            Clears the current patchers
+            This prevents loading by the parser
+        '''
+        cls.hash_function_patchers.clear()
+
+    @classmethod
     def get_hash_patcher(cls) -> dict:
         return cls.hash_function_patchers
 
+    @classmethod
+    def get_tracking_targets(cls) -> set:
+        '''
+            Just the tracking target objects
+        '''
+        return set(cls.hash_function_patchers) 
 
 # Singleton instance
 patching_singleton = PatchingSingleton()
@@ -73,11 +87,21 @@ def add_cirq_hash(patcher, function):
 
 def get_hash_patcher() -> dict:
     '''
+        Singleton dispatch
     '''
     return patching_singleton.get_hash_patcher()
 
 def load_hash_patcher() -> dict:
+    '''
+        Singleton dispatch
+    '''
     return patching_singleton.load_hash_patcher()
+
+def get_tracking_targets() -> set:
+    '''
+        Singleton dispatch
+    '''
+    return patching_singleton.get_tracking_targets()
 
 def rottnest_hash(self):
     '''
@@ -88,3 +112,8 @@ def rottnest_hash(self):
     # Non-hashing object
     return None
 
+def clear_hash_patcher():
+    '''
+        Singleton Dipatch
+    '''
+    patching_singleton.clear_hash_patcher()
