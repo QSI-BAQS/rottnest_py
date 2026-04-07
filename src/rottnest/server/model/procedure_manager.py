@@ -30,8 +30,9 @@ def procedure_manager_get_procedure_state(procedure_id):
        Given a procedure id that the manager
        would have tagged with a integer (pylong)
     '''
-    # procmanager = ProcedureManager.get_instance()
-    # return result
+    procmanager = ProcedureManager.get_instance()
+    result = procmanager.get_procedure_state(procedure_id)
+    return result
 
 
 

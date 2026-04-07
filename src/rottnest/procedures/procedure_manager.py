@@ -6,24 +6,64 @@ from rottnest.debug.util import with_debug_log
 from threading import Thread
 import queue
 
-class ProcedureExecutionStateTag(Enum):
+class ProcedureEntityStateTag(Enum):
     '''
        Tag for the execution state 
     '''
-    INACTIVE = 1
+    CONSTRUCTED = 1
     QUEUED = 2
     ACTIVE = 3
+    COMPLETED = 4
+    INVALID = -1
+
+    
 
 
-class ProcedureExecutionContext:
+class ProcedureEntityTag:
     '''
        When executing a procedure asynchronously, information about
        the context and what is being executed is worth knowing 
     '''
 
-    def __init__(self, proc_id: int | None = None):
+    def __init__(self, proc_id: int = -1):
+        '''
+           Initialises the entity tag to be associated with the procedure 
+        '''
         self.proc_id = proc_id
-        self.state_tag = ProcedureExecutionStateTag.INACTIVE
+        self.state_tag = ProcedureEntityStateTag.CONSTRUCTED
+
+    @classmethod
+    def make(cls, proc_id: int):
+        '''
+           Constructing the procedure with a given procedure id
+        '''
+        return ProcedureEntityTag(proc_id)
+
+    def progress_to_next_state(self):
+        '''
+           Progresses through the states based on the current state it is in
+           Only when the state needs to be reset and usually that would result
+           in a new procedure being constructed 
+        '''
+        if self.state_tag == ProcedureEntityStateTag.CONSTRUCTED:
+            self.state_tag = ProcedureEntityStateTag.QUEUED
+        elif self.state_tag == ProcedureEntityStateTag.QUEUED:
+            self.state_tag = ProcedureEntityStateTag.ACTIVE            
+        elif self.state_tag == ProcedureEntityStateTag.ACTIVE:
+            self.state_tag = ProcedureEntityStateTag.COMPLETED
+
+    def progress_to_active(self):
+        '''
+           For immediate execution mode, it will just jump from constructed to
+           active 
+        '''
+        self.state_tag = ProcedureEntityStateTag.ACTIVE
+
+    def set_state(self, state_tag: ProcedureEntityStateTag):
+        '''
+            Sets the current state tag for the execution
+        '''
+        self.state_tag = state_tag
 
 class ProcedureManager(RottnestCompilerStage):
     '''
@@ -62,14 +102,28 @@ class ProcedureManager(RottnestCompilerStage):
                    completed. Not used by default
         '''
         self.app = app
-        self.id_set: set[int] = set()
+        self.queued_id_set: set[int] = set()
         self.track_stage_completion = track_stage_completion
         self.queue_timeout = queue_timeout
-        self.queued_tasks: queue.Queue[tuple[int, RottnestCompilerStage]] = queue.Queue()
-        self.completed_tasks = list() # NOTE: NOT USED
+        self.queued_tasks: queue.Queue[tuple[ProcedureEntityTag, RottnestCompilerStage]] = queue.Queue()
+
+        # Used to keep track of completed tasks, however we will have a default
+        # limit on how many we can track here
+        self.completed_tasks = list() # NOTE: Not sure if we should use this or not
+
+        
+
+        # Provides an indicator if the application should stop, by default it is
+        # considered active
         self.should_stop = False
+
+        # Assumed not to be, however can be initialised via get_instance
+        # to have an invalid RottnestApplication and will attempt to re-establish if
+        # found to be in this state
         self.app_instance_is_uninit = False
-        self.exec_context = ProcedureExecutionContext()
+
+        # Used to provide information regarding the current active procedure
+        self.current_procedure_focus: tuple[ProcedureEntityTag, RottnestCompilerStage] = None
 
     @with_debug_log()
     def get_enqueued_size(self) -> int:
@@ -77,7 +131,7 @@ class ProcedureManager(RottnestCompilerStage):
             Gets the number of elements currently enqueued
             within the procedure manager
         '''
-        return len(self.id_set)
+        return len(self.queued_id_set)
       
     @classmethod
     @with_debug_log()
@@ -107,8 +161,23 @@ class ProcedureManager(RottnestCompilerStage):
         '''
            Executes the procedure immediately
            Return any data from the stage
+
+           NOTE: It is assumed that the application is executed in a single-threaded
+               manner and that you will not get overlapping/concurrent executions
         '''
-        return stage.execute(self)
+
+        proc_entity_obj = ProcedureEntityTag.make(ProcedureManager.next_global_id())
+        proc_entity_obj.progress_to_active()
+        # After it is constructed, it will progress to queued
+        
+        self.current_procedure_focus = (proc_entity_obj, stage)
+        result = stage.execute(self)
+
+        proc_entity_obj.progress_to_next_state() # Should be marked as completed now
+
+        # Returns a result after the execution is finished
+        return result
+
 
     @with_debug_log()
     def execute_defer(self, stage: RottnestCompilerStage):
@@ -116,6 +185,9 @@ class ProcedureManager(RottnestCompilerStage):
            Defers the execution to the queue
                Will be executed when time is available 
         '''
+        proc_entity_obj = ProcedureEntityTag.make(ProcedureManager.next_global_id())
+        proc_entity_obj.progress_to_next_state()
+        # After it is constructed, it will progress to queued
         self.enqueue_procedure(stage)
         return True
 
@@ -146,10 +218,17 @@ class ProcedureManager(RottnestCompilerStage):
             Dequeue a procedure and execute it by also providing the
             manager as context
         '''
-        id, proc = self.queued_tasks.get(True, self.queue_timeout)
-        proc.execute(self)
-        self.id_set.discard(id)
-        self.queued_tasks.task_done()
+        entity_obj, proc = self.queued_tasks.get(True, self.queue_timeout)
+
+        if entity_obj:
+            entity_id = entity_obj.proc_id
+            proc.execute(self)
+
+            self.queued_id_set.discard(entity_id)
+            self.queued_tasks.task_done()
+
+            # Entity object will be marked as completed here
+            entity_obj.progress_to_next_state()
 
     @with_debug_log()
     def start_loop(self):
@@ -199,15 +278,41 @@ class ProcedureManager(RottnestCompilerStage):
 
         return retapp
 
+    def get_procedure_state(self, procedure_id: int):
+        '''
+           Gets the procedure state and checks the relevant buckets to see if
+           it exists
+               - Likely to check the queued than active
+               - If completed is tracked - checks completed otherwise None 
+               - Active if not in queued
+        '''
+        prc_tuple = self.current_procedure_focus
+        result = ProcedureEntityStateTag.INVALID
+        
+        if procedure_id in self.queued_id_set: #In Queued Set
+            result = ProcedureEntityStateTag.QUEUED
+        elif procedure_id in self.completed_tasks: #In Completed Set
+            result = ProcedureEntityStateTag.COMPLETED
+
+        elif prc_tuple is not None:
+            prc_entity_obj, proc = self.current_procedure_focus
+
+            if prc_entity_obj.proc_id == procedure_id:
+                result = ProcedureEntityStateTag.ACTIVE
+                
+        return result
 
     @with_debug_log()
-    def get_active_procedure_ids(self):
+    def get_queued_procedure_ids(self):
         '''
            Retrieves a list of the current enqueued procedures
             - Note: Was originally going to be computed but we keep a dict
                 for keeping track of them now
+
+            Do Note: This is likely to just be 1 entry but could be many if
+                it gets capability to execute more than 1 at a time.
         '''
-        return list(self.id_set)
+        return list(self.queued_id_set)
 
     @with_debug_log()
     def enqueue_procedure(self, stage):
@@ -217,7 +322,7 @@ class ProcedureManager(RottnestCompilerStage):
         '''
         stage_id = ProcedureManager.next_global_id()
         id_stage_tuple = (stage_id, stage)
-        self.id_set.add(stage_id)
+        self.queued_id_set.add(stage_id)
         self.queued_tasks.put(id_stage_tuple)
     
     @classmethod

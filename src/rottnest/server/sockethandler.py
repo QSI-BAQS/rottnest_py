@@ -12,18 +12,23 @@ from rottnest.server.controller.layout import LayoutInterface
 from rottnest.server.controller.data import RunResultDataInterface
 from rottnest.server.controller_mapper import ControllerMapper
 from rottnest.debug.util import with_debug_log
-
 import json
 
 
 @with_debug_log()
 def websocket_register_routes(app):
-    
+    '''
+      Websocket registration of the route  
+    '''
     DebugMonitor.with_obj('Registering routes', __name__)
     app.route("/websocket", callback=websocket_handle)
 
 @with_debug_log()
 def websocket_construct():
+    '''
+       Websocket construction function that will build
+       a websocket and semaphore 
+    '''
     wsock = request.environ.get('wsgi.websocket')
     wsock_sem = Semaphore()
 
@@ -34,10 +39,13 @@ def websocket_construct():
 
 @with_debug_log()
 def websocket_handle():
-    
+    '''
+       Websocket handler that will be used to process requests from the frontend
+       This is a single threaded application
+    '''
     wsock, wsock_sem = websocket_construct()
     app = RottnestApplication(wsock, wsock_sem)
-
+    
     socket_binds = ControllerMapper.assemble(app.get_responder_ref()) \
         .attach(ArchitectureInterface) \
         .attach(ExecutableInterface) \
