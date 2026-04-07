@@ -1,6 +1,7 @@
 '''
     LCU hash patchers
 '''
+import numpy as np
 from Crypto.Hash import MD5
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
 

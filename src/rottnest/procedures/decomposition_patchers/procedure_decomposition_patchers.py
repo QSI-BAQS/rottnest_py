@@ -16,11 +16,11 @@ class DecompositionPatchProcedure(procedure.RottnestCompilerProcedure):
 
         patchers = stage_decomposition_patchers.DecomposerPatchStage()
 
-#        parser_tracking = stage_parser_tracking.ParserTrackingStage(
-#            dependencies = [patchers.get_tag()] 
-#        ) 
+        parser_tracking = stage_parser_tracking.ParserTrackingStage(
+            dependencies = [patchers.get_tag()] 
+        ) 
         stages = [
             patchers,
-#            parser_tracking
+            parser_tracking
         ]
         super().__init__(None, stages=stages, tag=tag, dependencies=dependencies, asynchronous=asynchronous)

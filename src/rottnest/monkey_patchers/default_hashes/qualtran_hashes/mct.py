@@ -1,6 +1,8 @@
 '''
     Multi control bloq hashes
 '''
+from Crypto.Hash import MD5
+
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.mcmt.and_bloq import MultiAnd
 
