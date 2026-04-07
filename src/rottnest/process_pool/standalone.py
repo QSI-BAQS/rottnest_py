@@ -10,6 +10,8 @@ from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
 
 from rottnest.rz_decomposer import get_rz_precision
 
+from rottnest.procedures.decomposition_patchers import DecompositionPatchProcedure
+
 
 def compile_from_modules(layout, compile_from_graph=True):
     '''
@@ -35,6 +37,9 @@ def compile(
         :: architecture : RottnestArchitecture :: Target architecture 
         :: compile_from_graph : bool :: Whether the worker supports `execute_graph_state`
     '''
+
+    # Setup decompositions
+    DecompositionPatchProcedure().execute()    
 
     # Set architecture and ID
     # If single layout, detect and make it a list
