@@ -1,6 +1,8 @@
 '''
     Pauli LCU hashes
 '''
+import struct
+import numpy as np 
 from Crypto.Hash import MD5
 
 from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU

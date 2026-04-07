@@ -34,8 +34,8 @@ from cabaliser.operation_sequence import OperationSequence
 from rottnest.input_parsers.qubit_label_tracker import QubitLabelTracker
 from rottnest.input_parsers.rz_tag_tracker import RzTagTracker
 
-
 from .default_hashes import cirq_hashes
+from .pyliqtr_patcher import monkey_patch as pyliqtr_monkey_patch
 
 MIN_SEQUENCE_LEN = 5
 
@@ -459,3 +459,5 @@ def monkey_patch():
 
 # Perform the monkey patching
 monkey_patch()
+# Patch non-basis cirq objects
+pyliqtr_monkey_patch(patchers=cirq_hashes.TARGETS)

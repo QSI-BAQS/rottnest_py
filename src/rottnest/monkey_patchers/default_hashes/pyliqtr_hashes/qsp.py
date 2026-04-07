@@ -1,6 +1,7 @@
 '''
     QSP functions
 '''
+import numpy as np
 from Crypto.Hash import MD5
 from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
 

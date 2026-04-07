@@ -107,7 +107,7 @@ def rottnest_hash(self):
     '''
         Dispatch method for rottnest hashing
     '''
-    if self.gate.__class__ in hash_function_patchers:
+    if self.gate.__class__ in PatchingSingleton.hash_function_patchers:
         return self.gate._rottnest_hash(self)
     # Non-hashing object
     return None

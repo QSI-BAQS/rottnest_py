@@ -2,6 +2,7 @@
     Hash function for Inverse gates
 '''
 from cirq.ops.raw_types import _InverseCompositeGate
+from Crypto.Hash import MD5
 
 def inverse_composite_hash(_, operation):
     '''
