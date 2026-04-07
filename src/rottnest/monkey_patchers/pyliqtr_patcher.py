@@ -14,11 +14,14 @@ from .default_hashes import pyliqtr_hashes
 # Map of functions to classes to inject
 hash_function_patchers = {} | pyliqtr_hashes.TARGETS 
 
-def monkey_patch():
+def monkey_patch(patchers=None):
     '''
         Injects the parsers into the cirq objects
         Linters will complain about this
     '''
+    if patchers is None:
+        patchers = hash_function_patchers
+
     parse_method = MethodType(rottnest_hash, cirq.ops.gate_operation.GateOperation)
     cirq.ops.gate_operation.GateOperation._rottnest_hash = rottnest_hash
     cirq.ops.controlled_operation.ControlledOperation._rottnest_hash = rottnest_hash
@@ -26,7 +29,7 @@ def monkey_patch():
     cirq.ops.gate_operation.GateOperation._cached_rottnest_hash = None
     cirq.ops.controlled_operation.ControlledOperation._cached_rottnest_hash = None
 
-    for gate_type, fn in hash_function_patchers.items():
+    for gate_type, fn in patchers.items():
         bound_method = MethodType(fn, gate_type)
         if gate_type is not None.__class__:
             # TODO Some hash calculations take a while, caching is good
