@@ -10,6 +10,7 @@ from rottnest.server.controller.executable import ExecutableInterface
 from rottnest.server.controller.callgraph import CallGraphInterface
 from rottnest.server.controller.layout import LayoutInterface
 from rottnest.server.controller.data import RunResultDataInterface
+from rottnest.server.controller.procedure import ProcedureInterface
 from rottnest.server.controller_mapper import ControllerMapper
 from rottnest.debug.util import with_debug_log
 import json
@@ -52,6 +53,7 @@ def websocket_handle():
         .attach(LayoutInterface) \
         .attach(CallGraphInterface) \
         .attach(RunResultDataInterface) \
+        .attach(ProcedureInterface) \
         .build()
 
 
