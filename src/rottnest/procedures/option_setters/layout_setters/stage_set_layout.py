@@ -4,8 +4,6 @@
 from rottnest.procedures import stage
 from rottnest.compute_units.layout_proxy import LayoutProxy
 
-from . import stage_set_preproc_architecture
-
 STAGE_TAG = 'set_layout'
 
 class SetLayoutStage(stage.RottnestCompilerStage):

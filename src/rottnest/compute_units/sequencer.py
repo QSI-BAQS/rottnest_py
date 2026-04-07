@@ -87,7 +87,7 @@ class Sequencer():
                     # compute unit - this means we need to provide that compute unit
                     if len(compute_unit.sequences) > 0:
                         yield_unit = True
-                        # Void the op_seq so we don't append it while falling thru
+                        # Void the op_seq so we don't append it while falling through
                         # to yield the current unit
                         op_seq = None
                     # We don't have to yield current, and this is an interrupt (not to be

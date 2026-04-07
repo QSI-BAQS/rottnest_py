@@ -6,8 +6,13 @@ STAGE_TAG = 'Start Pool Manager'
 class StartPoolManagerStage(stage.RottnestCompilerStage):
     TAG = STAGE_TAG
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *, tag=None, dependencies=None):
+        super().__init__(
+            tag=tag, 
+            dependencies=dependencies,
+            asynchronous=False
+        )
+
 
     def execute(self, compiler_environment):
         '''

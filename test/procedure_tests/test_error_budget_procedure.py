@@ -5,12 +5,7 @@ from rottnest.plugins import architectures, executables
 
 import unittest
 
-#from rottnest.procedures import error_budget 
-
-from rottnest.test_utils.executable import SampleExecutable 
-
 from rottnest import test_utils
-from rottnest.test_utils.plugin_support import add_executable, add_architecture
 
 from rottnest.process_pool.singleton import get_pool
 

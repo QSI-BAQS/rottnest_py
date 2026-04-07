@@ -180,6 +180,36 @@ default to a counter in the preprocessing pass
         '''
         return {}
 
+    @classmethod
+    def pyliqtr_patchers(self) -> dict():
+        '''
+            Any custom pyliqtr hashes needed for this executable
+        '''
+        return dict()
+
+    @classmethod
+    def qualtran_patchers(self) -> dict():
+        '''
+            Any custom qualtran hashes needed for this executable
+
+        '''
+        return dict()
+
+    @classmethod
+    def cirq_patchers(self) -> dict():
+        '''
+            Any custom cirq hashes needed for this executable
+        '''
+        return dict()
+
+    @classmethod
+    def cirq_gate_decomposers(self) -> dict():
+        '''
+            Any custom cirq to cabaliser decomposers needed
+        '''
+        return dict()
+
+
     def n_rz(self) -> int:
         '''
             Number of Rz gates
@@ -335,3 +365,5 @@ default to a counter in the preprocessing pass
                 for g in gate:
                     qubits |= set(g.qubits)
         return qubits
+
+

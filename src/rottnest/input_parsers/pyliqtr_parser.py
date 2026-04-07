@@ -33,7 +33,7 @@ from cirq.ops.raw_types import _InverseCompositeGate
 from rottnest.pandora.pandora_sequencer import PandoraSequencer
 
 from . import cirq_parser
-from rottnest.monkey_patchers import pyliqtr_patcher, qualtran_patcher
+from rottnest.monkey_patchers import add_pyliqtr_hash
 from rottnest.pandora.pandora_cache import pandora_cache
 
 # pyLIQTR gates include cirq gates
@@ -56,20 +56,7 @@ All pyLIQTR gates should be decomposed into their call graph
 Each gate is then bound as a shim and a re-usable component
 '''
 class PyliqtrParser:
-    tracking_targets = set([
-        qsvt.QSVT_real_polynomial,
-        PauliStringLCU,
-        prepare_pauli_lcu,
-        QSP_Prepare,
-        qubitized_gates.QubitizedRotation,
-        qubitized_gates.QubitizedReflection,
-        qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlPauli,
-        qualtran.cirq_interop._bloq_to_cirq.BloqAsCirqGate, # Catch a bunch of qualtran gates
-        qualtran._infra.adjoint.Adjoint,
-        qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU,
-    _InverseCompositeGate,
-    ])
-
+    tracking_targets = set()
 
     # Used to cache results
     # This is a singleton
@@ -93,6 +80,13 @@ class PyliqtrParser:
         qualtran.bloqs.mcmt.and_bloq.And,
         cirq.CCXPowGate,
     ))
+
+    @classmethod
+    def update_tracking_targets(cls, targets):
+        '''
+            Injects new tracking targets
+        '''
+        cls.tracking_targets |= targets
 
     '''
         Begin by collecting the pyliqtr components
@@ -384,8 +378,13 @@ def rottnest_cacheable(cls, hash_fn=None):
         if hasattr(cls, "_rottnest_hash") and hash_fn is not cls._rottnest_hash:
             raise TypeError(f"Class {cls} implements _rottnest_hash, but a different function was passed as its hashing function.\nEither implement its hash function as _rottnest_hash, or do not define your own separate _rottnest_hash")
         cls._rottnest_hash = MethodType(hash_fn)
-    pyliqtr_patcher.hash_function_patchers[cls] = cls._rottnest_hash
+    add_pyliqtr_hash(cls, rottnest_hash)
     PyliqtrParser.tracking_targets.add(cls)
 
     return cls
 
+def update_tracking_targets(targets):
+    '''
+        Singleton dispatch
+    '''
+    PyliqtrParser.update_tracking_targets(targets)
