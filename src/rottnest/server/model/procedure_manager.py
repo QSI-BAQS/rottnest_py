@@ -36,3 +36,11 @@ def procedure_manager_get_procedure_state(procedure_id):
 
 
 
+def procedure_manager_get_procedure_list():
+    '''
+        It will get the list of the available procedures
+        that the manager can execute
+
+        TODO: This needs to be clarified
+    '''
+    return []

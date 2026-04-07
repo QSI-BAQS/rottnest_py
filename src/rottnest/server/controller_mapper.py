@@ -1,9 +1,8 @@
 '''
-   Controller mapp is a simple class that will
+   Controller mapper is a simple class that will
    build the responses based on each set of api endpoints 
 '''
 import json
-import os
 
 from responder import responder
 from collections.abc import Callable
