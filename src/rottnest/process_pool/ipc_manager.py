@@ -63,9 +63,10 @@ class IPCManager:
         '''
             Clears a queue, saving memory
         '''
-        lst = self._msg_queues[target]
+        lst = self._msg_queues.get(target, None)
         self._msg_queues[target] = list()
-        del lst
+        if lst is not None:
+            del lst
 
     def batch_get(self, target):
         '''
