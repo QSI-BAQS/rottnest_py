@@ -351,15 +351,36 @@ class ComputeUnitExecutorPool(StatusTracked):
         )
         assert resp == symbols.PONG
 
-    def get_results(self):
+    def get_results_stream(self):
+        '''
+            Gets current results stream objects
+        '''
+        resp = self.ipc.batch_get(
+            commands.GET_RESULTS_STREAM
+        )
+        if resp is not IPCManager.NOT_FOUND: 
+            '''
+                Only need the most recent object
+            '''
+            return resp
+        return []
+
+    def get_results(self, blocking=False):
         '''
             Requests results from the pool manager 
         '''
-        resp = self.ipc.get_item(
+        resp = self.ipc.batch_get(
             commands.GET_CURRENT_RESULTS
         )
         if resp is not IPCManager.NOT_FOUND: 
-            return resp
+            '''
+                Only need the most recent object
+            '''
+            return resp[-1]
+    
+        # Non-blocking update
+        if not blocking:
+            return [] 
 
         self.manager_task_queue.put(
             (commands.GET_CURRENT_RESULTS,)
@@ -379,16 +400,25 @@ class ComputeUnitExecutorPool(StatusTracked):
         # Flush any remaining results
         self.ipc.flush()
         results = self.ipc.batch_get(commands.GET_CURRENT_RESULTS)
-        if len(results) > 0:
+        if results is not IPCManager.NOT_FOUND:
             return results[-1]
 
         # Todo, make this stateful
         # At the moment the command gets dropped
+
         resp = self.ipc.get_item(
             commands.GET_CURRENT_RESULTS,
             blocking=True
         )
         return resp
+
+    def flush_results_cache(self):
+        '''
+            Clears buffers saving memory
+        '''
+        self.ipc.clear(commands.GET_CURRENT_RESULTS)
+        self.ipc.clear(commands.GET_RESULTS_STREAM)
+
 
     #######
 

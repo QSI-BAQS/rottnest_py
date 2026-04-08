@@ -9,15 +9,18 @@ STAGE_TAG = 'Run Pool'
 class RunPoolStage(stage.RottnestCompilerStage):
     TAG = STAGE_TAG
 
-    def __init__(self, *, tag=None, dependencies=None):
+    def __init__(self, *, 
+            reporting=True,
+            tag=None,
+            dependencies=None
+        ):
         if dependencies is None:
             dependencies = [stage_start_pool.STAGE_TAG] 
 
         self._complete = False
+        self._reporting = reporting
 
         super().__init__(tag=tag, dependencies=dependencies, asynchronous=True)
-
-
 
     def execute(self, compiler_environment):
         # TODO: load layout IDs
@@ -33,6 +36,13 @@ class RunPoolStage(stage.RottnestCompilerStage):
         self._complete = (
             status == PoolStatus.FINISHED
         )
+        if self._reporting and not self._complete:
+            res = pool.get_results(blocking=False)
+            stream = pool.get_results_stream()
+        else:
+            # Not reporting, clear buffers
+            pool.flush_results_cache()
+
 
     def complete(self):
         return self._complete

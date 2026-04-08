@@ -27,8 +27,10 @@ class PreprocessorProcedure(procedure.RottnestCompilerProcedure):
         swap_layout = stage_set_preproc_layout.SetPreprocessingLayoutStage(
             dependencies = [swap_arch.get_tag()]
         )
- 
+
+        # Doesn't report to websocket 
         preprocessing_pool = pool.procedure_pool.PoolProcedure(
+            reporting = False,
             dependencies = [swap_layout.get_tag()],
             asynchronous = True
         )

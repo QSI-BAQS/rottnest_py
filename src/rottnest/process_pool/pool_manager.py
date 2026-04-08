@@ -527,11 +527,12 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             result_obj
         )
 
-        self.manager_completion_queue.put((commands.GET_CURRENT_RESULTS, result_obj))
+        self.manager_completion_queue.put(
+            (commands.GET_RESULTS_STREAM, result_obj)
+        )
 
         # TODO: Batch
         self.n_received += 1
-
         return
 
         # Probably an error, dump to stdout
@@ -588,7 +589,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             Sends the results
             Wrapper around send total
         '''
-        print("Getting Results")
         self.send_total()
 
 
