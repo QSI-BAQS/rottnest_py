@@ -8,7 +8,7 @@ class PoolProcedure(procedure.RottnestCompilerProcedure):
 
     TAG = STAGE_TAG
 
-    def __init__(self, *, tag=None, dependencies=None, asynchronous=True):
+    def __init__(self, *, reporting=True, tag=None, dependencies=None, asynchronous=True):
 
         # Patch the parser
         # This needs to be reflected by the pool manager 
@@ -24,6 +24,7 @@ class PoolProcedure(procedure.RottnestCompilerProcedure):
             dependencies = [synch.get_tag()] 
         )
         run = pool.stage_run_pool.RunPoolStage(
+            reporting=reporting,
             dependencies = [workers.get_tag()] 
         )
 
