@@ -11,13 +11,13 @@ from . import stage_t_fidelity
 
 from rottnest.compute_units.layout_proxy import LayoutProxy
 
-STAGE_TAG = 'preprocessor_procedure'
+STAGE_TAG = 'preprocessor'
 
 class PreprocessorProcedure(procedure.RottnestCompilerProcedure): 
 
     TAG = STAGE_TAG
 
-    def __init__(self, *, tag=None, dependencies=None):
+    def __init__(self, *, tag=None, dependencies=None, asynchronous=True):
 
 
         # TODO: Replace this with dynamic loads

@@ -45,14 +45,15 @@ class RunPoolStage(stage.RottnestCompilerStage):
         if self._reporting and not self._complete:
             res = pool.get_results(blocking=False)
             stream = pool.get_results_stream()
-            print(res)
-            print(stream)
             wsock.send(res)
             wsock.send(stream)
         else:
             # Not reporting, clear buffers
             pool.flush_results_cache()
 
-
     def complete(self):
+        if self._reporting and self._complete: 
+            pool = get_pool()
+            pool.get_final_results()
+
         return self._complete

@@ -137,7 +137,7 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
                 # Single pass completed, break
                 break
 
-            if not resolved_on_pass: 
+            if len(self._current_asynchronous_stages) == 0 and not resolved_on_pass: 
                 # Nothing resolved, throw an error
                 raise exceptions.UnresolvableDependencyError()
             unresolved = unresolved_nxt
