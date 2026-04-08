@@ -28,6 +28,9 @@ from copy import deepcopy
 from .pool_status import PoolStatus
 from .status_decorator import status_update, StatusTracked
 
+# Used to hook the patching procedure
+from rottnest.procedures.decomposition_patchers import DecompositionPatchProcedure
+
 
 class ComputeUnitExecutorPoolManager(StatusTracked):
     '''
@@ -338,7 +341,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
         key = args[0]
         self._executables.set_current_executable(key)
-
+        DecompositionPatchProcedure().execute()
 
     def _task_synchronisation_status(self, *args):
         '''
