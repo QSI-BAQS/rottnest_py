@@ -25,6 +25,7 @@ class GetResultsPoolStage(stage.RottnestCompilerStage):
         '''
             Synchronises and starts the workers
         '''
+        print("Getting Final Results")
         pool = get_pool()
         self._results = pool.get_final_results()
 

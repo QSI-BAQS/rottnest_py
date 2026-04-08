@@ -56,7 +56,7 @@ class IPCManager:
             Flush the pipe
         '''
         while not self._pipe.empty(): 
-            self.get_item(None)
+            self.get_item(None, blocking=False)
         return
     
     def clear(self, target):
@@ -99,7 +99,6 @@ class IPCManager:
                 # Item is enqueued, fetch
                 item = queue.pop(0)
                 return item 
-
         # Queue not populated, attempt to fetch
         return self.fetch(
             target,

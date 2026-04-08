@@ -291,7 +291,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         self._task_stop_workers()
 
         self.manager_running = False
-        return None
+        return True 
 
     def _task_ping_manager(self, *args):
         '''
@@ -589,7 +589,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             Sends the results
             Wrapper around send total
         '''
-        self.send_total()
+        return self.composer.stack_frames[0].result.to_args()
 
 
     def process_elem_cache(

@@ -399,12 +399,14 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
         # Flush any remaining results
         self.ipc.flush()
+
+        self.manager_task_queue.put(
+            (commands.GET_CURRENT_RESULTS,)
+        ) 
+
         results = self.ipc.batch_get(commands.GET_CURRENT_RESULTS)
         if results is not IPCManager.NOT_FOUND:
             return results[-1]
-
-        # Todo, make this stateful
-        # At the moment the command gets dropped
 
         resp = self.ipc.get_item(
             commands.GET_CURRENT_RESULTS,
@@ -418,6 +420,17 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
         self.ipc.clear(commands.GET_CURRENT_RESULTS)
         self.ipc.clear(commands.GET_RESULTS_STREAM)
+
+
+    def shutdown_status(self):
+        '''
+            Checks the status of a shutdown
+        '''
+        resp = self.ipc.get_item(
+            commands.TERMINATE,
+            blocking=False
+        )
+        return resp is IPCManager.NOT_FOUND
 
 
     #######
