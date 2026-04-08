@@ -284,6 +284,7 @@ class PluginManager(typing.Generic[T]):
         '''
             Setter for the currently selected option
         '''
+        print("DEBUG: " + key)
         option = self[key]
         if option is None:
             print(f"Unknown option {key}")

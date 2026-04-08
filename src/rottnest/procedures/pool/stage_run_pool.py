@@ -1,6 +1,7 @@
 from rottnest.procedures import stage
 from rottnest.process_pool.singleton import get_pool
 from rottnest.process_pool.pool_status import PoolStatus
+from rottnest.server.app.application import RottnestApplication
 
 from . import stage_start_pool
 
@@ -31,7 +32,12 @@ class RunPoolStage(stage.RottnestCompilerStage):
         '''
             Checks if the pool has finished
         '''
+        
         pool = get_pool()
+
+        app = RottnestApplication.get_instance()
+        wsock = app.get_websocket()
+
         status = pool.poll()
         self._complete = (
             status == PoolStatus.FINISHED
@@ -39,6 +45,10 @@ class RunPoolStage(stage.RottnestCompilerStage):
         if self._reporting and not self._complete:
             res = pool.get_results(blocking=False)
             stream = pool.get_results_stream()
+            print(res)
+            print(stream)
+            wsock.send(res)
+            wsock.send(stream)
         else:
             # Not reporting, clear buffers
             pool.flush_results_cache()

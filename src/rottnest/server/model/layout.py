@@ -1,10 +1,16 @@
 '''
     This interface handles the layout controllers 
 '''
+from rottnest.procedures.procedure_manager import ProcedureManager
 from rottnest.plugins import architectures
 from rottnest.plugins import executables
 from rottnest.procedures import preprocessor
+# from rottnest.procedures.preprocess_and_execute\
+#     .procedure_preprocess_and_execute import PreprocessAndExecute
+# from rottnest.procedures.diagnostic.websocket_procedure \
+    # import WebsocketProcedureDiagnostic
 from rottnest.compute_units.layout_proxy import LayoutProxy
+
 
 RUN_LAYOUT_MSG_TEMP = {
     "layout_id": 0,
@@ -18,7 +24,6 @@ RUN_LAYOUT_EXEC_ERROR = {
 RUN_LAYOUT_ARCH_ERROR = {
     'message': 'layout_architecture_invalid'
 }
-
 
 def get_layouts():
         '''
@@ -70,14 +75,24 @@ def run_layout(layout):
             # TODO: Change the id to the generated one..
             layout_id = 0
             LayoutProxy.add_layout_with_id(layout_id, layout)
-    
-            proc = preprocessor.PreprocessorProcedure()
-            proc.execute()
 
-            while not proc.complete():
-                proc.poll()
+            procedure_manager = ProcedureManager.get_instance()
+            # preprocessor_stage = preprocessor.PreprocessAndExecute()
+            preprocessor_stage = preprocessor.PreprocessorProcedure()
 
-            print("Running a quick test")
+            # NOTE: Diagnostic procedure to check to see if we can
+            #       communicate to the client
+            # preprocessor_stage = WebsocketProcedureDiagnostic()
+
+            # NOTE: Manager is really just a wrapper here?
+            _result = procedure_manager.execute_immediate(preprocessor_stage)
+            # proc.execute()
+
+
+            # NOTE/TODO: Probably need to clean this up or restructure it?
+            while not preprocessor_stage.complete():
+                preprocessor_stage.poll()
+
 
             # TODO: Send back confirmation that it has started running
             #       This should indicate the kind of state it is in.
