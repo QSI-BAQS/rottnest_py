@@ -5,7 +5,7 @@
 
 import unittest
 
-from rottnest.architecture_interface.rottnest_composer import ComposerStackFrame, RottnestComposer, ResultsComposer
+from rottnest.architecture_interface.rottnest_composer import ComposerStackFrame, RottnestComposer, ResultsComposer, MemoryManager
 
 # Patch over result composer get_tocks() so that it can be used as-is
 ResultsComposer.get_tocks = lambda *a, **ka: 1
@@ -14,6 +14,9 @@ class MockComputeUnit():
     def __init__(self, unit_id, qubit_labels=dict()):
         self.unit_id = unit_id
         self._qubit_labels = qubit_labels
+
+    def get_qubit_labels(self):
+        return self._qubit_labels
 
 class MockCachable():
     def __init__(self, cache_v, qubits=[]):
@@ -28,7 +31,7 @@ def unit_res_pair(res_obj, unit_id, qubit_labels=dict()):
     )
 
 def generic_stack_frame(rottnest_hash=0):
-    return ComposerStackFrame(rottnest_hash, ResultsComposer, {})
+    return ComposerStackFrame(rottnest_hash, ResultsComposer, {}, memory_manager=MemoryManager(ResultsComposer))
 
 def generic_composer():
     return RottnestComposer({0:"dummy_layout"}, [])
