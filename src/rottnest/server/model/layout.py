@@ -4,25 +4,29 @@
 from rottnest.procedures.procedure_manager import ProcedureManager
 from rottnest.plugins import architectures
 from rottnest.plugins import executables
-from rottnest.procedures import preprocessor
-# from rottnest.procedures.preprocess_and_execute\
-#     .procedure_preprocess_and_execute import PreprocessAndExecute
-# from rottnest.procedures.diagnostic.websocket_procedure \
-    # import WebsocketProcedureDiagnostic
+from rottnest.procedures.preprocess_and_execute\
+    .procedure_preprocess_and_execute import PreprocAndExecuteProcedure
 from rottnest.compute_units.layout_proxy import LayoutProxy
+from rottnest.server.app.application import RottnestApplication
+from rottnest.protocol.net import Rottnest
+import json
 
+RUN_LAYOUT_MSG_END = {
+    "message": Rottnest.layout.poll_status,
+    "payload": "issued"
+}
 
-RUN_LAYOUT_MSG_TEMP = {
-    "layout_id": 0,
-    "status": "started"
+RUN_LAYOUT_PROCESS_MSG = {
+    "message": Rottnest.layout.poll_status,
+    "payload": "processing"
 }
 
 RUN_LAYOUT_EXEC_ERROR = {
-    'message': 'layout_executable_invalid'
+    "message": Rottnest.layout.err.executable_invalid,
 }
 
 RUN_LAYOUT_ARCH_ERROR = {
-    'message': 'layout_architecture_invalid'
+    "message": Rottnest.layout.err.architecture_invalid,
 }
 
 def get_layouts():
@@ -52,10 +56,9 @@ def run_layout(layout):
         '''
             Gets the list of currently loaded layouts
         '''
-
         # TODO: Please amend this when we have a layout manager in the backend
         #       Please, thank you and bless
-
+        wsock = RottnestApplication.get_instance().get_websocket()
         current_exec = executables.get_current_executable()
         current_arch = architectures.get_current_architecture()
 
@@ -77,25 +80,25 @@ def run_layout(layout):
             LayoutProxy.add_layout_with_id(layout_id, layout)
 
             procedure_manager = ProcedureManager.get_instance()
-            # preprocessor_stage = preprocessor.PreprocessAndExecute()
-            preprocessor_stage = preprocessor.PreprocessorProcedure()
+            preprocessor_stage = PreprocAndExecuteProcedure()
 
-            # NOTE: Diagnostic procedure to check to see if we can
-            #       communicate to the client
-            # preprocessor_stage = WebsocketProcedureDiagnostic()
 
-            # NOTE: Manager is really just a wrapper here?
-            _result = procedure_manager.execute_immediate(preprocessor_stage)
-            # proc.execute()
+            # NOTE: Manager is really just a wrapper in this case
+            _result = procedure_manager\
+                .execute_immediate(preprocessor_stage, )
 
 
             # NOTE/TODO: Probably need to clean this up or restructure it?
+            print('About to check completion')
             while not preprocessor_stage.complete():
+                wsock.send(json.dumps(RUN_LAYOUT_PROCESS_MSG))
+                print("Has sent!")
                 preprocessor_stage.poll()
+                print("Polling Finished")
 
 
             # TODO: Send back confirmation that it has started running
             #       This should indicate the kind of state it is in.
 
-            return RUN_LAYOUT_MSG_TEMP
+            return RUN_LAYOUT_MSG_END
 

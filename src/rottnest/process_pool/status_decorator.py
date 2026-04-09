@@ -17,10 +17,10 @@ def status_update(status, post_status):
             '''
             self.set_status(status)
 
-            print("DEBUG STATUS UPDATE: ", status)
+            # print("DEBUG STATUS UPDATE: ", status)
             result = fn(self, *args, **kwargs)
             self.set_status(post_status)
-            print("DEBUG STATUS UPDATE: ", post_status)
+            # print("DEBUG STATUS UPDATE: ", post_status)
 
             return result
         return _wrap 

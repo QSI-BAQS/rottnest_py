@@ -1,7 +1,7 @@
 import sys
 from time import time
 from .interactive.console import DebugConsoleSystem
-
+from os import getpid
 
 class DebugMonitorMessage:
     '''
@@ -18,6 +18,7 @@ class DebugMonitorMessage:
         self.timestamp = time()
         self.tabsize = tabsize
         self.charcount = charcount
+        self.pid = getpid()
 
     def fmtstr(self):
 
@@ -50,7 +51,7 @@ class DebugMonitorMessage:
         else:
             message_comp = message
         
-        return f"(DEBUG:{int(timestamp)}, {kind}): {message_comp}"
+        return f"(DEBUG:{int(timestamp)}, {self.pid}, {kind}): {message_comp}"
 
     @staticmethod
     def make(kind, message):

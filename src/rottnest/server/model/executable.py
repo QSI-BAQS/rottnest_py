@@ -32,6 +32,7 @@ def get_current_executable() -> dict:
     return exec_dict
 
 
+# BUG: Apparently this is not being set correctly?
 def set_current_executable(name: str) -> Result:
     '''
         It sets the executable using a string name
@@ -39,6 +40,8 @@ def set_current_executable(name: str) -> Result:
         Returns the currently loaded executable from the singleton
         instance
     '''
+    # TODO: Bug here in the set_current_executable
+    # BUG: Need to fix ASAP!
     return singleton.set_current_executable(name)
 
 
@@ -53,5 +56,11 @@ def set_current_params(params: dict) -> Result:
     '''
         Sets the executable parameters
     '''
-    singleton.set_executable_params(**params)
+    # Process parameters and omit type from tuple
+    params_reduction = {}
+    for (pname, ptuple) in params.items():
+
+        params_reduction[pname] = ptuple[1]
+    
+    singleton.set_executable_params(**params_reduction)
     return get_current_params()

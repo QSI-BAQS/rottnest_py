@@ -59,6 +59,9 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
         self.composer = None
         self._rz_precision = DEFAULT_PRECISION
+        self._precision = DEFAULT_PRECISION # TODO: THIS IS WRONG
+        # # WARN: ^^^^^^^^^^
+        # # WARN: We need to address this conflict of names
 
         # Cache management
         # TODO: Move this into the composer
@@ -148,6 +151,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         manager = ComputeUnitExecutorPoolManager(*args, **kwargs)
         manager.main_loop()
 
+    # @with_debug_log()
     def main_loop(self):
         '''
             Main loop for manager
@@ -184,6 +188,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
         self._status = status
 
+    # @with_debug_log()
     def _task_synchronise_layouts(self, *args):
         '''
             Loads a layout to the manager
@@ -200,6 +205,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         self.composer = arch.composer(layouts, list(executable.get_qubits()))
         self.composer.reset_result()
 
+    # @with_debug_log()
     def _task_start_workers(self, *args):
         '''
             Starts the pool
@@ -359,6 +365,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
 
 
+    # @with_debug_log()
     def _task_set_precision(self, *args):
         '''
             Sets the precision of the manager
@@ -371,8 +378,8 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
             Synchronise precision on workers
         '''
-        for queue in self.worker_comms_queue:
-            queue.put((rottnest_worker.SET_PRECISION, self._precision))
+        for q in self.worker_comms_queue:
+            q.put((rottnest_worker.SET_PRECISION, self._precision))
 
     def _task_set_executable_params(self, *args):
         params = args[0]

@@ -5,6 +5,10 @@ from rottnest.server.app.application import RottnestApplication
 
 from . import stage_start_pool
 
+from rottnest.protocol.net import Rottnest
+
+import json
+
 STAGE_TAG = 'Run Pool'
 
 class RunPoolStage(stage.RottnestCompilerStage):
@@ -44,9 +48,14 @@ class RunPoolStage(stage.RottnestCompilerStage):
         )
         if self._reporting and not self._complete:
             res = pool.get_results(blocking=False)
-            stream = pool.get_results_stream()
-            wsock.send(res)
-            wsock.send(stream)
+            # stream = pool.get_results_stream()
+            wsock.send(Rottnest\
+                           .start_packet(Rottnest.data.run_result)\
+                           .set_payload(res)\
+                           .build())
+
+            # NOTE: Results, graph_state info
+            # wsock.send(json.dumps(list(stream))) # NOTE: stream of data?
         else:
             # Not reporting, clear buffers
             pool.flush_results_cache()
@@ -55,5 +64,6 @@ class RunPoolStage(stage.RottnestCompilerStage):
         if self._reporting and self._complete: 
             pool = get_pool()
             pool.get_final_results()
+            # TODO: Flush final results to the websocket
 
         return self._complete

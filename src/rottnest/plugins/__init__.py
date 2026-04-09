@@ -1,7 +1,6 @@
 from .architecture_plugins import ArchitecturePlugins
 from .executable_plugins import ExecutablePlugins
 
-print("INIT PLUGINS")
 
 def override_architectures(architectures_override: ArchitecturePlugins):
     '''

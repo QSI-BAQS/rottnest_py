@@ -1,3 +1,4 @@
+from rottnest.procedures.procedure import RottnestCompilerProcedure
 from enum import Enum
 from rottnest.procedures.stage import RottnestCompilerStage
 from rottnest.server.app.application import RottnestApplication, \
@@ -157,7 +158,7 @@ class ProcedureManager(RottnestCompilerStage):
         return ProcedureManager._manager
 
     @with_debug_log()
-    def execute_immediate(self, stage: RottnestCompilerStage):
+    def execute_immediate(self, stage: RottnestCompilerStage, inject_manager=False):
         '''
            Executes the procedure immediately
            Return any data from the stage
@@ -171,6 +172,12 @@ class ProcedureManager(RottnestCompilerStage):
         # After it is constructed, it will progress to queued
         
         self.current_procedure_focus = (proc_entity_obj, stage)
+
+        # TODO: Fix up as to not need to inject manager here
+        # result = None
+        # if inject_manager:
+        #     result = stage.execute(self)
+        # else:
         result = stage.execute(self)
 
         proc_entity_obj.progress_to_next_state() # Should be marked as completed now
@@ -178,6 +185,12 @@ class ProcedureManager(RottnestCompilerStage):
         # Returns a result after the execution is finished
         return result
 
+
+    def complete():
+        '''
+          To implement required methods for a Stage  
+        '''
+        return False
 
     @with_debug_log()
     def execute_defer(self, stage: RottnestCompilerStage):
