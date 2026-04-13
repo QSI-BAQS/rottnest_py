@@ -77,8 +77,11 @@ def websocket_handle():
                 DebugMonitor.dump(traceback.format_exc())
                 wsock.send(json.dumps({'message': 'err', 
                                        'desc': f"{e}"}))
-    finally:
-        pass
+    except Exception as _e:
+        DebugMonitor.with_obj("Websocket dropped due to unknown failure", kind="FATAL")
+        import traceback
+        traceback.print_exc()
+        DebugMonitor.with_obj(traceback.format_exc())
         # cu_executor_pool.terminate()
 
 @with_debug_log()

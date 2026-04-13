@@ -6,6 +6,8 @@
 from .stage import RottnestCompilerStage #,stage_tag
 from . import exceptions
 
+import time
+
 class RottnestCompilerProcedure(RottnestCompilerStage):
     '''
         Compiler pass manager
@@ -144,7 +146,7 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
 
             return self.complete() 
             
-
+    # BUG: Something within this method is triggering a race condition
     def poll(self, environment = None):
         '''
             Polling function during asynchronous execution
@@ -168,7 +170,10 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
         '''
             Check if this pass is complete
         '''
-        return len(self._stages_complete) == len(self._stages)
+        print("Checking complete")
+        results = len(self._stages_complete) == len(self._stages)
+        print(f"Finished comparison: {results}")
+        return results
 
     def resolved(self, tag) -> bool:
         '''

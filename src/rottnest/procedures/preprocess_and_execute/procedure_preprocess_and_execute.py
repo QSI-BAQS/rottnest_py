@@ -13,6 +13,7 @@ class PreprocAndExecuteProcedure(procedure.RottnestCompilerProcedure):
         preproc = preprocessor.PreprocessorProcedure(
             asynchronous = True
         )
+
         execute = pool.PoolProcedure(
             dependencies = [preproc.get_tag()],
             asynchronous = True

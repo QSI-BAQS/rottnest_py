@@ -1,4 +1,3 @@
-from rottnest.procedures.procedure import RottnestCompilerProcedure
 from enum import Enum
 from rottnest.procedures.stage import RottnestCompilerStage
 from rottnest.server.app.application import RottnestApplication, \
@@ -16,9 +15,6 @@ class ProcedureEntityStateTag(Enum):
     ACTIVE = 3
     COMPLETED = 4
     INVALID = -1
-
-    
-
 
 class ProcedureEntityTag:
     '''
@@ -40,6 +36,7 @@ class ProcedureEntityTag:
         '''
         return ProcedureEntityTag(proc_id)
 
+    @with_debug_log()
     def progress_to_next_state(self):
         '''
            Progresses through the states based on the current state it is in
@@ -53,6 +50,7 @@ class ProcedureEntityTag:
         elif self.state_tag == ProcedureEntityStateTag.ACTIVE:
             self.state_tag = ProcedureEntityStateTag.COMPLETED
 
+    @with_debug_log()
     def progress_to_active(self):
         '''
            For immediate execution mode, it will just jump from constructed to
@@ -60,6 +58,7 @@ class ProcedureEntityTag:
         '''
         self.state_tag = ProcedureEntityStateTag.ACTIVE
 
+    @with_debug_log()
     def set_state(self, state_tag: ProcedureEntityStateTag):
         '''
             Sets the current state tag for the execution
@@ -178,6 +177,7 @@ class ProcedureManager(RottnestCompilerStage):
         # if inject_manager:
         #     result = stage.execute(self)
         # else:
+        print("execute_call")
         result = stage.execute(self)
 
         proc_entity_obj.progress_to_next_state() # Should be marked as completed now
@@ -186,6 +186,7 @@ class ProcedureManager(RottnestCompilerStage):
         return result
 
 
+    @with_debug_log()
     def complete():
         '''
           To implement required methods for a Stage  

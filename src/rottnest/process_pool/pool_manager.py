@@ -188,7 +188,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
         self._status = status
 
-    # @with_debug_log()
     def _task_synchronise_layouts(self, *args):
         '''
             Loads a layout to the manager
@@ -205,7 +204,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         self.composer = arch.composer(layouts, list(executable.get_qubits()))
         self.composer.reset_result()
 
-    # @with_debug_log()
     def _task_start_workers(self, *args):
         '''
             Starts the pool
@@ -365,7 +363,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
 
 
-    # @with_debug_log()
     def _task_set_precision(self, *args):
         '''
             Sets the precision of the manager
@@ -382,6 +379,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             q.put((rottnest_worker.SET_PRECISION, self._precision))
 
     def _task_set_executable_params(self, *args):
+        # print("SYNC RZ_PRECISION")
         params = args[0]
         self._executables.set_executable_params(**params)
 
@@ -413,6 +411,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
             Consumes the iterator while performing compilation on a single core
         '''
+        print("IN_PLACE COMPILATION")
         arch = plugin_architecture.get_current_architecture()
 
         # Sets up a singular worker

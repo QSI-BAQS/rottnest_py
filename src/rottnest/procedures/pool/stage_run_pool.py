@@ -48,14 +48,28 @@ class RunPoolStage(stage.RottnestCompilerStage):
         )
         if self._reporting and not self._complete:
             res = pool.get_results(blocking=False)
-            # stream = pool.get_results_stream()
+            stream = pool.get_results_stream()
             wsock.send(Rottnest\
                            .start_packet(Rottnest.data.run_result)\
                            .set_payload(res)\
                            .build())
 
-            # NOTE: Results, graph_state info
-            # wsock.send(json.dumps(list(stream))) # NOTE: stream of data?
+
+            for sobj in stream:
+                
+                stream_tup = sobj.items()
+                # unit_ids = sobj.get_compute_unit_ids()
+                stream_data = dict()
+                for (idx, tup) in enumerate(stream_tup):
+                    tkey, tvalue = tup
+                    stream_data[tkey] = tvalue
+                    # stream_data['cuid'] = unit_ids[idx]
+                    
+                # NOTE: Results, graph_state info
+                wsock.send(Rottnest\
+                           .start_packet(Rottnest.data.run_result)\
+                           .set_payload(stream_data)\
+                           .build())
         else:
             # Not reporting, clear buffers
             pool.flush_results_cache()
