@@ -6,6 +6,7 @@ from geventwebsocket.websocket import WebSocket
 from threading import Semaphore
 from rottnest.server.app.app_config import ApplicationConfig, AppExtensions
 from rottnest.debug.monitor import DebugMonitor
+from rottnest.server.protocol.net import Rottnest
 
 class RottnestApplicationUnavailableException(BaseException):
 
@@ -51,6 +52,22 @@ class RottnestApplication:
             RottnestApplication._appinstance = self
             
 
+
+    @classmethod
+    def try_get_instance(cls):
+        '''
+           Will attempt to try and get the instance of rottnest that is
+           initialised
+           If it is not initialised, it will return None
+           If it is initialised, it will return RottnestApplication 
+        '''
+        instance = RottnestApplication._appinstance
+        if instance is None:
+            return None
+        else:
+            return instance
+            
+    
     @staticmethod
     def get_uninitialised_instance():
         '''
@@ -72,6 +89,57 @@ class RottnestApplication:
             raise RottnestApplicationUnavailableException()
         else:
             return cls._appinstance
+
+    
+
+    def websocket_stream_write(self, stream):
+        '''
+           Writes data to the websocket via rottnest instance
+           usage is on composer streams
+           NOTE: Better rename or generalise this method
+        '''
+        for sobj in stream:
+            
+            stream_tup = sobj.items()
+            # unit_ids = sobj.get_compute_unit_ids()
+            stream_data = dict()
+            for (idx, tup) in enumerate(stream_tup):
+                tkey, tvalue = tup
+                stream_data[tkey] = tvalue
+                # stream_data['cuid'] = unit_ids[idx]
+                
+            # NOTE: Results, graph_state info
+            self.wsock.send(Rottnest\
+                       .start_packet(Rottnest.data.run_result)\
+                       .set_payload(stream_data)\
+                       .build())
+
+    def websocket_result_write(self, results):
+        '''
+            Writes data to the websocket via the rottnest instance
+            On results from composer objects    
+            NOTE: Better rename or generalise this method
+        '''
+        
+        self.wsock.send(Rottnest\
+                       .start_packet(Rottnest.data.run_result)\
+                       .set_payload(results)\
+                       .build())
+
+
+    def websocket_result_final_write(self, results):
+        '''
+            Writes data to the websocket via the rottnest instance
+            On results from composer objects    
+            NOTE: Better rename or generalise this method
+        '''
+        
+        self.wsock.send(Rottnest\
+                       .start_packet(Rottnest.data.run_result)\
+                       .set_payload(results)\
+                       .put("cu_id", "TOTAL") \
+                       .build())
+        
 
     def get_websocket(self):
         '''

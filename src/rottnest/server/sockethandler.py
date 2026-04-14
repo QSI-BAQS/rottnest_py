@@ -72,13 +72,15 @@ def websocket_handle():
                 DebugMonitor.dump(str(wse))
                 break
             except Exception as e:
+                print(e)
                 import traceback
                 traceback.print_exc()
                 DebugMonitor.dump(traceback.format_exc())
                 wsock.send(json.dumps({'message': 'err', 
                                        'desc': f"{e}"}))
-    except Exception as _e:
-        DebugMonitor.with_obj("Websocket dropped due to unknown failure", kind="FATAL")
+    except Exception as e:
+        print('Hello, is there anyone there?')
+        print(e)
         import traceback
         traceback.print_exc()
         DebugMonitor.with_obj(traceback.format_exc())

@@ -170,9 +170,7 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
         '''
             Check if this pass is complete
         '''
-        print("Checking complete")
         results = len(self._stages_complete) == len(self._stages)
-        print(f"Finished comparison: {results}")
         return results
 
     def resolved(self, tag) -> bool:

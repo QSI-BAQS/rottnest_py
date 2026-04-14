@@ -7,11 +7,8 @@ from rottnest.plugins import executables
 from rottnest.procedures.preprocess_and_execute\
     .procedure_preprocess_and_execute import PreprocAndExecuteProcedure
 from rottnest.compute_units.layout_proxy import LayoutProxy
-from rottnest.server.app.application import RottnestApplication
-from rottnest.protocol.net import Rottnest
+from rottnest.server.protocol.net import Rottnest
 
-import time
-import json
 
 RUN_LAYOUT_MSG_END = {
     "message": Rottnest.layout.poll_status,
@@ -60,7 +57,6 @@ def run_layout(layout):
         '''
         # TODO: Please amend this when we have a layout manager in the backend
         #       Please, thank you and bless
-        wsock = RottnestApplication.get_instance().get_websocket()
         current_exec = executables.get_current_executable()
         current_arch = architectures.get_current_architecture()
 
@@ -97,10 +93,6 @@ def run_layout(layout):
             #   - PoolManager/ProcessPool is detached/unmanaged
             #   - New PoolManager/ProcessPool is constructed?
             #   -   This will repeat and there is no way for the pool manager to accept work
-
-            # NOTE: Get an idea from the process pool and its structure
-            
-            # NOTE/TODO: Probably need to clean this up or restructure it?
             
             while not preprocessor_stage.complete():
                 preprocessor_stage.poll()

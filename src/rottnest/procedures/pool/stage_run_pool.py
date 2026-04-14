@@ -5,7 +5,6 @@ from rottnest.server.app.application import RottnestApplication
 
 from . import stage_start_pool
 
-from rottnest.protocol.net import Rottnest
 
 import json
 
@@ -38,46 +37,30 @@ class RunPoolStage(stage.RottnestCompilerStage):
         '''
         
         pool = get_pool()
-
-        app = RottnestApplication.get_instance()
-        wsock = app.get_websocket()
-
         status = pool.poll()
         self._complete = (
             status == PoolStatus.FINISHED
         )
         if self._reporting and not self._complete:
-            res = pool.get_results(blocking=False)
-            stream = pool.get_results_stream()
-            wsock.send(Rottnest\
-                           .start_packet(Rottnest.data.run_result)\
-                           .set_payload(res)\
-                           .build())
-
-
-            for sobj in stream:
-                
-                stream_tup = sobj.items()
-                # unit_ids = sobj.get_compute_unit_ids()
-                stream_data = dict()
-                for (idx, tup) in enumerate(stream_tup):
-                    tkey, tvalue = tup
-                    stream_data[tkey] = tvalue
-                    # stream_data['cuid'] = unit_ids[idx]
-                    
-                # NOTE: Results, graph_state info
-                wsock.send(Rottnest\
-                           .start_packet(Rottnest.data.run_result)\
-                           .set_payload(stream_data)\
-                           .build())
+            app_instance = RottnestApplication.try_get_instance()
+            if app_instance is not None:
+                res = pool.get_results(blocking=False)
+                stream = pool.get_results_stream()
+                app_instance.websocket_result_write(res)
+                app_instance.websocket_stream_write(stream)
+            else:
+                pool.flush_results_cache()
+            
         else:
             # Not reporting, clear buffers
             pool.flush_results_cache()
 
     def complete(self):
         if self._reporting and self._complete: 
-            pool = get_pool()
-            pool.get_final_results()
-            # TODO: Flush final results to the websocket
-
+            app_instance = RottnestApplication.try_get_instance()
+            if app_instance is not None:
+                pool = get_pool()
+                res = pool.get_final_results()
+                app_instance.websocket_result_final_write(res)
+                
         return self._complete
