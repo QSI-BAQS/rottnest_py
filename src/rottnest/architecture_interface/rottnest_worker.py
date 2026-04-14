@@ -94,6 +94,8 @@ class RottnestWorker(abc.ABC):
             Default entrypoint function
             Invokes the dispatch call
         '''
+        import os
+        print("WORKER:", os.getpid())
 
         worker = cls(
             layouts=layouts,

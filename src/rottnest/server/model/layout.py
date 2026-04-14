@@ -8,7 +8,10 @@ from rottnest.procedures.preprocess_and_execute\
     .procedure_preprocess_and_execute import PreprocAndExecuteProcedure
 from rottnest.compute_units.layout_proxy import LayoutProxy
 from rottnest.server.protocol.net import Rottnest
+from rottnest.server.app.application import RottnestApplication
 
+
+import time
 
 RUN_LAYOUT_MSG_END = {
     "message": Rottnest.layout.poll_status,
@@ -57,6 +60,7 @@ def run_layout(layout):
         '''
         # TODO: Please amend this when we have a layout manager in the backend
         #       Please, thank you and bless
+        app = RottnestApplication.get_instance()
         current_exec = executables.get_current_executable()
         current_arch = architectures.get_current_architecture()
 
@@ -85,7 +89,7 @@ def run_layout(layout):
             _result = procedure_manager\
                 .execute_immediate(preprocessor_stage, )
 
-            # time.sleep(4) # BUG: If `poll` is called before a process is ready
+            time.sleep(4) # BUG: If `poll` is called before a process is ready
             # Bad solution: You can sleep by 2 seconds and lets the workers push through
             # 
             # It will result in a crash/reset of the websocket and other components
@@ -95,9 +99,9 @@ def run_layout(layout):
             #   -   This will repeat and there is no way for the pool manager to accept work
             
             while not preprocessor_stage.complete():
+                app.websocket_heartbeat()
                 preprocessor_stage.poll()
-                # NOTE: Keeping it commented it out   
-                # wsock.send(json.dumps(RUN_LAYOUT_PROCESS_MSG))
+                # NOTE: Keeping it commented it out
 
 
             # TODO: Send back confirmation that it has started running

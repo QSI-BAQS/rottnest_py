@@ -45,7 +45,11 @@ def websocket_handle():
        This is a single threaded application
     '''
     wsock, wsock_sem = websocket_construct()
-    app = RottnestApplication(wsock, wsock_sem)
+    app = RottnestApplication.try_get_instance()
+    if app is None:
+        app = RottnestApplication.get_uninitialised_instance()
+
+    app.set_wsock_and_sem(wsock, wsock_sem)
     
     socket_binds = ControllerMapper.assemble(app.get_responder_ref()) \
         .attach(ArchitectureInterface) \
@@ -69,6 +73,9 @@ def websocket_handle():
                                               socket_binds)
 
             except WebSocketError as wse:
+                import traceback
+                traceback.print_exc()
+                DebugMonitor.dump(traceback.format_exc())
                 DebugMonitor.dump(str(wse))
                 break
             except Exception as e:

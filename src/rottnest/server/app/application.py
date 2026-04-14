@@ -75,6 +75,7 @@ class RottnestApplication:
            that are to provide some level of introspection within the system
            itself
         '''
+        print("UNIT")
         wsock = WebSocket(None, StringIO(''), None) # NOTE: Un-init'd
         wsock_sem = Semaphore()
         return RottnestApplication(wsock, wsock_sem, is_uninit=True)
@@ -141,6 +142,15 @@ class RottnestApplication:
                        .build())
         
 
+    def websocket_heartbeat(self):
+        '''
+           Provides a heartbeat mechanism for the websocket
+           to ensure that it is kept alive
+        '''
+        heartbeat_package = Rottnest.make_message(Rottnest.liveness)
+        wsock = self.wsock
+        wsock.send(heartbeat_package)
+
     def get_websocket(self):
         '''
             Gets the websocket that is attached to the application
@@ -152,6 +162,13 @@ class RottnestApplication:
            Sets the websocket connection 
         '''
         self.wsock = wsock
+
+    def set_wsock_and_sem(self, wsock, wsem):
+        '''
+           Sets the websocket and semaphore 
+        '''
+        self.wsock = wsock
+        self.wsock_sem = wsem
 
     def get_responder_ref(self):
         exts = self.get_extensions()
