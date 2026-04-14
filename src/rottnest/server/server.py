@@ -7,13 +7,14 @@ from rottnest.debug.monitor import DebugMonitor
 from rottnest.debug.util import with_debug_log
 from rottnest.server import sockethandler
 from rottnest.server.app.application import RottnestApplication
-from rottnest.server.model.plugin_architecture import cu_executor_pool
 
 app = Bottle()
 sockethandler.websocket_register_routes(app)
 
 # Global lock
 compilation_lock = False
+
+thread_pool_count = 4
 
 @with_debug_log(msg="Server Starting")
 def server_start(hostname="localhost", port=8080):
@@ -32,11 +33,8 @@ def rottnestpy_start():
         .get_console()\
         .set_app(RottnestApplication.get_uninitialised_instance())\
         .get_monitor()
-        
-    cu_executor_pool.start()
-    cu_executor_pool.ping_manager()
-    
-    pool = ThreadPool(10)
+            
+    pool = ThreadPool(thread_pool_count)
     pool.spawn(monitor_obj.get_console().selector_interact)
     server_handle = server_start()
     server_handle.serve_forever()
