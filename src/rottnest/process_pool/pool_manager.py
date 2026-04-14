@@ -59,6 +59,9 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
         self.composer = None
         self._rz_precision = DEFAULT_PRECISION
+        self._precision = DEFAULT_PRECISION # TODO: THIS IS WRONG
+        # # WARN: ^^^^^^^^^^
+        # # WARN: We need to address this conflict of names
 
         # Cache management
         # TODO: Move this into the composer
@@ -148,6 +151,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         manager = ComputeUnitExecutorPoolManager(*args, **kwargs)
         manager.main_loop()
 
+    # @with_debug_log()
     def main_loop(self):
         '''
             Main loop for manager
@@ -372,11 +376,11 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
             Synchronise precision on workers
         '''
-        print("Synchronising precisions")
         for queue in self.worker_comms_queue:
             queue.put((rottnest_worker.SET_RZ_PRECISION, self._precision))
 
     def _task_set_executable_params(self, *args):
+        # print("SYNC RZ_PRECISION")
         params = args[0]
         self._executables.set_executable_params(**params)
 
@@ -408,6 +412,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
             Consumes the iterator while performing compilation on a single core
         '''
+        print("IN_PLACE COMPILATION")
         arch = plugin_architecture.get_current_architecture()
 
         # Sets up a singular worker

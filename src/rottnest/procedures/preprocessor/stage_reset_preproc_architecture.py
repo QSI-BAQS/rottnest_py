@@ -38,7 +38,8 @@ class ResetPreprocessingArchitectureStage(stage.RottnestCompilerStage):
         '''
         # Todo replace with dynamic string
         arch = environment.hotswap_architecture.get_original_architecture()
+        
         architectures.set_current_architecture(
-            arch 
+            arch.get_name()
         )
         self._complete = True

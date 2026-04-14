@@ -115,7 +115,6 @@ class ExecutablePlugins(PluginManager[RottnestExecutable]):
             for the caller
         '''
         self._set_current_option(key)
-
         if self._current_option is not None:
             current_option: RottnestExecutable = self._current_option        
     

@@ -10,41 +10,52 @@ from rottnest.server.controller.executable import ExecutableInterface
 from rottnest.server.controller.callgraph import CallGraphInterface
 from rottnest.server.controller.layout import LayoutInterface
 from rottnest.server.controller.data import RunResultDataInterface
+from rottnest.server.controller.procedure import ProcedureInterface
 from rottnest.server.controller_mapper import ControllerMapper
 from rottnest.debug.util import with_debug_log
-
 import json
 
 
 @with_debug_log()
 def websocket_register_routes(app):
-    
+    '''
+      Websocket registration of the route  
+    '''
     DebugMonitor.with_obj('Registering routes', __name__)
     app.route("/websocket", callback=websocket_handle)
 
 @with_debug_log()
 def websocket_construct():
+    '''
+       Websocket construction function that will build
+       a websocket and semaphore 
+    '''
     wsock = request.environ.get('wsgi.websocket')
     wsock_sem = Semaphore()
 
     if not wsock:
-        abort(400, 'Expected WebScoket request.')
+        abort(400, 'Expected WebSocket request.')
 
     return (wsock, wsock_sem)
 
 @with_debug_log()
 def websocket_handle():
-    
+    '''
+       Websocket handler that will be used to process requests from the frontend
+       This is a single threaded application
+    '''
     wsock, wsock_sem = websocket_construct()
     app = RottnestApplication(wsock, wsock_sem)
-
+    
     socket_binds = ControllerMapper.assemble(app.get_responder_ref()) \
         .attach(ArchitectureInterface) \
         .attach(ExecutableInterface) \
         .attach(LayoutInterface) \
         .attach(CallGraphInterface) \
         .attach(RunResultDataInterface) \
+        .attach(ProcedureInterface) \
         .build()
+
 
     try:
         while True:
@@ -61,15 +72,25 @@ def websocket_handle():
                 DebugMonitor.dump(str(wse))
                 break
             except Exception as e:
+                print(e)
                 import traceback
                 traceback.print_exc()
                 DebugMonitor.dump(traceback.format_exc())
                 wsock.send(json.dumps({'message': 'err', 
                                        'desc': f"{e}"}))
-    finally:
-        pass
+    except Exception as e:
+        print('Hello, is there anyone there?')
+        print(e)
+        import traceback
+        traceback.print_exc()
+        DebugMonitor.with_obj(traceback.format_exc())
         # cu_executor_pool.terminate()
 
+@with_debug_log()
+def websocket_send_message(app):
+    pass
+
+    
 @with_debug_log()
 def websocket_message_deserialize(message_raw) -> tuple[bool, dict]:
     '''
@@ -114,7 +135,6 @@ def websocket_response_callback(ws, message_type):
                 'message': 'err',
                 'payload': payload
             })
-        # print("In callback: ", end='')
         ws.send(resp)
     return _callback
 

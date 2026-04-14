@@ -33,7 +33,6 @@ class ArchitectureControllerTests(unittest.TestCase):
            Endpoint Checking - Iterates through the list of endpoints and data
            payloads to then check if all the methods can be serialised 
         '''
-        
         prefix = 'rottnest'
         controller_mapper_builder = ControllerMapper.assemble()
 

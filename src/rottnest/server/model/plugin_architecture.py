@@ -1,16 +1,17 @@
+# DEAD CODE
+# Until testing confirms otherwise, kept only for reading purposes during re-integration
+
 import json
 import threading
 
 from rottnest.process_pool import process_pool
 from rottnest.compute_units.layout_proxy import LayoutProxy 
-from rottnest.process_pool.process_pool import ComputeUnitExecutorPool
 
 
 
 # TODO: May want to get a shared unit instead of instantiating it
 # here
 
-cu_executor_pool = ComputeUnitExecutorPool()   
 
 def log_resp(resp):
     resp_log = str(resp)

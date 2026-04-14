@@ -8,7 +8,7 @@
 from rottnest.debug.monitor import DebugMonitor
 from collections.abc import Callable
 from typing import TypeVar, ParamSpec
-
+from os import getpid
 
 
 T = TypeVar('T')

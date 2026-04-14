@@ -43,7 +43,7 @@ class ArchitectureInterface(RouteInterface):
         
         current, arch_list = model.get_architecture_list()        
         if current is not None:
-            current = current.designer.get_designer_metadata()
+            current = current.designer.get_designer_metadata() # ty ignore
         res = list(map(lambda a : a, arch_list))
         return Result.Ok({
                              "current_architecture" : current,

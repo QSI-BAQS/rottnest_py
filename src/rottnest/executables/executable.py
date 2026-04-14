@@ -42,13 +42,13 @@ class RottnestExecutable(abc.ABC):
             self.__class__.get_private_parameters()
             | self.__class__.get_parameters()
         )
-        
+        # NOTE: Bug triggered here - 8/04/2026 - 4:11pm
+        # NOTE: No issue on - 10/04/2026
         for param_name in params:
             param_type, param_value = params[param_name]
             
             if param_name in kwargs:
                 param_value = kwargs[param_name]
-
             # Bind the parameters by name to the class instance
             self.__setattr__(param_name, param_type(param_value))
 
