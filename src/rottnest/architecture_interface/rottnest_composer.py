@@ -654,10 +654,10 @@ class ResultsComposer:
         '''
         raise NotImplementedError
 
-    def serialise(self):
+    def to_runchart(self):
         '''
-            Returns a representation for display
-            on the front end
+            Converts the object to a format for
+            display on the runchart 
         '''
         return str(self._obj)
 

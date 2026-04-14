@@ -2,7 +2,7 @@
     Model wrapper functions for the process pool
 '''
 
-from rottnest.process_pool.process_pool import ComputeUnitExecutorPool 
+from rottnest.process_pool.process_pool import get_pool 
 from rottnest.process_pool.status_decorator import StatusTracked
 from rottnest.process_pool import standalone
 
@@ -22,7 +22,7 @@ class ModelProcessPool(StatusTracked):
         '''
             Wrap a process pool
         '''
-        self._pool = ComputeUnitExecutorPool()
+        self._pool = get_pool()
 
     def get_status(self) -> str:
         '''
