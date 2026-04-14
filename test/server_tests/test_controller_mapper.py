@@ -8,7 +8,7 @@ from rottnest.server.controller.architecture import ArchitectureInterface
 from rottnest.server.controller.executable import ExecutableInterface
 from rottnest.server.controller.layout import LayoutInterface
 from rottnest.server.controller.callgraph import CallGraphInterface
-
+from rottnest.server.util.result import Result
 
 class DummyInterface(RouteInterface):
 
@@ -18,10 +18,10 @@ class DummyInterface(RouteInterface):
         '''
            Dummy method that will return a dict 
         '''
-        return {
-            'property': 'value',
-            'easily': 'serialisable'
-        }
+        return Result.Ok({
+            'message': 'value',
+            'payload': 'serialisable'
+        })
         
         
 class ControllerMapperTests(unittest.TestCase):
@@ -115,7 +115,7 @@ class ControllerMapperTests(unittest.TestCase):
 
         mapper_fn = controller_mapper_obj.get('rottnest.dummyiface.get_dummy',
                                           ControllerMapperTests.err_fn)
-        mapobj = mapper_fn(None, {'data': 'nothing data'})
+        mapobj = mapper_fn(None, {'message': 'nothing data'})
         
 
         assert hasattr(mapper_fn, '__call__')

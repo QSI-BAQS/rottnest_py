@@ -4,7 +4,7 @@
 '''
 import json
 
-from responder import responder
+from rottnest.server.responder import responder
 from collections.abc import Callable
 from typing import Self, Any
 from rottnest.server.interface_spec.route_interface import RouteInterface
