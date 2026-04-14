@@ -14,7 +14,7 @@ RUN_SEQUENCE = 'run_sequence'
 SET_ARCHITECTURE_MODULE = 'set_architecture_module'
 SET_EXECUTABLE = 'set_executable'
 SET_EXECUTABLE_PARAMS = 'set_executable_params'
-SET_PRECISION = 'set_precision'
+SET_RZ_PRECISION = 'set_rz_precision'
 
 # Synchronise executable and architecture modules
 # With the manager
