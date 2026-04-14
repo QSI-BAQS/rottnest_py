@@ -30,6 +30,7 @@ from .status_decorator import status_update, StatusTracked
 
 # Used to hook the patching procedure
 from rottnest.procedures.decomposition_patchers import DecompositionPatchProcedure
+from rottnest.procedures.option_setters.project_setters import SynchroniseModulesProcedure, SetArchitectureProcedure, SetExecutableProcedure 
 
 
 class ComputeUnitExecutorPoolManager(StatusTracked):
@@ -330,22 +331,22 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
         architectures = args[0]
         executables = args[1]
-        self._architectures.load_modules_from_strings(*architectures)
-        self._executables.load_modules_from_strings(*executables)
+        proc = SynchroniseModulesProcedure(architectures, executables)
+        proc.execute()
 
     def _task_set_architecture_module(self, *args):
         '''
             Sets an architecture module from a key
         '''
         key = args[0]
-        self._architectures.set_current_architecture(key)
+        SetArchitectureProcedure(key).execute()
 
     def _task_set_executable(self, *args):
         '''
             Sets an executable from a key
         '''
         key = args[0]
-        self._executables.set_current_executable(key)
+        SetExecutableProcedure(key).execute()
         DecompositionPatchProcedure().execute()
 
     def _task_synchronisation_status(self, *args):
