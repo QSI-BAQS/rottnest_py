@@ -158,7 +158,7 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
         self.synchronise_modules_and_layouts()
         self.synchronise_options()
-        self.synchronise_precision()
+        self.synchronise_rz_precision()
 
     def synchronise_modules_and_layouts(self):
         '''
@@ -182,14 +182,14 @@ class ComputeUnitExecutorPool(StatusTracked):
         return
 
 
-    def synchronise_precision(self):
+    def synchronise_rz_precision(self):
         '''
             Synchronises the Rz precision with the queue 
         '''
         precision = get_rz_precision()
         self.manager_task_queue.put(
             (
-                commands.SET_PRECISION,
+                commands.SET_RZ_PRECISION,
                 precision
             )
         )

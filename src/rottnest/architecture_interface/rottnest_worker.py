@@ -17,7 +17,7 @@ from cabaliser.widget import Widget
 
 PING = 'ping'
 PONG = 'pong'
-SET_PRECISION = 'set_precision'
+SET_RZ_PRECISION = 'set_rz_precision'
 EXEC_COMPUTE_UNIT  = 'exec_compute_unit'
 EXEC_GRAPH_STATE = 'exec_widget'
 GET_GRAPH = 'get_graph'
@@ -50,13 +50,20 @@ class RottnestWorker(abc.ABC):
 
         self.worker_tasks = {
             PING: self.ping,
-            SET_PRECISION: self.set_precision,
+            SET_RZ_PRECISION: self.set_precision,
             EXEC_COMPUTE_UNIT: self.task_execute_compute_unit,
             EXEC_GRAPH_STATE: self.task_execute_graph_state,
             GET_GRAPH: self.get_graph,
             LOAD_LAYOUT: self.load_layout,
             HALT: self.halt
         }
+
+        # Additional tasks for priority workers
+        if self._priority:
+            priority_worker_tasks = {
+
+            }
+            self.worker_tasks |= priority_worker_tasks
 
         # Workers enabled blinding
         # Architecture details are contained to workers
@@ -104,10 +111,13 @@ class RottnestWorker(abc.ABC):
 
         worker(task_queue, worker_results_queue, worker_comms_queue)
 
-    def main(self, task_queue: mp.Queue, worker_results_queue: mp.Queue, comms_queue):
+    def main(self, task_queue: mp.Queue, worker_results_queue: mp.Queue, comms_queue: mp.Queue):
         '''
             Worker loop - queries
         '''
+        if self._priority:
+            self.priority_main()
+        
         print("Worker started:", mp.current_process().name, flush=True)
         self.running = True
         while self.running:
@@ -123,6 +133,24 @@ class RottnestWorker(abc.ABC):
             if response is not None:
                 worker_results_queue.put(response)
         return
+
+    def priority_main(self, task_queue: mp.Queue, worker_results_queue: mp.Queue, comms_queue: mp.Queue): 
+        print("Worker started:", mp.current_process().name, flush=True)
+        self.running = True
+        while self.running:
+
+            if not comms_queue.empty():
+                queue = comms_queue
+            elif not task_queue.empty():
+                queue = task_queue
+            else:
+                continue
+            task, *args = queue.get()
+            response = (task, self.worker_tasks[task](*args))
+            if response is not None:
+                worker_results_queue.put(response)
+        return
+
 
     def halt(
             self,
@@ -262,16 +290,6 @@ class RottnestWorker(abc.ABC):
         '''
         raise NotImplementedError
 
-    def get_graph(
-            self,
-            *args,
-        ):
-        '''
-            Synchronises back end graph object unrolling with front end objects
-            TODO: Replace
-        '''
-        raise NotImplementedError
-
     def run_widget(
             self,
             cabaliser_obj,
@@ -296,6 +314,31 @@ class RottnestWorker(abc.ABC):
             widget
         '''
         raise NotImplementedError
+
+    ###
+    # Priority Worker Methods
+    ###
+
+    def execute_compute_unit_visualiser(
+        self,
+        compute_unit: "ComputeUnit"
+        ) -> dict:
+        '''
+            This is a task for the architecture
+        '''
+        raise NotImplementedError 
+
+
+    def get_graph(
+            self,
+            *args,
+        ):
+        '''
+            Synchronises back end graph object unrolling with front end objects
+            TODO: Replace
+        '''
+        raise NotImplementedError
+
 
     @staticmethod
     def __MISSING() -> dict:

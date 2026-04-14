@@ -135,7 +135,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             commands.SET_ARCHITECTURE_MODULE: self._task_set_architecture_module,
             commands.SET_EXECUTABLE: self._task_set_executable,
             commands.SET_EXECUTABLE_PARAMS: self._task_set_executable_params,
-            commands.SET_PRECISION: self._task_set_precision,
+            commands.SET_RZ_PRECISION: self._task_set_rz_precision,
 
             commands.GET_CURRENT_RESULTS: self._task_get_results,
         }
@@ -225,7 +225,8 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
                 self.priority_result_queue,
                 self.worker_comms_queue[-1],
                 layouts,
-                self._rz_precision
+                self._rz_precision,
+                True # Priority
                 ),
             daemon=True
         )
@@ -359,7 +360,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
 
 
-    def _task_set_precision(self, *args):
+    def _task_set_rz_precision(self, *args):
         '''
             Sets the precision of the manager
         '''
@@ -371,8 +372,9 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
             Synchronise precision on workers
         '''
+        print("Synchronising precisions")
         for queue in self.worker_comms_queue:
-            queue.put((rottnest_worker.SET_PRECISION, self._precision))
+            queue.put((rottnest_worker.SET_RZ_PRECISION, self._precision))
 
     def _task_set_executable_params(self, *args):
         params = args[0]
