@@ -1,7 +1,6 @@
-from geventwebsocket.websocket import WebSocket
 
 from bottle import Bottle
-# from gevent.threadpool import ThreadPool
+from gevent.threadpool import ThreadPool
 from gevent.pywsgi import WSGIServer
 from geventwebsocket.handler import WebSocketHandler
 from rottnest.debug.monitor import DebugMonitor
@@ -15,6 +14,7 @@ sockethandler.websocket_register_routes(app)
 # Global lock
 compilation_lock = False
 
+# Thread Pool count for gevent
 thread_pool_count = 4
 
 @with_debug_log(msg="Server Starting")
@@ -30,27 +30,13 @@ def server_start(hostname="localhost", port=8080):
 
 # @with_debug_log(msg="RottnestPy Init")
 def rottnestpy_start():
-    # _monitor_obj = DebugMonitor.default()\
-        # .get_console()\
-        # .set_app(RottnestApplication.get_uninitialised_instance())\
-        # .get_monitor()
-
-    # DEBUG!
-    #
-    # 
-
-    # webclose = WebSocket.close
-
-    
-    def close_wrapper(self, *args, **kwargs):
-        print("CLOSING!!!", flush=True)
-        self._base_close(*args, **kwargs)
-    
-    WebSocket._base_close = WebSocket.close
-    WebSocket.close = close_wrapper
+    monitor_obj = DebugMonitor.default()\
+      .get_console()\
+      .set_app(RottnestApplication.get_uninitialised_instance())\
+      .get_monitor()    
           
-    # pool = ThreadPool(thread_pool_count)
-    # pool.spawn(monitor_obj.get_console().selector_interact)
+    pool = ThreadPool(thread_pool_count)
+    pool.spawn(monitor_obj.get_console().selector_interact)
     server_handle = server_start()
     server_handle.serve_forever()
     

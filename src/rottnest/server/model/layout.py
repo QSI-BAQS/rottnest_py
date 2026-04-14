@@ -58,8 +58,6 @@ def run_layout(layout):
         '''
             Gets the list of currently loaded layouts
         '''
-        # TODO: Please amend this when we have a layout manager in the backend
-        #       Please, thank you and bless
         app = RottnestApplication.get_instance()
         current_exec = executables.get_current_executable()
         current_arch = architectures.get_current_architecture()
@@ -89,7 +87,7 @@ def run_layout(layout):
             _result = procedure_manager\
                 .execute_immediate(preprocessor_stage, )
 
-            time.sleep(4) # BUG: If `poll` is called before a process is ready
+            # time.sleep(4) # BUG: If `poll` is called before a process is ready
             # Bad solution: You can sleep by 2 seconds and lets the workers push through
             # 
             # It will result in a crash/reset of the websocket and other components
@@ -101,11 +99,6 @@ def run_layout(layout):
             while not preprocessor_stage.complete():
                 app.websocket_heartbeat()
                 preprocessor_stage.poll()
-                # NOTE: Keeping it commented it out
-
-
-            # TODO: Send back confirmation that it has started running
-            #       This should indicate the kind of state it is in.
 
             return RUN_LAYOUT_MSG_END
 

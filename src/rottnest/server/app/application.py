@@ -75,7 +75,6 @@ class RottnestApplication:
            that are to provide some level of introspection within the system
            itself
         '''
-        print("UNIT")
         wsock = WebSocket(None, StringIO(''), None) # NOTE: Un-init'd
         wsock_sem = Semaphore()
         return RottnestApplication(wsock, wsock_sem, is_uninit=True)

@@ -5,8 +5,6 @@
 import abc
 
 import multiprocessing as mp
-import traceback
-import time
 
 from ..input_parsers.rz_tag_tracker import RzTagTracker
 from ..compute_units.compute_unit import ComputeUnit
@@ -94,8 +92,6 @@ class RottnestWorker(abc.ABC):
             Default entrypoint function
             Invokes the dispatch call
         '''
-        import os
-        print("WORKER:", os.getpid())
 
         worker = cls(
             layouts=layouts,
