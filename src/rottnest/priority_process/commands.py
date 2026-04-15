@@ -1,4 +1,6 @@
 SYNCHRONISE_MODULES = 'synchronise_modules'
+SYNCHRONISE_LAYOUTS = 'synchronise_layouts'
 SET_ARCHITECTURE = 'set_architecture'
 SET_EXECUTABLE = 'set_executable'
 SET_EXECUTABLE_PARAMS = 'set_executable_params'
+GET_CALLGRAPH = 'get_callgraph'

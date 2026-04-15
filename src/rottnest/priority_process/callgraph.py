@@ -4,7 +4,7 @@
 
 from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
 
-from rottnest.plugins import executables as singleton
+from rottnest.plugins import executables
 
 class CallGraphModel:
     '''
@@ -29,7 +29,7 @@ class CallGraphModel:
             Generates the root node of the graph
         '''
         parser = PyliqtrParser(
-            singleton.get_current_executable()
+            executables.get_current_executable()
         )
         parser.parse()
         return parser
