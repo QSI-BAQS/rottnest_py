@@ -143,6 +143,7 @@ class Rottnest:
         Root - Rottnest namespace which includes all protocl messages
     '''
     err = 'err'
+    liveness = 'live'
     arch = _compose(Arch)
     layout = _compose(Layout)
     executable = _compose(Executable)
@@ -154,6 +155,10 @@ class Rottnest:
     @classmethod
     def start_packet(cls, name: str):
         return RottnestPacketBuilder(name)
+
+    @classmethod
+    def make_message(cls, name: str):
+        return RottnestPacketBuilder.message(name)
 
 '''
    Single instance which these are encompassed under 

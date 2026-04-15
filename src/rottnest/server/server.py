@@ -14,6 +14,7 @@ sockethandler.websocket_register_routes(app)
 # Global lock
 compilation_lock = False
 
+# Thread Pool count for gevent
 thread_pool_count = 4
 
 @with_debug_log(msg="Server Starting")
@@ -27,13 +28,13 @@ def server_start(hostname="localhost", port=8080):
     return server
 
 
-@with_debug_log(msg="RottnestPy Init")
+# @with_debug_log(msg="RottnestPy Init")
 def rottnestpy_start():
     monitor_obj = DebugMonitor.default()\
-        .get_console()\
-        .set_app(RottnestApplication.get_uninitialised_instance())\
-        .get_monitor()
-            
+      .get_console()\
+      .set_app(RottnestApplication.get_uninitialised_instance())\
+      .get_monitor()    
+          
     pool = ThreadPool(thread_pool_count)
     pool.spawn(monitor_obj.get_console().selector_interact)
     server_handle = server_start()
