@@ -119,11 +119,14 @@ class CallGraphInterface(RouteInterface):
     @RouteInterface.bind_route(MODULE_PREFIX, GET_ROOT_GRAPH) 
     @classmethod
     def get_root_graph(cls, message, **kwargs) -> Result:
-        root_graph = CallGraphModel.get_root_graph_result()
+        (root_graph, available) = CallGraphModel.get_root_graph_result()
         callgraph_packet = CallGraphPacketBuilder.make()
+
+        
         
         if root_graph is None:
             return Result.Ok(callgraph_packet.set_error().build())
+        # elif 
         else:
             return Result.Ok(callgraph_packet.set_root_graph(root_graph) \
                 .build())
