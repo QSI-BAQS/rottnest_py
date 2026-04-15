@@ -6,13 +6,15 @@
 from . import gridsynth
 
 # Currently defaults to Gridsynth
-__RZ_DECOMPOSER = gridsynth.Gridsynth()
+__RZ_DECOMPOSER = None 
 
 
 def get_rz_decomposer():
     '''
         Getter for the singleton instance
     '''
+    if __RZ_DECOMPOSER is None:
+        __RZ_DECOMPOSER = gridsynth.Gridsynth()
     return __RZ_DECOMPOSER
 
 def set_rz_decomposer(composer):

@@ -5,8 +5,8 @@ from decimal import Decimal
 from functools import lru_cache
 
 # Try a self import
-from rottnest.rz_decomposer import rz_decomposer
-from rottnest.rz_decomposer import gridsynth
+from . import rz_decomposer
+from . import gridsynth
 
 # Default precision in bits
 
