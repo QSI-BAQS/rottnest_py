@@ -18,6 +18,10 @@ from rottnest.debug.util import with_debug_log
 
 # from rottnest.server.view import callgraph as view
 
+GET_ROOT_GRAPH_INTERMEDIATE_RESULT = {
+    "": Rottnest.callgraph.get_root_graph,
+}
+
 
 class CallGraphModel:
     '''
@@ -68,17 +72,19 @@ class CallGraphModel:
             graph_id)
 
         proc_manager = ProcedureManager.get_instance()
-        # app = RottnestApplication.get_instance()
 
-        _result = proc_manager.execute_immediate(gg_proc, )
+        _result = proc_manager.execute_defer(gg_proc, )
 
+        
+        (result_dict, False)
+        
         # BUG: Can get stuck in this loop
         # if the status is not resolved
         #   - We need to have a way to exit - Consider using defer instead
         while not gg_proc.complete():
             gg_proc.poll()
 
-        return result_dict
+        return (result_dict, True)
 
         
     # @classmethod
