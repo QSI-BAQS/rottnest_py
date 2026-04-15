@@ -1,7 +1,6 @@
 """
     Model for Callgraph
 """
-
 from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
 
 from rottnest.plugins import executables as singleton
@@ -106,3 +105,24 @@ class CallGraphModel:
         graph_segment = view.callgraph_segment(0, graph)
 
         return graph_segment
+
+    @classmethod
+    def get_node_status(cls, graph_id, element_id):
+        '''
+           Gets the status of a particular node within a graph id 
+        '''
+        # TODO: Complete this model method
+        # NOTE: This is a dummy object
+        return {
+            'node_status' : 'Something',
+            'visualiser_object' : {}
+        }
+
+    @classmethod
+    def run_graph_node(cls, graph_id, element_id):
+        '''
+           Attempts to run the graph node - True if it has been queued
+            False if an error had occurred
+        '''
+        # TODO: Complete this model method
+        return False
