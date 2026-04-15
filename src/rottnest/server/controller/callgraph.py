@@ -119,7 +119,7 @@ class CallGraphInterface(RouteInterface):
     @RouteInterface.bind_route(MODULE_PREFIX, GET_ROOT_GRAPH) 
     @classmethod
     def get_root_graph(cls, message, **kwargs) -> Result:
-        root_graph = CallGraphModel.generate_root_node()
+        root_graph = CallGraphModel.get_root_graph_result()
         callgraph_packet = CallGraphPacketBuilder.make()
         
         if root_graph is None:
@@ -133,10 +133,11 @@ class CallGraphInterface(RouteInterface):
     @classmethod
     def get_graph(cls, message, **kwargs) -> Result:
         id = kwargs['graph_id']
-        min_amt = kwargs['graph_min']
-        max_amt = kwargs['graph_max']
+        # min_amt = kwargs['graph_min']
+        # max_amt = kwargs['graph_max']
         
-        graph_result = CallGraphModel.get_graph(id, (min_amt, max_amt))
+        # graph_result = CallGraphModel.get_graph(id, (min_amt, max_amt))
+        graph_result = CallGraphModel.get_graph_result(id)
         callgraph_packet = CallGraphPacketBuilder.make()
         
         if graph_result is None:
