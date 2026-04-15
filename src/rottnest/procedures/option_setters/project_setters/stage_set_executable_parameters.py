@@ -2,16 +2,16 @@
     Stage for setting layouts
 '''
 from rottnest.procedures import stage
-from rottnest.compute_units.layout_proxy import LayoutProxy
+from rottnest.plugins import executables
 
-STAGE_TAG = 'set_layout'
+STAGE_TAG = 'set_executable_params'
 
-class SetLayoutStage(stage.RottnestCompilerStage):
+class SetExecutableParamsStage(stage.RottnestCompilerStage):
     TAG = STAGE_TAG
 
-    def __init__(self, layout, *, tag=None, dependencies=None):
+    def __init__(self, executable: str, *, tag=None, dependencies=None):
         self._complete = False
-        self._layout = layout
+        self._params = params
         
         if dependencies is None:
             dependencies = []
@@ -24,11 +24,7 @@ class SetLayoutStage(stage.RottnestCompilerStage):
 
     def execute(self, compiler_environment):
         '''
-            Swaps the current rottnest architecture 
+            Swaps the current rottnest executable 
         '''
-
-        # This bound is reasonably performant
-        layout_id = 0
-        LayoutProxy.add_layout_with_id(layout_id, self._layout)
-
+        executables.set_executable_params(self._params)
         self._complete = True

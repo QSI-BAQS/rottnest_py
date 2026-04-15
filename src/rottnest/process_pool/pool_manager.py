@@ -28,6 +28,8 @@ from copy import deepcopy
 from .pool_status import PoolStatus
 from .status_decorator import status_update, StatusTracked
 
+from rottnest.priority_process import commands as priority_commands 
+
 # Used to hook the patching procedure
 from rottnest.procedures.decomposition_patchers import DecompositionPatchProcedure
 from rottnest.procedures.option_setters.project_setters import SynchroniseModulesProcedure, SetArchitectureProcedure, SetExecutableProcedure 
@@ -363,13 +365,10 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
         return [arch, exe]
 
-
-
     def _task_set_rz_precision(self, *args):
         '''
             Sets the precision of the manager
         '''
-        print("PRECISION SET: ", args[0])
         self._precision = args[0]
         set_rz_precision(self._precision)
 
@@ -447,6 +446,9 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         self.n_submitted = 0
         self.n_received = 0
         self.n_error = 0
+
+        # Synchronise the priority worker
+        self.setup_priority_worker()
 
         # Synchronise precision with workers
         self.synchronise_rz_precision()
@@ -543,48 +545,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         self.n_received += 1
         return
 
-        # Probably an error, dump to stdout
-        if result.get('status', 'error') == 'error':
-            print(result)
-
-        result_hash_stack = result.get('cache_hash', [None])
-        np_stack = result.get('np_qubits', [0])
-
-        ### TO COMPOSER
-        tock_dict = result.get('tocks', {})
-        np_dur = tock_dict.get('bell', 0) + tock_dict.get('t_schedule', 0) + tock_dict.get('bell2', 0)
-        if 'volumes' not in result:
-            result['volumes'] = {}
-
-        old_volume = result['volumes'].get('NP_VOLUME', 0)
-        result['volumes']['NP_VOLUME'] = old_volume
-
-        ###
-
-        for i, stack_hash in enumerate(
-                    reversed(
-                        result_hash_stack
-                    )
-                ):
-            self.compute_unit_counts[stack_hash] += 1
-            add_result_dicts(
-                self.compute_unit_result_cache[stack_hash],
-                result
-            )
-
-            # COMPOSER
-            result['volumes']['NP_VOLUME'] += (
-                np_stack[-i-1] * np_dur
-            )
-
-        result['volumes']['NP_VOLUME'] = old_volume
-
-        # TODO More interesting cursors for printing
-        print("Received", self.n_received)
-        self.manager_completion_queue.put(result)
-        self.n_received += 1
-
-
     def send_total(self, cu_id=TOTAL):
         '''
             Asynch sending of totals
@@ -632,6 +592,30 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             #proc.wait()
 
         self.pool_running = False
+
+
+    ###
+    # PRIORITY WORKER TASKS
+    ###
+    def setup_priority_worker(self): 
+        '''
+        Calls synchronisation functions on the
+         priority process
+        '''
+        if not self.pool_running:
+            # Pool isn't running, skip 
+            return
+
+        self.priority_task_queue.put((
+            priority_commands.SYNCHRONISE_MODULES,
+            self._architectures.get_synchronisation_strings(),
+            self._executables.get_synchronisation_strings(),
+        ))
+        return
+
+    ###
+    # WORKER MANAGEMENT FUNCTIONS
+    ###
 
     def restart_dead_processes(self):
         '''

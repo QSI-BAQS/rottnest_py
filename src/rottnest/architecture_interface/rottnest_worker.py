@@ -60,9 +60,9 @@ class RottnestWorker(abc.ABC):
 
         # Additional tasks for priority workers
         if self._priority:
-            priority_worker_tasks = {
-
-            }
+            print("STARTING PRIORITY PROCESS")
+            # In init import to avoid circular dependency issues
+            from rottnest.priority_process import priority_worker_tasks 
             self.worker_tasks |= priority_worker_tasks
 
         # Workers enabled blinding
@@ -116,7 +116,7 @@ class RottnestWorker(abc.ABC):
             Worker loop - queries
         '''
         if self._priority:
-            self.priority_main()
+            self.priority_main(task_queue, worker_results_queue, comms_queue)
         
         print("Worker started:", mp.current_process().name, flush=True)
         self.running = True

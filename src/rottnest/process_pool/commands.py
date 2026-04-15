@@ -30,3 +30,4 @@ SYNCHRONISATION_STATUS = 'synchronisation_status'
 # Priority task
 GET_CURRENT_RESULTS = 'get_current_results'
 GET_RESULTS_STREAM = 'get_results_stream'
+
