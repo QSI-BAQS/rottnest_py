@@ -65,6 +65,63 @@ class ProcedureEntityTag:
         '''
         self.state_tag = state_tag
 
+
+
+
+
+class ProcedureTuple:
+    '''
+       Tuple that will hold onto a state object for the
+       the procedure as well as provide an intermediary callback
+       and finaliser callback for the structure. 
+    '''
+    def __init__(self, entity_obj: ProcedureEntityStateTag, procedure: RottnestCompilerStage, state_obj=dict(),
+                 poll_callback=None, finaliser_callback=None):
+        '''
+           Initialises the procedure tuple as a way to handle
+           the operations right now 
+        '''
+        self.entity_object = entity_obj
+        self.procedure = procedure
+        self.procedure_state = state_obj
+        self.poll_callback = poll_callback
+        self.finaliser_callback = finaliser_callback
+
+    def get_entity_object(self):
+        '''
+           Gets the entity object that is used for tracking 
+        '''
+        return self.entity_object
+
+
+    def get_procedure(self):
+        '''
+           Gets the procedure from the tuple 
+        '''
+        return self.procedure
+
+    def get_procedure_state_object(self):
+        '''
+           Gets the state object, useful for the poll and finaliser calls 
+        '''
+        return self.procedure_state
+
+    def get_poll_callback(self):
+        '''
+           Callback that can be injected on poll that uses the state object 
+        '''
+        return self.poll_callback
+
+    def get_finaliser_callback(self):
+        '''
+           Callback for when the procedure has completed, used with the
+           state object
+        '''
+        return self.finaliser_callback
+
+
+
+
 class ProcedureManager(RottnestCompilerStage):
     '''
         ProcedureManager class,
@@ -84,7 +141,6 @@ class ProcedureManager(RottnestCompilerStage):
 
     # class object for maintaining the current id
     NEXT_ID = 1
-
     # Singleton Instance
     _manager = None
 
@@ -105,7 +161,7 @@ class ProcedureManager(RottnestCompilerStage):
         self.queued_id_set: set[int] = set()
         self.track_stage_completion = track_stage_completion
         self.queue_timeout = queue_timeout
-        self.queued_tasks: queue.Queue[tuple[ProcedureEntityTag, RottnestCompilerStage]] = queue.Queue()
+        self.queued_tasks: queue.Queue[ProcedureTuple] = queue.Queue()
 
         # Used to keep track of completed tasks, however we will have a default
         # limit on how many we can track here
@@ -124,6 +180,7 @@ class ProcedureManager(RottnestCompilerStage):
 
         # Used to provide information regarding the current active procedure
         self.current_procedure_focus: tuple[ProcedureEntityTag, RottnestCompilerStage] = None
+        self.current_background_procedure: ProcedureTuple | None = None
 
     @with_debug_log()
     def get_enqueued_size(self) -> int:
@@ -177,7 +234,6 @@ class ProcedureManager(RottnestCompilerStage):
         # if inject_manager:
         #     result = stage.execute(self)
         # else:
-        print("execute_call")
         result = stage.execute(self)
 
         proc_entity_obj.progress_to_next_state() # Should be marked as completed now
@@ -194,15 +250,17 @@ class ProcedureManager(RottnestCompilerStage):
         return False
 
     @with_debug_log()
-    def execute_defer(self, stage: RottnestCompilerStage):
+    def execute_defer(self, stage: RottnestCompilerStage, poll_callback=None, finaliser_callback=None, state_obj=dict()):
         '''
            Defers the execution to the queue
                Will be executed when time is available 
         '''
         proc_entity_obj = ProcedureEntityTag.make(ProcedureManager.next_global_id())
         proc_entity_obj.progress_to_next_state()
+
+        procedure_tuple = ProcedureTuple(proc_entity_obj, stage, state_obj, poll_callback, finaliser_callback)
         # After it is constructed, it will progress to queued
-        self.enqueue_procedure(stage)
+        self.enqueue_procedure_tuple(procedure_tuple)
         return True
 
 
@@ -232,17 +290,64 @@ class ProcedureManager(RottnestCompilerStage):
             Dequeue a procedure and execute it by also providing the
             manager as context
         '''
-        entity_obj, proc = self.queued_tasks.get(True, self.queue_timeout)
+        proc_tuple = self.queued_tasks.get(True, self.queue_timeout)
 
-        if entity_obj:
+        if proc_tuple:
+            entity_obj = proc_tuple.get_entity_object()
             entity_id = entity_obj.proc_id
-            proc.execute(self)
+
+            procedure_state = proc_tuple.get_procedure_state_object()
+            proc_final_callback = proc_tuple.get_finaliser_callback()
+
+            procedure = proc_tuple.get_procedure()
+
+            # Sets the current defer procedure 
+            self.current_background_procedure = proc_tuple
+            procedure.execute(self)
+
+            # NOTE: This will check to see if it is complete or not
+            if not self.is_background_procedure_complete():
+                self.poll_background_procedure()
 
             self.queued_id_set.discard(entity_id)
             self.queued_tasks.task_done()
 
             # Entity object will be marked as completed here
             entity_obj.progress_to_next_state()
+
+            # NOTE: Once it is completed, it will need to process the last bit of data
+            if proc_final_callback is not None:
+                proc_final_callback(procedure_state)
+
+            self.current_background_procedure = None
+            
+
+    @with_debug_log()
+    def poll_background_procedure(self):
+        '''
+            Polls the current_background_procedure
+        '''
+        background_proc_tup = self.current_background_procedure
+        if background_proc_tup is not None:
+            proc_state = background_proc_tup.get_procedure_state_object()
+            poll_callback = background_proc_tup.get_poll_callback()
+
+            # If not assigned, it will ignore it
+            if poll_callback is not None:
+                poll_callback(proc_state)
+            
+    def is_background_procedure_complete(self):
+        '''
+           Checks to see if the background procedure is finished
+           or not 
+        '''
+        background_proc_tup = self.current_background_procedure
+        if background_proc_tup is not None:
+            background_proc = background_proc_tup.get_procedure()
+            if background_proc is not None:
+                return background_proc.complete()
+        
+        return True
 
     @with_debug_log()
     def start_loop(self):
@@ -329,15 +434,13 @@ class ProcedureManager(RottnestCompilerStage):
         return list(self.queued_id_set)
 
     @with_debug_log()
-    def enqueue_procedure(self, stage):
+    def enqueue_procedure_tuple(self, procedure_tuple):
         '''
            Enqueues the procedure with a global id associated
            - This is a tuple 
         '''
-        stage_id = ProcedureManager.next_global_id()
-        id_stage_tuple = (stage_id, stage)
-        self.queued_id_set.add(stage_id)
-        self.queued_tasks.put(id_stage_tuple)
+        self.queued_id_set.add(procedure_tuple.get_entity_object().proc_id)
+        self.queued_tasks.put(procedure_tuple)
     
     @classmethod
     @with_debug_log()

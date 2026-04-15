@@ -10,8 +10,7 @@ from rottnest.compute_units.layout_proxy import LayoutProxy
 from rottnest.server.protocol.net import Rottnest
 from rottnest.server.app.application import RottnestApplication
 
-
-import time
+from rottnest.debug.util import with_debug_log
 
 RUN_LAYOUT_MSG_END = {
     "message": Rottnest.layout.poll_status,
@@ -52,7 +51,21 @@ def set_layout(data):
         layout_id = LayoutProxy.add_layout(layout_obj)
         return layout_id
         
-        
+@with_debug_log()
+def _run_layout_poll(state):
+    '''
+       Callback function for the run layout call 
+    '''
+    app = state['app']
+    if app is not None:
+        app.websocket_heartbeat()
+    
+
+@with_debug_log()
+def _run_layout_finalise(state_obj):
+    '''
+       Once finished, it will outline that it is complete 
+    '''
 
 def run_layout(layout):
         '''
@@ -81,24 +94,18 @@ def run_layout(layout):
 
             procedure_manager = ProcedureManager.get_instance()
             preprocessor_stage = PreprocAndExecuteProcedure()
-
+            state_object = {
+                "application": app
+            }
 
             # NOTE: Manager is really just a wrapper in this case
             _result = procedure_manager\
-                .execute_immediate(preprocessor_stage, )
-
-            # time.sleep(4) # BUG: If `poll` is called before a process is ready
-            # Bad solution: You can sleep by 2 seconds and lets the workers push through
-            # 
-            # It will result in a crash/reset of the websocket and other components
-            # Observed:
-            #   - PoolManager/ProcessPool is detached/unmanaged
-            #   - New PoolManager/ProcessPool is constructed?
-            #   -   This will repeat and there is no way for the pool manager to accept work
+                .execute_defer(preprocessor_stage, _run_layout_poll, _run_layout_finalise, state_object)
             
-            while not preprocessor_stage.complete():
-                app.websocket_heartbeat()
-                preprocessor_stage.poll()
+            # NOTE: Commented out to allow the procedure manager thread to sort it out
+            # while not preprocessor_stage.complete():
+            #     app.websocket_heartbeat()
+            #     preprocessor_stage.poll()
 
             return RUN_LAYOUT_MSG_END
 
