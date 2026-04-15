@@ -9,7 +9,7 @@ STAGE_TAG = 'synchronise_layouts'
 class SynchroniseLayoutsStage(stage.RottnestCompilerStage):
     TAG = STAGE_TAG
 
-    def __init__(self, layout: dict, *, tag=None, dependencies=None):
+    def __init__(self, layouts: dict, *, tag=None, dependencies=None):
         '''
             Takes a dicitionary with keys as layout ids and values
              as layouts

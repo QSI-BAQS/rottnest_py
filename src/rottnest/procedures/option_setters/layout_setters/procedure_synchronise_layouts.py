@@ -1,6 +1,6 @@
 from rottnest.procedures import procedure
 
-from .stage_synchronise_layout import SynchroniseLayoutsStage
+from .stage_synchronise_layouts import SynchroniseLayoutsStage
 
 
 STAGE_TAG = 'synchronise_layouts_procedure'

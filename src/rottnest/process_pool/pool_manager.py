@@ -25,10 +25,11 @@ from rottnest.compute_units.layout_proxy import LayoutProxy
 
 from copy import deepcopy
 
-from .pool_status import PoolStatus
-from .status_decorator import status_update, StatusTracked
 
 from rottnest.priority_process import commands as priority_commands 
+
+from .pool_status import PoolStatus
+from .status_decorator import status_update, StatusTracked
 
 # Used to hook the patching procedure
 from rottnest.procedures.decomposition_patchers import DecompositionPatchProcedure
@@ -144,6 +145,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             commands.SET_RZ_PRECISION: self._task_set_rz_precision,
 
             commands.GET_CURRENT_RESULTS: self._task_get_results,
+            priority_commands.GET_CALLGRAPH: self._task_get_callgraph,
         }
 
     @staticmethod
@@ -611,7 +613,34 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             self._architectures.get_synchronisation_strings(),
             self._executables.get_synchronisation_strings(),
         ))
+
+        self.priority_task_queue.put((
+            priority_commands.SET_EXECUTABLE,
+            self._executables.get_current_executable().get_name() 
+        ))
+
+        self.priority_task_queue.put((
+            priority_commands.SET_ARCHITECTURE,
+            self._architectures.get_current_architecture().get_name()
+ 
+        ))
+
+        self.priority_task_queue.put((
+            priority_commands.SYNCHRONISE_LAYOUTS,
+            list(LayoutProxy.get_layouts())
+        ))
         return
+
+    def _task_get_callgraph(self, graph_id):
+        '''
+            Gets the callgraph
+        '''        
+        self.priority_task_queue.put((
+            priority_commands.GET_CALLGRAPH,
+            graph_id
+        ))
+        return
+
 
     ###
     # WORKER MANAGEMENT FUNCTIONS
@@ -792,10 +821,10 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         while self.priority_error_count + self.priority_received_count < self.priority_submitted_count or not self.priority_result_queue.empty():
             try:
                 result = self.priority_result_queue.get_nowait()
-                print("received priority", self.priority_received_count)
+                print("received priority result", self.priority_received_count)
                 self.priority_received_count += 1
 
                 print("PRIOR")
-                self.manager_priority_completion_queue.put(result)
+                self.manager_completion_queue.put(result)
             except queue.Empty:
                 break

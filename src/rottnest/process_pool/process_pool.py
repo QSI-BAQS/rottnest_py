@@ -12,6 +12,7 @@ from rottnest.compute_units.sequencer import Sequencer
 from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
 
 from rottnest.process_pool import commands, symbols
+from rottnest.priority_process import commands as priority_commands
 
 from rottnest.compute_units.layout_proxy import LayoutProxy
 
@@ -432,7 +433,31 @@ class ComputeUnitExecutorPool(StatusTracked):
         )
         return resp is IPCManager.NOT_FOUND
 
+    ###
+    # PRIORITY PROCESS COMMANDS 
+    ###
+    def get_callgraph(self, graph_id):
+        '''
+            Sends and asynch request to 
+        '''
+        self.manager_priority_task_queue.put(
+            (priority_commands.GET_CALLGRAPH, graph_id)
+        ) 
 
+    def get_callgraph_status(self):
+        '''
+            Gets a status object from the IPC
+        '''
+        status = self.ipc.get_item(
+            priority_commands.GET_CALLGRAPH,
+            blocking=False
+        )
+        if status is IPCManager.NOT_FOUND:
+            return 
+        return status 
+
+
+    
     #######
 
     def run_priority(self, compute_unit, rz_tag_tracker, full_output=True):
