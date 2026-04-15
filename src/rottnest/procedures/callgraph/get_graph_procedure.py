@@ -32,9 +32,9 @@ class GetGraphProcedure(procedure.RottnestCompilerProcedure):
            Attempts to retrieve the callgraph but may not eb able to do it immediately. 
         '''
         
-        graph_id = self.graph_id
-        pool_manager = get_pool()
-        callgraph_results = pool_manager.get_callgraph(graph_id)
+        pool = get_pool()
+
+        callgraph_results = pool.get_callgraph_status()
 
         if callgraph_results is None:
             return False
@@ -51,7 +51,9 @@ class GetGraphProcedure(procedure.RottnestCompilerProcedure):
                - Then afterwards, it will have some capability to query the
                    the process pool to extract a graph object 
         '''
-        self._complete = self.try_retrieve()
+        graph_id = self.graph_id
+        pool = get_pool()
+        pool.get_callgraph(graph_id)
         
 
     def poll(self):

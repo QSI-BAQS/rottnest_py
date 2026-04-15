@@ -13,6 +13,8 @@ from rottnest.server.protocol.net import Rottnest
 
 from rottnest.server.app.application import RottnestApplication
 
+from rottnest.debug.util import with_debug_log
+
 
 # from rottnest.server.view import callgraph as view
 
@@ -45,6 +47,7 @@ class CallGraphModel:
     #     return parser
 
     @classmethod
+    @with_debug_log()
     def get_root_graph_result(cls):
         '''
            Same as get_graph_result but will intentionally call it with
@@ -53,6 +56,7 @@ class CallGraphModel:
         return CallGraphModel.get_graph_result(None)
 
     @classmethod
+    @with_debug_log()
     def get_graph_result(cls, graph_id):
         '''
            Gets the graph, if it is None it will get the root graph
@@ -64,13 +68,14 @@ class CallGraphModel:
             graph_id)
 
         proc_manager = ProcedureManager.get_instance()
-        app = RottnestApplication.get_instance()
+        # app = RottnestApplication.get_instance()
 
         _result = proc_manager.execute_immediate(gg_proc, )
 
-
-        while not proc_manager.complete():
-            app.websocket_heartbeat()
+        # BUG: Can get stuck in this loop
+        # if the status is not resolved
+        #   - We need to have a way to exit - Consider using defer instead
+        while not gg_proc.complete():
             gg_proc.poll()
 
         return result_dict
