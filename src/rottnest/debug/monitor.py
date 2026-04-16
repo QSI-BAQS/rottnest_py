@@ -97,7 +97,7 @@ class DebugMonitor:
         self.disabled_selector = True
         self.logs = []
         self.use_decorator = use_decorator
-        self.console = DebugConsoleSystem.default(monitor=self, disabled=self.disabled)
+        self.console = DebugConsoleSystem.default(monitor=self, disabled=self.disabled_selector)
 
 
         

@@ -4,7 +4,9 @@ from rottnest.server.app.application import RottnestApplication, \
     RottnestApplicationUnavailableException
 from rottnest.debug.util import with_debug_log
 from threading import Thread
+
 import queue
+
 
 class ProcedureEntityStateTag(Enum):
     '''
@@ -216,10 +218,10 @@ class ProcedureManager(RottnestCompilerStage):
             proc_manager = ProcedureManager(app)
             ProcedureManager._manager = proc_manager
             ProcedureManager._manager.app_instance_is_uninit = is_uninit
-            # if concurrent:
-            #     proc_manager.start_concurrent_manager_in_thread()
-            # else:
-            proc_manager.start_manager_in_thread()
+            if concurrent:
+                proc_manager.start_concurrent_manager_in_thread()
+            else:
+                proc_manager.start_manager_in_thread()
             
         return ProcedureManager._manager
 
@@ -321,14 +323,19 @@ class ProcedureManager(RottnestCompilerStage):
         '''
         proc_tuple = None
         
-        if timeout is None:
-            proc_tuple = self.queued_tasks.get(True, timeout)
-        else:
-            proc_tuple = self.queued_tasks.get(False)
+        try:
+            if timeout is not None:
+                proc_tuple = self.queued_tasks.get(True, timeout)
+            else:
+                proc_tuple = self.queued_tasks.get(False)
 
-        # proc_tuple is getting the entry from the queued_tasks
-        if proc_tuple is not None:
-            self.active_procedures.append(proc_tuple)
+            # proc_tuple is getting the entry from the queued_tasks
+            if proc_tuple is not None:
+                self.queued_tasks.task_done()
+                self.active_procedures.append(proc_tuple)
+        except queue.Empty:
+            # Is to be ignored
+            pass
 
         self.concurrent_execute_active_list()
 
@@ -342,12 +349,18 @@ class ProcedureManager(RottnestCompilerStage):
         '''
 
         active_list = self.active_procedures
-        dispose_list = self.dispose_procedures_buffer
         # Process all procedures
         # Dispose list will be repopulated
         for active_proc_idx in range(len(active_list)):
             self.concurrent_execute_on_procedure(active_proc_idx)
 
+        self.cleanup_active_list()
+
+    @with_debug_log()
+    def cleanup_active_list(self):
+        
+        active_list = self.active_procedures
+        dispose_list = self.dispose_procedures_buffer
         # Dispose any completed procedures
         # Drains the dispose list - Will be empty for next iteration
         while len(dispose_list) > 0:
@@ -363,15 +376,15 @@ class ProcedureManager(RottnestCompilerStage):
         '''
         proc_tuple = self.active_procedures[proc_index]
         entity_obj = proc_tuple.get_entity_object()
-        entity_id = entity_obj.proc_id
-
         procedure_state = proc_tuple.get_procedure_state_object()
         proc_final_callback = proc_tuple.get_finaliser_callback()
 
         procedure = proc_tuple.get_procedure()
+        procedure.execute(self)
+        
         if procedure.complete():
-            procedure_state.progress_to_next_state()
-            self.queued_id_set.discard(entity_id)
+            entity_obj.progress_to_next_state()
+            self.queued_id_set.remove(entity_obj.proc_id)
             self.dispose_procedures_buffer.append(proc_index)
             if proc_final_callback is not None:
                 proc_final_callback(procedure_state)
@@ -471,16 +484,12 @@ class ProcedureManager(RottnestCompilerStage):
         while not self.should_stop:
             # Blocks until N seconds and throws an exception
             # or has data available
-            try:
-                if len(self.active_procedures) > 0:
-                    # active procedures, only grab what you can
-                    self.concurrent_dequeue_and_execute()
-                else:
-                    # No active processes, wait until procedures are added
-                    self.concurrent_dequeue_and_execute(timeout=self.queue_timeout)
-            except queue.Empty:
-                # Is to be ignored
-                pass
+            if len(self.active_procedures) > 0:
+                # active procedures, only grab what you can
+                self.concurrent_dequeue_and_execute()
+            else:
+                # No active processes, wait until procedures are added
+                self.concurrent_dequeue_and_execute(timeout=self.queue_timeout)
 
     @with_debug_log()
     def execute(self, compiler_environment=None,
