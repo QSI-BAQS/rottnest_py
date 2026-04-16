@@ -199,7 +199,7 @@ class ProcedureManager(RottnestCompilerStage):
       
     @classmethod
     @with_debug_log()
-    def get_instance(cls, concurrent=True) -> type['ProcedureManager']:
+    def get_instance(cls, concurrent=False) -> type['ProcedureManager']:
         '''
            Singleton object that can be retrieved
            by the procedures
