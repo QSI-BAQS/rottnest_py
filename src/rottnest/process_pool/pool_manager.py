@@ -179,7 +179,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             - A priority result
         '''
         while self.manager_running:
-            select.select(
+            _result = select.select(
                 self.manager_task_fds,
                 [],
                 [],

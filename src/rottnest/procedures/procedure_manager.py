@@ -168,8 +168,7 @@ class ProcedureManager(RottnestCompilerStage):
         # Used to keep track of completed tasks, however we will have a default
         # limit on how many we can track here
         self.completed_tasks = list() # NOTE: Not sure if we should use this or not
-
-        
+        self.thread_handle = None
 
         # Provides an indicator if the application should stop, by default it is
         # considered active
@@ -199,7 +198,7 @@ class ProcedureManager(RottnestCompilerStage):
       
     @classmethod
     @with_debug_log()
-    def get_instance(cls, concurrent=False) -> type['ProcedureManager']:
+    def get_instance(cls, concurrent=True) -> type['ProcedureManager']:
         '''
            Singleton object that can be retrieved
            by the procedures
@@ -296,6 +295,7 @@ class ProcedureManager(RottnestCompilerStage):
             
         thread_joinhandler = Thread(target=_thread_worker, daemon=True)
         thread_joinhandler.start()
+        self.thread_handle = thread_joinhandler
         return thread_joinhandler
 
 
@@ -311,6 +311,7 @@ class ProcedureManager(RottnestCompilerStage):
             
         thread_joinhandler = Thread(target=_thread_worker, daemon=True)
         thread_joinhandler.start()
+        self.thread_handle = thread_joinhandler
         return thread_joinhandler
 
 
@@ -325,7 +326,7 @@ class ProcedureManager(RottnestCompilerStage):
         
         try:
             if timeout is not None:
-                proc_tuple = self.queued_tasks.get(True, timeout)
+                proc_tuple = self.queued_tasks.get(True)
             else:
                 proc_tuple = self.queued_tasks.get(False)
 
@@ -333,10 +334,10 @@ class ProcedureManager(RottnestCompilerStage):
             if proc_tuple is not None:
                 self.queued_tasks.task_done()
                 self.active_procedures.append(proc_tuple)
+                proc_tuple.procedure.execute(self)
         except queue.Empty:
-            # Is to be ignored
             pass
-
+                
         self.concurrent_execute_active_list()
 
 
@@ -380,7 +381,6 @@ class ProcedureManager(RottnestCompilerStage):
         proc_final_callback = proc_tuple.get_finaliser_callback()
 
         procedure = proc_tuple.get_procedure()
-        procedure.execute(self)
         
         if procedure.complete():
             entity_obj.progress_to_next_state()
