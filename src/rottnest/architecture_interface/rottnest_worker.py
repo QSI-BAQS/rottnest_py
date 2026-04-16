@@ -21,7 +21,7 @@ GET_GRAPH = 'get_graph'
 LOAD_LAYOUT = 'load_layout'
 HALT = 'halt'
 
-from rottnest.rz_decomposer.rz_decomposer import DEFAULT_PRECISION
+from rottnest.rz_decomposer import DEFAULT_PRECISION, get_rz_decomposer, set_rz_precision
 
 
 # TODO: Replace with more generic decomposition manager
@@ -176,7 +176,7 @@ class RottnestWorker(abc.ABC):
             Set the Rz decomposition precision for the workers
             :: precision : int :: Precision in bits
         '''
-        self.get_rz_decomposer().set_precision(precision)
+        self.get_rz_decomposer().set_rz_precision(precision)
 
     def load_layout(self, layout_id: int, layout_json: dict):
         '''
@@ -218,7 +218,7 @@ class RottnestWorker(abc.ABC):
             Within the worker this is intended to be a
             singleton method
         '''
-        raise NotImplementedError
+        return get_rz_decomposer()
 
     def task_execute_compute_unit(
             self,

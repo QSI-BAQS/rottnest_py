@@ -113,7 +113,22 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         self.priority_received_count = 0
         self.priority_error_count = 0
 
-        self.priority_process = None 
+        self.priority_process = self.ctx.Process(
+            target=rottnest_worker.RottnestWorker.entrypoint,
+            name="PoolWorker(Priority)",
+            args=(
+                self.priority_task_queue,
+                self.priority_result_queue,
+                self.worker_comms_queue[-1],
+                [],
+                self._rz_precision,
+                True # Priority
+                ),
+            daemon=True
+        )
+        self.priority_process.start()
+
+
 
         # File desciptors
         self.manager_task_fds = [
@@ -236,21 +251,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
                         daemon=True)
             for i in range(N_PROCESSES)
         ]
-
-        self.priority_process = self.ctx.Process(
-            target=arch.worker.entrypoint,
-            name="PoolWorker(Priority)",
-            args=(
-                self.priority_task_queue,
-                self.priority_result_queue,
-                self.worker_comms_queue[-1],
-                [],
-                self._rz_precision,
-                True # Priority
-                ),
-            daemon=True
-        )
-        self.priority_process.start()
 
 
 

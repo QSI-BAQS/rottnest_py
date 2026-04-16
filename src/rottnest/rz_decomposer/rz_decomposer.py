@@ -5,16 +5,17 @@ DEFAULT_PRECISION = 10
 
 class RzDecomposer(abc.ABC):
 
-    def set_precision(self, precision: int):
+    @abc.abstractmethod
+    def set_rz_precision(self, precision: int):
         '''
             Sets the minimum precision of the decomposer
         '''
-
-    def get_precision(self) -> int:
+    @abc.abstractmethod
+    def get_rz_precision(self) -> int:
         '''
             Gets the current precision
         '''
-    
+    @abc.abstractmethod
     def z_theta_instruction(self, p, q, *, precision=None, **kwargs) -> Iterable:
         '''
             Decompose Rz(p / q, 2 ** -precision) to a sequence of H, T, S  

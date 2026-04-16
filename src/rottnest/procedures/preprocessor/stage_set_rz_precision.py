@@ -58,7 +58,7 @@ class RzPrecisionStage(stage.RottnestCompilerStage):
 
         # Get the decomposer
         decomposer = get_rz_decomposer() 
-        decomposer.set_precision(self._prec_rz)
+        decomposer.set_rz_precision(self._prec_rz)
  
         self._complete = True
 
