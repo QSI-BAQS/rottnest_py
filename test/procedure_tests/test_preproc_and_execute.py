@@ -6,7 +6,7 @@ from rottnest.plugins import architectures, executables
 import unittest
 
 from rottnest.procedures import preprocess_and_execute 
-from rottnest.preprocessor.architecture import PreprocessorArchitecture
+from rottnest_preprocessor import PreprocessorArchitecture
 
 from rottnest.test_utils.executable import SampleExecutable 
 

@@ -13,7 +13,7 @@ from rottnest.monkey_patchers import cirq_patcher
 from rottnest.monkey_patchers.cirq_patcher import known_gates
 from rottnest.input_parsers.interrupt import INTERRUPT, NON_CACHING
 
-from rottnest.pandora.pandora_sequencer import PandoraSequencer
+#from rottnest.pandora.pandora_sequencer import PandoraSequencer
 
 # TODO: remove
 shared_rz_tag_tracker = RzTagTracker()
@@ -82,7 +82,8 @@ class CirqParser:
     ):
 
         # This needs to be better
-        if isinstance(circ_iter, PandoraSequencer):
+        # TODO: Fix cyclic dependency in pandora sequencer
+        if isinstance(circ_iter, type(None)): #PandoraSequencer):
             yield from circ_iter.to_operation_sequence()
             return
 
