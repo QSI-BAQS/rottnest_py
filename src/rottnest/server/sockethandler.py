@@ -17,6 +17,13 @@ import json
 
 
 @with_debug_log()
+def websocket_reset_application():
+    '''
+       Resets the rottnest application 
+    '''
+    # TODO: Finish this 
+
+@with_debug_log()
 def websocket_register_routes(app):
     '''
       Websocket registration of the route  

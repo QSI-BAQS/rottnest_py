@@ -373,13 +373,14 @@ class ProcedureManager(RottnestCompilerStage):
     def concurrent_execute_on_procedure(self, proc_index):
         '''
            Given a procedure, it will operate on it
-           from the active list 
+           from the active list
         '''
         proc_tuple = self.active_procedures[proc_index]
         entity_obj = proc_tuple.get_entity_object()
         procedure_state = proc_tuple.get_procedure_state_object()
         proc_final_callback = proc_tuple.get_finaliser_callback()
 
+        procedure_poll = proc_tuple.get_poll_callback()
         procedure = proc_tuple.get_procedure()
         
         if procedure.complete():
@@ -389,7 +390,7 @@ class ProcedureManager(RottnestCompilerStage):
             if proc_final_callback is not None:
                 proc_final_callback(procedure_state)
         else:
-            procedure.poll()
+            procedure_poll(procedure_state)
             
 
     @with_debug_log()
@@ -399,6 +400,7 @@ class ProcedureManager(RottnestCompilerStage):
             manager as context
         '''
         proc_tuple = self.queued_tasks.get(True, self.queue_timeout)
+
         if proc_tuple:
             entity_obj = proc_tuple.get_entity_object()
             entity_id = entity_obj.proc_id
@@ -422,7 +424,8 @@ class ProcedureManager(RottnestCompilerStage):
             # Entity object will be marked as completed here
             entity_obj.progress_to_next_state()
 
-            # NOTE: Once it is completed, it will need to process the last bit of data
+            # NOTE: Once it is completed, it will need to
+            # process the last bit of data
             if proc_final_callback is not None:
                 proc_final_callback(procedure_state)
 
