@@ -26,14 +26,14 @@ from rottnest.compute_units.layout_proxy import LayoutProxy
 from copy import deepcopy
 
 
-from rottnest.priority_process import commands as priority_commands 
+from rottnest.priority_process import commands as priority_commands
 
 from .pool_status import PoolStatus
 from .status_decorator import status_update, StatusTracked
 
 # Used to hook the patching procedure
 from rottnest.procedures.decomposition_patchers import DecompositionPatchProcedure
-from rottnest.procedures.option_setters.project_setters import SynchroniseModulesProcedure, SetArchitectureProcedure, SetExecutableProcedure 
+from rottnest.procedures.option_setters.project_setters import SynchroniseModulesProcedure, SetArchitectureProcedure, SetExecutableProcedure
 
 
 class ComputeUnitExecutorPoolManager(StatusTracked):
@@ -84,10 +84,10 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
         # Worker queues
         # TODO: add network queue
-        self.worker_task_queue = None 
+        self.worker_task_queue = None
         # For per-worker comms
         self.worker_comms_queue = None
-        self.worker_result_queue = None 
+        self.worker_result_queue = None
 
         # Entrypoints
         self._architecture = None
@@ -322,7 +322,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         self.priority_process.terminate()
         self.pool_running = False
         self.manager_running = False
-        return True 
+        return True
 
     def _task_ping_manager(self, *args):
         '''
@@ -378,7 +378,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         self.priority_task_queue.put((
             priority_commands.SET_ARCHITECTURE,
             self._architectures.get_current_architecture().get_name()
- 
+
         ))
 
 
@@ -392,7 +392,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         # Synch with priority task
         self.priority_task_queue.put((
             priority_commands.SET_EXECUTABLE,
-            self._executables.get_current_executable().get_name() 
+            self._executables.get_current_executable().get_name()
         ))
 
 
@@ -515,6 +515,10 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         layouts = list(LayoutProxy.get_layouts())
         self.initialise_composer(layouts, executable)
 
+        # TODO : Make cache force flush a procedure
+        PyliqtrParser.force_cache_flush()
+
+        # NOTE : This also tries to call a cache flush with a tag set
         it = generate_compute_units(arch_ids, architecture, executable)
 
         # Consume the iterator to distribute jobs to workers
@@ -642,20 +646,20 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
     ###
     # PRIORITY WORKER TASKS
     ###
-    def setup_priority_worker(self): 
+    def setup_priority_worker(self):
         '''
         Calls synchronisation functions on the
          priority process
         '''
-        
 
-        
+
+
         return
 
     def _task_get_callgraph(self, graph_id):
         '''
             Gets the callgraph
-        '''        
+        '''
         self.priority_task_queue.put((
             priority_commands.GET_CALLGRAPH,
             graph_id
