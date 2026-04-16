@@ -13,6 +13,7 @@ from rottnest.test_utils.executable import SampleExecutable
 from rottnest import test_utils
 from rottnest.test_utils.plugin_support import add_executable, add_architecture
 
+from rottnest.process_pool import terminate_pool
 
 class PreprocessorProcedureTest(unittest.TestCase):
 
@@ -33,7 +34,8 @@ class PreprocessorProcedureTest(unittest.TestCase):
         assert procedure.preprocessor.get_rz_count() == 1680 
         assert procedure.preprocessor.set_rz_precision() == 20 
         assert procedure.preprocessor.get_t_count() == 1680 
-
+        
+        terminate_pool()
         #print(procedure.get_t_infidelity())
 
 
