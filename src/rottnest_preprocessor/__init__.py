@@ -1,6 +1,6 @@
-from .preprocessor import architecture
+from .preprocessor.architecture import PreprocessorArchitecture
 
 rottnest_architectures = [
-    architecture.PreprocessorArchitecture
+    PreprocessorArchitecture
 ]
 
