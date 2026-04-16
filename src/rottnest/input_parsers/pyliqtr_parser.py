@@ -78,6 +78,13 @@ class PyliqtrParser:
             cls.local_cache_tag = layout_ids
             cls.local_cache = set()
 
+    @classmethod
+    def force_cache_flush(cls):
+        # Reset to base (under no circumstance should None ever
+        # be given to set_cache_tag)
+        cls.local_cache_tag = None
+        cls.local_cache = set()
+
     # Targets to decompose on the spot
     cirq_decomposing_targets = frozenset((
         cirq.ControlledGate,
@@ -287,7 +294,7 @@ class PyliqtrParser:
                 shim_id = f"{prefix}{handle_idx}s"
                 yield GraphWrapper(shim_id, str(r), parser=r)
                 continue
-            
+
             # TODO: Fix import cycle on pandora sequencer
             if isinstance(r, type(None)): #PandoraSequencer):
                 # Set the pandora union find based on the architecture

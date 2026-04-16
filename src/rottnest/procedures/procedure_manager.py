@@ -216,10 +216,10 @@ class ProcedureManager(RottnestCompilerStage):
             proc_manager = ProcedureManager(app)
             ProcedureManager._manager = proc_manager
             ProcedureManager._manager.app_instance_is_uninit = is_uninit
-            if concurrent:
-                proc_manager.start_concurrent_manager_in_thread()
-            else:
-                proc_manager.start_manager_in_thread()
+            # if concurrent:
+            #     proc_manager.start_concurrent_manager_in_thread()
+            # else:
+            proc_manager.start_manager_in_thread()
             
         return ProcedureManager._manager
 
