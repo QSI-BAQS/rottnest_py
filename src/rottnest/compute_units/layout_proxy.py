@@ -44,6 +44,7 @@ class LayoutProxy:
         '''
         layout_id = cls.curr_layout_id
         cls.saved_layouts[layout_id] = layout
+        cls._refresh_proxy_by_id(layout_id)
         cls.curr_layout_id += 1
         return layout_id
 
@@ -54,14 +55,13 @@ class LayoutProxy:
             Should be used for
         '''
         cls.saved_layouts[layout_id] = layout
+        cls._refresh_proxy_by_id(layout_id)
+
 
     @classmethod
-    def refresh_mem_bound_by_id(cls, layout_id):
-        '''
-            Callthru to refresh_mem_bound via id (ie. usable
-            when layout is not directly accessible)
-        '''
-        cls.saved_layouts[layout_id].refresh_mem_bound()
+    def _refresh_proxy_by_id(cls, layout_id):
+        if layout_id in cls.saved_proxies:
+            cls.saved_proxies[layout_id].refresh_mem_bound()
 
     @classmethod
     def get_layouts(cls) -> Generator:
