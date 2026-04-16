@@ -6,6 +6,7 @@ import typing
 import select
 from collections import defaultdict, deque
 
+from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
 from rottnest.input_parsers.interrupt import INTERRUPT, CACHED
 from rottnest.config import REPORT_INTERVAL, RESULT_INTERVAL
 from rottnest.architecture_interface import rottnest_worker
