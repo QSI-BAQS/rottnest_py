@@ -6,6 +6,7 @@ Rottnest Server - Launches the server and will ready the application
 '''
 
 import environment
+
 from bottle import Bottle
 from gevent.threadpool import ThreadPool
 from gevent.pywsgi import WSGIServer
@@ -37,13 +38,13 @@ def server_start(hostname="localhost", port=8080):
 
 # # @with_debug_log(msg="RottnestPy Init")
 def rottnestpy_start():
-    _monitor_obj = DebugMonitor.default()\
+    monitor_obj = DebugMonitor.default()\
       .get_console()\
       .set_app(RottnestApplication.get_uninitialised_instance())\
       .get_monitor()    
           
-    # pool = ThreadPool(thread_pool_count)
-    # pool.spawn(monitor_obj.get_console().selector_interact)
+    pool = ThreadPool(thread_pool_count)
+    pool.spawn(monitor_obj.get_console().selector_interact)
     server_handle = server_start()
     server_handle.serve_forever()
     

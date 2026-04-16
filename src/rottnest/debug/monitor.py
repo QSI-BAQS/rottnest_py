@@ -96,7 +96,7 @@ class DebugMonitor:
         self.disabled = False
         self.logs = []
         self.use_decorator = use_decorator
-        self.console = DebugConsoleSystem.default(monitor=self)
+        self.console = DebugConsoleSystem.default(monitor=self, disabled=self.disabled)
 
 
         
@@ -156,7 +156,8 @@ class DebugMonitor:
            Ends up calling the singleton instance 
         '''
         inst = DebugMonitor.current()
-        inst.dump_error(message)
+        if not inst.disabled:
+            inst.dump_error(message)
 
     def dump_error(self, message: str):
         '''

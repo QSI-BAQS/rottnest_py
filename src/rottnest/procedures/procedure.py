@@ -5,6 +5,8 @@
 '''
 from .stage import RottnestCompilerStage #,stage_tag
 from . import exceptions
+from rottnest.debug.util import with_debug_log
+
 
 import time
 
@@ -146,8 +148,8 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
             unresolved = unresolved_nxt
 
             return self.complete() 
-            
-    # BUG: Something within this method is triggering a race condition
+
+    @with_debug_log()
     def poll(self, environment = None):
         '''
             Polling function during asynchronous execution

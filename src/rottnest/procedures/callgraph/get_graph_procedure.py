@@ -3,6 +3,8 @@ from rottnest.process_pool.singleton import get_pool
 
 STAGE_TAG = 'get_graph_procedure'
 
+RESULTS_KEY = 'graph_results'
+
 class GetGraphProcedure(procedure.RottnestCompilerProcedure): 
 
     TAG = STAGE_TAG
@@ -27,6 +29,12 @@ class GetGraphProcedure(procedure.RottnestCompilerProcedure):
         return GetGraphProcedure(graph_id=graph_id, results_ref=results_ref)
 
 
+    def abort_procedure(self):
+        '''
+           Override for the complete if set by the procedure manager 
+        '''
+        self._complete = True
+
     def try_retrieve(self, compiler_environment=None, reporting=True, single_pass=False):
         '''
            Attempts to retrieve the callgraph but may not eb able to do it immediately. 
@@ -39,7 +47,7 @@ class GetGraphProcedure(procedure.RottnestCompilerProcedure):
         if callgraph_results is None:
             return False
         else:
-            self.results_ref['graph'] = callgraph_results
+            self.results_ref[RESULTS_KEY] = callgraph_results
             return True
         
 
@@ -61,7 +69,8 @@ class GetGraphProcedure(procedure.RottnestCompilerProcedure):
         Polling to check to see if we are to perform a transformation or
         even update the current procedure completion
         '''
-        self._complete = self.try_retrieve()
+        if self._complete is not True:
+            self._complete = self.try_retrieve()
         
         
     def complete(self):

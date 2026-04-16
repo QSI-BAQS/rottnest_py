@@ -10,8 +10,11 @@ from rottnest.compute_units.layout_proxy import LayoutProxy
 from rottnest.server.protocol.net import Rottnest
 from rottnest.server.app.application import RottnestApplication
 
+from rottnest.debug.util import with_debug_log
 
 import time
+
+STANDARD_DELAY_ON_POLL = 3
 
 RUN_LAYOUT_MSG_END = {
     "message": Rottnest.layout.poll_status,
@@ -30,6 +33,9 @@ RUN_LAYOUT_EXEC_ERROR = {
 RUN_LAYOUT_ARCH_ERROR = {
     "message": Rottnest.layout.err.architecture_invalid,
 }
+
+STATE_OBJ_APP_KEY = 'application'
+STATE_OBJ_PREPROC_KEY = 'preprocessor'
 
 def get_layouts():
         '''
@@ -52,7 +58,27 @@ def set_layout(data):
         layout_id = LayoutProxy.add_layout(layout_obj)
         return layout_id
         
-        
+@with_debug_log()
+def _run_layout_poll(state):
+    '''
+       Callback function for the run layout call 
+    '''
+    app = state[STATE_OBJ_APP_KEY]
+    preproc = state[STATE_OBJ_PREPROC_KEY]
+
+    if preproc is not None:
+        preproc.poll()
+    
+    if app is not None:
+        app.websocket_heartbeat()
+        # time.sleep(STANDARD_DELAY_ON_POLL)
+
+@with_debug_log()
+def _run_layout_finalise(state_obj):
+    '''
+       Once finished, it will outline that it is complete 
+    '''
+    pass
 
 def run_layout(layout):
         '''
@@ -81,24 +107,14 @@ def run_layout(layout):
 
             procedure_manager = ProcedureManager.get_instance()
             preprocessor_stage = PreprocAndExecuteProcedure()
-
+            state_object = {
+                STATE_OBJ_APP_KEY: app,
+                STATE_OBJ_PREPROC_KEY: preprocessor_stage
+            }
 
             # NOTE: Manager is really just a wrapper in this case
             _result = procedure_manager\
-                .execute_immediate(preprocessor_stage, )
-
-            # time.sleep(4) # BUG: If `poll` is called before a process is ready
-            # Bad solution: You can sleep by 2 seconds and lets the workers push through
-            # 
-            # It will result in a crash/reset of the websocket and other components
-            # Observed:
-            #   - PoolManager/ProcessPool is detached/unmanaged
-            #   - New PoolManager/ProcessPool is constructed?
-            #   -   This will repeat and there is no way for the pool manager to accept work
+                .execute_defer(preprocessor_stage, _run_layout_poll, _run_layout_finalise, state_object)
             
-            while not preprocessor_stage.complete():
-                app.websocket_heartbeat()
-                preprocessor_stage.poll()
-
             return RUN_LAYOUT_MSG_END
 
