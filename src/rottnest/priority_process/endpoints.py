@@ -61,9 +61,17 @@ def get_callgraph(graph_id: str) -> list:
 
 def get_visualiser(graph_id: str):
     ''' 
-        Compiles object
+        Compiles object to visualiser
     ''' 
-    return CallGraph.get_visualiser(graph_id=graph_id)
+    parser = CallGraph.get_visualiser_parser(graph_id)
+    Visualiser.build_compute_units(parser)
+    return Visualiser.next()
+
+def next_visualiser():
+    '''
+        Gets next visualiser object in sequence
+    '''
+    return Visualiser.next()
 
 priority_worker_tasks = {
     commands.SYNCHRONISE_MODULES: synchronise_modules,
