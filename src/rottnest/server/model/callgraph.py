@@ -11,6 +11,7 @@ from rottnest.procedures.callgraph.get_graph_procedure import GetGraphProcedure
 from rottnest.debug.util import with_debug_log
 from rottnest.server.app.application import RottnestApplication
 
+import time
 
 '''
    States for the `get_*graph` messages
@@ -21,15 +22,24 @@ from rottnest.server.app.application import RottnestApplication
     
 '''
 
+POLL_TIME_DELAY = 2
+POLL_RETRY_COUNT = 60
+
+STATE_CALLGRAPH_RESULTS_KEY = 'graph_results'
+
 STATE_APPLICATION_KEY = 'application'
+STATE_PROCEDURE_KEY = 'procedure'
 STATE_RESULTS_KEY = 'results'
 STATE_NODE_STATUS_KEY = 'node_status'
 STATE_VISUALISER_KEY = 'visualiser_object'
+STATE_POLL_COUNTER_KEY = 'poll_counter'
 
 GET_GRAPH_MSG_POLL_TEMPLATE = CallGraphPacketBuilder.make().set_graph_not_ready()
 GET_GRAPH_MSG_FINISH_TEMPLATE = CallGraphPacketBuilder.make()
 GET_GRAPH_MSG_INVALID_TEMPLATE = CallGraphPacketBuilder.make().set_error('Graph could not be computed or returned')
 GET_GRAPH_MSG_ISSUED_TEMPLATE = CallGraphPacketBuilder.make().set_get_graph_confirmation()
+
+
 
 
 @with_debug_log()
@@ -39,14 +49,26 @@ def _get_graph_result_poll(state):
         ensure that the state is up to date for the frontend
         or sets the complete state for the procedure
     '''
+    # Sleep is here to ensure that we aren't spamming the frontend with a lot
+    # of rubbish
+    time.sleep(POLL_TIME_DELAY)
     app = state[STATE_APPLICATION_KEY]
-    if app is not None:
-        wsock = app.get_websocket()
-        if wsock is not None:
-            
-            graph_package = GET_GRAPH_MSG_POLL_TEMPLATE.copy().build_and_package()
+    proc = state[STATE_PROCEDURE_KEY]
+    counter = state[STATE_POLL_COUNTER_KEY]
+
+    
+    if app is not None and proc is not None:
+
+        if counter < POLL_RETRY_COUNT:
+            state[STATE_POLL_COUNTER_KEY] = counter + 1
+            proc.poll()
+            wsock = app.get_websocket()
+            if wsock is not None:
+                graph_package = GET_GRAPH_MSG_POLL_TEMPLATE.copy().build_and_package()
+                wsock.send(graph_package)
+        else:
+            proc.abort_procedure()
         
-            wsock.send(graph_package)
     
 
 @with_debug_log()
@@ -55,14 +77,20 @@ def _get_graph_result_finalise(state):
         Gets the graph results, it should send it down once it is ready
     '''
     app = state[STATE_APPLICATION_KEY]
-    if app is not None:
+    proc = state[STATE_PROCEDURE_KEY]
+    
+    if app is not None and proc is not None:
+                
         wsock = app.get_websocket()
         results = state[STATE_RESULTS_KEY]
         graph_package = GET_GRAPH_MSG_INVALID_TEMPLATE.copy()
-        if results is not None:
-            graph_package = GET_GRAPH_MSG_FINISH_TEMPLATE.copy().set_graph(results) \
-
         if wsock is not None:
+            if results is not None:
+                callgraph_results = results[STATE_CALLGRAPH_RESULTS_KEY]
+                if callgraph_results is not None:
+                    graph_package = GET_GRAPH_MSG_FINISH_TEMPLATE.copy().set_graph(callgraph_results)\
+                        .build_and_package()
+            # Sends valid or invalid package
             wsock.send(graph_package.build_and_package())
 
     
@@ -112,18 +140,20 @@ class CallGraphModel:
         '''
         app = RottnestApplication.get_instance()
         result_dict = dict()
+        getgraph_proc = GetGraphProcedure.construct_get_graph_proc(result_dict, graph_id)
         state_obj = {
             STATE_APPLICATION_KEY: app,
-            STATE_RESULTS_KEY: result_dict
+            STATE_PROCEDURE_KEY: getgraph_proc,
+            STATE_RESULTS_KEY: result_dict,
+            STATE_POLL_COUNTER_KEY: 0
         }
 
         proc_manager = ProcedureManager.get_instance()
-        gg_proc = GetGraphProcedure.construct_get_graph_proc(result_dict, graph_id)
 
-        _result = proc_manager.execute_defer(gg_proc, _get_graph_result_poll,
+        _result = proc_manager.execute_defer(getgraph_proc, _get_graph_result_poll,
                                              _get_graph_result_finalise, state_obj)
         
-        return GET_GRAPH_MSG_ISSUED_TEMPLATE.copy()
+        return GET_GRAPH_MSG_ISSUED_TEMPLATE.copy().build()
 
         
     # @classmethod

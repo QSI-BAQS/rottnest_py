@@ -31,7 +31,7 @@ class CallGraphInterface(RouteInterface):
             Gets the root graph to allow for the beginning of the traversal
         '''
         callgraph_packet = CallGraphModel.get_root_graph_result()
-        return Result.Ok(callgraph_packet.build())
+        return Result.Ok(callgraph_packet)
                 
     
     @RouteInterface.bind_route(MODULE_PREFIX, GET_GRAPH) 
@@ -43,7 +43,7 @@ class CallGraphInterface(RouteInterface):
         id = kwargs['graph_id']
         
         callgraph_packet = CallGraphModel.get_graph_result(id)
-        return Result.Ok(callgraph_packet.build())
+        return Result.Ok(callgraph_packet)
 
     @RouteInterface.bind_route(MODULE_PREFIX, GET_STATUS) 
     @classmethod

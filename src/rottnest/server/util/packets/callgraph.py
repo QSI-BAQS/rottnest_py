@@ -41,14 +41,14 @@ class CallGraphPacketBuilder:
         return CallGraphPacketBuilder()
 
     
-    def build_and_package(self, ):
+    def build_and_package(self):
         '''
             Builds and packages the packet to be sendable over a websocket
         '''
         package = self.build()
 
         return json.dumps({
-                              "message": Rottnest.callgraph,
+                              "message": Rottnest.callgraph.get_graph,
                               "payload": package
                           })
 
@@ -57,21 +57,22 @@ class CallGraphPacketBuilder:
         '''
            Builds the packet to be sent to the frontend 
         '''
+        packet_kind_str = self.packet_kind.name
         if self.packet_kind in { CallGraphPacketKind.Graph,
             CallGraphPacketKind.RootGraph, CallGraphPacketKind.Node }:
             return {
-                'kind' : self.packet_kind,
+                'kind' : packet_kind_str,
                 'result' : self.result_package
             }
         if self.packet_kind in { CallGraphPacketKind.RunNodeConfirmation,
             CallGraphPacketKind.GraphNotReady, CallGraphPacketKind.GetGraphConfirmation }:
             return {
-                'kind' : self.packet_kind,
+                'kind' : packet_kind_str,
                 'message' : self.message
             }
         else:
             return {
-                'kind' : self.packet_kind,
+                'kind' : packet_kind_str,
                 'error' : self.message
             }
 
@@ -117,6 +118,7 @@ class CallGraphPacketBuilder:
         '''
         self.packet_kind = CallGraphPacketKind.RunNodeConfirmation
         self.message = msg
+        return self
         
     def set_get_graph_confirmation(self, msg='Attempting to retrieve graph'):
         '''
@@ -124,6 +126,7 @@ class CallGraphPacketBuilder:
         '''
         self.packet_kind = CallGraphPacketKind.GetGraphConfirmation
         self.message = msg
+        return self
 
     def set_node(self, node):
         '''

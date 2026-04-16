@@ -25,6 +25,7 @@ class PreprocAndExecuteProcedure(procedure.RottnestCompilerProcedure):
         ]
         self.stage_ref = stages # NOTE: I am not sure if this is wise...
 
+        
         super().__init__(
             None,
             stages=stages,

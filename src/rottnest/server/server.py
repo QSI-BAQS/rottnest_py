@@ -6,6 +6,7 @@ Rottnest Server - Launches the server and will ready the application
 '''
 
 import environment
+
 from bottle import Bottle
 from gevent.threadpool import ThreadPool
 from gevent.pywsgi import WSGIServer

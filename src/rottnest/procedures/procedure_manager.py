@@ -182,6 +182,11 @@ class ProcedureManager(RottnestCompilerStage):
         self.current_procedure_focus: tuple[ProcedureEntityTag, RottnestCompilerStage] = None
         self.current_background_procedure: ProcedureTuple | None = None
 
+        # NOTE: Swithcing over to a procedure manage
+        # that has many background tasks running
+        self.active_procedures = list()
+        self.dispose_procedures_buffer = list()
+
     @with_debug_log()
     def get_enqueued_size(self) -> int:
         '''
@@ -192,7 +197,7 @@ class ProcedureManager(RottnestCompilerStage):
       
     @classmethod
     @with_debug_log()
-    def get_instance(cls) -> type['ProcedureManager']:
+    def get_instance(cls, concurrent=True) -> type['ProcedureManager']:
         '''
            Singleton object that can be retrieved
            by the procedures
@@ -208,8 +213,13 @@ class ProcedureManager(RottnestCompilerStage):
                 app = RottnestApplication.get_uninitialised_instance()
                 is_uninit = True
 
-            ProcedureManager._manager = ProcedureManager(app)
+            proc_manager = ProcedureManager(app)
+            ProcedureManager._manager = proc_manager
             ProcedureManager._manager.app_instance_is_uninit = is_uninit
+            if concurrent:
+                proc_manager.start_concurrent_manager_in_thread()
+            else:
+                proc_manager.start_manager_in_thread()
             
         return ProcedureManager._manager
 
@@ -272,6 +282,23 @@ class ProcedureManager(RottnestCompilerStage):
         self.should_stop = True
     
     @with_debug_log()
+    def start_concurrent_manager_in_thread(self) -> Thread:
+        '''
+            Will create a thread and invoke a start_loop
+            for it to run until the meant to finish,
+            it will maintain an active list and a dispose
+            list of procedures it is working and needs to discard
+        '''
+        def _thread_worker():
+            self.start_loop_concurrent()
+            
+        thread_joinhandler = Thread(target=_thread_worker, daemon=True)
+        thread_joinhandler.start()
+        return thread_joinhandler
+
+
+    
+    @with_debug_log()
     def start_manager_in_thread(self) -> Thread:
         '''
            Will create a thread and invoke start_loop
@@ -284,6 +311,68 @@ class ProcedureManager(RottnestCompilerStage):
         thread_joinhandler.start()
         return thread_joinhandler
 
+
+    def concurrent_dequeue_and_execute(self, timeout=None):
+        '''
+           Concurrent execution on active list
+           for the procedures given 
+        '''
+        proc_tuple = None
+        
+        if timeout is None:
+            proc_tuple = self.queued_tasks.get(True, timeout)
+        else:
+            proc_tuple = self.queued_tasks.get(False)
+
+        # proc_tuple is getting the entry from the queued_tasks
+        if proc_tuple is not None:
+            self.active_procedures.append(proc_tuple)
+
+        self.concurrent_execute_active_list()
+
+    def concurrent_execute_active_list(self):
+        '''
+            It will iterate over the active list
+            and provide some time for each procedure by calling
+            poll
+        '''
+
+        active_list = self.active_procedures
+        dispose_list = self.dispose_procedures_buffer
+        # Process all procedures
+        # Dispose list will be repopulated
+        for active_proc_idx in range(len(active_list)):
+            self.concurrent_execute_on_procedure(active_proc_idx)
+
+        # Dispose any completed procedures
+        # Drains the dispose list - Will be empty for next iteration
+        while len(dispose_list) > 0:
+            dispose_idx = dispose_list.pop()
+            active_list.pop(dispose_idx)
+
+    def concurrent_execute_on_procedure(self, proc_index):
+        '''
+           Given a procedure, it will operate on it
+           from the active list 
+        '''
+        proc_tuple = self.active_procedures[proc_index]
+        entity_obj = proc_tuple.get_entity_object()
+        entity_id = entity_obj.proc_id
+
+        procedure_state = proc_tuple.get_procedure_state_object()
+        proc_final_callback = proc_tuple.get_finaliser_callback()
+
+        procedure = proc_tuple.get_procedure()
+        if procedure.complete():
+            procedure_state.progress_to_next_state()
+            self.queued_id_set.discard(entity_id)
+            self.dispose_procedures_buffer.append(proc_index)
+            if proc_final_callback is not None:
+                proc_final_callback(procedure_state)
+        else:
+            procedure.poll()
+            
+
     @with_debug_log()
     def dequeue_and_execute(self):
         '''
@@ -291,7 +380,6 @@ class ProcedureManager(RottnestCompilerStage):
             manager as context
         '''
         proc_tuple = self.queued_tasks.get(True, self.queue_timeout)
-
         if proc_tuple:
             entity_obj = proc_tuple.get_entity_object()
             entity_id = entity_obj.proc_id
@@ -306,7 +394,7 @@ class ProcedureManager(RottnestCompilerStage):
             procedure.execute(self)
 
             # NOTE: This will check to see if it is complete or not
-            if not self.is_background_procedure_complete():
+            while not self.is_background_procedure_complete():
                 self.poll_background_procedure()
 
             self.queued_id_set.discard(entity_id)
@@ -347,8 +435,8 @@ class ProcedureManager(RottnestCompilerStage):
             if background_proc is not None:
                 return background_proc.complete()
         
-        return True
-
+        return False
+    
     @with_debug_log()
     def start_loop(self):
         '''
@@ -357,12 +445,33 @@ class ProcedureManager(RottnestCompilerStage):
                - These are async procedures
         '''
         while not self.should_stop:
-            # Blocks until 10 seconds and throws an exception
+            # Blocks until N seconds and throws an exception
             # or has data available
             try:
                 self.dequeue_and_execute()
             except queue.Empty:
-                print("Timeout Reached or Invalid Queue Operation")
+                # Is to be ignored
+                pass
+
+    @with_debug_log()
+    def start_loop_concurrent(self):
+        '''
+           Starts te event loop, will await for tasks to be
+           sent by producers and consumed by the manager
+               - These are async procedures
+        '''
+        while not self.should_stop:
+            # Blocks until N seconds and throws an exception
+            # or has data available
+            try:
+                if len(self.active_procedures) > 0:
+                    # active procedures, only grab what you can
+                    self.concurrent_dequeue_and_execute()
+                else:
+                    # No active processes, wait until procedures are added
+                    self.concurrent_dequeue_and_execute(timeout=self.queue_timeout)
+            except queue.Empty:
+                # Is to be ignored
                 pass
 
     @with_debug_log()
@@ -441,6 +550,8 @@ class ProcedureManager(RottnestCompilerStage):
         '''
         self.queued_id_set.add(procedure_tuple.get_entity_object().proc_id)
         self.queued_tasks.put(procedure_tuple)
+        
+
     
     @classmethod
     @with_debug_log()
