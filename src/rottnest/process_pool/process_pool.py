@@ -289,7 +289,6 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
             Puts a run sequence to the worker queue
         '''
-        print("Submitted RUN")
         self.manager_task_queue.put(
             (
                 commands.RUN_SEQUENCE,
