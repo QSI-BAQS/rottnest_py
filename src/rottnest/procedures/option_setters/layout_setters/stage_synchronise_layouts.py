@@ -35,6 +35,5 @@ class SynchroniseLayoutsStage(stage.RottnestCompilerStage):
             LayoutProxy.add_layout_with_id(
                 layout_id, layout_json
             )
-            LayoutProxy.refresh_mem_bound_by_id(layout_id)
 
         self._complete = True

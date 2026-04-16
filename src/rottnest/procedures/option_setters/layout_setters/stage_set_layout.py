@@ -30,6 +30,5 @@ class SetLayoutStage(stage.RottnestCompilerStage):
         # This bound is reasonably performant
         layout_id = 0
         LayoutProxy.add_layout_with_id(layout_id, self._layout)
-        LayoutProxy.refresh_mem_bound_by_id(layout_id)
 
         self._complete = True
