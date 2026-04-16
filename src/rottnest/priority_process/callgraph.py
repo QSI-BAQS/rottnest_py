@@ -69,7 +69,6 @@ class CallGraph:
         for node in parser.unroll_graph(prefix=prefix):
             count += 1
                 
-            print(node)
             if count > cls.GRAPH_LIMIT:
                 break
 

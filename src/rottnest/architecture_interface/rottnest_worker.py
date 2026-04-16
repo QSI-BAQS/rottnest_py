@@ -58,7 +58,6 @@ class RottnestWorker(abc.ABC):
 
         # Additional tasks for priority workers
         if self._priority:
-            print("STARTING PRIORITY PROCESS")
             # In init import to avoid circular dependency issues
             from rottnest.priority_process import priority_worker_tasks 
             self.worker_tasks |= priority_worker_tasks
@@ -139,7 +138,7 @@ class RottnestWorker(abc.ABC):
 
             if not comms_queue.empty():
                 queue = comms_queue
-            elif not task_queue.empty():
+            elif not self._priority and not task_queue.empty():
                 queue = task_queue
             else:
                 continue

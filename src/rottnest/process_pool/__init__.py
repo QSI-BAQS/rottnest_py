@@ -1,1 +1,1 @@
-from .singleton import get_pool 
+from .singleton import get_pool, terminate_pool

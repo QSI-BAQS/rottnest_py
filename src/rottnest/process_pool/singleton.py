@@ -33,6 +33,14 @@ class PoolSingletonRef:
             return cls.process_pool
         raise Exception("Pool Already Instantiated")
 
+    @classmethod
+    def terminate_pool(cls):
+        '''
+            Triggers pool shutdown with 
+            all workers extinguished
+        '''
+        cls.get_pool().terminate()
+
 def get_pool():
     '''
         Dispatch for singleton reference 
@@ -47,3 +55,6 @@ def instantiate_pool(*args, **kwargs):
         *args,
         **kwargs
     )
+
+def terminate_pool():
+    PoolSingletonRef.terminate_pool()

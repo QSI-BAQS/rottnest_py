@@ -4,6 +4,9 @@ from typing import Iterable
 DEFAULT_PRECISION = 10 
 
 class RzDecomposer(abc.ABC):
+    '''
+        Abstract base class for a decomposer
+    '''
 
     @abc.abstractmethod
     def set_rz_precision(self, precision: int):

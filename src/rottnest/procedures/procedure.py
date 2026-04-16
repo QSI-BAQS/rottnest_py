@@ -109,7 +109,8 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
                     and stage.codependencies_resolved(self)
                     ):
                     stage.execute(self)
-                  
+            
+ 
                     if stage.is_codependent():
                         self._current_codepenent_stages[tag] = stage
  

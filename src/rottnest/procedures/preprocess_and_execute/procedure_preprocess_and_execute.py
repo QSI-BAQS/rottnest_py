@@ -23,7 +23,6 @@ class PreprocAndExecuteProcedure(procedure.RottnestCompilerProcedure):
             preproc,
             execute    
         ]
-        self.stage_ref = stages # NOTE: I am not sure if this is wise...
 
         super().__init__(
             None,
@@ -31,22 +30,3 @@ class PreprocAndExecuteProcedure(procedure.RottnestCompilerProcedure):
             tag=tag,
             dependencies=dependencies
         )
-
-    # @with_debug_log()
-    # def poll(self, compiler_environment=None):
-    #     '''
-    #         Polls the data from its sub-procedures
-    #     '''
-    #     for s in self.stage_ref:
-    #         s.poll()
-        
-
-    # @with_debug_log()
-    # def complete(self):
-    #     '''
-    #        Checks to see if the final stage is complete 
-    #     '''
-    #     if len(self.stage_ref) == 0:
-    #         return True
-    #     return self.stage_ref[-1].complete()
-        

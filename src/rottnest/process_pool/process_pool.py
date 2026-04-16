@@ -29,9 +29,6 @@ from .pool_status import PoolStatus
 from .ipc_manager import IPCManager
 
 
-# result_manager = mp.Manager()
-# dummy_result_cache = result_manager.dict()
-
 class ComputeUnitExecutorPool(StatusTracked):
     '''
         This class acts as an interface to the worker
@@ -136,17 +133,19 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
             Starts the process pool manager
         '''
-        self.manager = self.ctx.Process(
-            target=ComputeUnitExecutorPoolManager.entrypoint,
-            args=[
-                 self.manager_task_queue,
-                 self.manager_completion_queue,
-                 self.manager_priority_task_queue,
-                 self.manager_priority_completion_queue
-            ],
-            name="PoolManager"
-        )
-        self.manager.start()
+        if self.manager is None:
+            # Checks that the manager has not been started before
+            self.manager = self.ctx.Process(
+                target=ComputeUnitExecutorPoolManager.entrypoint,
+                args=[
+                     self.manager_task_queue,
+                     self.manager_completion_queue,
+                     self.manager_priority_task_queue,
+                     self.manager_priority_completion_queue
+                ],
+                name="PoolManager"
+            )
+            self.manager.start()
         self.synchronise_modules()
 
     @status_update(
@@ -290,6 +289,7 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
             Puts a run sequence to the worker queue
         '''
+        print("Submitted RUN")
         self.manager_task_queue.put(
             (
                 commands.RUN_SEQUENCE,
@@ -318,14 +318,23 @@ class ComputeUnitExecutorPool(StatusTracked):
         )
         return status == symbols.END_COMPUTATION
 
-
     def shutdown(self):
+        '''
+            Broadcasts a shutdown to all workers
+        '''
+        self.manager_task_queue.put(
+            (commands.STOP_WORKERS,)
+        )
+
+    def terminate(self):
         '''
             Broadcasts a shutdown to all workers
         '''
         self.manager_task_queue.put(
             (commands.TERMINATE,)
         )
+
+
 
     def ping_manager(self):
         '''
@@ -428,7 +437,7 @@ class ComputeUnitExecutorPool(StatusTracked):
             Checks the status of a shutdown
         '''
         resp = self.ipc.get_item(
-            commands.TERMINATE,
+            commands.STOP_WORKERS,
             blocking=False
         )
         return resp is IPCManager.NOT_FOUND

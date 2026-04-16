@@ -50,6 +50,12 @@ class Gridsynth(rz_decomposer.RzDecomposer):
         self.precision_decimal = None
         self.set_rz_precision(default_precision)
 
+    def __del__(self):
+        '''
+            Safe subprocess shutdown
+        '''
+        self.proc.terminate()
+        
     def set_rz_precision(self, precision):
         '''
             Sets the precision

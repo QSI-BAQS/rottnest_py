@@ -21,6 +21,9 @@ class ShutdownPoolStage(stage.RottnestCompilerStage):
         pool.shutdown()
 
     def poll(self, compiler_environment):
+        '''
+            Checks if the shutdown has completed
+        '''
         pool = get_pool()
         self._complete = pool.shutdown_status()
         
