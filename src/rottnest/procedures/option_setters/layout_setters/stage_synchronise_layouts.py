@@ -37,6 +37,4 @@ class SynchroniseLayoutsStage(stage.RottnestCompilerStage):
             )
             LayoutProxy.refresh_mem_bound_by_id(layout_id)
 
-        LayoutProxy.refresh_all_mem_bounds()
-
         self._complete = True
