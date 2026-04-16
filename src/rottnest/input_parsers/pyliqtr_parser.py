@@ -33,6 +33,10 @@ from cirq.ops.raw_types import _InverseCompositeGate
 from rottnest.pandora.pandora_sequencer import PandoraSequencer
 
 from . import cirq_parser
+from . import graph_wrapper
+
+from .graph_wrapper import GraphWrapper
+
 from rottnest.monkey_patchers import add_pyliqtr_hash
 from rottnest.pandora.pandora_cache import pandora_cache
 
@@ -323,21 +327,6 @@ class PyliqtrParser:
         for circuit in self.traverse():
             for ops in parser.parse(circuit):
                 yield ops
-
-class GraphWrapper():
-    '''
-        Thin graph node wrapper object
-    '''
-    def __init__(self, handle_id, name, description="", parser=None, rottnest_hash=None):
-        self.handle_id = handle_id
-        self.rottnest_hash = rottnest_hash
-
-        self.name = name
-        self.description = description
-        self.parser = parser
-
-    def get_graph(self):
-        return self.parser
 
 
 def rottnest_cacheable(cls, hash_fn=None):

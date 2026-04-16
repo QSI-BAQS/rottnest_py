@@ -6,7 +6,7 @@ from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
 
 from rottnest.plugins import executables
 
-class CallGraphModel:
+class CallGraph:
     '''
         Singleton instance class for tracking and handling state of the
          callgraph model
@@ -28,9 +28,9 @@ class CallGraphModel:
         '''
             Generates the root node of the graph
         '''
-        parser = PyliqtrParser(
-            executables.get_current_executable()
-        )
+        executable = executables.get_current_executable()
+
+        parser = PyliqtrParser(executable())
         parser.parse()
         return parser
 
@@ -38,7 +38,7 @@ class CallGraphModel:
     def get_graph(
         cls,
         graph_id: str,
-        graph_limit_range: tuple  # (0, cls.GRAPH_LIMIT)
+        graph_limit_range=None  # (0, cls.GRAPH_LIMIT)
     ):
         '''
             Gets a pylitrq parser object from a graph_id
@@ -48,7 +48,7 @@ class CallGraphModel:
         if graph_id is None:
             prefix = ''
             parser = cls.generate_root_node()
-            cls.curr_executable_id = id(singleton.get_current_executable)
+            cls.curr_executable_id = id(executables.get_current_executable())
 
         # Non-root request
         else:
@@ -68,7 +68,8 @@ class CallGraphModel:
 
         for node in parser.unroll_graph(prefix=prefix):
             count += 1
-
+                
+            print(node)
             if count > cls.GRAPH_LIMIT:
                 break
 
@@ -92,15 +93,6 @@ class CallGraphModel:
             # Populate the view cache
             cls.view_cache[handle_id] = node
 
-            graph.append(
-                view.callgraph_node(
-                    node.name,
-                    node.description,
-                    [],
-                    handle_id,
-                    expands,
-                )
-            )
-        graph_segment = view.callgraph_segment(0, graph)
+            graph.append(node.to_dict())
 
-        return graph_segment
+        return graph

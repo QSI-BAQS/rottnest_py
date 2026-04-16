@@ -1,7 +1,8 @@
 import base64
 
 import pyLIQTR
-from rottnest.pandora.pandora_sequencer import PandoraSequencer
+# TODO: Fix imports and refactor this
+#from rottnest.pandora.pandora_sequencer import PandoraSequencer
 from rottnest.pandora import pandora_connection
 from rottnest.compute_units.layout_proxy import LayoutProxy
 
