@@ -80,16 +80,20 @@ def _get_graph_result_finalise(state):
     proc = state[STATE_PROCEDURE_KEY]
     
     if app is not None and proc is not None:
-                
         wsock = app.get_websocket()
         results = state[STATE_RESULTS_KEY]
-        graph_package = GET_GRAPH_MSG_INVALID_TEMPLATE.copy()
         if wsock is not None:
             if results is not None:
-                callgraph_results = results[STATE_CALLGRAPH_RESULTS_KEY]
-                if callgraph_results is not None:
-                    graph_package = GET_GRAPH_MSG_FINISH_TEMPLATE.copy().set_graph(callgraph_results)\
-                        .build_and_package()
+
+                if proc.was_aborted():
+                    graph_package = GET_GRAPH_MSG_INVALID_TEMPLATE.copy()
+                else:
+                    callgraph_results = results[STATE_CALLGRAPH_RESULTS_KEY]
+                    if callgraph_results is not None:
+
+                        graph_package = GET_GRAPH_MSG_FINISH_TEMPLATE.copy()\
+                            .set_graph(callgraph_results).build_and_package()
+
             # Sends valid or invalid package
             wsock.send(graph_package.build_and_package())
 
@@ -132,26 +136,30 @@ class CallGraphModel:
 
     @classmethod
     @with_debug_log()
-    def get_graph_result(cls, graph_id):
+    def get_graph_result(cls, graph_id=None):
         '''
            Gets the graph, if it is None it will get the root graph
            If it the graph id is a valid integer it will retrieve
            the callgraph associated
         '''
         app = RottnestApplication.get_instance()
+        proc_manager = ProcedureManager.get_instance()
+
         result_dict = dict()
-        getgraph_proc = GetGraphProcedure.construct_get_graph_proc(result_dict, graph_id)
         state_obj = {
             STATE_APPLICATION_KEY: app,
-            STATE_PROCEDURE_KEY: getgraph_proc,
             STATE_RESULTS_KEY: result_dict,
             STATE_POLL_COUNTER_KEY: 0
         }
+        getgraph_proc = GetGraphProcedure.construct_get_graph_proc(state_obj,
+                                                                   graph_id)
+        state_obj[STATE_PROCEDURE_KEY] = getgraph_proc
 
-        proc_manager = ProcedureManager.get_instance()
 
-        _result = proc_manager.execute_defer(getgraph_proc, _get_graph_result_poll,
-                                             _get_graph_result_finalise, state_obj)
+        _result = proc_manager.execute_defer(getgraph_proc,
+                                             _get_graph_result_poll,
+                                             _get_graph_result_finalise,
+                                             state_obj)
         
         return GET_GRAPH_MSG_ISSUED_TEMPLATE.copy().build()
 

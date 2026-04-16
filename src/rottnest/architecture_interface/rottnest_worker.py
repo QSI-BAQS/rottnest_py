@@ -26,6 +26,8 @@ from rottnest.rz_decomposer import DEFAULT_PRECISION, get_rz_decomposer, set_rz_
 
 # TODO: Replace with more generic decomposition manager
 
+GET_TIMEOUT = 1
+
 class RottnestWorker(abc.ABC):
     '''
         RottnestWorker
@@ -132,20 +134,25 @@ class RottnestWorker(abc.ABC):
         return
 
     def priority_main(self, task_queue: mp.Queue, worker_results_queue: mp.Queue, comms_queue: mp.Queue): 
-        print("Worker started:", mp.current_process().name, flush=True)
+        print("Priority started:", mp.current_process().name, flush=True)
+
+        import queue as q
         self.running = True
         while self.running:
-
-            if not comms_queue.empty():
+            try:
+                # if not comms_queue.empty():
                 queue = comms_queue
-            elif not self._priority and not task_queue.empty():
-                queue = task_queue
-            else:
-                continue
-            task, *args = queue.get()
-            response = (task, self.worker_tasks[task](*args))
-            if response is not None:
-                worker_results_queue.put(response)
+                if not self._priority and not task_queue.empty():
+                    queue = task_queue
+                # else:
+                #     continue
+
+                task, *args = queue.get(True, GET_TIMEOUT)
+                response = (task, self.worker_tasks[task](*args))
+                if response is not None:
+                    worker_results_queue.put(response)
+            except q.Empty:
+                pass
         return
 
 

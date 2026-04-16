@@ -461,7 +461,7 @@ class ComputeUnitExecutorPool(StatusTracked):
             blocking=False
         )
         if status is IPCManager.NOT_FOUND:
-            return 
+            return None
         return status 
 
 

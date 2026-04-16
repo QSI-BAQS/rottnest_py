@@ -16,19 +16,19 @@ class SynchroniseLayoutsStage(stage.RottnestCompilerStage):
         '''
         self._complete = False
         self._layouts = layouts
-        
+
         if dependencies is None:
             dependencies = []
- 
+
         super().__init__(
-            tag=tag, 
+            tag=tag,
             dependencies=dependencies,
             asynchronous=False
         )
 
     def execute(self, compiler_environment):
         '''
-            Swaps the current rottnest architecture 
+            Swaps the current rottnest architecture
         '''
         # This bound is reasonably performant
         for layout_id, layout_json in self._layouts:

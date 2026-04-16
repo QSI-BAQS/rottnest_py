@@ -179,7 +179,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             - A priority result
         '''
         while self.manager_running:
-            select.select(
+            _result = select.select(
                 self.manager_task_fds,
                 [],
                 [],
@@ -514,6 +514,10 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
         # Pass layouts to composer
         layouts = list(LayoutProxy.get_layouts())
+
+        # For now, just force all layouts to recompute mem bounds
+        # against the new architecture
+        LayoutProxy.force_proxy_refresh()
         self.initialise_composer(layouts, executable)
 
         # TODO : Make cache force flush a procedure
