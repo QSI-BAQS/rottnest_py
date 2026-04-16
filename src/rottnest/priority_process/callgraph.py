@@ -95,3 +95,24 @@ class CallGraph:
             graph.append(node.to_dict())
 
         return graph
+
+    @classmethod
+    def get_visualiser_parser(cls, graph_id):
+        '''
+            Gets the visualiser parser
+        '''
+        graph_node = cls.view_cache.get(graph_id, None)
+        if graph_node is None:
+            return graph_node
+        return graph_node.parser
+
+
+    @classmethod
+    def flush_caches(cls):
+        '''
+            Reset callgraph caches
+            This prevents bad cache entires between state updates on the  
+            executable or parameters
+        '''
+        cls.view_cache = {}
+        cls.hash_cache = {}

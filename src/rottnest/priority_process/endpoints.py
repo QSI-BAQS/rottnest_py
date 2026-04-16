@@ -8,6 +8,7 @@ from rottnest.procedures.option_setters.layout_setters import SynchroniseLayouts
 
 from . import commands
 from .callgraph import CallGraph
+from .visualiser import Visualiser
 
 def synchronise_modules(architectures, executables):
     '''
@@ -21,6 +22,7 @@ def synchronise_layouts(layouts:dict):
         Synchronises layouts
     '''
     SynchroniseLayoutsProcedure(layouts)
+    Visualiser.setup_worker()
     return
     
 def set_architecture(architecture: str):
@@ -28,6 +30,7 @@ def set_architecture(architecture: str):
         Sets the architecture
     '''
     SetArchitectureProcedure(architecture).execute()
+    Visualiser.setup_worker()
     return
 
 def set_executable(executable: str):
@@ -37,6 +40,7 @@ def set_executable(executable: str):
     SetExecutableProcedure(executable).execute()
     # Call the decomposition immediately to hook everything
     DecompositionPatchProcedure().execute()
+    CallGraph.flush_caches()
     return
 
 def set_executable_params(params):
@@ -44,6 +48,8 @@ def set_executable_params(params):
         Sets the executable parameters
     '''
     SetExecutableParametersProcedure(params).execute()
+    CallGraph.flush_caches()
+
     return
 
 def get_callgraph(graph_id: str) -> list:
@@ -53,11 +59,18 @@ def get_callgraph(graph_id: str) -> list:
     '''
     return CallGraph.get(graph_id=graph_id)
 
+def get_visualiser(graph_id: str):
+    ''' 
+        Compiles object
+    ''' 
+    return CallGraph.get_visualiser(graph_id=graph_id)
+
 priority_worker_tasks = {
     commands.SYNCHRONISE_MODULES: synchronise_modules,
     commands.SYNCHRONISE_LAYOUTS: synchronise_layouts,
     commands.SET_ARCHITECTURE: set_architecture,
     commands.SET_EXECUTABLE: set_executable,
     commands.SET_EXECUTABLE_PARAMS: set_executable_params,
-    commands.GET_CALLGRAPH: get_callgraph
+    commands.GET_CALLGRAPH: get_callgraph,
+    commands.GET_VISUALISER: get_visualiser
 }
