@@ -12,23 +12,24 @@ class SetLayoutStage(stage.RottnestCompilerStage):
     def __init__(self, layout, *, tag=None, dependencies=None):
         self._complete = False
         self._layout = layout
-        
+
         if dependencies is None:
             dependencies = []
- 
+
         super().__init__(
-            tag=tag, 
+            tag=tag,
             dependencies=dependencies,
             asynchronous=False
         )
 
     def execute(self, compiler_environment):
         '''
-            Swaps the current rottnest architecture 
+            Swaps the current rottnest architecture
         '''
 
         # This bound is reasonably performant
         layout_id = 0
         LayoutProxy.add_layout_with_id(layout_id, self._layout)
+        LayoutProxy.refresh_mem_bound_by_id(layout_id)
 
         self._complete = True
