@@ -656,7 +656,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
             Gets the callgraph
         '''        
-        print("Pool Manager Get Callgraph")
         self.priority_task_queue.put((
             priority_commands.GET_CALLGRAPH,
             graph_id
@@ -748,7 +747,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
                 # Inform the composer
                 self.composer.submit(obj)
 
-                print("SENT TO WORKER")
                 # Send job to worker
                 self.worker_task_queue.put(
                     (
@@ -847,7 +845,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
                 print("received priority result", self.priority_received_count)
                 self.priority_received_count += 1
 
-                print("PRIOR")
                 self.manager_completion_queue.put(result)
             except queue.Empty:
                 break
