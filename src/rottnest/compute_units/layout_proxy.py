@@ -60,8 +60,20 @@ class LayoutProxy:
 
     @classmethod
     def _refresh_proxy_by_id(cls, layout_id):
+        '''
+            Refresh to avoid membound lingering from previous
+            architecture
+        '''
         if layout_id in cls.saved_proxies:
             cls.saved_proxies[layout_id].refresh_mem_bound()
+
+    @classmethod
+    def force_proxy_refresh(cls):
+        '''
+            Force a refresh of membounds for every saved proxy
+        '''
+        for layout in cls.saved_proxies.values():
+            layout.refresh_mem_bound()
 
     @classmethod
     def get_layouts(cls) -> Generator:
