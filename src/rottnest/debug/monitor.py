@@ -93,7 +93,8 @@ class DebugMonitor:
         self.use_stdin = use_stdin
         self.stdout_output = stdout_output
         self.to_file = to_file
-        self.disabled = False
+        self.disabled = True
+        self.disabled_selector = True
         self.logs = []
         self.use_decorator = use_decorator
         self.console = DebugConsoleSystem.default(monitor=self, disabled=self.disabled)

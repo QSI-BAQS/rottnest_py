@@ -90,7 +90,7 @@ class ProcedureManagerTest(unittest.TestCase):
         procs_generated_ref = ProcedureExample.GENERATED_OBJECTS
         procman = ProcedureManager(RottnestApplication.get_uninitialised_instance())
 
-        handler = procman.start_manager_in_thread()
+        handler = procman.start_concurrent_manager_in_thread()
         # Use test procedure included in class
         procman.execute_immediate(ProcedureExample.Make())
         procman.execute_immediate(ProcedureExample.Make())
@@ -114,7 +114,8 @@ class ProcedureManagerTest(unittest.TestCase):
         procman = ProcedureManager(RottnestApplication.get_uninitialised_instance(),\
                                    queue_timeout=1)
 
-        procman.start_loop() # Starts working
+        handler = procman.start_concurrent_manager_in_thread()
+        # procman.start_loop() # Starts working
 
         # Use test procedure included in class
         procman.execute_defer(ProcedureExample.Make())
@@ -123,6 +124,8 @@ class ProcedureManagerTest(unittest.TestCase):
         procman.dequeue_and_execute()
         assert procman.get_enqueued_size() == 0
 
+        procman.stop_manager()
+        handler.join()
 
         only_proc = procs_generated_ref[0]
         assert only_proc.executed
@@ -134,6 +137,8 @@ class ProcedureManagerTest(unittest.TestCase):
         '''
         procs_generated_ref = ProcedureExample.GENERATED_OBJECTS
         procman = ProcedureManager(RottnestApplication.get_uninitialised_instance())
+
+        handler = procman.start_concurrent_manager_in_thread()
 
         # Use test procedure included in class
         procman.execute_defer(ProcedureExample.Make())
@@ -151,6 +156,9 @@ class ProcedureManagerTest(unittest.TestCase):
         assert procman.get_enqueued_size() == 1
         procman.dequeue_and_execute()
         assert procman.get_enqueued_size() == 0
+
+        procman.stop_manager()
+        handler.join()
 
         for g in procs_generated_ref:
             assert g.executed # NOTE: Since the procedure is controlled

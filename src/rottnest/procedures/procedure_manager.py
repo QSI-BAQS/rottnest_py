@@ -312,6 +312,8 @@ class ProcedureManager(RottnestCompilerStage):
         return thread_joinhandler
 
 
+
+    @with_debug_log()
     def concurrent_dequeue_and_execute(self, timeout=None):
         '''
            Concurrent execution on active list
@@ -330,6 +332,8 @@ class ProcedureManager(RottnestCompilerStage):
 
         self.concurrent_execute_active_list()
 
+
+    @with_debug_log()
     def concurrent_execute_active_list(self):
         '''
             It will iterate over the active list
@@ -350,6 +354,8 @@ class ProcedureManager(RottnestCompilerStage):
             dispose_idx = dispose_list.pop()
             active_list.pop(dispose_idx)
 
+
+    @with_debug_log()
     def concurrent_execute_on_procedure(self, proc_index):
         '''
            Given a procedure, it will operate on it
@@ -424,6 +430,8 @@ class ProcedureManager(RottnestCompilerStage):
             if poll_callback is not None:
                 poll_callback(proc_state)
             
+
+    @with_debug_log()
     def is_background_procedure_complete(self):
         '''
            Checks to see if the background procedure is finished

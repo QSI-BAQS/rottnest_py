@@ -108,7 +108,8 @@ class ProcedureManagerTest(unittest.TestCase):
             in sequence using the defer method and explicit dequeuing
         '''
         procs_generated_ref = ProcedureExample.GENERATED_OBJECTS
-        procman = ProcedureManager(RottnestApplication.get_uninitialised_instance())
+        # procman = ProcedureManager(RottnestApplication.get_uninitialised_instance())
+        procman = ProcedureManager.get_instance()
 
         # Use test procedure included in class
         procman.execute_defer(ProcedureExample.Make())
