@@ -159,6 +159,8 @@ class LayoutProxy:
             Required if arch_module has changed, otherwise the previous mem_bound will
             be used
         '''
+        # Cursed, but also the way __init__ does it???
+        from rottnest.plugins import architectures
         arch_module = architectures.get_current_architecture()
 
         self.num_registers = arch_module.designer().get_mem_bound(
