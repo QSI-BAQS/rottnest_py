@@ -99,7 +99,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         # Entrypoints
         self._architecture = None
         self.pool = list()
-        self.priority_process = None
 
         self.manager_running = True
         self.pool_running = False
@@ -114,8 +113,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         self.priority_received_count = 0
         self.priority_error_count = 0
 
-        # Default precision
-        self.precision_bits = 10
+        self.priority_process = None 
 
         # File desciptors
         self.manager_task_fds = [
@@ -226,20 +224,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
         self.pool_running = True
 
-        self.priority_process = self.ctx.Process(
-            target=arch.worker.entrypoint,
-            name="PoolWorker(Priority)",
-            args=(
-                self.priority_task_queue,
-                self.priority_result_queue,
-                self.worker_comms_queue[-1],
-                layouts,
-                self._rz_precision,
-                True # Priority
-                ),
-            daemon=True
-        )
-
         self.pool = [
             self.ctx.Process(target=arch.worker.entrypoint,
                         name=f"PoolWorker{i}",
@@ -253,7 +237,23 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             for i in range(N_PROCESSES)
         ]
 
+        self.priority_process = self.ctx.Process(
+            target=arch.worker.entrypoint,
+            name="PoolWorker(Priority)",
+            args=(
+                self.priority_task_queue,
+                self.priority_result_queue,
+                self.worker_comms_queue[-1],
+                [],
+                self._rz_precision,
+                True # Priority
+                ),
+            daemon=True
+        )
         self.priority_process.start()
+
+
+
         for proc in self.pool:
             proc.start()
 
@@ -604,10 +604,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         Calls synchronisation functions on the
          priority process
         '''
-        if not self.pool_running:
-            # Pool isn't running, skip 
-            return
-
         self.priority_task_queue.put((
             priority_commands.SYNCHRONISE_MODULES,
             self._architectures.get_synchronisation_strings(),
@@ -635,6 +631,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
             Gets the callgraph
         '''        
+        print("Pool Manager Get Callgraph")
         self.priority_task_queue.put((
             priority_commands.GET_CALLGRAPH,
             graph_id

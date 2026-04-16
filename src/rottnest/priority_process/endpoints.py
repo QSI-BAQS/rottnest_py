@@ -7,7 +7,7 @@ from rottnest.procedures.option_setters.project_setters import SynchroniseModule
 from rottnest.procedures.option_setters.layout_setters import SynchroniseLayoutsProcedure
 
 from . import commands
-from .callgraph import CallGraphModel
+from .callgraph import CallGraph
 
 def synchronise_modules(architectures, executables):
     '''
@@ -51,7 +51,7 @@ def get_callgraph(graph_id: str) -> list:
         Gets objects from the callgraph
         Returned object
     '''
-    return CallGraphModel.get(graph_id=graph_id)
+    return CallGraph.get(graph_id=graph_id)
 
 priority_worker_tasks = {
     commands.SYNCHRONISE_MODULES: synchronise_modules,

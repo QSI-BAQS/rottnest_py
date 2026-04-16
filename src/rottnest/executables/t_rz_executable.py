@@ -2,7 +2,8 @@
     Derived class from RottnestExecutable for T Rz based compilation  
 '''
 
-from rottnest.monkey_patchers import pyliqtr_patcher
+# TODO: Fix this
+#from rottnest.monkey_patchers import pyliqtr_patcher
 from rottnest.pandora.pandora_cache import pandora_cache
 
 from rottnest.executables.executable import RottnestExecutable

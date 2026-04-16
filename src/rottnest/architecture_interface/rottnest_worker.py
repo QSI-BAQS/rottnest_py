@@ -6,10 +6,9 @@ import abc
 
 import multiprocessing as mp
 
-from ..input_parsers.rz_tag_tracker import RzTagTracker
-from ..compute_units.compute_unit import ComputeUnit
 from ..compute_units.layout_proxy import LayoutProxy
 from cabaliser.widget import Widget
+
 # Commands as constants
 # Load from this location to prevent duplication
 
@@ -23,6 +22,7 @@ LOAD_LAYOUT = 'load_layout'
 HALT = 'halt'
 
 from rottnest.rz_decomposer.rz_decomposer import DEFAULT_PRECISION
+
 
 # TODO: Replace with more generic decomposition manager
 
@@ -260,7 +260,7 @@ class RottnestWorker(abc.ABC):
             unit_id: int,
             layout_id: int,
             widget: "Widget",
-            rz_tag_tracker: RzTagTracker
+            rz_tag_tracker: "RzTagTracker"
         ) -> dict:
         '''
             Task wrapper to execute a graph state
@@ -349,7 +349,7 @@ class RottnestWorker(abc.ABC):
     def __FAILED(
             error,
             traceback,
-            compute_unit: ComputeUnit,
+            compute_unit: "ComputeUnit",
             cache_hash: str,
             unit_id = None,
             ) -> dict:
