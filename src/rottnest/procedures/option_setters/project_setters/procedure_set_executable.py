@@ -14,7 +14,7 @@ class SetExecutableProcedure(procedure.RottnestCompilerProcedure):
 
     def __init__(self, executable, *, tag=None, dependencies=None):
 
-        stage = stage_set_executable.SetExecutableStage(
+        stage_ = stage_set_executable.SetExecutableStage(
                 executable = executable,
                 dependencies = []
         )

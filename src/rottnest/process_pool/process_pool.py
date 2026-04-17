@@ -507,17 +507,3 @@ class ComputeUnitExecutorPool(StatusTracked):
             if status is IPCManager.NOT_FOUND:
                 return None
         return status 
-    
-    #######
-
-    def run_priority(self, compute_unit, rz_tag_tracker, full_output=True):
-        self.manager_priority_task_queue.put(("run_priority", ('exc_cu', compute_unit, rz_tag_tracker, full_output, [None], 0)))
-
-    def run_priority_graph_node(self, node_name, arch_obj):
-        self.manager_priority_task_queue.put(("run_priority", ('exc_graph_node', node_name, arch_obj)))
-
-    def save_arch(self, arch_id, arch_json_obj):
-        self.manager_priority_task_queue.put(("save_arch", (arch_id, arch_json_obj)))
-
-    def get_graph(self, graph_id):
-        self.manager_priority_task_queue.put(("run_priority", ('get_graph', graph_id)))
