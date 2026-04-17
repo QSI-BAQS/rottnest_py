@@ -3,7 +3,6 @@ from rottnest.process_pool.singleton import get_pool
 from rottnest.debug.util import with_debug_log
 
 STAGE_TAG = 'get_graph_procedure'
-
 RESULTS_KEY = 'graph_results'
 
 class GetGraphProcedure(procedure.RottnestCompilerProcedure): 
