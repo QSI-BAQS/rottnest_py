@@ -10,12 +10,16 @@ class SetArchitectureProcedure(procedure.RottnestCompilerProcedure):
 
     def __init__(self, architecture, *, tag=None, dependencies=None):
 
-        stage = stage_set_architecture.SetArchitectureStage(
+        stage_set = stage_set_architecture.SetArchitectureStage(
                 architecture = architecture,
                 dependencies = []
         )
+        stage_synch = stage_set_architecture.SetArchitectureStage(
+                dependencies = [stage_set.get_tag()]
+        )
 
         stages = [
-            stage
+            stage_set,
+            stage_synch
         ]
         super().__init__(None, stages=stages, tag=tag, dependencies=dependencies)
