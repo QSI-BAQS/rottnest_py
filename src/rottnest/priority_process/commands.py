@@ -1,3 +1,5 @@
+SYNCHRONISE_PRIORITY = 'synchronise_priority'
+
 SYNCHRONISE_MODULES = 'synchronise_modules'
 SYNCHRONISE_LAYOUTS = 'synchronise_layouts'
 

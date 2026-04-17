@@ -142,7 +142,7 @@ class RottnestWorker(abc.ABC):
             try:
                 # if not comms_queue.empty():
                 queue = comms_queue
-                if not self._priority and not task_queue.empty():
+                if comms_queue.empty():
                     queue = task_queue
                 # else:
                 #     continue
@@ -151,7 +151,8 @@ class RottnestWorker(abc.ABC):
                 response = (task, self.worker_tasks[task](*args))
                 if response is not None:
                     worker_results_queue.put(response)
-            except q.Empty:
+            except q.Empty as _e:
+                print(type(_e))
                 pass
         return
 

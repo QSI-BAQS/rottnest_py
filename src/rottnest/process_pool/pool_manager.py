@@ -151,9 +151,10 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             commands.SET_RZ_PRECISION: self._task_set_rz_precision,
 
             commands.GET_CURRENT_RESULTS: self._task_get_results,
+            priority_commands.SYNCHRONISE_PRIORITY: self._task_priority_setup,
             priority_commands.GET_CALLGRAPH: self._task_get_callgraph,
-            priority_commands.GET_VISUALSIER: self._task_get_visualiser,
-            priority_commands.GET_VISUALSIER: self._task_get_visualiser_next,
+            priority_commands.GET_VISUALISER: self._task_get_visualiser,
+            priority_commands.GET_VISUALISER: self._task_get_visualiser_next,
         }
 
     def __del__(self, *args, **kwargs):
@@ -194,6 +195,10 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             # Task available: run task
             if not self.manager_task_queue.empty():
                 self.run_task()
+
+            # Check the priority result queues
+            self.check_priority_result()
+
         return
 
     def get_status(self):
@@ -220,6 +225,12 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             )
 
         # Maintain synchronisation with priority process
+        self.priority_task_queue.put((
+            priority_commands.SET_ARCHITECTURE,
+            self._architectures.get_current_architecture().get_name()
+
+        ))
+
         self.priority_task_queue.put((
             priority_commands.SYNCHRONISE_LAYOUTS,
             list(LayoutProxy.get_layouts())
@@ -301,6 +312,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         if task is None:
             raise Exception(f"Unknown task: {task_name}")
         else:
+            print("Manager Loaded Task:", task_name)
             result = task(*args)
             # If a response occurs, pass it back
             # Prepend the name of the task
@@ -653,13 +665,40 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
     ###
     # PRIORITY WORKER TASKS
     ###
+
+    def _task_priority_setup(self):
+        '''
+            Caller wrapper function
+        '''
+        print("Priority Setup")
+        self.setup_priority_worker()
+
     def setup_priority_worker(self):
         '''
         Calls synchronisation functions on the
          priority process
         '''
+        self.priority_task_queue.put((
+            priority_commands.SYNCHRONISE_MODULES,
+            self._architectures.get_synchronisation_strings(),
+            self._executables.get_synchronisation_strings(),
+        ))
 
+        print("Setting ARCH")
+        self.priority_task_queue.put((
+            priority_commands.SET_ARCHITECTURE,
+            self._architectures.get_current_architecture().get_name()
 
+        ))
+        self.priority_task_queue.put((
+            priority_commands.SET_EXECUTABLE,
+            self._executables.get_current_executable().get_name()
+        ))
+
+        self.priority_task_queue.put((
+            priority_commands.SYNCHRONISE_LAYOUTS,
+            list(LayoutProxy.get_layouts())
+        ))
 
         return
 
@@ -667,6 +706,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
             Gets the callgraph
         '''
+        print("Manager relaying callgraph")
         self.priority_task_queue.put((
             priority_commands.GET_CALLGRAPH,
             graph_id
@@ -866,7 +906,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
     def check_priority_result(self):
         # Check if process is alive
-        self.check_restart_priority_worker()
+        #self.check_restart_priority_worker()
 
         while self.priority_error_count + self.priority_received_count < self.priority_submitted_count or not self.priority_result_queue.empty():
             try:

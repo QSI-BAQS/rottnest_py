@@ -57,7 +57,7 @@ def get_callgraph(graph_id: str) -> list:
         Gets objects from the callgraph
         Returned object
     '''
-    return CallGraph.get(graph_id=graph_id)
+    return CallGraph.get_graph(graph_id=graph_id)
 
 def get_visualiser(graph_id: str):
     ''' 

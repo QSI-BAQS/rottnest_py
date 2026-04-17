@@ -156,9 +156,10 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
             Wrapper synchronisation function
         '''
-        self.synchronise_modules_and_layouts()
+        self.synchronise_modules()
         self.synchronise_options()
         self.synchronise_rz_precision()
+        self.synchronise_layouts()
 
     def synchronise_modules_and_layouts(self):
         '''
@@ -172,7 +173,7 @@ class ComputeUnitExecutorPool(StatusTracked):
             Attempts to synchronise all architecure and
             executable modules with the manager
         '''
-        self.manager_task_queue.put(
+        self.manager_priority_task_queue.put(
             (
     commands.SYNCHRONISE_MODULES,
     architectures.get_synchronisation_strings(),
@@ -187,7 +188,7 @@ class ComputeUnitExecutorPool(StatusTracked):
             Synchronises the Rz precision with the queue 
         '''
         precision = get_rz_precision()
-        self.manager_task_queue.put(
+        self.manager_priority_task_queue.put(
             (
                 commands.SET_RZ_PRECISION,
                 precision
@@ -201,7 +202,7 @@ class ComputeUnitExecutorPool(StatusTracked):
             manager
         '''
         layout_payload = list(LayoutProxy.get_layouts())
-        self.manager_task_queue.put(
+        self.manager_priority_task_queue.put(
             (
                 commands.SYNCHRONISE_LAYOUTS,
                 layout_payload
@@ -217,7 +218,7 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
            Spins up the workers
         '''
-        self.manager_task_queue.put(
+        self.manager_priority_task_queue.put(
             (commands.START_WORKERS,)
         )
 
@@ -225,7 +226,7 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
            Spins down the workers
         '''
-        self.manager_task_queue.put(
+        self.manager_priority_task_queue.put(
             (commands.STOP_WORKERS,)
         )
 
@@ -237,7 +238,7 @@ class ComputeUnitExecutorPool(StatusTracked):
             Sets the architecture module
             This is set on all the workers and the manager
         '''
-        self.manager_task_queue.put(
+        self.manager_priority_task_queue.put(
             (
                 commands.SET_ARCHITECTURE_MODULE,
                 architecture_module
@@ -249,7 +250,7 @@ class ComputeUnitExecutorPool(StatusTracked):
             Sets the current executable
             This is only set on the manager
         '''
-        self.manager_task_queue.put(
+        self.manager_priority_task_queue.put(
             (
                 commands.SET_EXECUTABLE,
                 executable
@@ -260,7 +261,7 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
             Getter for worker and manager status
         '''
-        self.manager_task_queue.put((commands.SYNCHRONISATION_STATUS,))
+        self.manager_priority_task_queue.put((commands.SYNCHRONISATION_STATUS,))
 
         resp = self.ipc.fetch(
             commands.SYNCHRONISATION_STATUS,
@@ -274,7 +275,7 @@ class ComputeUnitExecutorPool(StatusTracked):
             Sets the parameters for the executable
             This is only set on the manager
         '''
-        self.manager_task_queue.put(
+        self.manager_priority_task_queue.put(
             (
                 commands.SET_EXECUTABLE_PARAMS,
                 params
@@ -329,7 +330,7 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
             Broadcasts a shutdown to all workers
         '''
-        self.manager_task_queue.put(
+        self.manager_priority_task_queue.put(
             (commands.TERMINATE,)
         )
 
@@ -444,10 +445,18 @@ class ComputeUnitExecutorPool(StatusTracked):
     ###
     # PRIORITY PROCESS COMMANDS 
     ###
+
+    def synchronise_priority_process(self):
+        self.manager_priority_task_queue.put(
+            (priority_commands.SYNCHRONISE_PRIORITY,)
+        ) 
+
+
     def get_callgraph(self, graph_id):
         '''
             Sends and asynch request to 
         '''
+        print("Request Sent")
         self.manager_priority_task_queue.put(
             (priority_commands.GET_CALLGRAPH, graph_id)
         ) 
