@@ -152,6 +152,8 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
             commands.GET_CURRENT_RESULTS: self._task_get_results,
             priority_commands.GET_CALLGRAPH: self._task_get_callgraph,
+            priority_commands.GET_VISUALSIER: self._task_get_visualiser,
+            priority_commands.GET_VISUALSIER: self._task_get_visualiser_next,
         }
 
     def __del__(self, *args, **kwargs):
@@ -671,6 +673,24 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         ))
         return
 
+    def _task_get_visualiser(self, graph_id):
+        '''
+            Gets the callgraph
+        '''
+        self.priority_task_queue.put((
+            priority_commands.GET_VISUALISER,
+            graph_id
+        ))
+        return
+
+    def _task_get_visualiser_next(self):
+        '''
+            Gets the callgraph
+        '''
+        self.priority_task_queue.put((
+            priority_commands.GET_VISUALISER_NEXT,
+        ))
+        return
 
     ###
     # WORKER MANAGEMENT FUNCTIONS

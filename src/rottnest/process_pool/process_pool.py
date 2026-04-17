@@ -464,7 +464,40 @@ class ComputeUnitExecutorPool(StatusTracked):
             return None
         return status 
 
+    def get_visualiser(self, graph_id):
+        '''
+            Sends and asynch request to get a visualiser object 
+        '''
+        self.manager_priority_task_queue.put(
+            (priority_commands.GET_VISUALISER, graph_id)
+        ) 
 
+    def get_visualiser_next(self):
+        '''
+            Requests the next object in a sequence
+        '''
+        self.manager_priority_task_queue.put(
+            (priority_commands.GET_VISUALISER_NEXT, graph_id)
+        ) 
+
+    def get_visualiser_status(self):
+        '''
+            Gets a status object from the IPC
+            This batches both the base get and the
+            get_next requests 
+        '''
+        status = self.ipc.get_item(
+            priority_commands.GET_VISUALISER,
+            blocking=False
+        )
+        if status is IPCManager.NOT_FOUND:
+            status = self.ipc.get_item(
+                priority_commands.GET_VISUALISER_NEXT,
+                blocking=False
+            )
+            if status is IPCManager.NOT_FOUND:
+                return None
+        return status 
     
     #######
 
