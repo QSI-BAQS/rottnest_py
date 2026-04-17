@@ -27,6 +27,7 @@ class SynchroniseExecutableStage(stage.RottnestCompilerStage):
         '''
         from rottnest.process_pool import get_pool
 
+
         pool = get_pool()
         executable = executables.get_current_executable()
         pool.set_executable(executable.get_name())
@@ -34,4 +35,5 @@ class SynchroniseExecutableStage(stage.RottnestCompilerStage):
         params = executables.get_executable_params()
         pool.set_executable_params(params)
 
+        print("Synching Executable")
         self._complete = True

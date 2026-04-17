@@ -9,7 +9,7 @@ class PoolSingletonRef:
         Scoped reference wrapper for the process_pool
         singleton
     '''
-
+    DO_NOT_INSTANTIATE = object()
     process_pool = None
     
     @classmethod
@@ -40,6 +40,13 @@ class PoolSingletonRef:
             all workers extinguished
         '''
         cls.get_pool().terminate()
+       
+    @classmethod 
+    def block_pool(cls):
+        '''
+            Blocks the formation of a pool on this process
+        '''
+        cls.process_pool = cls.DO_NOT_INSTANTIATE
 
 def get_pool():
     '''
@@ -58,3 +65,6 @@ def instantiate_pool(*args, **kwargs):
 
 def terminate_pool():
     PoolSingletonRef.terminate_pool()
+
+def block_pool():
+    PoolSingletonRef.block_pool()

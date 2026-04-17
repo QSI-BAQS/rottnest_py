@@ -56,6 +56,9 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
         # Internal import to for instantiation
         from rottnest.plugins import architectures, executables
+        from rottnest.process_pool.singleton import block_pool 
+        block_pool()
+
         self._architectures = architectures
         self._executables = executables
 
@@ -388,7 +391,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             Sets an architecture module from a key
         '''
         key = args[0]
-        SetArchitectureProcedure(key).execute()
+        SetArchitectureProcedure(key, pool=False).execute()
         # Synchronisation with the priority process
         self.priority_task_queue.put((
             priority_commands.SET_ARCHITECTURE,
@@ -401,8 +404,9 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
             Sets an executable from a key
         '''
+        print("Setting executable")
         key = args[0]
-        SetExecutableProcedure(key).execute()
+        SetExecutableProcedure(key, pool=False).execute()
         DecompositionPatchProcedure().execute()
         # Synch with priority task
         self.priority_task_queue.put((
