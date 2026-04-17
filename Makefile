@@ -20,7 +20,7 @@ gridsynth : ${OBJFILES}
 build : ${OBJFILES}
 
 ${SRCDIR}/% : ${SRCDIR}/%.hs
-	$(GHC) -package random -package newsynth $^
+	$(GHC) $^
 
 test:
 	pytest
