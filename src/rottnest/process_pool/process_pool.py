@@ -250,6 +250,7 @@ class ComputeUnitExecutorPool(StatusTracked):
             Sets the current executable
             This is only set on the manager
         '''
+        print("Sending exec set: ", executable)
         self.manager_priority_task_queue.put(
             (
                 commands.SET_EXECUTABLE,

@@ -100,6 +100,8 @@ class RottnestWorker(abc.ABC):
             Default entrypoint function
             Invokes the dispatch call
         '''
+        from rottnest.process_pool.singleton import block_pool
+        block_pool()
 
         worker = cls(
             layouts=layouts,

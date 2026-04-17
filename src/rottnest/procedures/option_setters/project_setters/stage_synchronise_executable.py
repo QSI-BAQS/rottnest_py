@@ -3,7 +3,6 @@
 '''
 from rottnest.procedures import stage
 from rottnest.plugins import executables 
-from rottnest.process_pool import get_pool
 
 STAGE_TAG = 'synch_architecture'
 
@@ -26,11 +25,15 @@ class SynchroniseExecutableStage(stage.RottnestCompilerStage):
         '''
             Swaps the current rottnest architecture 
         '''
-        pool = get_pool()
-        executable = executables.get_current_architecture()
-        pool.set_executable_module(executable.get_name())
+        from rottnest.process_pool import get_pool
 
-        params = executable.get_executable_params()
+
+        pool = get_pool()
+        executable = executables.get_current_executable()
+        pool.set_executable(executable.get_name())
+
+        params = executables.get_executable_params()
         pool.set_executable_params(params)
 
+        print("Synching Executable")
         self._complete = True

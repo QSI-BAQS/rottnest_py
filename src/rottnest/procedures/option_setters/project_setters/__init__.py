@@ -1,4 +1,3 @@
 from .procedure_set_architecture import SetArchitectureProcedure
 from .procedure_set_executable import SetExecutableProcedure
-
 from .procedure_synchronise_modules import SynchroniseModulesProcedure

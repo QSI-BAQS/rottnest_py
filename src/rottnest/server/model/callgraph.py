@@ -7,7 +7,7 @@
 
 from rottnest.server.util.packets.callgraph import CallGraphPacketBuilder
 from rottnest.procedures.procedure_manager import ProcedureManager
-from rottnest.procedures.callgraph.get_graph_procedure import GetGraphProcedure
+from rottnest.procedures.callgraph.procedure_get_graph import GetGraphProcedure
 from rottnest.debug.util import with_debug_log
 from rottnest.server.app.application import RottnestApplication
 
