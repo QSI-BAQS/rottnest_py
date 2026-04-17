@@ -29,7 +29,7 @@ def set_architecture(architecture: str):
     '''
         Sets the architecture
     '''
-    SetArchitectureProcedure(architecture).execute()
+    SetArchitectureProcedure(architecture, pool=False).execute()
     Visualiser.setup_worker()
     return
 
@@ -37,7 +37,7 @@ def set_executable(executable: str):
     '''
         Sets the executable
     '''
-    SetExecutableProcedure(executable).execute()
+    SetExecutableProcedure(executable, params=None, pool=False).execute()
     # Call the decomposition immediately to hook everything
     DecompositionPatchProcedure().execute()
     CallGraph.flush_caches()

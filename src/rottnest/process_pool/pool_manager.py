@@ -296,7 +296,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         self.worker_result_queue = self.ctx.Queue()
 
 
-    def run_task(self, task_queue=None, completion_queue=None):
+    def run_task(self, task_queue=None, completion_queue=None, TIMEOUT=0.25):
         '''
             Task selector entrypoint
             Takes a task from the manager task queue
@@ -310,12 +310,12 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         if completion_queue is None:
             completion_queue = self.manager_completion_queue
 
-        task_name, *args = task_queue.get()
+        task_name, *args = task_queue.get(block=True, timeout=TIMEOUT)
+
         task = self._tasks.get(task_name, None)
         if task is None:
             raise Exception(f"Unknown task: {task_name}")
         else:
-            print("Manager Loaded Task:", task_name)
             result = task(*args)
             # If a response occurs, pass it back
             # Prepend the name of the task
@@ -328,7 +328,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
         return self.run_task(
             task_queue = self.manager_priority_task_queue,
-            completion_queue = self.manager_priority_completion_queue
+            completion_queue = self.manager_completion_queue
         )
 
 
@@ -404,9 +404,8 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
             Sets an executable from a key
         '''
-        print("Setting executable")
         key = args[0]
-        SetExecutableProcedure(key, pool=False).execute()
+        SetExecutableProcedure(key, None, pool=False).execute()
         DecompositionPatchProcedure().execute()
         # Synch with priority task
         self.priority_task_queue.put((
@@ -674,7 +673,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
             Caller wrapper function
         '''
-        print("Priority Setup")
         self.setup_priority_worker()
 
     def setup_priority_worker(self):
@@ -688,7 +686,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             self._executables.get_synchronisation_strings(),
         ))
 
-        print("Setting ARCH")
         self.priority_task_queue.put((
             priority_commands.SET_ARCHITECTURE,
             self._architectures.get_current_architecture().get_name()
@@ -710,7 +707,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
             Gets the callgraph
         '''
-        print("Manager relaying callgraph")
         self.priority_task_queue.put((
             priority_commands.GET_CALLGRAPH,
             graph_id
@@ -888,26 +884,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             self.run_priority_task()
 
 
-    #def check_run_priority(self):
-    #    global saved_architectures
-
-    #    while not self.manager_priority_task_queue.empty():
-    #        # Get task
-    #        task, args = self.manager_priority_task_queue.get() # This should not block, now that we checked
-
-    #        if task == "run_priority":
-    #            print("Manager got priority task", task, args)
-    #            # Check if process is alive
-    #            self.check_restart_priority_worker()
-
-    #            # Submit task
-    #            self.priority_task_queue.put(args)
-    #            print("submitted priority", self.priority_submitted_count)
-    #            self.priority_submitted_count += 1
-    #        elif task == "save_arch":
-    #            arch_id, arch_json_obj = args
-    #            saved_architectures[arch_id] = arch_json_obj
-
     def check_priority_result(self):
         # Check if process is alive
         #self.check_restart_priority_worker()
@@ -915,7 +891,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         while self.priority_error_count + self.priority_received_count < self.priority_submitted_count or not self.priority_result_queue.empty():
             try:
                 result = self.priority_result_queue.get_nowait()
-                print("received priority result", self.priority_received_count)
                 self.priority_received_count += 1
 
                 self.manager_completion_queue.put(result)

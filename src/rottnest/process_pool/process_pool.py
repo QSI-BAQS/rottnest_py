@@ -238,6 +238,7 @@ class ComputeUnitExecutorPool(StatusTracked):
             Sets the architecture module
             This is set on all the workers and the manager
         '''
+        print("Setting architecture")
         self.manager_priority_task_queue.put(
             (
                 commands.SET_ARCHITECTURE_MODULE,
@@ -291,7 +292,7 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
             Puts a run sequence to the worker queue
         '''
-        self.manager_task_queue.put(
+        self.manager_priority_task_queue.put(
             (
                 commands.RUN_SEQUENCE,
                 layout_ids
