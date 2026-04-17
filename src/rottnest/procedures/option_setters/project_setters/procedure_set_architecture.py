@@ -1,6 +1,8 @@
 from rottnest.procedures import procedure
 
 from . import stage_set_architecture
+from . import stage_synchronise_architecture
+
 
 STAGE_TAG = 'set_architecture_procedure'
 
@@ -14,7 +16,7 @@ class SetArchitectureProcedure(procedure.RottnestCompilerProcedure):
                 architecture = architecture,
                 dependencies = []
         )
-        stage_synch = stage_set_architecture.SetArchitectureStage(
+        stage_synch = stage_synchronise_architecture.SynchroniseArchitectureStage(
                 dependencies = [stage_set.get_tag()]
         )
 

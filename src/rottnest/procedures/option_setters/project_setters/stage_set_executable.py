@@ -9,9 +9,17 @@ STAGE_TAG = 'set_executable'
 class SetExecutableStage(stage.RottnestCompilerStage):
     TAG = STAGE_TAG
 
-    def __init__(self, executable: str, *, tag=None, dependencies=None):
+    def __init__(
+            self,
+            executable: str,
+            *,
+            params=None,
+            tag=None,
+            dependencies=None
+        ):
         self._complete = False
         self._executable = executable
+        self._params = params
         
         if dependencies is None:
             dependencies = []
@@ -27,4 +35,9 @@ class SetExecutableStage(stage.RottnestCompilerStage):
             Swaps the current rottnest executable 
         '''
         executables.set_current_executable(self._executable)
+
+        if self._params is not None:
+            executables.set_executable_params(**self._params)
+
         self._complete = True
+

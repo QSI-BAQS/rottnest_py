@@ -1,6 +1,8 @@
 from rottnest.procedures import procedure
 
 from . import stage_set_executable
+from . import stage_synchronise_executable
+
 
 STAGE_TAG = 'set_executable_procedure'
 
@@ -12,14 +14,20 @@ class SetExecutableProcedure(procedure.RottnestCompilerProcedure):
 
     TAG = STAGE_TAG
 
-    def __init__(self, executable, *, tag=None, dependencies=None):
+    def __init__(self, executable, params, *, tag=None, dependencies=None):
 
-        stage_ = stage_set_executable.SetExecutableStage(
+        stage_set = stage_set_executable.SetExecutableStage(
                 executable = executable,
+                params = params,
+                dependencies = []
+        )
+
+        stage_synch = stage_synchronise_executable.SynchroniseExecutableStage(
                 dependencies = []
         )
 
         stages = [
-            stage
+            stage_set,
+            stage_synch
         ]
         super().__init__(None, stages=stages, tag=tag, dependencies=dependencies)
