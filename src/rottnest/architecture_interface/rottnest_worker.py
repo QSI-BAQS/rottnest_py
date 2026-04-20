@@ -154,7 +154,6 @@ class RottnestWorker(abc.ABC):
                 if response is not None:
                     worker_results_queue.put(response)
             except q.Empty as _e:
-                print(type(_e))
                 pass
         return
 
