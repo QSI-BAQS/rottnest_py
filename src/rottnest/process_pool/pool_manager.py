@@ -34,7 +34,7 @@ from .status_decorator import status_update, StatusTracked
 
 # Used to hook the patching procedure
 from rottnest.procedures.decomposition_patchers import DecompositionPatchProcedure
-from rottnest.procedures.option_setters.project_setters import SynchroniseModulesProcedure, SetArchitectureProcedure, SetExecutableProcedure
+from rottnest.procedures.option_setters.project_setters import LoadModulesProcedure, SetArchitectureProcedure, SetExecutableProcedure
 
 
 class ComputeUnitExecutorPoolManager(StatusTracked):
@@ -56,6 +56,8 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
         # Internal import to for instantiation
         from rottnest.plugins import architectures, executables
+
+        # Ensure that this process can't spin up its own pool
         from rottnest.process_pool.singleton import block_pool 
         block_pool()
 
@@ -374,7 +376,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
         architectures = args[0]
         executables = args[1]
-        procedure = SynchroniseModulesProcedure(architectures, executables)
+        procedure = LoadModulesProcedure(architectures, executables)
         procedure.execute()
 
         # Maintain synchronisation with priority task
@@ -391,7 +393,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             Sets an architecture module from a key
         '''
         key = args[0]
-        SetArchitectureProcedure(key, pool=False).execute()
+        SetArchitectureProcedure(key).execute()
         # Synchronisation with the priority process
         self.priority_task_queue.put((
             priority_commands.SET_ARCHITECTURE,
@@ -405,7 +407,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             Sets an executable from a key
         '''
         key = args[0]
-        SetExecutableProcedure(key, None, pool=False).execute()
+        SetExecutableProcedure(key, None).execute()
         DecompositionPatchProcedure().execute()
         # Synch with priority task
         self.priority_task_queue.put((

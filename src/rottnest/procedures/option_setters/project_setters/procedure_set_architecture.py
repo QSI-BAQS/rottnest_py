@@ -10,18 +10,12 @@ class SetArchitectureProcedure(procedure.RottnestCompilerProcedure):
 
     TAG = STAGE_TAG
 
-    def __init__(self, architecture, *, pool=True, tag=None, dependencies=None):
+    def __init__(self, architecture, *, tag=None, dependencies=None):
 
         stage_set = stage_set_architecture.SetArchitectureStage(
                 architecture = architecture,
                 dependencies = []
         )
         stages = [stage_set]
-
-        if pool:
-            stage_synch = stage_synchronise_architecture.SynchroniseArchitectureStage(
-                    dependencies = [stage_set.get_tag()]
-            )
-            stages.append(stage_synch)
 
         super().__init__(None, stages=stages, tag=tag, dependencies=dependencies)

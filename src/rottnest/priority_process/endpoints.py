@@ -3,41 +3,50 @@
     These are thin layers that can be overridden later as needed
 '''
 from rottnest.procedures.decomposition_patchers import DecompositionPatchProcedure
-from rottnest.procedures.option_setters.project_setters import SynchroniseModulesProcedure, SetArchitectureProcedure, SetExecutableProcedure  
+from rottnest.procedures.option_setters.project_setters import LoadModulesProcedure, SetArchitectureProcedure, SetExecutableProcedure  
 from rottnest.procedures.option_setters.layout_setters import SynchroniseLayoutsProcedure
 
 from . import commands
 from .callgraph import CallGraph
 from .visualiser import Visualiser
 
+
+# Simple state wrapper for visualiser reloads
+def reload_visualiser(fn):
+    def _wrap(*args, **kwargs):
+        res = fn(*args, **kwargs)
+        Visualiser.setup_worker()
+        return res
+    return _wrap
+
 def synchronise_modules(architectures, executables):
     '''
         Synchronises the modules
     '''
-    SynchroniseModulesProcedure(architectures, executables).execute()
+    LoadModulesProcedure(architectures, executables).execute()
     return
 
+@reload_visualiser
 def synchronise_layouts(layouts:dict):
     '''
         Synchronises layouts
     '''
     SynchroniseLayoutsProcedure(layouts)
-    Visualiser.setup_worker()
     return
-    
+
+@reload_visualiser
 def set_architecture(architecture: str):
     '''
         Sets the architecture
     '''
-    SetArchitectureProcedure(architecture, pool=False).execute()
-    Visualiser.setup_worker()
+    SetArchitectureProcedure(architecture).execute()
     return
 
 def set_executable(executable: str):
     '''
         Sets the executable
     '''
-    SetExecutableProcedure(executable, params=None, pool=False).execute()
+    SetExecutableProcedure(executable, params=None).execute()
     # Call the decomposition immediately to hook everything
     DecompositionPatchProcedure().execute()
     CallGraph.flush_caches()

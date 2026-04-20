@@ -146,7 +146,12 @@ class ComputeUnitExecutorPool(StatusTracked):
                 name="PoolManager"
             )
             self.manager.start()
+        # Open with a module synch
         self.synchronise_modules()
+
+    ###
+    # State synchronisation methods 
+    ###
 
     @status_update(
         PoolStatus.SYNCHRONISING, 
@@ -161,13 +166,6 @@ class ComputeUnitExecutorPool(StatusTracked):
         self.synchronise_rz_precision()
         self.synchronise_layouts()
 
-    def synchronise_modules_and_layouts(self):
-        '''
-            Calls synchronisation functions
-        '''
-        self.synchronise_modules()
-        self.synchronise_layouts()
-
     def synchronise_modules(self):
         '''
             Attempts to synchronise all architecure and
@@ -175,17 +173,16 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
         self.manager_priority_task_queue.put(
             (
-    commands.SYNCHRONISE_MODULES,
-    architectures.get_synchronisation_strings(),
-    executables.get_synchronisation_strings()
+                commands.SYNCHRONISE_MODULES,
+                architectures.get_synchronisation_strings(),
+                executables.get_synchronisation_strings()
             )
         )
         return
 
-
     def synchronise_rz_precision(self):
         '''
-            Synchronises the Rz precision with the queue 
+            Synchronises the Rz precision with the queue
         '''
         precision = get_rz_precision()
         self.manager_priority_task_queue.put(
@@ -209,6 +206,10 @@ class ComputeUnitExecutorPool(StatusTracked):
             )
         )
         return
+
+    ###
+    # Worker control functions
+    ###
 
     @status_update(
         PoolStatus.STARTING_WORKERS, 
