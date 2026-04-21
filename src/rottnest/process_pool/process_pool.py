@@ -314,6 +314,7 @@ class ComputeUnitExecutorPool(StatusTracked):
     def complete(self):
         '''
             Checks if a job has finished
+            # WARN: Deprecated
         '''
         status = self.ipc.fetch(
             symbols.END_COMPUTATION,
@@ -321,13 +322,24 @@ class ComputeUnitExecutorPool(StatusTracked):
         )
         return status == symbols.END_COMPUTATION
 
-    def shutdown(self):
+    def shutdown_workers(self):
         '''
             Broadcasts a shutdown to all workers
         '''
         self.manager_task_queue.put(
             (commands.STOP_WORKERS,)
         )
+
+    def shutdown_workers_status(self):
+        '''
+            Checks the status of a shutdown
+        '''
+        resp = self.ipc.get_item(
+            commands.STOP_WORKERS,
+            blocking=False
+        )
+        return resp is not IPCManager.NOT_FOUND
+
 
     def terminate(self):
         '''
@@ -434,16 +446,15 @@ class ComputeUnitExecutorPool(StatusTracked):
         self.ipc.clear(commands.GET_CURRENT_RESULTS)
         self.ipc.clear(commands.GET_RESULTS_STREAM)
 
+    def reset_execution_context(self): 
+        '''
+            Resets the execution context on the manager
+        '''
+        self.manager_task_queue.put(
+            (commands.RESET_EXECUTION_CONTEXT,)
+        ) 
 
-    def shutdown_status(self):
-        '''
-            Checks the status of a shutdown
-        '''
-        resp = self.ipc.get_item(
-            commands.STOP_WORKERS,
-            blocking=False
-        )
-        return resp is IPCManager.NOT_FOUND
+
 
     ###
     # PRIORITY PROCESS COMMANDS 

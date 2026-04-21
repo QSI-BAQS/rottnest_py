@@ -16,6 +16,8 @@ SET_EXECUTABLE = 'set_executable'
 SET_EXECUTABLE_PARAMS = 'set_executable_params'
 SET_RZ_PRECISION = 'set_rz_precision'
 
+RESET_EXECUTION_CONTEXT = 'reset_execution_context'
+
 # Synchronise executable and architecture modules
 # With the manager
 SYNCHRONISE_MODULES = 'synchronise_modules'

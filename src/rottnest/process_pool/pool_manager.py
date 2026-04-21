@@ -69,9 +69,8 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
         self.composer = None
         self._rz_precision = DEFAULT_PRECISION
-        self._precision = DEFAULT_PRECISION # TODO: THIS IS WRONG
-        # # WARN: ^^^^^^^^^^
-        # # WARN: We need to address this conflict of names
+        self._precision = DEFAULT_PRECISION # TODO 
+        # WARN: We need to address this conflict of names
 
         # Cache management
         # TODO: Move this into the composer
@@ -146,6 +145,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             commands.TERMINATE: self._task_terminate,
             commands.RUN_SEQUENCE: self._task_run_sequence,
 
+            commands.RESET_EXECUTION_CONTEXT: self._task_reset_execution_context,
             commands.SYNCHRONISE_MODULES: self._task_synchronise_modules,
             commands.SYNCHRONISE_LAYOUTS: self._task_synchronise_layouts,
             commands.SYNCHRONISATION_STATUS: self._task_synchronisation_status,
@@ -217,6 +217,16 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             Status Setter
         '''
         self._status = status
+
+
+    def _task_reset_execution_context(self, *args):
+        '''
+            Resets execution context tracking
+        '''
+        self.cache_hash_stack = []
+        PyliqtrParser.force_cache_flush()
+
+        
 
     def _task_synchronise_layouts(self, *args):
         '''
@@ -600,7 +610,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         unit_id, result = self.worker_result_queue.get(
             timeout=timeout
         )
-        #print('Result:', unit_id, str(result), type(result))
+        print('Result:', unit_id, str(result), type(result))
 
         result_obj = self.composer.compose_result(unit_id, result)
 
@@ -661,10 +671,12 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
         for proc in self.pool:
             proc.terminate()
-            #proc.wait()
+        for proc in self.pool:
+            proc.join()
 
         self.pool = []
         self.pool_running = False
+        return True
 
 
     ###
