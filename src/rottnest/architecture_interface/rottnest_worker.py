@@ -118,7 +118,7 @@ class RottnestWorker(abc.ABC):
         '''
         if self._priority:
             self.priority_main(task_queue, worker_results_queue, comms_queue)
-        
+            return
         print("Worker started:", mp.current_process().name, flush=True)
         self.running = True
         while self.running:
