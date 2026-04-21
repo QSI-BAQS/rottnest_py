@@ -119,7 +119,6 @@ class RottnestWorker(abc.ABC):
         if self._priority:
             self.priority_main(task_queue, worker_results_queue, comms_queue)
             return
-        
         print("Worker started:", mp.current_process().name, flush=True)
         self.running = True
         while self.running:
@@ -155,7 +154,6 @@ class RottnestWorker(abc.ABC):
                 if response is not None:
                     worker_results_queue.put(response)
             except q.Empty as _e:
-                print(type(_e))
                 pass
         return
 

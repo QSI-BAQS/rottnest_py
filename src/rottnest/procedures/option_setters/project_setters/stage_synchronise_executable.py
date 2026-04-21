@@ -35,5 +35,4 @@ class SynchroniseExecutableStage(stage.RottnestCompilerStage):
         params = executables.get_executable_params()
         pool.set_executable_params(params)
 
-        print("Synching Executable")
         self._complete = True
