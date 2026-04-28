@@ -5,6 +5,7 @@ from rottnest.process_pool.single_instantiation import (
     InstantiatingBlockedObjectException, 
     BlockingInstantiatedObjectException,
     MultipleInstantiationException,
+    NotSingleInstantiationSubclassException,
     block_instantiation)
 
 class TestSingleInstantiation(unittest.TestCase):
@@ -113,6 +114,21 @@ class TestSingleInstantiation(unittest.TestCase):
             assert False
         except InstantiatingBlockedObjectException:
             pass
+
+    def test_block_non_inheriting(self):
+        '''
+            Test that blocks can't be called on
+            objects that don't inherit from 
+            SingleInstantiation
+        '''
+        Obj = object
+       
+        try: 
+            block_instantiation(Obj)
+            assert False 
+        except NotSingleInstantiationSubclassException:
+            pass
+
 
 
 
