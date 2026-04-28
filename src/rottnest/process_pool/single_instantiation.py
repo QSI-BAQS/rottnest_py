@@ -83,7 +83,7 @@ class SingleInstantiation:
         return obj
 
     @staticmethod
-    def block_instantiation(cls):
+    def block_instantiation(cls: type):
         '''
             Blocks the instantiation of an object of type 
             cls
@@ -97,3 +97,9 @@ class SingleInstantiation:
 
         # Already blocked
         return
+
+def block_instantiation(cls):
+    '''
+        Dispatch to SingleInstantiation.block_instantiation
+    '''
+    SingleInstantiation.block_instantiation(cls)

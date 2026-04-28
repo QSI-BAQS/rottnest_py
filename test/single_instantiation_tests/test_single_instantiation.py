@@ -4,7 +4,8 @@ from rottnest.process_pool.single_instantiation import (
     SingleInstantiation,
     InstantiatingBlockedObjectException, 
     BlockingInstantiatedObjectException,
-    MultipleInstantiationException)
+    MultipleInstantiationException,
+    block_instantiation)
 
 class TestSingleInstantiation(unittest.TestCase):
 
@@ -33,7 +34,6 @@ class TestSingleInstantiation(unittest.TestCase):
             assert False
         except MultipleInstantiationException:
             pass
-
 
     def test_class_scoping(self):
         '''
@@ -84,6 +84,37 @@ class TestSingleInstantiation(unittest.TestCase):
             assert False
         except BlockingInstantiatedObjectException:
             pass
+
+    def test_dispatch_init_then_block(self):
+        '''
+            Checks the dispatch function rather than the base function
+        '''
+        Obj = self.class_builder()
+        
+        a = Obj()
+ 
+        # Init should fail
+        try:
+            block_instantiation(Obj)
+            # Should not reach
+            assert False
+        except BlockingInstantiatedObjectException:
+            pass
+
+    def test_dispatch_block_then_init(self):
+        Obj = self.class_builder()
+        
+        block_instantiation(Obj)
+ 
+        # Init should fail
+        try:
+            a = Obj()
+            # Should not reach
+            assert False
+        except InstantiatingBlockedObjectException:
+            pass
+
+
 
 if __name__ == '__main__':
     unittest.main()
