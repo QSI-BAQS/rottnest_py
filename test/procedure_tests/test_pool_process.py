@@ -7,13 +7,12 @@ import unittest
 
 from rottnest.procedures import pool
 from rottnest.procedures import stage
+from rottnest.procedures import terminate
 
-#from rottnest.plugins import architectures, executables
 from rottnest.compute_units.layout_proxy import LayoutProxy
-
 from rottnest.test_utils.executable import SampleExecutable 
-
 from rottnest import test_utils
+
 
 class PoolProcedureTest(unittest.TestCase):
 
@@ -44,12 +43,14 @@ class PoolProcedureTest(unittest.TestCase):
             SampleExecutable.get_name() 
         )
 
-        procedure = pool.PoolProcedure()
+        procedure = pool.PoolProcedure(reporting=False)
         procedure.execute()
 
         while not procedure.complete():
             procedure.poll()
 
+        # Shutdown the pool
+        terminate.TerminatePoolProcedure().execute()
 
 if __name__ == '__main__':
     tst = PoolProcedureTest()
