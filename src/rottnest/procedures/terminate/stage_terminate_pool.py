@@ -2,7 +2,7 @@
     Simple setter for the error budget
     TODO: Extend this with the plugin system for different budget setters
 '''
-
+from rottnest.procedures import stage
 from rottnest.process_pool import terminate_pool
 
 STAGE_TAG = 'terminate_pool'

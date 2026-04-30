@@ -1,19 +1,15 @@
 from rottnest.procedures import procedure
+from .stage_terminate_pool import TerminatePoolStage
 
-from . import stage_set_error_budget
+STAGE_TAG = 'terminate_pool'
 
-
-STAGE_TAG = 'set_error_budget_procedure'
-
-class SetErrorBudgetProcedure(procedure.RottnestCompilerProcedure): 
+class TerminatePoolProcedure(procedure.RottnestCompilerProcedure): 
 
     TAG = STAGE_TAG
 
     def __init__(self, *, tag=None, dependencies=None, target_error=None, p_phys=None):
 
-        stage = stage_set_error_budget.SetErrorBudgetStage(
-                target_error = target_error,
-                p_phys = p_phys,
+        stage = TerminatePoolStage(
                 dependencies = []
         )
 
