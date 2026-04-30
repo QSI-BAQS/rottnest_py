@@ -7,7 +7,7 @@ class PreprocAndExecuteProcedure(procedure.RottnestCompilerProcedure):
 
     TAG = STAGE_TAG
 
-    def __init__(self, *, tag=None, dependencies=None):
+    def __init__(self, *, reporting=True, tag=None, dependencies=None):
 
         self._complete = False
         preproc = preprocessor.PreprocessorProcedure(
@@ -16,7 +16,8 @@ class PreprocAndExecuteProcedure(procedure.RottnestCompilerProcedure):
 
         execute = pool.PoolProcedure(
             dependencies = [preproc.get_tag()],
-            asynchronous = True
+            asynchronous = True,
+            reporting=reporting
         )
         
         stages = [

@@ -1,7 +1,6 @@
 from rottnest.procedures import stage
 from rottnest.process_pool.singleton import get_pool
 from rottnest.process_pool.pool_status import PoolStatus
-from rottnest.server.app.application import RottnestApplication
 
 from . import stage_start_pool
 
@@ -24,6 +23,11 @@ class RunPoolStage(stage.RottnestCompilerStage):
         self._complete = False
         self._reporting = reporting
 
+        if self._reporting:
+            from rottnest.server.app.application import RottnestApplication
+            self._app = RottnestApplication.try_get_instance()
+
+
         super().__init__(tag=tag, dependencies=dependencies, asynchronous=True)
 
     def execute(self, compiler_environment):
@@ -42,12 +46,11 @@ class RunPoolStage(stage.RottnestCompilerStage):
             status == PoolStatus.FINISHED
         )
         if self._reporting and not self._complete:
-            app_instance = RottnestApplication.try_get_instance()
-            if app_instance is not None:
+            if self._app is not None:
                 res = pool.get_results(blocking=False)
                 stream = pool.get_results_stream()
-                app_instance.websocket_result_write(res)
-                app_instance.websocket_stream_write(stream)
+                self._app.websocket_result_write(res)
+                self._app.websocket_stream_write(stream)
             else:
                 pool.flush_results_cache()
             

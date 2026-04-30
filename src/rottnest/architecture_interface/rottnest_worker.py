@@ -3,7 +3,7 @@
 '''
 
 import abc
-
+import queue as queue_module
 import multiprocessing as mp
 
 from ..compute_units.layout_proxy import LayoutProxy
@@ -19,7 +19,7 @@ EXEC_COMPUTE_UNIT  = 'exec_compute_unit'
 EXEC_GRAPH_STATE = 'exec_widget'
 GET_GRAPH = 'get_graph'
 LOAD_LAYOUT = 'load_layout'
-HALT = 'halt'
+SHUTDOWN = 'shutdown'
 
 from rottnest.rz_decomposer import DEFAULT_PRECISION, get_rz_decomposer, set_rz_precision
 
@@ -55,7 +55,7 @@ class RottnestWorker(abc.ABC):
             EXEC_GRAPH_STATE: self.task_execute_graph_state,
             GET_GRAPH: self.get_graph,
             LOAD_LAYOUT: self.load_layout,
-            HALT: self.halt
+            SHUTDOWN: self.shutdown
         }
 
         # Additional tasks for priority workers
@@ -82,7 +82,7 @@ class RottnestWorker(abc.ABC):
         '''
             Dispatch method for the main worker loop
         '''
-        return self.main(task_queue, worker_results_queue, worker_comms_queue)
+        self.main(task_queue, worker_results_queue, worker_comms_queue)
 
     @classmethod
     def entrypoint(
@@ -100,17 +100,15 @@ class RottnestWorker(abc.ABC):
             Default entrypoint function
             Invokes the dispatch call
         '''
-        from rottnest.process_pool.singleton import block_pool
-        block_pool()
-
         worker = cls(
             layouts=layouts,
             priority=priority,
             blind=blind,
             debug=debug
         )
-
+        # Run main worker loop
         worker(task_queue, worker_results_queue, worker_comms_queue)
+        return
 
     def main(self, task_queue: mp.Queue, worker_results_queue: mp.Queue, comms_queue: mp.Queue):
         '''
@@ -119,7 +117,6 @@ class RottnestWorker(abc.ABC):
         if self._priority:
             self.priority_main(task_queue, worker_results_queue, comms_queue)
             return
-        print("Worker started:", mp.current_process().name, flush=True)
         self.running = True
         while self.running:
 
@@ -129,16 +126,17 @@ class RottnestWorker(abc.ABC):
                 queue = task_queue
             else:
                 continue
-            task, *args = queue.get()
+            try:
+                task, *args = queue.get(True, GET_TIMEOUT)
+            except queue_module.Empty:
+                continue
             response = self.worker_tasks[task](*args)
             if response is not None:
-                worker_results_queue.put(response)
+                worker_results_queue.put((task, response))
         return
 
     def priority_main(self, task_queue: mp.Queue, worker_results_queue: mp.Queue, comms_queue: mp.Queue): 
-        print("Priority started:", mp.current_process().name, flush=True)
 
-        import queue as q
         self.running = True
         while self.running:
             try:
@@ -152,13 +150,13 @@ class RottnestWorker(abc.ABC):
                 task, *args = queue.get(True, GET_TIMEOUT)
                 response = (task, self.worker_tasks[task](*args))
                 if response is not None:
-                    worker_results_queue.put(response)
-            except q.Empty as _e:
+                    worker_results_queue.put((task, response))
+            except queue_module.Empty as _e:
                 pass
         return
 
 
-    def halt(
+    def shutdown(
             self,
             *args,
         ):

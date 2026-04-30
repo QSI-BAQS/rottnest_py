@@ -30,17 +30,21 @@ from copy import deepcopy
 from rottnest.priority_process import commands as priority_commands
 
 from .pool_status import PoolStatus
+from .single_instantiation import SingleInstantiation
 from .status_decorator import status_update, StatusTracked
+from .ipc_manager import IPCManager
 
 # Used to hook the patching procedure
 from rottnest.procedures.decomposition_patchers import DecompositionPatchProcedure
 from rottnest.procedures.option_setters.project_setters import LoadModulesProcedure, SetArchitectureProcedure, SetExecutableProcedure
 
 
-class ComputeUnitExecutorPoolManager(StatusTracked):
+class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
     '''
         Manages communications with process pool workers
     '''
+    instantiate = True
+    blocked = False  
 
     TIMEOUT = 5
 
@@ -54,12 +58,12 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
             Manager class for the process pool
         '''
+        self.manager_running = True
+        self.pool_running = False
+
+
         # Internal import to for instantiation
         from rottnest.plugins import architectures, executables
-
-        # Ensure that this process can't spin up its own pool
-        from rottnest.process_pool.singleton import block_pool 
-        block_pool()
 
         self._architectures = architectures
         self._executables = executables
@@ -94,12 +98,12 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         self.worker_comms_queue = None
         self.worker_result_queue = None
 
+        # IPC manager
+        self.worker_ipc = None 
+
         # Entrypoints
-        self._architecture = None
         self.pool = list()
 
-        self.manager_running = True
-        self.pool_running = False
 
         #############################
         # Priority data structures + setup
@@ -107,7 +111,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         self.priority_task_queue = self.ctx.Queue()
         self.priority_result_queue = self.ctx.Queue()
         self.priority_comms_queue = self.ctx.Queue()
-
 
         self.priority_submitted_count = 0
         self.priority_received_count = 0
@@ -167,7 +170,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             Safe process shutdown
         '''
         self._task_stop_workers()
-        self.priority_process.terminate()
+        self.stop_priority_worker()
 
     @staticmethod
     def entrypoint(*args, **kwargs):
@@ -267,14 +270,13 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             # Workers already running, return
             return
 
+        # Build queues
         self.construct_worker_queues()
 
         arch = self._architectures.get_current_architecture()
         worker_entrypoint = arch.worker_entrypoint
 
         layouts = list(LayoutProxy.get_layouts())
-
-        self.pool_running = True
 
         self.pool = [
             self.ctx.Process(target=arch.worker.entrypoint,
@@ -291,7 +293,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
         for proc in self.pool:
             proc.start()
-
         self.pool_running = True
 
 
@@ -304,8 +305,11 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
                 maxsize = 4
             )
             for _ in range(N_PROCESSES)
-        ] + [self.priority_comms_queue]
+        ]
         self.worker_result_queue = self.ctx.Queue()
+
+        # Manager object for worker callback
+        self.worker_ipc = IPCManager(self.worker_result_queue)
 
 
     def run_task(self, task_queue=None, completion_queue=None, TIMEOUT=0.25):
@@ -343,14 +347,12 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             completion_queue = self.manager_completion_queue
         )
 
-
     def _task_terminate(self, *args):
         '''
             Terminate the pool
         '''
         self._task_stop_workers()
-        self.priority_process.terminate()
-        self.pool_running = False
+        self.stop_priority_worker()
         self.manager_running = False
         return True
 
@@ -377,7 +379,8 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
         # This should not block
         self.worker_task_queue.put((commands.PING,))
-        assert self.worker_result_queue.get() == PONG
+        res = self.worker_ipc.get_item(commands.PING, blocking=True)
+        assert res == PONG
         return PONG
 
     def _task_synchronise_modules(self, *args):
@@ -453,6 +456,11 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
         for queue in self.worker_comms_queue:
             queue.put((rottnest_worker.SET_RZ_PRECISION, self._precision))
+       
+        # Synch with priority 
+        self.priority_comms_queue.put((rottnest_worker.SET_RZ_PRECISION, self._precision))
+
+
 
     def _task_set_executable_params(self, *args):
         params = args[0]
@@ -481,6 +489,9 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
                 self.post_result_queue()
                 update_counter = REPORT_INTERVAL
                 self.send_total()
+
+        self.post_result_queue()
+
 
     def in_place_compilation(self, it: typing.Iterator):
         '''
@@ -527,15 +538,13 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         # Synchronise precision with workers
         self.synchronise_rz_precision()
 
-        self.compute_unit_counts = defaultdict(int)
-        self.compute_unit_totals = defaultdict(int)
-
         self.sequencer_time = 0
         self.cache_time = 0
 
         # Submit all jobs provided by sequencer
         # This loop blocks when task queue is full
 
+        ### CONTEXT SETUP
         arch_ids = args[0]
 
         architecture = self._architectures.get_current_architecture()
@@ -552,6 +561,8 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         # TODO : Make cache force flush a procedure
         PyliqtrParser.force_cache_flush()
 
+
+        ### MAIN LOOP
         # NOTE : This also tries to call a cache flush with a tag set
         it = generate_compute_units(arch_ids, architecture, executable)
 
@@ -572,10 +583,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
                 # Trigger priority task check
                 self.check_run_priority()
                 self.check_priority_result()
-
-                self.process_result_elem(
-                    timeout=SEGFAULT_SENTINEL_TIMEOUT_SECS
-                )
+                self.post_result_queue()
 
         except Exception as e:
             print(e)
@@ -594,23 +602,19 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
         print("All Received")
         print("time:", time.time() - self.run_seq_start)
-        return
+        return True
 
 
-    def process_result_elem(self, timeout=None):
+    def process_result_elem(self, wrapped_result: tuple):
         '''
         Blocking read from worker_result_queue and
             process result
         '''
-        #print("Processing result")
         #obj = self.worker_result_queue.get(
         #    timeout=timeout
         #)
 
-        unit_id, result = self.worker_result_queue.get(
-            timeout=timeout
-        )
-        print('Result:', unit_id, str(result), type(result))
+        unit_id, result = wrapped_result
 
         result_obj = self.composer.compose_result(unit_id, result)
 
@@ -669,13 +673,23 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             # Pool isn't running, skip
             return
 
-        for proc in self.pool:
-            proc.terminate()
-        for proc in self.pool:
+        for queue in self.worker_comms_queue:
+            queue.put((rottnest_worker.SHUTDOWN,))
+        for i, proc in enumerate(self.pool):
             proc.join()
 
         self.pool = []
         self.pool_running = False
+
+        # Nontrivial return statement
+        return True
+
+    def stop_priority_worker(self):
+        '''
+            Sends a shutdown signal to the priority worker
+        '''
+        self.priority_task_queue.put((rottnest_worker.SHUTDOWN,))
+        self.priority_process.join()
         return True
 
 
@@ -787,9 +801,15 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         '''
         Drain the result queue and post
         '''
-        while not self.worker_result_queue.empty():
-            # Drain result queue
-            self.process_result_elem()
+        result = self.worker_ipc.get_item(
+            rottnest_worker.EXEC_COMPUTE_UNIT
+        )
+        while result is not IPCManager.NOT_FOUND:
+            self.process_result_elem(result)
+            result = self.worker_ipc.get_item(
+                rottnest_worker.EXEC_COMPUTE_UNIT
+            )
+        return
 
     def process_elem_obj(
         self,
@@ -799,10 +819,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
             Triggers compilation of a compute unit
         '''
         self.submit_time = time.time()
-
-        # TODO: Figure out what this is up to
-        for stack_hash in self.cache_hash_stack:
-            self.compute_unit_totals[stack_hash] += 1
 
         # Check if we need to post results
         if (
@@ -817,11 +833,10 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
         # TODO
         #self.restart_dead_processes()
 
-
         submitted = False
         while not submitted:
-            # Spin until either we get a priority task or we are unblocked on the worker task
 
+            # Spin until either we get a priority task or we are unblocked on the worker task
             self.check_run_priority()
 
             # This may block, so check
@@ -829,7 +844,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
                 # Inform the composer
                 self.composer.submit(obj)
-
                 # Send job to worker
                 self.worker_task_queue.put(
                     (
@@ -839,40 +853,11 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
                 )
                 submitted = True
             else:
+                print('Queue Full')
                 # Wait for space in queue
                 time.sleep(0.1)
 
         self.n_submitted += 1
-
-    def process_cache_request(self, cache_hash, np_qubits = 0) -> bool:
-        '''
-        Returns true if success, false if blocking on previously submitted compute units
-        MOVED TO COMPOSER
-        '''
-        if self.compute_unit_counts[cache_hash] != self.compute_unit_totals[cache_hash]:
-            return False
-
-        output = deepcopy(self.compute_unit_result_cache[cache_hash])
-        output['cache_hash_hex'] = cache_hash.hex()
-        self.manager_completion_queue.put(commands.GET_CURRENT_RESULTS, output)
-
-        tock_dict = output.get('tocks', {})
-        np_dur = tock_dict.get('bell', 0) + tock_dict.get('t_schedule', 0) + tock_dict.get('bell2', 0)
-        if 'volumes' not in output:
-            output['volumes'] = {}
-
-        old_volume = output['volumes'].get('NP_VOLUME', 0)
-        output['volumes']['NP_VOLUME'] = old_volume + np_qubits * np_dur
-
-        for i,stack_hash in enumerate(reversed(self.cache_hash_stack)):
-            iadd_result_dicts(
-                self.compute_unit_result_cache[stack_hash], output
-            )
-            output['volumes']['NP_VOLUME'] += self.np_stack[-i-1] * np_dur
-
-        output['volumes']['NP_VOLUME'] = old_volume
-
-        return True
 
     def check_restart_priority_worker(self):
 
@@ -900,6 +885,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
 
     def check_priority_result(self):
         # Check if process is alive
+        # TODO
         #self.check_restart_priority_worker()
 
         while self.priority_error_count + self.priority_received_count < self.priority_submitted_count or not self.priority_result_queue.empty():
@@ -910,3 +896,9 @@ class ComputeUnitExecutorPoolManager(StatusTracked):
                 self.manager_completion_queue.put(result)
             except queue.Empty:
                 break
+
+def entrypoint(*args, **kwargs):
+    '''
+        Dispatch method
+    '''
+    return ComputeUnitExecutorPoolManager.entrypoint(*args, **kwargs)

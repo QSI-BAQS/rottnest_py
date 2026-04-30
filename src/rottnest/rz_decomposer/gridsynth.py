@@ -49,6 +49,7 @@ class Gridsynth(rz_decomposer.RzDecomposer):
         self.precision = None
         self.precision_decimal = None
         self.set_rz_precision(default_precision)
+        super().__init__()
 
     def __del__(self):
         '''
