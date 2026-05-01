@@ -375,8 +375,10 @@ def rottnest_cacheable(cls, hash_fn=None):
         if hasattr(cls, "_rottnest_hash") and hash_fn is not cls._rottnest_hash:
             raise TypeError(f"Class {cls} implements _rottnest_hash, but a different function was passed as its hashing function.\nEither implement its hash function as _rottnest_hash, or do not define your own separate _rottnest_hash")
         cls._rottnest_hash = MethodType(hash_fn)
-    add_pyliqtr_hash(cls, rottnest_hash)
-    PyliqtrParser.tracking_targets.add(cls)
+
+    assert False
+    add_pyliqtr_hash(cls, hash_fn)
+    PyliqtrParser.update_tracking_targets({cls})
 
     return cls
 
