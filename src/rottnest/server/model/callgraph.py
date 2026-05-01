@@ -1,17 +1,11 @@
 """
     Model for Callgraph
 """
-# from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
-# from rottnest.plugins import executables as singleton
-# from rottnest.server.view import callgraph as view
 
 from rottnest.server.util.packets.callgraph import CallGraphPacketBuilder
-from rottnest.procedures.procedure_manager import ProcedureManager
-from rottnest.procedures.callgraph.procedure_get_graph import GetGraphProcedure
+from rottnest.server.websocket.websocket_pool import WebSocketPoolSelector
 from rottnest.debug.util import with_debug_log
-from rottnest.server.app.application import RottnestApplication
 
-import time
 
 '''
    States for the `get_*graph` messages
@@ -40,63 +34,7 @@ GET_GRAPH_MSG_INVALID_TEMPLATE = CallGraphPacketBuilder.make().set_error('Graph 
 GET_GRAPH_MSG_ISSUED_TEMPLATE = CallGraphPacketBuilder.make().set_get_graph_confirmation()
 
 
-
-
-@with_debug_log()
-def _get_graph_result_poll(state):
-    '''
-        Send a heartbat to the frontend but should also
-        ensure that the state is up to date for the frontend
-        or sets the complete state for the procedure
-    '''
-    # Sleep is here to ensure that we aren't spamming the frontend with a lot
-    # of rubbish
-    time.sleep(POLL_TIME_DELAY)
-    app = state[STATE_APPLICATION_KEY]
-    proc = state[STATE_PROCEDURE_KEY]
-    counter = state[STATE_POLL_COUNTER_KEY]
-
-    
-    if app is not None and proc is not None:
-
-        if counter < POLL_RETRY_COUNT:
-            state[STATE_POLL_COUNTER_KEY] = counter + 1
-            proc.poll()
-            wsock = app.get_websocket()
-            if wsock is not None:
-                graph_package = GET_GRAPH_MSG_POLL_TEMPLATE.copy().build_and_package()
-                wsock.send(graph_package)
-        else:
-            proc.abort_procedure()
-        
-    
-
-@with_debug_log()
-def _get_graph_result_finalise(state):
-    '''
-        Gets the graph results, it should send it down once it is ready
-    '''
-    app = state[STATE_APPLICATION_KEY]
-    proc = state[STATE_PROCEDURE_KEY]
-    
-    if app is not None and proc is not None:
-        wsock = app.get_websocket()
-        results = state[STATE_RESULTS_KEY]
-        if wsock is not None:
-            if results is not None:
-
-                if proc.was_aborted():
-                    graph_package = GET_GRAPH_MSG_INVALID_TEMPLATE.copy()
-                else:
-                    callgraph_results = results[STATE_CALLGRAPH_RESULTS_KEY]
-                    if callgraph_results is not None:
-
-                        graph_package = GET_GRAPH_MSG_FINISH_TEMPLATE.copy()\
-                            .set_graph(callgraph_results).build_and_package()
-
-            # Sends valid or invalid package
-            wsock.send(graph_package.build_and_package())
-
+# callgraph_top_level = json.dumps([{'handle_id': '0s', 'name': "Shim: <class 'pyLIQTR.qubitization.qsvt.QSVT_real_polynomial'>", 'description': '', 'rottnest_hash': None}, {'handle_id': '0', 'name': 'QSVT_real_polynomial', 'description': '', 'rottnest_hash': b'\x14\x84\xda|ys\xe0\x16P\xce\xc7uH\x89\x9b\x11'}, {'handle_id': '1', 'name': 'QSVT_real_polynomial', 'description': '', 'rottnest_hash': b'\x89\x01\xdf\x7fm1?w\x02p\x84\x0e\x8c#@a'}, {'handle_id': '2s', 'name': 'Shim: None', 'description': '', 'rottnest_hash': None}])
     
 class CallGraphModel:
     '''
@@ -114,16 +52,6 @@ class CallGraphModel:
 
     curr_executable_id = None
 
-    # @classmethod
-    # def generate_root_node(cls):
-    #     '''
-    #         Generates the root node of the graph
-    #     '''
-    #     parser = PyliqtrParser(
-    #         singleton.get_current_executable()
-    #     )
-    #     parser.parse()
-    #     return parser
 
     @classmethod
     @with_debug_log()
@@ -138,29 +66,12 @@ class CallGraphModel:
     @with_debug_log()
     def get_graph_result(cls, graph_id=None):
         '''
-           Gets the graph, if it is None it will get the root graph
-           If it the graph id is a valid integer it will retrieve
-           the callgraph associated
+           Alternative for the get_graph that uses the websocket
+           proxy 
         '''
-        app = RottnestApplication.get_instance()
-        proc_manager = ProcedureManager.get_instance()
+        websocket = WebSocketPoolSelector.get_current_websocket()
+        websocket.get_graph(websocket.get_proxy(), graph_id)
 
-        result_dict = dict()
-        state_obj = {
-            STATE_APPLICATION_KEY: app,
-            STATE_RESULTS_KEY: result_dict,
-            STATE_POLL_COUNTER_KEY: 0
-        }
-        getgraph_proc = GetGraphProcedure.construct_get_graph_proc(state_obj,
-                                                                   graph_id)
-        state_obj[STATE_PROCEDURE_KEY] = getgraph_proc
-
-
-        _result = proc_manager.execute_defer(getgraph_proc,
-                                             _get_graph_result_poll,
-                                             _get_graph_result_finalise,
-                                             state_obj)
-        
         return GET_GRAPH_MSG_ISSUED_TEMPLATE.copy().build()
 
         
