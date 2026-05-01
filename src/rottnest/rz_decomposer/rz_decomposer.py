@@ -7,6 +7,13 @@ class RzDecomposer(abc.ABC):
     '''
         Abstract base class for a decomposer
     '''
+    INSTANTIATED = False
+    def __init__(self):
+
+        '''
+            Hard check against multiple instantiation
+        '''
+        self.singleton_validation()
 
     @abc.abstractmethod
     def set_rz_precision(self, precision: int):
@@ -23,3 +30,8 @@ class RzDecomposer(abc.ABC):
         '''
             Decompose Rz(p / q, 2 ** -precision) to a sequence of H, T, S  
         '''
+
+    @classmethod
+    def singleton_validation(cls):
+        assert cls.INSTANTIATED is False
+        cls.INSTANTIATED = True

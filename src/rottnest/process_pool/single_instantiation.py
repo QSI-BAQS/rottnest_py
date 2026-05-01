@@ -51,6 +51,19 @@ class InstantiatingBlockedObjectException(Exception):
             msg = self._err.format(cls=cls)
         super().__init__(msg)
 
+class NotSingleInstantiationSubclassException(Exception):
+    '''
+       Trying to block on a class that doesn't inherit 
+    '''
+
+    _err = "Object of type {cls} not a child of SingleInstantiation"
+
+    def __init__(self, cls=None, *, msg=None): 
+        if msg is None:
+            msg = self._err.format(cls=cls)
+        super().__init__(msg)
+
+
 class SingleInstantiation:
     '''
         Not quite a singleton pattern
@@ -77,17 +90,23 @@ class SingleInstantiation:
         # Object of this type already instantiated
         if obj is not None:
             raise MultipleInstantiationException(cls)
-
+    
+        # Add to singletons list to prevent further 
+        # instantiation
         obj = super().__new__(cls)
         cls._singletons[cls] = cls
         return obj
 
     @staticmethod
-    def block_instantiation(cls):
+    def block_instantiation(cls: type):
         '''
             Blocks the instantiation of an object of type 
             cls
         '''
+        # Check that this is a subclass
+        if not issubclass(cls, SingleInstantiation):
+            raise NotSingleInstantiationSubclassException(cls)
+
         obj = SingleInstantiation._singletons.get(cls, None)
         if obj is None:
             SingleInstantiation._singletons[cls] = SingleInstantiation.BLOCKED
@@ -97,3 +116,11 @@ class SingleInstantiation:
 
         # Already blocked
         return
+
+def block_instantiation(*objs):
+    '''
+        Dispatch to SingleInstantiation.block_instantiation
+        Blocks all classes passed
+    '''
+    for obj in objs:
+        SingleInstantiation.block_instantiation(obj)

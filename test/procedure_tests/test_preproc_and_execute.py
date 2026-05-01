@@ -13,7 +13,7 @@ from rottnest.test_utils.executable import SampleExecutable
 from rottnest import test_utils
 from rottnest.test_utils.plugin_support import add_executable, add_architecture
 
-from rottnest.process_pool import terminate_pool
+from rottnest.process_pool import get_pool
 
 class PreprocessorProcedureTest(unittest.TestCase):
 
@@ -25,7 +25,7 @@ class PreprocessorProcedureTest(unittest.TestCase):
         )
         architectures.set_current_architecture(PreprocessorArchitecture.get_name())
 
-        procedure = preprocess_and_execute.PreprocAndExecuteProcedure()
+        procedure = preprocess_and_execute.PreprocAndExecuteProcedure(reporting=False)
         procedure.execute()
 
         while not procedure.complete():
@@ -34,14 +34,15 @@ class PreprocessorProcedureTest(unittest.TestCase):
         assert procedure.preprocessor.get_rz_count() == 1680 
         assert procedure.preprocessor.set_rz_precision() == 20 
         assert procedure.preprocessor.get_t_count() == 1680 
-        
-        terminate_pool()
-        #print(procedure.get_t_infidelity())
+        self.term()
+
+    def term(self):
+        pool = get_pool()
+        pool.terminate()
 
 
 if __name__ == '__main__':
     tst = PreprocessorProcedureTest()
     tst.test_full_run()
-
     #unittest.main()
 

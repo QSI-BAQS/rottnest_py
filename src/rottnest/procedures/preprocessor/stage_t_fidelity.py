@@ -44,6 +44,8 @@ class TFidelityStage(stage.RottnestCompilerStage):
         err_budget = budget.get_t_infidelity_budget() 
 
         t_count = environment.get_t_count()
+        if t_count == 0:
+            t_count += 1
         self._t_infidelity = err_budget / t_count
         self._complete = True
 

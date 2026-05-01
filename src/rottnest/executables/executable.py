@@ -7,7 +7,6 @@ from typing import Iterable
 # from functools import reduce
 
 from rottnest.rz_decomposer.angle_to_rational import angle_to_rational
-from rottnest.rz_decomposer.gridsynth import Gridsynth 
 from rottnest.rz_decomposer.rz_decomposer import DEFAULT_PRECISION 
 
 ROTTNEST_EXECUTABLE_MODULE_TAG = "rottnest_executables"
@@ -22,9 +21,6 @@ class RottnestExecutable(abc.ABC):
     RZ_PREC = 'prec_rz'
     base_params = {RZ_PREC: (int, DEFAULT_PRECISION)}
 
-    # FEATURE: RzDecomposition
-    # Move this to a module that can be shared with workers 
-    _rz_decomposer = Gridsynth()
 
     def __init__(self, pandora=True, prec_rz=None, **kwargs):
         '''
@@ -277,58 +273,6 @@ default to a counter in the preprocessing pass
         '''
             Dipatch method for magic state counting
         '''
-
-    def count_t_cirq(self, qc: cirq.Circuit, precision: int | None = None) -> int:
-        '''
-            Naive T counting
-            :: qc : cirq.Circuit :: Cirq circuit to perform T counting over 
-            :: precision : int :: Precision in bits for Rz rotations
-        '''
-
-        if precision is None:
-            precision = self.precision_rz() 
-
-        t_count = 0
-        for sl in qc:
-            for gate in sl:
-                if type(gate.gate) is cirq.ops.common_gates.Rz:
-                    angle = gate.gate._rads
-                    p, q = angle_to_rational(angle, precision=precision)
-                    sequence = self._rz_decomposer.z_theta_instruction(p, q, precision=precision)
-                    for i in sequence:
-                        if i == 'T':
-                            t_count += 1
-        return t_count
-
-    @staticmethod
-    def count_rz_cirq(qc, precision: int | None = None):
-        '''
-        Counts the number of rz gates in a cirq circuit
-        :: qc : cirq.Circuit :: Cirq circuit to perform Rz counting over
-        :: precision: int :: (Optional) Number of bits to truncate the precision 
-        Excludes Rz gates that correpond to angles 
-        
-        Typically it may be worth running this count a few times   
-        '''
-        rz_count = 0
-        T_rotation = 0.25
-
-        if precision is None: 
-            eps = 0
-        else:
-            eps = 2 ** - precision
-
-        for s in qc:
-            for gate in s:
-                # Bound by delta of a T rotation
-                # T gates are caught elsewhere 
-                if (
-                        (type(gate.gate) is cirq.ops.common_gates.Rz) 
-                        and 
-                        (gate.gate._rads % T_rotation > eps) # Not within epsilon
-                   ):
-                    rz_count += 1
-        return rz_count
 
     def get_qubits(self):
         '''

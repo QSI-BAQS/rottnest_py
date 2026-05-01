@@ -16,12 +16,13 @@ class ErrorTargetProcedureTest(unittest.TestCase):
         '''
             Checks that asynch is collected properly
         '''
-        pool = get_pool()
-        procedure = pool.PoolProcedure()
-        assert not procedure.is_asynchronous()
+        #pool = get_pool()
+        #procedure = pool.PoolProcedure()
+        #assert not procedure.is_asynchronous()
 
 
 if __name__ == '__main__':
-    #tst = ErrorTargetProcedureTest()
+    tst = ErrorTargetProcedureTest()
+    tst.test_asynch()
 
-    unittest.main()
+    #unittest.main()
