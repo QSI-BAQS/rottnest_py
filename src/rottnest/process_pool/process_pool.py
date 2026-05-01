@@ -386,19 +386,19 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
         )
         assert resp == symbols.PONG
 
-    def get_results_stream(self):
+    def get_results_stream(self, max_get=10):
         '''
             Gets current results stream objects
         '''
-        resp = self.ipc.batch_get(
-            commands.GET_RESULTS_STREAM
-        )
-        if resp is not IPCManager.NOT_FOUND: 
-            '''
-                Only need the most recent object
-            '''
-            return resp
-        return []
+        collected = []
+        count = 0
+        while (count < max_get) and IPCManager.NOT_FOUND is not ( 
+                resp := self.ipc.get_item(
+                    commands.GET_RESULTS_STREAM
+                )
+            ):
+            collected.append(resp)
+        return collected 
 
     def get_results(self, blocking=False):
         '''

@@ -624,7 +624,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         )
 
         self.manager_completion_queue.put(
-            (commands.GET_RESULTS_STREAM, result_obj)
+            (commands.GET_RESULTS_STREAM, result_obj.to_args())
         )
 
         # TODO: Batch

@@ -18,12 +18,11 @@ from rottnest.compute_units.layout_proxy import LayoutProxy
 from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser, rottnest_cacheable
 from rottnest.input_parsers.interrupt import INTERRUPT, CACHED
 
-from rottnest.monkey_patchers.pyliqtr_patcher import hash_function_patchers
 
 from rottnest.architecture_interface.rottnest_composer import RottnestComposer
 
-from rottnest.preprocessor.rz_collection_worker import RzCollectionWorker
-from rottnest.preprocessor.rz_collection_composer import RzCollectionComposer, RzCollectionResultsComposer
+from rottnest_preprocessor.preprocessor.rz_collection_worker import RzCollectionWorker
+from rottnest_preprocessor.preprocessor.rz_collection_composer import RzCollectionComposer, RzCollectionResultsComposer
 
 
 # Ensure this works with both unittest and direct running
@@ -41,11 +40,19 @@ mem_bound = "mem_bound"
 default_mem_bound = 1000
 layout_id = 0
 generic_layout = { mem_bound: default_mem_bound }
-LayoutProxy.add_layout_with_id(layout_id, layout)
+LayoutProxy.add_layout_with_id(layout_id, generic_layout)
 
 # Use the Rz Counter from the preprocessor
 architectures.set_current_architecture("Rz Counter")
 
+
+def const_hash(val):
+    '''
+        Simple cost fn
+    '''
+    def _wrap(*args, **kwargs):
+        return val
+    return _wrap
 
 class TestCachedRzCollection(unittest.TestCase):
     def test_cache_hit(self):
@@ -505,4 +512,6 @@ class TestCachedRzCollection(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    tst = TestCachedRzCollection()
+    tst.test_cache_hit()
+    #unittest.main()

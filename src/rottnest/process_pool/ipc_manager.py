@@ -84,7 +84,7 @@ class IPCManager:
             # TODO: there seems to be some errors in this function
         '''
         # Initial fetch to populate
-        self.fetch(target)
+        init = self.fetch(target)
 
         if None is not (queue := 
             self._msg_queues.get(target, None)
