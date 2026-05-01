@@ -111,7 +111,7 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
                     and stage.codependencies_resolved(self)
                     ):
                     # TODO: Convert the below to a debug log
-                    #print("Executing: {proc} {id} -> {stage}".format(proc=self.get_tag(), id=hex(id(self)), stage=stage.get_tag()))
+                    print("Executing: {proc} {id} -> {stage}".format(proc=self.get_tag(), id=hex(id(self)), stage=stage.get_tag()))
                     stage.execute(self)
             
  

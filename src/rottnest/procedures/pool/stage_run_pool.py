@@ -49,7 +49,7 @@ class RunPoolStage(stage.RottnestCompilerStage):
         if self._reporting and not self._complete:
             if self._app is not None:
                 stream = pool.get_results_stream()
-                if len(stream) > 1:
+                if len(stream) > 0:
                     self._app.websocket_stream_write(stream)
             else:
                 pool.flush_results_cache()

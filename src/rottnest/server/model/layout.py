@@ -69,8 +69,8 @@ def _run_layout_poll(state):
     if preproc is not None:
         preproc.poll()
     
-    if app is not None:
-        app.websocket_heartbeat()
+    #if app is not None:
+        #app.websocket_heartbeat()
         # time.sleep(STANDARD_DELAY_ON_POLL)
 
 @with_debug_log()
