@@ -515,7 +515,7 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
             Requests the next object in a sequence
         '''
         self.manager_priority_task_queue.put(
-            (priority_commands.GET_VISUALISER_NEXT, graph_id)
+            (priority_commands.GET_VISUALISER_NEXT,)
         ) 
 
     def get_visualiser_status(self):
