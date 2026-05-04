@@ -27,14 +27,12 @@ class WebSocketPoolSingleton:
        This is used to manage the pool of sockets and reference it where
        needed within the server context 
     '''
-    # Not implemented
-
     @classmethod
     def get_instance(cls):
         '''
            Gets the instance of the websocket pool 
         '''
-        return NotImplemented
+        raise NotImplementedError
 
 class CurrentWebSocketSingleton:
     '''

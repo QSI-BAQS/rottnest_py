@@ -21,7 +21,7 @@ WEBSOCKET_ERROR_VAL = 'err'
 WEBSOCKET_ABORT_MSG = 'Expected WebSocket request.'
 WEBSOCKET_ABORT_STATUS = 400
 
-WEBSOCKET_PRINT_TRACEBACK = False
+WEBSOCKET_PRINT_TRACEBACK = True
 
 def websocket_reset_rottnest(proxy_instance):
     '''
@@ -90,8 +90,10 @@ def websocket_handle():
                 websocket_print_traceback()
                 break
             except Exception as e:
+                websocket_print_traceback()
                 websocket_send_message(wsock, websocket_error_description(e))
     except Exception as _e:
+        websocket_print_traceback()
         websocket_print_traceback()
 
 def websocket_print_traceback():

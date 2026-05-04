@@ -16,7 +16,7 @@ class RottnestWebSocketCommon:
            Initialises the common actions, these will require
            a websocket to be passed into it 
         '''
-        self.Callgraph = CallGraphOperations()
+        self.CallGraph = CallGraphOperations()
         self.Layout = LayoutOperations()
 
 

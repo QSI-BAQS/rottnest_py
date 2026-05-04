@@ -1,6 +1,5 @@
 from enum import Enum
 from typing import Protocol
-from rottnest.debug.util import with_debug_log
 from rottnest.procedures.procedure import RottnestCompilerProcedure
 from rottnest.procedures.procedure_manager.procedure_state_hook import ProcedureStateHook
 
@@ -50,7 +49,7 @@ class ProcedureEntityTag:
         self.state_tag = ProcedureEntityStateTag.CONSTRUCTED
 
     @classmethod
-    def make(cls, proc_id: int):
+    def make(cls, proc_id: int) -> 'ProcedureEntityTag':
         '''
            Constructing the procedure with a given procedure id
         '''
@@ -62,7 +61,6 @@ class ProcedureEntityTag:
         '''
         return self.proc_id
 
-    @with_debug_log()
     def progress_to_next_state(self):
         '''
            Progresses through the states based on the current state it is in
@@ -80,7 +78,6 @@ class ProcedureEntityTag:
         if self.state_tag == ProcedureEntityStateTag.INVALID:
             raise ProcedureEntityInvalidState(self.proc_id)
 
-    @with_debug_log()
     def progress_to_active(self):
         '''
            For immediate execution mode, it will just jump from constructed to
@@ -144,7 +141,7 @@ class ProcedureTuple:
         '''
         entity_id = tagger.get_next_id()
         proc_entity_tag = ProcedureEntityTag.make(entity_id)
-        proc_entity_tag.progess_to_next_state()
+        proc_entity_tag.progress_to_next_state()
         return ProcedureTuple(proc_entity_tag,
                               procedure,
                               poll_callback,

@@ -175,8 +175,8 @@ class ConcurrentProcedureManager(ProcedureManager):
            Given a procedure, it will operate on it
            from the active list
         '''
-        proc_tuple = self.active_procedures[proc_index]
-        entity_obj = proc_tuple.get_entity_object()
+        proc_tuple: ProcedureTuple = self.active_procedures[proc_index]
+        entity_obj = proc_tuple.get_entity_tag()
         procedure_state = proc_tuple.get_procedure_state_object()
         proc_final_callback = proc_tuple.get_finaliser_callback()
 
@@ -200,7 +200,7 @@ class ConcurrentProcedureManager(ProcedureManager):
            Enqueues the procedure with a global id associated
            - This is a tuple 
         '''
-        self.queued_id_set.add(procedure_tuple.get_entity_object().proc_id)
+        self.queued_id_set.add(procedure_tuple.get_entity_tag().proc_id)
         self.queued_tasks.put(procedure_tuple)
         
     def get_queued_procedure_ids(self):

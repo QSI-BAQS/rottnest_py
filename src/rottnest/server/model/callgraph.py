@@ -69,8 +69,9 @@ class CallGraphModel:
            Alternative for the get_graph that uses the websocket
            proxy 
         '''
-        websocket = WebSocketPoolSelector.get_current_websocket()
-        websocket.get_graph(websocket.get_proxy(), graph_id)
+        
+        websocket = WebSocketPoolSelector.get_current_websocket().get_proxy()
+        websocket.CallGraph.get_graph(websocket, graph_id)
 
         return GET_GRAPH_MSG_ISSUED_TEMPLATE.copy().build()
 

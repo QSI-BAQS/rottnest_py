@@ -235,3 +235,15 @@ class ProcedureManager(RottnestCompilerStage):
         '''
         raise NotImplementedError
 
+    def execute(self,
+            compiler_environment = None,
+            reporting=True,
+            single_pass=False) -> bool | None:
+        '''
+           Reimplements the execute method for Procedure
+           Calls itself by running 'run_manager'
+        '''
+
+        self.run_manager()
+        
+        
