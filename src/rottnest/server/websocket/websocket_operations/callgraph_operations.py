@@ -4,12 +4,14 @@ from rottnest.server.protocol.operation import CallGraph as SpecOperations
 from rottnest.server.websocket.websocket_operations.operations_spec import \
      WebSocketOperationsSpecification
 
- 
+from rottnest.procedures.procedure_manager.mpsc_common import MPSC_CALLGRAPH_CHANNEL_TAG
+from rottnest.procedures.procedure_manager.mpsc_channel import MPSCChannelProvider
 from rottnest.procedures.procedure_manager import ProcedureManagerSelector
+
+import time
     
 POLL_TIME_DELAY = 2
 POLL_RETRY_COUNT = 60
-
 
 STATE_CALLGRAPH_RESULTS_KEY = 'graph_results'
 STATE_NODE_STATUS_KEY = 'node_status'
@@ -21,20 +23,24 @@ GET_GRAPH_MSG_FINISH_TEMPLATE = CallGraphPacketBuilder.make()
 GET_GRAPH_MSG_INVALID_TEMPLATE = CallGraphPacketBuilder.make().set_error('Graph could not be computed or returned')
 GET_GRAPH_MSG_ISSUED_TEMPLATE = CallGraphPacketBuilder.make().set_get_graph_confirmation()
 
+TRANSLATE_HANDLE = 'handle_id'
+TRANSLATE_NAME = 'name'
+TRANSLATE_DESC = 'description'
+TRANSLATE_HASH = 'rottnest_hash'
 
 class GetGraphStateObject():
     '''
        State object that is constructed for this purpose 
     '''
 
-    def __init__(self, websocket, procedure, limit: int, results=dict()):
+    def __init__(self, websocket, procedure, reader, limit: int):
         '''
            Stores the websocket and procedure
            Initialises state information it will need to maintain per instance 
         '''
         self.websocket = websocket
         self.procedure = procedure
-        self.results = results if None else dict()
+        self.reader = reader
         self.counter = 0
         self.limit = limit
 
@@ -70,11 +76,11 @@ class GetGraphStateObject():
         self.counter += 1
 
     
-    def get_results(self):
+    def get_reader(self):
         '''
-           Returns the results 
+           Returns the reader 
         '''
-        return self.results        
+        return self.reader
 
 
 class CallGraphOperations(WebSocketOperationsSpecification):
@@ -113,20 +119,23 @@ class CallGraphOperations(WebSocketOperationsSpecification):
         '''
         proc_manager = ProcedureManagerSelector.get_instance().get_default()
 
-        results_dict = dict()
+        mpsc_provider: MPSCChannelProvider = MPSCChannelProvider.get_instance()
+        mpsc_provider.recreate_channel(MPSC_CALLGRAPH_CHANNEL_TAG)
+        mpsc_reader, _mpscstate = mpsc_provider.get_reader(MPSC_CALLGRAPH_CHANNEL_TAG)
 
-        getgraph_proc = GetGraphProcedure.construct_get_graph_proc(
-                                        results_dict,
-                                        graph_id)
+
+        getgraph_proc = GetGraphProcedure(graph_id=graph_id)
 
         state_object = GetGraphStateObject(websocket,
                                         getgraph_proc,
-                                        POLL_RETRY_COUNT,
-                                        results_dict)
+                                        mpsc_reader,
+                                        POLL_RETRY_COUNT)
+
 
         proc_manager.dispatch(
                             getgraph_proc,
                             self.get_graph_poll,
+                            None,
                             self.get_graph_finalise,
                             state_object)
 
@@ -134,7 +143,8 @@ class CallGraphOperations(WebSocketOperationsSpecification):
 
     def run_graph_node(self, websocket, graph_id):
         '''
-           Runs the graph node itself 
+           Runs the graph node itself - This should attempt to run layout
+               in some way?
         '''
         pass
 
@@ -142,35 +152,67 @@ class CallGraphOperations(WebSocketOperationsSpecification):
         '''
            Poll method for get_graph 
         '''
-        wsock = state_object.get_websocket_proxy()
+        wproxy = state_object.get_websocket_proxy()
+        wsock = wproxy.get_websocket()
         proc = state_object.get_procedure()
         counter = state_object.get_counter()
         limit = state_object.get_limit()
+        actions = wproxy.get_actions()
 
         if counter < limit:
             state_object.increment_counter()
             proc.poll()
+            time.sleep(POLL_TIME_DELAY)
             graph_package = GET_GRAPH_MSG_POLL_TEMPLATE.copy()\
                 .build_and_package()
-            wsock.send(graph_package)
+            actions.websocket_write(wsock, graph_package)
         else:
             proc.abort_procedure()
 
+
+
+    def translate_items(self, many_objects):
+        '''
+           Calls translate_object on all objects in the list 
+        '''
+        results = []
+        for obj in many_objects:
+            results.append(self.translate_object(obj))
+
+        return results
+
+    def translate_object(self, obj):
+        '''
+           Translate from internal representation
+           that fixes the hash to use a hex string 
+        '''
+        new_hash = None if obj[TRANSLATE_HASH] is None else obj[TRANSLATE_HASH].hex()
+        
+        return {
+            TRANSLATE_HANDLE: obj[TRANSLATE_HANDLE], 
+            TRANSLATE_NAME: obj[TRANSLATE_NAME], 
+            TRANSLATE_DESC: obj[TRANSLATE_DESC], 
+            TRANSLATE_HASH: new_hash, # needed for fix
+        }
 
     def get_graph_finalise(self, state_object: GetGraphStateObject):
         '''
            Finaliser method for get_graph 
         '''
-        wsock = state_object.get_websocket_proxy()
+        wproxy = state_object.get_websocket_proxy()
+        wsock = wproxy.get_websocket()
+        actions = wproxy.get_actions()
+        reader = state_object.get_reader()
         proc = state_object.get_procedure()
-        results = state_object.get_results()
         graph_package = GET_GRAPH_MSG_INVALID_TEMPLATE.copy()
 
         if not proc.was_aborted():
-            callgraph_results = results[STATE_CALLGRAPH_RESULTS_KEY]
+            callgraph_results = reader.read()
             if callgraph_results is not None:
+                items = callgraph_results.get_object()[1]
+                results = self.translate_items(items)
                 graph_package = GET_GRAPH_MSG_FINISH_TEMPLATE.copy()\
-                    .set_graph(callgraph_results).build_and_package()
+                    .set_graph(results)
 
-        # Sends valid or invalid package
-        wsock.send(graph_package.build_and_package())
+        
+        actions.websocket_write(wsock, graph_package.build_and_package())

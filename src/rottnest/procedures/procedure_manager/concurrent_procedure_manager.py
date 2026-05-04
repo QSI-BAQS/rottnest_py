@@ -180,9 +180,11 @@ class ConcurrentProcedureManager(ProcedureManager):
         procedure_state = proc_tuple.get_procedure_state_object()
         proc_final_callback = proc_tuple.get_finaliser_callback()
 
-        procedure_wrapper_complete = proc_tuple.get_complete_callback()
+        procedure_wrapper_complete = proc_tuple.get_complete_callback_or_default()
         procedure_wrapper_poll = proc_tuple.get_poll_callback()
         procedure = proc_tuple.get_procedure()
+
+        
         if procedure_wrapper_complete(procedure_state):
             entity_obj.progress_to_next_state()
             self.queued_id_set.remove(entity_obj.proc_id)

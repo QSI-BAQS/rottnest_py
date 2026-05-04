@@ -1,5 +1,4 @@
 from rottnest.procedures import pool, procedure, preprocessor
-from rottnest.debug.util import with_debug_log
 
 STAGE_TAG = 'preprocess_and_execute'
 
@@ -17,14 +16,13 @@ class PreprocAndExecuteProcedure(procedure.RottnestCompilerProcedure):
         execute = pool.PoolProcedure(
             dependencies = [preproc.get_tag()],
             asynchronous = True,
-            reporting=reporting
+            reporting=reporting,
         )
         
         stages = [
             preproc,
             execute    
         ]
-
         
         super().__init__(
             None,
@@ -32,3 +30,5 @@ class PreprocAndExecuteProcedure(procedure.RottnestCompilerProcedure):
             tag=tag,
             dependencies=dependencies
         )
+
+        

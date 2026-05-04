@@ -1,7 +1,6 @@
 """
     Model for Callgraph
 """
-
 from rottnest.server.util.packets.callgraph import CallGraphPacketBuilder
 from rottnest.server.websocket.websocket_pool import WebSocketPoolSelector
 from rottnest.debug.util import with_debug_log
@@ -34,8 +33,6 @@ GET_GRAPH_MSG_INVALID_TEMPLATE = CallGraphPacketBuilder.make().set_error('Graph 
 GET_GRAPH_MSG_ISSUED_TEMPLATE = CallGraphPacketBuilder.make().set_get_graph_confirmation()
 
 
-# callgraph_top_level = json.dumps([{'handle_id': '0s', 'name': "Shim: <class 'pyLIQTR.qubitization.qsvt.QSVT_real_polynomial'>", 'description': '', 'rottnest_hash': None}, {'handle_id': '0', 'name': 'QSVT_real_polynomial', 'description': '', 'rottnest_hash': b'\x14\x84\xda|ys\xe0\x16P\xce\xc7uH\x89\x9b\x11'}, {'handle_id': '1', 'name': 'QSVT_real_polynomial', 'description': '', 'rottnest_hash': b'\x89\x01\xdf\x7fm1?w\x02p\x84\x0e\x8c#@a'}, {'handle_id': '2s', 'name': 'Shim: None', 'description': '', 'rottnest_hash': None}])
-    
 class CallGraphModel:
     '''
         Singleton instance class for tracking and handling state of the
@@ -69,10 +66,8 @@ class CallGraphModel:
            Alternative for the get_graph that uses the websocket
            proxy 
         '''
-        
         websocket = WebSocketPoolSelector.get_current_websocket().get_proxy()
         websocket.CallGraph.get_graph(websocket, graph_id)
-
         return GET_GRAPH_MSG_ISSUED_TEMPLATE.copy().build()
 
         

@@ -200,6 +200,21 @@ class ProcedureTuple:
            Callback that can be injected on poll that uses the state object 
         '''
         return self.procedure_hook.get_complete_callback()
+    
+    def get_complete_callback_or_default(self):
+        '''
+            Gets the hooked version or the procedure version
+        '''
+        complete_fn = self.procedure_hook.get_complete_callback()
+        procedure = self.procedure
+
+        def proc_wrapper_fn(_state_obj):
+            '''
+               Wraps the complete call 
+            '''
+            return procedure.complete()
+        
+        return complete_fn if complete_fn is not None else proc_wrapper_fn
 
     def get_finaliser_callback(self):
         '''

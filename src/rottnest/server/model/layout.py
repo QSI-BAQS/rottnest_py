@@ -1,7 +1,8 @@
 '''
     This interface handles the layout controllers 
 '''
-from rottnest.procedures.procedure_manager import ProcedureManagerSelector
+from rottnest.procedures.procedure_manager import ProcedureManagerSelector, MPSCChannelProvider, \
+    MPSC_LAYOUT_CHANNEL_TAG
 from rottnest.plugins import architectures
 from rottnest.plugins import executables
 from rottnest.procedures.preprocess_and_execute\
@@ -75,12 +76,17 @@ def run_layout(layout):
             layout_obj = layout
             _layout_id = LayoutProxy.add_layout_with_id(0, layout_obj)
             app = RottnestApplication.get_instance()
+            mpsc_provider: MPSCChannelProvider = MPSCChannelProvider.get_instance()
+            mpsc_provider.recreate_channel(MPSC_LAYOUT_CHANNEL_TAG)
+            mpsc_reader, _mpscstate = mpsc_provider.get_reader(MPSC_LAYOUT_CHANNEL_TAG)
+                
             procedure_manager = ProcedureManagerSelector.get_instance().get_default(app)
             preprocessor_stage = PreprocAndExecuteProcedure()
             websocket = WebSocketPoolSelector.get_current_websocket().get_proxy()
             websocket.Layout.run_layout(websocket,
                                         preprocessor_stage,
-                                        procedure_manager)
+                                        procedure_manager,
+                                        mpsc_reader)
             
             return RUN_LAYOUT_MSG_END
 

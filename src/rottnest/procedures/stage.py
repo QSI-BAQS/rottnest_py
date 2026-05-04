@@ -9,7 +9,6 @@ class StageInterface(Protocol):
     
     TAG: str
 
-
     def get_tag(self):
         '''
             Retrieves the tag held by the stage_tag object
@@ -97,9 +96,7 @@ class RottnestCompilerStage(abc.ABC, StageInterface):
         self._co_dependencies = co_dependencies 
 
         self._complete: bool = False
-
         self._asynchronous = asynchronous
-        self._data_channel = list()
 
     def get_tag(self) -> str | None:
         '''
@@ -196,18 +193,12 @@ class RottnestCompilerStage(abc.ABC, StageInterface):
         '''
         pass
 
-    def poll(self):
+    def poll(self, compiler_environment=None):
         '''
             Function to perform or re-trigger some incremental work for the stage
         '''
         pass
 
-    def get_data_channel(self):
-        '''
-            Gets the data channel from the stage that the
-            root procedure has access to  
-        '''
-        return self._data_channel
 
     # def is_asynchronous(self):
     #     '''

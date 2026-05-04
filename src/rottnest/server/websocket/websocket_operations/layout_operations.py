@@ -33,12 +33,13 @@ class RunLayoutStateObject:
        that need to be implemented are used
     '''
 
-    def __init__(self, websocket_proxy, procedure):
+    def __init__(self, websocket_proxy, procedure, mpsc_reader):
         '''
            Initialises the object with the required proxy and procedure 
         '''
         self.websocket_proxy = websocket_proxy
         self.procedure = procedure
+        self.mpsc_reader = mpsc_reader
 
     def get_websocket_proxy(self):
         '''
@@ -52,6 +53,11 @@ class RunLayoutStateObject:
         '''
         return self.procedure
 
+    def get_reader(self):
+        '''
+           Gets the MPSC Reader that can be used for hooks 
+        '''
+        return self.mpsc_reader
 
 class LayoutOperations(WebSocketOperationsSpecification):
     '''
@@ -82,13 +88,14 @@ class LayoutOperations(WebSocketOperationsSpecification):
     def run_layout(self,
                    websocket,
                    procedure,
-                   procedure_manager
+                   procedure_manager,
+                   mpsc_reader
                    ):
         '''
            Runs the layout and maintains state information around
            the execution and provides feedback to the frontend 
         '''
-        state_object = RunLayoutStateObject(websocket, procedure)
+        state_object = RunLayoutStateObject(websocket, procedure, mpsc_reader)
         _result = procedure_manager.dispatch(
                                 procedure,
                                 self.run_layout_poll_extraction,
@@ -96,7 +103,16 @@ class LayoutOperations(WebSocketOperationsSpecification):
                                 self.run_layout_finalise,
                                 state_object)
 
+
         return _result
+
+    def run_layout_complete(self, state_object: RunLayoutStateObject):
+        '''
+           Hook for complete method, is currently a noop 
+        '''
+        proc = state_object.get_procedure()        
+        is_complete = proc.complete()
+        return is_complete
 
     def run_layout_poll_extraction(self, state_object: RunLayoutStateObject):
         '''
@@ -110,24 +126,17 @@ class LayoutOperations(WebSocketOperationsSpecification):
         websocket = websocket_proxy.get_websocket()
         actions = websocket_proxy.get_actions()
         preproc = state_object.get_procedure()
-        preproc.poll()
-        frames = preproc.get_data_channel()
-
-        while len(frames) > 0:
-            frame = frames.pop(0)
-            actions.websocket_result_write(websocket, frame.results)
-            if frame.stream is not None:
-                actions.websocket_stream_write(websocket, frame.stream)
-                
-
-    def run_layout_complete(self, state_object: RunLayoutStateObject):
-        '''
-           Hook for complete method, is currently a noop 
-        '''
-        proc = state_object.get_procedure()        
-        is_complete = proc.complete()
-        return is_complete
+        reader = state_object.get_reader()
         
+        preproc.poll()
+        current_messages = reader.read_all()
+
+        for msg in current_messages:
+            if msg.is_iterable():                
+                actions.websocket_stream_write(websocket, msg.get_object())
+            else:
+                actions.websocket_result_write(websocket, msg.get_object())
+                        
     def run_layout_finalise(self, state_object: RunLayoutStateObject):
         '''
             Given a layout, it will receive the state_object
@@ -138,11 +147,14 @@ class LayoutOperations(WebSocketOperationsSpecification):
         websocket_proxy = state_object.get_websocket_proxy()
         websocket = websocket_proxy.get_websocket()
         actions = websocket_proxy.get_actions()
-        proc = state_object.get_procedure()        
-        frames = proc.get_data_channel()
-        while len(frames) > 0:
-            frame = frames.pop(0)
-            actions.websocket_result_final_write(websocket, frame.results)
+        reader = state_object.get_reader()
+        current_messages = reader.read_all()
+        
+        for msg in current_messages:
+            if msg.is_iterable():                
+                actions.websocket_stream_write(websocket, msg.get_object())
+            else:
+                actions.websocket_result_write(websocket, msg.get_object())
         
 
     def poll_layout_status(self, websocket, layout_id):

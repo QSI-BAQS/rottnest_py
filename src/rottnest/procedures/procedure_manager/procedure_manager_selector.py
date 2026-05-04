@@ -68,6 +68,7 @@ class ProcedureManagerSelector:
         '''
         if self.concurrent_instance is None:
             self.concurrent_instance = ConcurrentProcedureManager(app)
+            self.concurrent_instance.start_manager_in_thread()
 
         return self.concurrent_instance
         
@@ -78,6 +79,8 @@ class ProcedureManagerSelector:
         '''
         if self.serial_instance is None:
             self.serial_instance = SerialProcedureManager(app)
+            self.serial_instance.start_manager_in_thread()
+            
 
         return self.serial_instance
         
