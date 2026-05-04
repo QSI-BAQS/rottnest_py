@@ -33,7 +33,6 @@ class GetGraphProcedure(procedure.RottnestCompilerProcedure):
     @with_debug_log()
     def abort_procedure(self):
         '''
-           Override for the complete if set by the procedure manager 
         '''
         self._complete = True
         self._was_aborted = True

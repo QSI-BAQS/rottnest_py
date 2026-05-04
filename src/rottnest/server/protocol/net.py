@@ -3,9 +3,7 @@
     name space and are composed by the main `Rottnest`
     class 
 '''
-
 from types import FunctionType, MethodType, ClassMethodDescriptorType
-
 import json
 
 def _compose(cls, parent=None):
@@ -164,3 +162,4 @@ class Rottnest:
    Single instance which these are encompassed under 
 '''
 Rottnest = _compose(Rottnest)
+

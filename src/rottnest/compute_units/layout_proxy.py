@@ -1,11 +1,7 @@
 '''
     Proxy class for managing layouts
 '''
-
-import abc
 from typing import Generator
-
-import math as maths
 
 class LayoutProxy:
     '''

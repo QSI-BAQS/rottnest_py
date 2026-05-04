@@ -1,7 +1,8 @@
 import sys
 from time import time
-from .interactive.console import DebugConsoleSystem
 from os import getpid
+from gevent.threadpool import ThreadPool
+from .interactive.console import DebugConsoleSystem
 
 class DebugMonitorMessage:
     '''
@@ -81,6 +82,9 @@ class DebugMonitor:
       extract meaningful information  
     '''
 
+    THREAD_POOL_COUNT = 1
+    POOL_REF = None
+
     def __init__(self, use_stdin=True, stdout_output=True, to_file=None,\
                   use_decorator=True, error_filepath: str | None =None):
         '''
@@ -101,6 +105,20 @@ class DebugMonitor:
 
 
         
+    @classmethod
+    def initialise():
+        '''
+            Initialises the debug monitor with a console and thread pool
+            setup for interacting with it via stdin
+        '''
+        monitor_obj = DebugMonitor.default()\
+          .get_console()\
+          .get_monitor()
+
+        pool = ThreadPool(DebugMonitor.THREAD_POOL_COUNT)
+        pool.spawn(monitor_obj.get_console().selector_interact)
+        DebugMonitor.POOL_REF = pool
+        return monitor_obj
 
     @staticmethod
     def current() -> 'DebugMonitor':

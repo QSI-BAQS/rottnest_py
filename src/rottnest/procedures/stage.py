@@ -63,7 +63,7 @@ class RottnestCompilerStage(abc.ABC, StageInterface):
         tag: str | None = None,
         dependencies: list[str | type] | None = None,
         co_dependencies: list[str | type] | None = None,
-        asynchronous: bool = False
+        asynchronous: bool = False,
     ): 
         '''
         Constructor for a stage
@@ -80,7 +80,6 @@ class RottnestCompilerStage(abc.ABC, StageInterface):
 
         :: asynchronous : bool :: Does this stage execute asynchronously
         '''
-        
         # Default to whatever is passed in
         if tag is None:
             # Prevent a recursion
@@ -94,13 +93,13 @@ class RottnestCompilerStage(abc.ABC, StageInterface):
         if co_dependencies is None:
             co_dependencies = list()
 
-
         self._dependencies = dependencies 
         self._co_dependencies = co_dependencies 
 
         self._complete: bool = False
 
         self._asynchronous = asynchronous
+        self._data_channel = list()
 
     def get_tag(self) -> str | None:
         '''
@@ -202,6 +201,13 @@ class RottnestCompilerStage(abc.ABC, StageInterface):
             Function to perform or re-trigger some incremental work for the stage
         '''
         pass
+
+    def get_data_channel(self):
+        '''
+            Gets the data channel from the stage that the
+            root procedure has access to  
+        '''
+        return self._data_channel
 
     # def is_asynchronous(self):
     #     '''

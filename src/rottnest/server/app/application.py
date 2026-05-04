@@ -1,12 +1,9 @@
 """
     Rottnest application class
 """
-from io import StringIO
-from geventwebsocket.websocket import WebSocket
-from threading import Semaphore
 from rottnest.server.app.app_config import ApplicationConfig, AppExtensions
 from rottnest.debug.monitor import DebugMonitor
-from rottnest.server.protocol.net import Rottnest
+from rottnest.server.websocket.websocket_proxy import RottnestWebSocketProxy
 
 class RottnestApplicationUnavailableException(BaseException):
 
@@ -26,10 +23,10 @@ class RottnestApplication:
     
     def __init__(
             self,
-            wsock,
-            wsock_sem,
+            websocket_proxy: RottnestWebSocketProxy | None,
             apploader=ApplicationConfig.default(),
-            is_uninit=False
+            is_uninit=False,
+            reload=True
         ):
         """
             Initialises an application
@@ -38,23 +35,31 @@ class RottnestApplication:
             ApplicationConfig will load defaults or
             what is specified
         """
-        self.wsock = wsock
-        self.wsock_sem = wsock_sem
+        self.websocket_proxy = websocket_proxy
+        self.app_loader_ref = apploader
         self.is_uninit = is_uninit
         self.app_state_map = {}
         self.app_extensions = AppExtensions()
-        apploader.load_and_attach(self.app_extensions)
+        if reload:
+            apploader.load_and_attach(self.app_extensions)
         DebugMonitor.current().set_console_context(self)
         DebugMonitor.current().get_console().set_app(self)
 
         if RottnestApplication._appinstance is None \
             or RottnestApplication._appinstance.is_uninit:
             RottnestApplication._appinstance = self
-            
+
+
+    def reload_extensions(self):
+        '''
+           Reload the plugins as necessary 
+        '''
+        self.app_loader_ref.load_and_attach(self.app_extensions)
+
 
 
     @classmethod
-    def try_get_instance(cls):
+    def try_get_instance(cls, reload=True):
         '''
            Will attempt to try and get the instance of rottnest that is
            initialised
@@ -75,9 +80,7 @@ class RottnestApplication:
            that are to provide some level of introspection within the system
            itself
         '''
-        wsock = WebSocket(None, StringIO(''), None) # NOTE: Un-init'd
-        wsock_sem = Semaphore()
-        return RottnestApplication(wsock, wsock_sem, is_uninit=True)
+        return RottnestApplication(websocket_proxy=None, is_uninit=True)
 
     @classmethod
     def get_instance(cls):
@@ -90,71 +93,25 @@ class RottnestApplication:
         else:
             return cls._appinstance
 
-    
-
-    def websocket_stream_write(self, stream):
-        '''
-           Writes data to the websocket via rottnest instance
-           usage is on composer streams
-           NOTE: Better rename or generalise this method
-        '''
-        for sobj in stream:
-            
-            stream_tup = sobj.items()
-            # unit_ids = sobj.get_compute_unit_ids()
-            stream_data = dict()
-            for (idx, tup) in enumerate(stream_tup):
-                tkey, tvalue = tup
-                stream_data[tkey] = tvalue
-                # stream_data['cuid'] = unit_ids[idx]
-                
-            # NOTE: Results, graph_state info
-            self.wsock.send(Rottnest\
-                       .start_packet(Rottnest.data.run_result)\
-                       .set_payload(stream_data)\
-                       .build())
-
-    def websocket_result_write(self, results):
-        '''
-            Writes data to the websocket via the rottnest instance
-            On results from composer objects    
-            NOTE: Better rename or generalise this method
-        '''
-        
-        self.wsock.send(Rottnest\
-                       .start_packet(Rottnest.data.run_result)\
-                       .set_payload(results)\
-                       .build())
-
-
-    def websocket_result_final_write(self, results):
-        '''
-            Writes data to the websocket via the rottnest instance
-            On results from composer objects    
-            NOTE: Better rename or generalise this method
-        '''
-        
-        self.wsock.send(Rottnest\
-                       .start_packet(Rottnest.data.run_result)\
-                       .set_payload(results)\
-                       .put("cu_id", "TOTAL") \
-                       .build())
-        
-
-    def websocket_heartbeat(self):
-        '''
-           Provides a heartbeat mechanism for the websocket
-           to ensure that it is kept alive
-        '''
-        heartbeat_package = Rottnest.make_message(Rottnest.liveness)
-        wsock = self.wsock
-        wsock.send(heartbeat_package)
 
     def get_websocket(self):
         '''
             Gets the websocket that is attached to the application
         '''
-        return self.wsock
+        return self.websocket_proxy.websocket if self.websocket_proxy \
+            is not None else None
+
+    def get_websocket_proxy(self):
+        '''
+             Gets the websocket proxy that is attached to the application
+        '''
+        return self.websocket_proxy
+
+    def set_websocket_proxy(self, websocket_proxy):
+        '''
+          Sets the websocket proxy  
+        '''
+        self.websocket_proxy = websocket_proxy
 
     def set_wsock(self, wsock):
         '''
@@ -164,10 +121,16 @@ class RottnestApplication:
 
     def set_wsock_and_sem(self, wsock, wsem):
         '''
-           Sets the websocket and semaphore 
+           Sets the websocket and semaphore
+           - This is now a wrapper method to eliminate issues
         '''
-        self.wsock = wsock
-        self.wsock_sem = wsem
+        self.set_websocket_proxy_from_websocket(wsock, wsem)
+
+    def set_websocket_proxy_from_websocket(self, wsock, semaphore):
+        '''
+           Constructs a websocket proxy from a websocket and semaphore given 
+        '''
+        self.websocket_proxy = RottnestWebSocketProxy(wsock, semaphore)
 
     def get_responder_ref(self):
         exts = self.get_extensions()
