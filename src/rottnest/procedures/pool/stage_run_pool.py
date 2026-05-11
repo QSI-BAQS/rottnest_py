@@ -60,10 +60,11 @@ class RunPoolStage(stage.RottnestCompilerStage):
 
     def complete(self):
         if self._reporting and self._complete: 
-            app_instance = RottnestApplication.try_get_instance()
-            if app_instance is not None:
+            if self._app is not None:
                 pool = get_pool()
                 res = pool.get_final_results()
                 app_instance.websocket_result_final_write(res)
+            else:
+                pool.flush_results_cache()
                 
         return self._complete
