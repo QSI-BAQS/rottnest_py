@@ -54,7 +54,7 @@ class CallGraph:
         else:
 
             # Check that the executable hasn't been changed
-            if cls.curr_executable_id != id(singleton.get_current_executable):
+            if cls.curr_executable_id != id(executables.get_current_executable):
                 # TODO View error handling
                 return None
 
