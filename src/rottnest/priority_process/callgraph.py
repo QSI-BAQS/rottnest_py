@@ -37,7 +37,7 @@ class CallGraph:
     @classmethod
     def get_graph(
         cls,
-        graph_id: str,
+        graph_id: str | None,
         graph_limit_range=None  # (0, cls.GRAPH_LIMIT)
     ):
         '''
