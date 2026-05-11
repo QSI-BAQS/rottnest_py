@@ -1,7 +1,8 @@
 '''
     This interface handles the callgraph controllers 
 '''
-# from rottnest.server.util.packets.callgraph import CallGraphPacketBuilder
+from rottnest.server.util.result import Result
+from rottnest.server.model.callgraph import CallGraphModel
 from rottnest.server.interface_spec.route_interface import RouteInterface
 from rottnest.server.interface_spec.specs.callgraph_spec import ( 
     MODULE_PREFIX,
@@ -10,14 +11,12 @@ from rottnest.server.interface_spec.specs.callgraph_spec import (
     GET_STATUS,
     RUN_GRAPH_NODE
 )
-# NOTE: These may have be unused now
-  
-# from rottnest.server.model import plugin_architecture
-# from rottnest.server.responder import responder
 
-from rottnest.server.util.result import Result
+CALLGRAPH_PAYLOAD = 'payload'
+CALLGRAPH_GRAPH_ID = 'graph_id'
+CALLGRAPH_HASH = 'rottnest_hash'
 
-from rottnest.server.model.callgraph import CallGraphModel
+
 class CallGraphInterface(RouteInterface):
     '''
         Interface for the callgraph controllers
@@ -40,9 +39,10 @@ class CallGraphInterface(RouteInterface):
         '''
            Gets a graph within the callgraph 
         '''
-        id = kwargs['graph_id']
+        graph_id = message[CALLGRAPH_PAYLOAD][CALLGRAPH_GRAPH_ID]
         
-        callgraph_packet = CallGraphModel.get_graph_result(id)
+        
+        callgraph_packet = CallGraphModel.get_graph_result(graph_id)
         return Result.Ok(callgraph_packet)
 
     @RouteInterface.bind_route(MODULE_PREFIX, GET_STATUS) 
@@ -50,14 +50,14 @@ class CallGraphInterface(RouteInterface):
     def get_graph_node_status(cls, message, **kwargs) -> Result:
         '''
             Gets a status of a particular node within the graph
-            TODO: Still needs to be finished
+            NOTE: Not sure if this is even used these days
         '''
-        graph_id = kwargs['graph_id']
-        element_id = kwargs['element_id']
-
-        callgraph_packet = CallGraphModel.get_node_status(graph_id, element_id)
+        graph_id = message[CALLGRAPH_PAYLOAD][CALLGRAPH_GRAPH_ID]
+        rottnest_hash = message[CALLGRAPH_PAYLOAD][CALLGRAPH_HASH]
         
-        return Result.Ok(callgraph_packet.build())
+        callgraph_packet = CallGraphModel.get_node_status(graph_id, rottnest_hash)
+        
+        return Result.Ok(callgraph_packet)
             
     @RouteInterface.bind_route(MODULE_PREFIX, RUN_GRAPH_NODE) 
     @classmethod
@@ -67,10 +67,9 @@ class CallGraphInterface(RouteInterface):
            but it should also get the visual object from it 
             TODO: Still needs to be finished
         '''
-        graph_id = kwargs['graph_id']
-        element_id = kwargs['element_id']
+        graph_id = message[CALLGRAPH_PAYLOAD][CALLGRAPH_GRAPH_ID]
 
-        callgraph_packet = CallGraphModel.run_graph_node(graph_id, element_id)
+        callgraph_packet = CallGraphModel.run_graph_node(graph_id)
 
-        return Result.Ok(callgraph_packet.build())
+        return Result.Ok(callgraph_packet)
 

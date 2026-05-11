@@ -15,9 +15,12 @@ class CallGraphPacketKind(Enum):
     RootGraph = 'root_graph'
     Graph = 'graph'
     Node = 'node'
+    VisualObject = 'visual_object'
     GetGraphConfirmation = 'get_graph_confirmation'
+    GetVisualisationConfirmation = 'get_visualisation_confirmation'
     RunNodeConfirmation = 'run_node_confirmation'
     GraphNotReady = 'graph_not_ready'
+    VisualisationNotReady = 'visualisation_not_ready'
     Compiling = 'node_compiling'
     Error = 'error'
     
@@ -84,6 +87,15 @@ class CallGraphPacketBuilder:
         self.result_package = None
         self.message = msg
         return self
+    
+    def set_runnode_not_ready(self, msg='Visualisation is not ready'):
+        '''
+           Sets the graph is not ready state 
+        '''
+        self.packet_kind = CallGraphPacketKind.VisualisationNotReady
+        self.result_package = None
+        self.message = msg
+        return self
 
 
     def set_error(self, msg = ''):
@@ -127,6 +139,14 @@ class CallGraphPacketBuilder:
         self.packet_kind = CallGraphPacketKind.GetGraphConfirmation
         self.message = msg
         return self
+    
+    def set_get_run_node_confirmation(self, msg='Attempting to run node and get visual object'):
+        '''
+           Confirms if a run was successful 
+        '''
+        self.packet_kind = CallGraphPacketKind.RunNodeConfirmation
+        self.message = msg
+        return self
 
     def set_node(self, node):
         '''
@@ -136,6 +156,13 @@ class CallGraphPacketBuilder:
         self.packet_kind = CallGraphPacketKind.Node
         return self
 
+    def set_visualisation(self, visual_obj):
+        '''
+           Will revert and no longer be set as an error in this situation 
+        '''
+        self.result_package = visual_obj
+        self.packet_kind = CallGraphPacketKind.VisualObject
+        return self
 
     def copy(self):
         '''

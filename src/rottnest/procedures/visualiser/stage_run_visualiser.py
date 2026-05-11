@@ -4,6 +4,9 @@
 
 from rottnest.process_pool import get_pool
 from rottnest.procedures import stage
+from rottnest.procedures.procedure_manager import MPSCChannelProvider
+from rottnest.procedures.procedure_manager.mpsc_common import MPSC_CALLGRAPH_RUNNODE_CHANNEL_TAG
+
 
 STAGE_TAG = 'run_visualiser'
 
@@ -25,8 +28,16 @@ class RunVisualiserStage(stage.RottnestCompilerStage):
         self._reporting = reporting
         self._result = None
         self.vis_status_data = None
-
         self._complete = False
+        self._writer = None
+
+
+        if self._reporting:
+            mpsc_instance = MPSCChannelProvider.get_instance()
+            mpsc_writer, _mpscstate = mpsc_instance.get_writer(MPSC_CALLGRAPH_RUNNODE_CHANNEL_TAG)
+            self._writer = mpsc_writer
+
+        
         if dependencies is None:
             dependencies = [] 
     
@@ -43,20 +54,18 @@ class RunVisualiserStage(stage.RottnestCompilerStage):
         pool = get_pool() 
         pool.get_visualiser(self.graph_id)
 
-    def poll(self):
+    def poll(self, compiler_environment=None):
         pool = get_pool()
         obj = pool.get_visualiser_status()
         if obj is not None:
             self._complete = True
             if self._reporting:
+                # NOTE: I will need to review why we double up?
                 self.vis_status_data = obj
                 self.result = obj
-                  
-            # Old code
-            # if self._reporting:
-                # app_instance = RottnestApplication.try_get_instance()
-                # if app_instance is not None:
-                    # app_instance.websocket_result_write(obj)
+                if self._writer:
+                    self._writer.write(obj)
+                                  
 
     def complete(self):
         '''

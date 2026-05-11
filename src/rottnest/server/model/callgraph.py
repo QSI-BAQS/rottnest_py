@@ -31,6 +31,7 @@ GET_GRAPH_MSG_POLL_TEMPLATE = CallGraphPacketBuilder.make().set_graph_not_ready(
 GET_GRAPH_MSG_FINISH_TEMPLATE = CallGraphPacketBuilder.make()
 GET_GRAPH_MSG_INVALID_TEMPLATE = CallGraphPacketBuilder.make().set_error('Graph could not be computed or returned')
 GET_GRAPH_MSG_ISSUED_TEMPLATE = CallGraphPacketBuilder.make().set_get_graph_confirmation()
+GET_RUN_NODE_MSG_ISSUED_TEMPLATE = CallGraphPacketBuilder.make().set_get_graph_confirmation()
 
 
 class CallGraphModel:
@@ -155,10 +156,11 @@ class CallGraphModel:
         }
 
     @classmethod
-    def run_graph_node(cls, graph_id, element_id):
+    def run_graph_node(cls, graph_id):
         '''
            Attempts to run the graph node - True if it has been queued
             False if an error had occurred
         '''
-        # TODO: Complete this model method
-        return False
+        websocket = WebSocketPoolSelector.get_current_websocket().get_proxy()
+        websocket.CallGraph.run_graph_node(websocket, graph_id)
+        return GET_RUN_NODE_MSG_ISSUED_TEMPLATE.copy().build()

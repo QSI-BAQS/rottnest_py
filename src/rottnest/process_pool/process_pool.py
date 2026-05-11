@@ -493,7 +493,7 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
         )
         if status is IPCManager.NOT_FOUND:
             return None
-        return status 
+        return status
 
     def clear_buffers(self):
         '''

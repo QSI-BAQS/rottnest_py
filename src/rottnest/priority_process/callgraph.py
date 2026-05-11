@@ -43,6 +43,7 @@ class CallGraph:
         '''
             Gets a pylitrq parser object from a graph_id
         '''
+        # executable = executables.get_current_executable()
 
         # If no ID is passed, then this is a root node
         if graph_id is None:
@@ -54,11 +55,14 @@ class CallGraph:
         else:
 
             # Check that the executable hasn't been changed
-            if cls.curr_executable_id != id(singleton.get_current_executable):
-                # TODO View error handling
-                return None
+            # if cls.curr_executable_id != id(executable):
+            #     # TODO View error handling
+            #     return None
 
             # Collect the correct paraser and set up the prefix
+
+            # TODO: Check to see if the graph_id can be used on
+            # the view_cache itself
             prefix = graph_id
             parser = cls.view_cache[graph_id].parser
 
@@ -92,7 +96,9 @@ class CallGraph:
             # Populate the view cache
             cls.view_cache[handle_id] = node
 
-            graph.append(node.to_dict())
+            # NOTE: expands was not used until this commit
+            #   issue with 
+            graph.append(node.to_dict(expands))
 
         return graph
 

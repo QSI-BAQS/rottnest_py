@@ -1,4 +1,5 @@
 
 MPSC_LAYOUT_CHANNEL_TAG = 'LayoutResultChannel'
 MPSC_CALLGRAPH_CHANNEL_TAG = 'CallGraphDataChannel'
+MPSC_CALLGRAPH_RUNNODE_CHANNEL_TAG = 'CallGraphRunNodeChannel'
 MPSC_VISUALISER_CHANNEL_TAG = 'VisualiserDataChannel'

@@ -30,3 +30,10 @@ class GetVisualiserProcedure(procedure.RottnestCompilerProcedure):
             stage
         ]
         super().__init__(None, stages=stages, tag=tag, dependencies=dependencies)
+
+
+    def abort_procedure(self):
+        '''
+           Capabilities to abort the procedure 
+        '''
+        self._complete = True

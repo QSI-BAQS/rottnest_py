@@ -1,3 +1,4 @@
+from rottnest.priority_process.commands import GET_VISUALISER_NEXT
 import time
 import multiprocessing as mp
 
@@ -329,9 +330,13 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         task_name, *args = task_queue.get(block=True, timeout=TIMEOUT)
 
         task = self._tasks.get(task_name, None)
+            
         if task is None:
             raise Exception(f"Unknown task: {task_name}")
         else:
+            if task_name == GET_VISUALISER_NEXT:
+                print("Getting next visualisation")
+                print(args)
             result = task(*args)
             # If a response occurs, pass it back
             # Prepend the name of the task
@@ -751,12 +756,13 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         ))
         return
 
-    def _task_get_visualiser_next(self):
+    def _task_get_visualiser_next(self, graph_id):
         '''
             Gets the callgraph
         '''
         self.priority_task_queue.put((
             priority_commands.GET_VISUALISER_NEXT,
+            graph_id
         ))
         return
 

@@ -107,6 +107,8 @@ class LayoutProxy:
 
     @classmethod
     def check_pregenerated(cls, layout_id):
+        print(cls.saved_layouts)
+        # breakpoint()
         if layout_id not in cls.saved_layouts:
             raise ValueError(f"Unknown layout with id {layout_id}")
         return layout_id in cls.saved_proxies
