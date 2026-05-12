@@ -1,3 +1,11 @@
+'''
+Rottnest Server - Launches the server and will ready the application
+    and debug monitor for the system.
+
+    Make sure the environment.py file is imported to ensure process control
+'''
+
+from rottnest import environment
 
 from bottle import Bottle
 from gevent.threadpool import ThreadPool
@@ -11,13 +19,13 @@ from rottnest.server.app.application import RottnestApplication
 app = Bottle()
 sockethandler.websocket_register_routes(app)
 
-# Global lock
+# # Global lock
 compilation_lock = False
 
-# Thread Pool count for gevent
+# # Thread Pool count for gevent
 thread_pool_count = 4
 
-@with_debug_log(msg="Server Starting")
+# @with_debug_log(msg="Server Starting")
 def server_start(hostname="localhost", port=8080):
     '''
         Runs the server
@@ -28,7 +36,7 @@ def server_start(hostname="localhost", port=8080):
     return server
 
 
-# @with_debug_log(msg="RottnestPy Init")
+# # @with_debug_log(msg="RottnestPy Init")
 def rottnestpy_start():
     monitor_obj = DebugMonitor.default()\
       .get_console()\

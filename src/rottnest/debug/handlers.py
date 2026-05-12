@@ -23,7 +23,7 @@ class DebugConsoleHandler:
     '''
         Used as part of stdin interaction
     '''
-    def __init__(self, *, app=None, monitor=None):
+    def __init__(self, *, app=None, monitor=None, disabled=False):
         '''
             Initialisation but also needs to handle the
             possibility that when forked, the handler could be
@@ -62,7 +62,7 @@ class DebugConsoleHandler:
             else:
                 return operfn(sel_data.as_tup(), mask)
         
-        if 'pytest' not in sys.modules:
+        if 'pytest' not in sys.modules and not disabled:
             self.selector.register(self.stdin, selectors.EVENT_READ, _event_hook)
 
 

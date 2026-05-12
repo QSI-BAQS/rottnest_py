@@ -4,6 +4,10 @@ from rottnest.server.app.application import RottnestApplication
 
 from rottnest.procedures import procedure, stage, exceptions
 
+import time
+
+DELAY_TO_DO_WORK = 2
+
 # TODO: Refactor this into their own files/modules for simplicity
 class ProcedureInspectionTools:
     '''
@@ -43,6 +47,7 @@ class ProcedureExample(stage.RottnestCompilerStage):
 
         self.proc_id = ProcedureInspectionTools.generate_next_id()
         self.executed = False
+        self._complete = False
 
     @classmethod
     def Make(cls):
@@ -66,6 +71,9 @@ class ProcedureExample(stage.RottnestCompilerStage):
         strfmt = f"{self.__class__.__name__}:{self.proc_id}:{self.executed}"
         return strfmt
 
+    def poll(self):
+        self._complete = True
+
 class ProcedureManagerTest(unittest.TestCase):
 
 
@@ -80,6 +88,10 @@ class ProcedureManagerTest(unittest.TestCase):
         # Use test procedure included in class
         procman.execute_immediate(ProcedureExample.Make())
 
+        handler = procman.start_concurrent_manager_in_thread()
+        procman.concurrent_dequeue_and_execute()
+        procman.stop_manager()
+        handler.join()
         only_proc = procs_generated_ref[0]
         assert only_proc.executed
 
@@ -90,7 +102,7 @@ class ProcedureManagerTest(unittest.TestCase):
         procs_generated_ref = ProcedureExample.GENERATED_OBJECTS
         procman = ProcedureManager(RottnestApplication.get_uninitialised_instance())
 
-        handler = procman.start_manager_in_thread()
+        handler = procman.start_concurrent_manager_in_thread()
         # Use test procedure included in class
         procman.execute_immediate(ProcedureExample.Make())
         procman.execute_immediate(ProcedureExample.Make())
@@ -114,13 +126,20 @@ class ProcedureManagerTest(unittest.TestCase):
         procman = ProcedureManager(RottnestApplication.get_uninitialised_instance(),\
                                    queue_timeout=1)
 
-        procman.start_loop() # Starts working
-
+        # procman.start_loop() # Starts working
         # Use test procedure included in class
+
         procman.execute_defer(ProcedureExample.Make())
 
         assert procman.get_enqueued_size() == 1
-        procman.dequeue_and_execute()
+
+        handler = procman.start_concurrent_manager_in_thread()
+
+        time.sleep(DELAY_TO_DO_WORK)
+        
+        procman.stop_manager()
+        handler.join()
+        
         assert procman.get_enqueued_size() == 0
 
 
@@ -135,6 +154,7 @@ class ProcedureManagerTest(unittest.TestCase):
         procs_generated_ref = ProcedureExample.GENERATED_OBJECTS
         procman = ProcedureManager(RottnestApplication.get_uninitialised_instance())
 
+
         # Use test procedure included in class
         procman.execute_defer(ProcedureExample.Make())
         procman.execute_defer(ProcedureExample.Make())
@@ -143,14 +163,13 @@ class ProcedureManagerTest(unittest.TestCase):
 
         assert procman.get_enqueued_size() == 4
 
-        procman.dequeue_and_execute()
-        assert procman.get_enqueued_size() == 3
-        procman.dequeue_and_execute()
-        assert procman.get_enqueued_size() == 2
-        procman.dequeue_and_execute()
-        assert procman.get_enqueued_size() == 1
-        procman.dequeue_and_execute()
+        handler = procman.start_concurrent_manager_in_thread()
+
+        procman.stop_manager()
+        handler.join()
+
         assert procman.get_enqueued_size() == 0
+
 
         for g in procs_generated_ref:
             assert g.executed # NOTE: Since the procedure is controlled
@@ -162,4 +181,6 @@ class ProcedureManagerTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+    # tobj = ProcedureManagerTest()
+    # tobj.test_single_procedure_enqueue()
 

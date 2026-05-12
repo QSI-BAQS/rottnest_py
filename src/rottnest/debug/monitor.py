@@ -93,10 +93,11 @@ class DebugMonitor:
         self.use_stdin = use_stdin
         self.stdout_output = stdout_output
         self.to_file = to_file
-        self.disabled = False
+        self.disabled = True
+        self.disabled_selector = True
         self.logs = []
         self.use_decorator = use_decorator
-        self.console = DebugConsoleSystem.default(monitor=self)
+        self.console = DebugConsoleSystem.default(monitor=self, disabled=self.disabled_selector)
 
 
         
@@ -156,7 +157,8 @@ class DebugMonitor:
            Ends up calling the singleton instance 
         '''
         inst = DebugMonitor.current()
-        inst.dump_error(message)
+        if not inst.disabled:
+            inst.dump_error(message)
 
     def dump_error(self, message: str):
         '''

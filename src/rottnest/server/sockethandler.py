@@ -17,6 +17,13 @@ import json
 
 
 @with_debug_log()
+def websocket_reset_application():
+    '''
+       Resets the rottnest application 
+    '''
+    # TODO: Finish this 
+
+@with_debug_log()
 def websocket_register_routes(app):
     '''
       Websocket registration of the route  
@@ -72,11 +79,8 @@ def websocket_handle():
                                               app, message, \
                                               socket_binds)
 
-            except WebSocketError as wse:
+            except WebSocketError as _wse:
                 import traceback
-                traceback.print_exc()
-                DebugMonitor.dump(traceback.format_exc())
-                DebugMonitor.dump(str(wse))
                 break
             except Exception as e:
                 print(e)

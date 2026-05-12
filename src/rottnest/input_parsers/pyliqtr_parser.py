@@ -16,7 +16,7 @@ from pyLIQTR.utils.circuit_decomposition import circuit_decompose_multi
 
 import networkx as nx
 
-from types import MethodType
+from types import MethodType, NoneType
 
 import pyLIQTR
 import qualtran
@@ -30,9 +30,17 @@ from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
 from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
 from cirq.ops.raw_types import _InverseCompositeGate
 
-from rottnest.pandora.pandora_sequencer import PandoraSequencer
+from cirq import DecompositionContext, SimpleQubitManager
+
+from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate
+
+#from rottnest.pandora.pandora_sequencer import PandoraSequencer
 
 from . import cirq_parser
+from . import graph_wrapper
+
+from .graph_wrapper import GraphWrapper
+
 from rottnest.monkey_patchers import add_pyliqtr_hash
 from rottnest.pandora.pandora_cache import pandora_cache
 
@@ -74,11 +82,23 @@ class PyliqtrParser:
             cls.local_cache_tag = layout_ids
             cls.local_cache = set()
 
+    @classmethod
+    def force_cache_flush(cls):
+        # Reset to base (under no circumstance should None ever
+        # be given to set_cache_tag)
+        cls.local_cache_tag = None
+        cls.local_cache = set()
+
     # Targets to decompose on the spot
     cirq_decomposing_targets = frozenset((
         cirq.ControlledGate,
         qualtran.bloqs.mcmt.and_bloq.And,
         cirq.CCXPowGate,
+    ))
+
+    # Targets to discard as unnecessary
+    discard_targets = frozenset((
+        qualtran.bloqs.bookkeeping.free.Free,
     ))
 
     @classmethod
@@ -91,13 +111,17 @@ class PyliqtrParser:
     '''
         Begin by collecting the pyliqtr components
     '''
-    def __init__(self, circuit=None, op=None, gate=None, sequence_length=1000, cache=True):
+    def __init__(self, circuit=None, op=None, gate=None, sequence_length=1000, decomp_context=None, cache=True):
 
         self.op = op
         self.sequence_length = sequence_length
         self.gate = gate
 
-        self.circuit = circuit_decompose_multi(circuit, 1)
+        if decomp_context is None:
+            decomp_context = DecompositionContext(qubit_manager=SimpleQubitManager())
+        self._context = decomp_context
+
+        self.circuit = circuit_decompose_multi(circuit, 1, context=self._context)
         self.n_qubits = len(self.circuit.all_qubits())
 
         self.shims = [] # Shims represent non-pyliqtr sequences
@@ -155,7 +179,7 @@ class PyliqtrParser:
             tmp = cirq.Circuit()
             tmp.append(gate)
 
-            parser = PyliqtrParser(tmp, op=gate, cache=self._caching)
+            parser = PyliqtrParser(tmp, op=gate, cache=self._caching, decomp_context=self._context)
             if rottnest_hash is not None:
                 parser.rottnest_hash = rottnest_hash
 
@@ -207,8 +231,14 @@ class PyliqtrParser:
 
         for moment in circuit:
             for operation in moment:
+                tracking_identity = operation.gate.__class__
 
-                if operation.gate.__class__ in self.tracking_targets:
+                if tracking_identity in [ BloqAsCirqGate ]:
+                    tracking_identity = type(operation.gate.bloq)
+
+                if tracking_identity in self.discard_targets:
+                    pass
+                elif tracking_identity in self.tracking_targets:
                     # Tracking object
                     # Add to sequence, create new shim
 
@@ -224,16 +254,23 @@ class PyliqtrParser:
                     # If this is created then
                     self.fully_decomposed = False
 
-                elif operation.gate.__class__ in self.cirq_decomposing_targets:
+                elif tracking_identity in self.cirq_decomposing_targets:
                     # TODO: Flatten this into a regular decomposition
                     # Force cirq decomposition to shim
                     # For now just hope that these aren't nested
                     self.fully_decomposed = False
 
                     for g in cirq.decompose(operation):
+                        g_identity = g.gate.__class__
+
+                        # TODO : Wrappers should be a class-level frozenset
+                        if g_identity in [ BloqAsCirqGate ]:
+                            g_identity = type(g.gate.bloq)
 
                         # In case the gate decomposes into tracking targets
-                        if g.gate.__class__ in self.tracking_targets:
+                        if g_identity in self.discard_targets:
+                            pass
+                        elif g_identity in self.tracking_targets:
                             self.sequence.append(g)
 
                             _curr_shim.set_parent(operation)
@@ -284,7 +321,8 @@ class PyliqtrParser:
                 yield GraphWrapper(shim_id, str(r), parser=r)
                 continue
 
-            if isinstance(r, PandoraSequencer):
+            # TODO: Fix import cycle on pandora sequencer
+            if isinstance(r, type(None)): #PandoraSequencer):
                 # Set the pandora union find based on the architecture
                 pandora_cache.architecture_bind(r, arch_ids[0])
 
@@ -323,21 +361,6 @@ class PyliqtrParser:
         for circuit in self.traverse():
             for ops in parser.parse(circuit):
                 yield ops
-
-class GraphWrapper():
-    '''
-        Thin graph node wrapper object
-    '''
-    def __init__(self, handle_id, name, description="", parser=None, rottnest_hash=None):
-        self.handle_id = handle_id
-        self.rottnest_hash = rottnest_hash
-
-        self.name = name
-        self.description = description
-        self.parser = parser
-
-    def get_graph(self):
-        return self.parser
 
 
 def rottnest_cacheable(cls, hash_fn=None):
@@ -378,8 +401,10 @@ def rottnest_cacheable(cls, hash_fn=None):
         if hasattr(cls, "_rottnest_hash") and hash_fn is not cls._rottnest_hash:
             raise TypeError(f"Class {cls} implements _rottnest_hash, but a different function was passed as its hashing function.\nEither implement its hash function as _rottnest_hash, or do not define your own separate _rottnest_hash")
         cls._rottnest_hash = MethodType(hash_fn)
-    add_pyliqtr_hash(cls, rottnest_hash)
-    PyliqtrParser.tracking_targets.add(cls)
+
+    assert False
+    add_pyliqtr_hash(cls, hash_fn)
+    PyliqtrParser.update_tracking_targets({cls})
 
     return cls
 

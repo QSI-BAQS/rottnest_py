@@ -71,14 +71,28 @@ class IPCManager:
         if lst is not None:
             del lst
 
+    def clear_all(self):
+        '''
+            Clears all message queues
+        '''
+        self.flush()
+        self._msg_queues = dict()
+
     def batch_get(self, target):
         '''
             Clears a message queue
+            # TODO: there seems to be some errors in this function
         '''
-        if None is not (queue := self._msg_queues.get(target, None)):
+        # Initial fetch to populate
+        init = self.fetch(target)
+
+        if None is not (queue := 
+            self._msg_queues.get(target, None)
+        ):
             if len(queue) > 0:
                 # Hotswap a new list
-                # Any dangling refs should write to the old one
+                # Any dangling refs should write to the 
+                #  old one
                 self._msg_queues[target] = list()
                 return queue
 

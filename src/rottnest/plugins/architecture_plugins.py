@@ -1,7 +1,8 @@
 '''
     Manages loading of architectures
 '''
-import rottnest
+
+import rottnest_preprocessor
 
 from ..config import architectures_file_name
 
@@ -23,9 +24,9 @@ class ArchitecturePlugins(PluginManager):
 
         # Preprocessor achitecture is a default in rottnest
         if modules is None:
-            modules = [rottnest]
+            modules = [rottnest_preprocessor]
         else:
-            modules = [rottnest] + modules
+            modules = [rottnest_preprocessor] + modules
 
         # Load from config
         super().__init__(

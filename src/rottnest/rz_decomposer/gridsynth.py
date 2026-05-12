@@ -5,8 +5,8 @@ from decimal import Decimal
 from functools import lru_cache
 
 # Try a self import
-from rottnest.rz_decomposer import rz_decomposer
-from rottnest.rz_decomposer import gridsynth
+from . import rz_decomposer
+from . import gridsynth
 
 # Default precision in bits
 
@@ -48,16 +48,23 @@ class Gridsynth(rz_decomposer.RzDecomposer):
             self.gate_dict = gate_dict
         self.precision = None
         self.precision_decimal = None
-        self.set_precision(default_precision)
+        self.set_rz_precision(default_precision)
+        super().__init__()
 
-    def set_precision(self, precision):
+    def __del__(self):
+        '''
+            Safe subprocess shutdown
+        '''
+        self.proc.terminate()
+        
+    def set_rz_precision(self, precision):
         '''
             Sets the precision
         '''
         self.precision = precision
         self.precision_decimal = Decimal(2) ** Decimal(-1 * precision)
 
-    def get_precision(self):
+    def get_rz_precision(self):
         '''
             Gets the current precision
         '''

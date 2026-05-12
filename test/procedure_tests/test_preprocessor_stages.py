@@ -20,6 +20,12 @@ class PreprocessorStageTest(unittest.TestCase):
 
 
     def test_stage_reset(self):
+
+        # Set an initial architecture
+        architectures.set_current_architecture(
+            'Rz Counter' 
+        )
+
         swap_arch = preprocessor.stage_set_preproc_architecture.SetPreprocessingArchitectureStage()
         swap_arch.execute(None)
         assert architectures.get_current_architecture().get_name() == 'Rz Counter' 

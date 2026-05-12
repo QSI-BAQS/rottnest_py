@@ -1,6 +1,7 @@
 from rottnest.procedures import stage
 from rottnest.process_pool.singleton import get_pool
-from rottnest.process_pool.pool_status import PoolStatus
+
+from rottnest.process_pool.ipc_manager import IPCManager
 
 from . import stage_synchronise
 
@@ -18,16 +19,21 @@ class GetResultsPoolStage(stage.RottnestCompilerStage):
         super().__init__(
             tag=tag, 
             dependencies=dependencies,
-            asynchronous=False
+            asynchronous=True
         )
 
     def execute(self, compiler_environment):
         '''
-            Synchronises and starts the workers
+            Gets Final results
         '''
-        print("Getting Final Results")
+        self.poll(compiler_environment)
+
+    def poll(self, compiler_environment):
         pool = get_pool()
-        self._results = pool.get_final_results()
+        results = pool.get_final_results()
+        if results is not IPCManager.NOT_FOUND:
+            self._results = results
+            self._complete = True
 
     def __call__(self) -> "ResultsComposer":
         '''

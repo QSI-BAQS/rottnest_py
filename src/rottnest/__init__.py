@@ -1,7 +1,1 @@
-from .preprocessor import architecture
-
-rottnest_architectures = [
-    architecture.PreprocessorArchitecture
-]
-
-
+from . import environment

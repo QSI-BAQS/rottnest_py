@@ -14,7 +14,9 @@ RUN_SEQUENCE = 'run_sequence'
 SET_ARCHITECTURE_MODULE = 'set_architecture_module'
 SET_EXECUTABLE = 'set_executable'
 SET_EXECUTABLE_PARAMS = 'set_executable_params'
-SET_PRECISION = 'set_precision'
+SET_RZ_PRECISION = 'set_rz_precision'
+
+RESET_EXECUTION_CONTEXT = 'reset_execution_context'
 
 # Synchronise executable and architecture modules
 # With the manager
@@ -30,3 +32,4 @@ SYNCHRONISATION_STATUS = 'synchronisation_status'
 # Priority task
 GET_CURRENT_RESULTS = 'get_current_results'
 GET_RESULTS_STREAM = 'get_results_stream'
+

@@ -22,17 +22,18 @@ class DecomposerPatchStage(stage.RottnestCompilerStage):
             And passes them to the monkey patcher
         '''
         executable = executables.get_current_executable()
+        if executable is not None:
+            for patcher, fn in executable.pyliqtr_patchers().items():
+                add_pyliqtr_hash(patcher, fn)
 
-        for patcher, fn in executable.pyliqtr_patchers().items():
-            add_pyliqtr_hash(patcher, fn)
+            for patcher, fn in executable.qualtran_patchers().items():
+                add_qualtran_hash(patcher, fn)
 
-        for patcher, fn in executable.qualtran_patchers().items():
-            add_qualtran_hash(patcher, fn)
+            for patcher, fn in executable.cirq_patchers().items():
+                add_cirq_hash(patcher, fn)
 
-        for patcher, fn in executable.cirq_patchers().items():
-            add_cirq_hash(patcher, fn)
-
-        # executable.cirq_gate_decomposers()
+            # TODO: Decomposers
+            # executable.cirq_gate_decomposers()
 
         # Trigger a reload of the monkey patchers
         load_hash_patcher()
