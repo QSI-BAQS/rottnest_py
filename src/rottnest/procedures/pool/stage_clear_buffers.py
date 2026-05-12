@@ -1,12 +1,18 @@
 from rottnest.procedures import stage
 from rottnest.process_pool.singleton import get_pool
+from rottnest.process_pool.pool_status import PoolStatus
 
-STAGE_TAG = 'Start Pool Manager'
+from . import stage_start_pool_manager
 
-class StartPoolManagerStage(stage.RottnestCompilerStage):
+STAGE_TAG = 'Clear Pool Buffers'
+
+class ClearPoolBuffersStage(stage.RottnestCompilerStage):
     TAG = STAGE_TAG
 
     def __init__(self, *, tag=None, dependencies=None):
+        if dependencies is None:
+            dependencies = [stage_start_pool_manager.STAGE_TAG] 
+    
         super().__init__(
             tag=tag, 
             dependencies=dependencies,
@@ -15,7 +21,7 @@ class StartPoolManagerStage(stage.RottnestCompilerStage):
 
     def execute(self, compiler_environment):
         '''
-            Starts the pool manager task
+            Synchronises and starts the workers
         '''
         pool = get_pool()
-        pool.start()
+        pool.clear_buffers()

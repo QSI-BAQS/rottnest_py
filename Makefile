@@ -15,6 +15,7 @@ all: build
 build: package
 
 package: gridsynth
+	pip install -r requirements.txt
 	pip install -e .
 
 gridsynth: ${OBJFILES}
@@ -23,7 +24,7 @@ ${SRCDIR}/% : ${SRCDIR}/%.hs
 	$(GHC) $^
 
 test:
-	pytest
+	pytest --forked
 	# We have to run this one separately, since importing breaks inside test systems
 	python test/unit/test_plugins.py
 

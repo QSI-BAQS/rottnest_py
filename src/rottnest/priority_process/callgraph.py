@@ -37,7 +37,7 @@ class CallGraph:
     @classmethod
     def get_graph(
         cls,
-        graph_id: str,
+        graph_id: str | None,
         graph_limit_range=None  # (0, cls.GRAPH_LIMIT)
     ):
         '''
@@ -52,11 +52,6 @@ class CallGraph:
 
         # Non-root request
         else:
-
-            # Check that the executable hasn't been changed
-            if cls.curr_executable_id != id(singleton.get_current_executable):
-                # TODO View error handling
-                return None
 
             # Collect the correct paraser and set up the prefix
             prefix = graph_id

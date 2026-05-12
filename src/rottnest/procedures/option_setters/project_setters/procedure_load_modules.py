@@ -3,9 +3,9 @@ from rottnest.procedures import procedure
 from .stage_load_architectures import LoadArchitecturesStage
 from .stage_load_executables import LoadExecutablesStage
 
-STAGE_TAG = 'synchronise_modules_procedure'
+STAGE_TAG = 'load_modules_procedure'
 
-class SynchroniseModulesProcedure(procedure.RottnestCompilerProcedure): 
+class LoadModulesProcedure(procedure.RottnestCompilerProcedure): 
 
     TAG = STAGE_TAG
 
@@ -21,8 +21,8 @@ class SynchroniseModulesProcedure(procedure.RottnestCompilerProcedure):
                 architectures=architectures,
                 dependencies = []
         )
-        stage_exec = LoadExecutableStage(
-                architectures=architectures,
+        stage_exec = LoadExecutablesStage(
+                executables=executables,
                 dependencies = []
         )
         stages = [

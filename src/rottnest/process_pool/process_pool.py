@@ -15,11 +15,11 @@ from rottnest.process_pool import commands, symbols
 from rottnest.priority_process import commands as priority_commands
 
 from rottnest.compute_units.layout_proxy import LayoutProxy
-
 from rottnest.plugins import architectures, executables
-
 from rottnest.rz_decomposer import get_rz_precision
 
+
+from .single_instantiation import SingleInstantiation
 from .status_decorator import status_update, StatusTracked  
 from .pool_manager import ComputeUnitExecutorPoolManager
 
@@ -29,7 +29,7 @@ from .pool_status import PoolStatus
 from .ipc_manager import IPCManager
 
 
-class ComputeUnitExecutorPool(StatusTracked):
+class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
     '''
         This class acts as an interface to the worker
          pool manager
@@ -81,19 +81,24 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
             Constructor
         '''
-        self.ctx = mp.get_context(SPAWN_CONTEXT)
 
+        self.ctx = mp.get_context(SPAWN_CONTEXT)
+        
         self.manager = None
 
         self.manager_task_queue = self.ctx.Queue()
         self.manager_completion_queue = self.ctx.Queue()
         self.manager_priority_task_queue = self.ctx.Queue()
+
+        # TODO: Scope removal
         self.manager_priority_completion_queue = self.ctx.Queue()
 
         self._status = PoolStatus.UNSTARTED 
 
         self.ipc = IPCManager(self.manager_completion_queue) 
-        self.priority_ipc = IPCManager(self.manager_completion_queue) 
+
+        # TODO: Scope removal
+        #self.priority_ipc = IPCManager(self.manager_completion_queue) 
 
 
     def get_status(self):
@@ -108,23 +113,6 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
         self._status = status
 
-    def synchronise_options(self):
-        '''
-            Synchronises from singletons
-        '''
-        # Synch architecture
-        architecture = architectures.get_current_architecture()
-        self.set_architecture_module(architecture.get_name())
-
-        # Synch executable
-        executable = executables.get_current_executable()
-        self.set_executable(executable.get_name())
-
-        # Synch parameters
-        executable_params = executables.get_executable_params()
-        self.set_executable_params(executable_params)
-
-
     @status_update(
         PoolStatus.STARTING,
         PoolStatus.STARTED
@@ -133,10 +121,17 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
             Starts the process pool manager
         '''
+        # If manager is already running, do not start another
         if self.manager is None:
-            # Checks that the manager has not been started before
+
+            from rottnest.process_pool.entrypoints import pool_manager 
+
+            # This call should validate the execution
+            # context
+            entrypoint = pool_manager.get_entrypoint()
+
             self.manager = self.ctx.Process(
-                target=ComputeUnitExecutorPoolManager.entrypoint,
+                target=entrypoint,
                 args=[
                      self.manager_task_queue,
                      self.manager_completion_queue,
@@ -146,7 +141,13 @@ class ComputeUnitExecutorPool(StatusTracked):
                 name="PoolManager"
             )
             self.manager.start()
+
+        # Open with a module synch
         self.synchronise_modules()
+
+    ###
+    # State synchronisation methods 
+    ###
 
     @status_update(
         PoolStatus.SYNCHRONISING, 
@@ -161,13 +162,6 @@ class ComputeUnitExecutorPool(StatusTracked):
         self.synchronise_rz_precision()
         self.synchronise_layouts()
 
-    def synchronise_modules_and_layouts(self):
-        '''
-            Calls synchronisation functions
-        '''
-        self.synchronise_modules()
-        self.synchronise_layouts()
-
     def synchronise_modules(self):
         '''
             Attempts to synchronise all architecure and
@@ -175,17 +169,34 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
         self.manager_priority_task_queue.put(
             (
-    commands.SYNCHRONISE_MODULES,
-    architectures.get_synchronisation_strings(),
-    executables.get_synchronisation_strings()
+                commands.SYNCHRONISE_MODULES,
+                architectures.get_synchronisation_strings(),
+                executables.get_synchronisation_strings()
             )
         )
         return
 
+    def synchronise_options(self):
+        '''
+            Synchronises from singletons
+            TODO: extension for architecture 
+                options goes here
+        '''
+        # Synch architecture
+        architecture = architectures.get_current_architecture()
+        self.set_architecture_module(architecture.get_name())
+
+        # Synch executable
+        executable = executables.get_current_executable()
+        self.set_executable(executable.get_name())
+
+        # Synch parameters
+        executable_params = executables.get_executable_params()
+        self.set_executable_params(executable_params)
 
     def synchronise_rz_precision(self):
         '''
-            Synchronises the Rz precision with the queue 
+            Synchronises the Rz precision with the queue
         '''
         precision = get_rz_precision()
         self.manager_priority_task_queue.put(
@@ -210,6 +221,9 @@ class ComputeUnitExecutorPool(StatusTracked):
         )
         return
 
+    ###
+    # Worker control functions
+    ###
     @status_update(
         PoolStatus.STARTING_WORKERS, 
         PoolStatus.STARTED_WORKERS
@@ -250,7 +264,6 @@ class ComputeUnitExecutorPool(StatusTracked):
             Sets the current executable
             This is only set on the manager
         '''
-        print("Sending exec set: ", executable)
         self.manager_priority_task_queue.put(
             (
                 commands.SET_EXECUTABLE,
@@ -291,7 +304,7 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
             Puts a run sequence to the worker queue
         '''
-        self.manager_task_queue.put(
+        self.manager_priority_task_queue.put(
             (
                 commands.RUN_SEQUENCE,
                 layout_ids
@@ -312,6 +325,7 @@ class ComputeUnitExecutorPool(StatusTracked):
     def complete(self):
         '''
             Checks if a job has finished
+            # WARN: Deprecated
         '''
         status = self.ipc.fetch(
             symbols.END_COMPUTATION,
@@ -319,13 +333,23 @@ class ComputeUnitExecutorPool(StatusTracked):
         )
         return status == symbols.END_COMPUTATION
 
-    def shutdown(self):
+    def shutdown_workers(self):
         '''
             Broadcasts a shutdown to all workers
         '''
-        self.manager_task_queue.put(
+        self.manager_priority_task_queue.put(
             (commands.STOP_WORKERS,)
         )
+
+    def shutdown_workers_status(self):
+        '''
+            Checks the status of a shutdown
+        '''
+        resp = self.ipc.get_item(
+            commands.STOP_WORKERS,
+            blocking=False
+        )
+        return resp is not IPCManager.NOT_FOUND
 
     def terminate(self):
         '''
@@ -341,7 +365,7 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
             Checks for worker life
         '''
-        self.manager_task_queue.put((commands.PING_MANAGER,))
+        self.manager_priority_task_queue.put((commands.PING_MANAGER,))
         # Assumes that it will be fetched shortly
         resp = self.ipc.fetch(
             commands.PING_MANAGER,
@@ -353,7 +377,7 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
             Checks for worker life
         '''
-        self.manager_task_queue.put((commands.PING,))
+        self.manager_priority_task_queue.put((commands.PING,))
 
         # Assumes that it will be fetched shortly
         resp = self.ipc.fetch(
@@ -362,19 +386,19 @@ class ComputeUnitExecutorPool(StatusTracked):
         )
         assert resp == symbols.PONG
 
-    def get_results_stream(self):
+    def get_results_stream(self, max_get=10):
         '''
             Gets current results stream objects
         '''
-        resp = self.ipc.batch_get(
-            commands.GET_RESULTS_STREAM
-        )
-        if resp is not IPCManager.NOT_FOUND: 
-            '''
-                Only need the most recent object
-            '''
-            return resp
-        return []
+        collected = []
+        count = 0
+        while (count < max_get) and IPCManager.NOT_FOUND is not ( 
+                resp := self.ipc.get_item(
+                    commands.GET_RESULTS_STREAM
+                )
+            ):
+            collected.append(resp)
+        return collected 
 
     def get_results(self, blocking=False):
         '''
@@ -432,16 +456,14 @@ class ComputeUnitExecutorPool(StatusTracked):
         self.ipc.clear(commands.GET_CURRENT_RESULTS)
         self.ipc.clear(commands.GET_RESULTS_STREAM)
 
+    def reset_execution_context(self): 
+        '''
+            Resets the execution context on the manager
+        '''
+        self.manager_task_queue.put(
+            (commands.RESET_EXECUTION_CONTEXT,)
+        ) 
 
-    def shutdown_status(self):
-        '''
-            Checks the status of a shutdown
-        '''
-        resp = self.ipc.get_item(
-            commands.STOP_WORKERS,
-            blocking=False
-        )
-        return resp is IPCManager.NOT_FOUND
 
     ###
     # PRIORITY PROCESS COMMANDS 
@@ -457,7 +479,6 @@ class ComputeUnitExecutorPool(StatusTracked):
         '''
             Sends and asynch request to 
         '''
-        print("Request Sent")
         self.manager_priority_task_queue.put(
             (priority_commands.GET_CALLGRAPH, graph_id)
         ) 
@@ -474,6 +495,13 @@ class ComputeUnitExecutorPool(StatusTracked):
             return None
         return status 
 
+    def clear_buffers(self):
+        '''
+            Reset all buffer state
+        '''
+        self.ipc.clear_all()
+
+
     def get_visualiser(self, graph_id):
         '''
             Sends and asynch request to get a visualiser object 
@@ -487,7 +515,7 @@ class ComputeUnitExecutorPool(StatusTracked):
             Requests the next object in a sequence
         '''
         self.manager_priority_task_queue.put(
-            (priority_commands.GET_VISUALISER_NEXT, graph_id)
+            (priority_commands.GET_VISUALISER_NEXT,)
         ) 
 
     def get_visualiser_status(self):

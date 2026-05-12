@@ -5,7 +5,7 @@ Rottnest Server - Launches the server and will ready the application
     Make sure the environment.py file is imported to ensure process control
 '''
 
-import environment
+from rottnest import environment
 
 from bottle import Bottle
 from gevent.threadpool import ThreadPool
