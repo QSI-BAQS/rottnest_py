@@ -16,7 +16,7 @@ from pyLIQTR.utils.circuit_decomposition import circuit_decompose_multi
 
 import networkx as nx
 
-from types import MethodType
+from types import MethodType, NoneType
 
 import pyLIQTR
 import qualtran
@@ -29,6 +29,10 @@ from pyLIQTR.BlockEncodings.PauliStringLCU import PauliStringLCU
 from pyLIQTR.circuits.operators.select_prepare_pauli import prepare_pauli_lcu
 from pyLIQTR.circuits.operators.prepare_oracle_pauli_lcu import QSP_Prepare
 from cirq.ops.raw_types import _InverseCompositeGate
+
+from cirq import DecompositionContext, SimpleQubitManager
+
+from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate
 
 #from rottnest.pandora.pandora_sequencer import PandoraSequencer
 
@@ -92,6 +96,11 @@ class PyliqtrParser:
         cirq.CCXPowGate,
     ))
 
+    # Targets to discard as unnecessary
+    discard_targets = frozenset((
+        qualtran.bloqs.bookkeeping.free.Free,
+    ))
+
     @classmethod
     def update_tracking_targets(cls, targets):
         '''
@@ -102,13 +111,17 @@ class PyliqtrParser:
     '''
         Begin by collecting the pyliqtr components
     '''
-    def __init__(self, circuit=None, op=None, gate=None, sequence_length=1000, cache=True):
+    def __init__(self, circuit=None, op=None, gate=None, sequence_length=1000, decomp_context=None, cache=True):
 
         self.op = op
         self.sequence_length = sequence_length
         self.gate = gate
 
-        self.circuit = circuit_decompose_multi(circuit, 1)
+        if decomp_context is None:
+            decomp_context = DecompositionContext(qubit_manager=SimpleQubitManager())
+        self._context = decomp_context
+
+        self.circuit = circuit_decompose_multi(circuit, 1, context=self._context)
         self.n_qubits = len(self.circuit.all_qubits())
 
         self.shims = [] # Shims represent non-pyliqtr sequences
@@ -166,7 +179,7 @@ class PyliqtrParser:
             tmp = cirq.Circuit()
             tmp.append(gate)
 
-            parser = PyliqtrParser(tmp, op=gate, cache=self._caching)
+            parser = PyliqtrParser(tmp, op=gate, cache=self._caching, decomp_context=self._context)
             if rottnest_hash is not None:
                 parser.rottnest_hash = rottnest_hash
 
@@ -218,8 +231,14 @@ class PyliqtrParser:
 
         for moment in circuit:
             for operation in moment:
+                tracking_identity = operation.gate.__class__
 
-                if operation.gate.__class__ in self.tracking_targets:
+                if tracking_identity in [ BloqAsCirqGate ]:
+                    tracking_identity = type(operation.gate.bloq)
+
+                if tracking_identity in self.discard_targets:
+                    pass
+                elif tracking_identity in self.tracking_targets:
                     # Tracking object
                     # Add to sequence, create new shim
 
@@ -235,16 +254,23 @@ class PyliqtrParser:
                     # If this is created then
                     self.fully_decomposed = False
 
-                elif operation.gate.__class__ in self.cirq_decomposing_targets:
+                elif tracking_identity in self.cirq_decomposing_targets:
                     # TODO: Flatten this into a regular decomposition
                     # Force cirq decomposition to shim
                     # For now just hope that these aren't nested
                     self.fully_decomposed = False
 
                     for g in cirq.decompose(operation):
+                        g_identity = g.gate.__class__
+
+                        # TODO : Wrappers should be a class-level frozenset
+                        if g_identity in [ BloqAsCirqGate ]:
+                            g_identity = type(g.gate.bloq)
 
                         # In case the gate decomposes into tracking targets
-                        if g.gate.__class__ in self.tracking_targets:
+                        if g_identity in self.discard_targets:
+                            pass
+                        elif g_identity in self.tracking_targets:
                             self.sequence.append(g)
 
                             _curr_shim.set_parent(operation)
