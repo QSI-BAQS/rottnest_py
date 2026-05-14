@@ -1,6 +1,6 @@
 from rottnest.procedures import stage
 from rottnest.process_pool.singleton import get_pool
-from rottnest.process_pool.pool_status import PoolStatus
+from rottnest.process_pool import commands
 
 from . import stage_start_pool_manager
 
@@ -24,4 +24,7 @@ class ClearPoolBuffersStage(stage.RottnestCompilerStage):
             Synchronises and starts the workers
         '''
         pool = get_pool()
-        pool.clear_buffers()
+        pool.clear_buffers(
+            commands.GET_CURRENT_RESULTS,
+            commands.GET_RESULTS_STREAM,
+        )
