@@ -62,7 +62,18 @@ class IPCManager:
             self.get_item(None, blocking=False)
         return
 
-    def clear(self, target):
+
+    def clear(self, *targets):
+        '''
+            Clears a queue, saving memory
+            :: targets : str :: List of names of 
+             queues to clear 
+        '''
+        for target in targets:
+            self._clear(target)
+
+
+    def _clear(self, target: str):
         '''
             Clears a queue, saving memory
         '''
@@ -71,12 +82,20 @@ class IPCManager:
         if lst is not None:
             del lst
 
-    def clear_all(self):
+    def clear_all(self, *retained):
         '''
             Clears all message queues
+            :: retained : str :: Fields to retain
         '''
         self.flush()
+        old_queues = self._msg_queues
         self._msg_queues = dict()
+
+        # Re-attach old queues
+        for ret in retained: 
+            if ret in old_queues:
+                self._msg_queues[ret] = old_queues[ret]
+        return
 
     def batch_get(self, target):
         '''

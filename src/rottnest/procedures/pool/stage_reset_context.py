@@ -6,6 +6,9 @@ from . import stage_start_pool_manager
 STAGE_TAG = 'Reset Pool Context'
 
 class ResetContextStage(stage.RottnestCompilerStage):
+    '''
+        Resets the execution context
+    '''
     TAG = STAGE_TAG
 
     def __init__(self, *, tag=None, dependencies=None):
