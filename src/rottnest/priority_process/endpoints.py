@@ -31,7 +31,7 @@ def synchronise_layouts(layouts:dict):
     '''
         Synchronises layouts
     '''
-    SynchroniseLayoutsProcedure(layouts)
+    SynchroniseLayoutsProcedure(layouts).execute()
     return
 
 @reload_visualiser

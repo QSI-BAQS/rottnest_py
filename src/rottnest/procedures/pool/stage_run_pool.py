@@ -23,7 +23,10 @@ class RunPoolStage(stage.RottnestCompilerStage):
 
         if self._reporting:
             mpsc_provider_instance: MPSCChannelProvider = MPSCChannelProvider.get_instance()
-            self._writer, _mpsc_state = mpsc_provider_instance.get_writer(MPSC_LAYOUT_CHANNEL_TAG)
+            self._writer, _mpsc_state = mpsc_provider_instance.get_writer(
+                MPSC_LAYOUT_CHANNEL_TAG
+            )
+
 
         super().__init__(tag=tag, dependencies=dependencies, asynchronous=True)
 

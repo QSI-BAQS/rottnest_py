@@ -11,8 +11,6 @@ class SynchroniseLayoutsProcedure(procedure.RottnestCompilerProcedure):
 
     def __init__(self, layouts, *, tag=None, dependencies=None):
 
-        # TODO: Replace this with dynamic loads
-
         stage = SynchroniseLayoutsStage(
                 layouts = layouts,
                 dependencies = []

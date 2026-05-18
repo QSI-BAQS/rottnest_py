@@ -163,7 +163,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
             priority_commands.SYNCHRONISE_PRIORITY: self._task_priority_setup,
             priority_commands.GET_CALLGRAPH: self._task_get_callgraph,
             priority_commands.GET_VISUALISER: self._task_get_visualiser,
-            priority_commands.GET_VISUALISER: self._task_get_visualiser_next,
+            priority_commands.GET_VISUALISER_NEXT: self._task_get_visualiser_next,
         }
 
     def __del__(self, *args, **kwargs):
@@ -334,9 +334,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         if task is None:
             raise Exception(f"Unknown task: {task_name}")
         else:
-            if task_name == GET_VISUALISER_NEXT:
-                print("Getting next visualisation")
-                print(args)
             result = task(*args)
             # If a response occurs, pass it back
             # Prepend the name of the task
@@ -756,13 +753,12 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         ))
         return
 
-    def _task_get_visualiser_next(self, graph_id):
+    def _task_get_visualiser_next(self, *args):
         '''
             Gets the callgraph
         '''
         self.priority_task_queue.put((
             priority_commands.GET_VISUALISER_NEXT,
-            graph_id
         ))
         return
 

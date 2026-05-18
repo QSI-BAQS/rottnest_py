@@ -1,9 +1,8 @@
 '''
     Runs the visualiser    
 '''
-
-from rottnest.process_pool import get_pool
 from rottnest.procedures import stage
+from rottnest.process_pool import get_pool
 from rottnest.procedures.procedure_manager import MPSCChannelProvider
 from rottnest.procedures.procedure_manager.mpsc_common import MPSC_CALLGRAPH_RUNNODE_CHANNEL_TAG
 
@@ -60,7 +59,6 @@ class RunVisualiserStage(stage.RottnestCompilerStage):
         if obj is not None:
             self._complete = True
             if self._reporting:
-                # NOTE: I will need to review why we double up?
                 self.vis_status_data = obj
                 self.result = obj
                 if self._writer:

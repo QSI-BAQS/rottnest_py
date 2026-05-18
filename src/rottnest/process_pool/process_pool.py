@@ -213,6 +213,7 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
             manager
         '''
         layout_payload = list(LayoutProxy.get_layouts())
+
         self.manager_priority_task_queue.put(
             (
                 commands.SYNCHRONISE_LAYOUTS,

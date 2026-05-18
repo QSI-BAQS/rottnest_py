@@ -4,7 +4,7 @@
 from rottnest.procedures import stage
 from rottnest.compute_units.layout_proxy import LayoutProxy
 
-STAGE_TAG = 'synchronise_layouts'
+STAGE_TAG = 'synchronise_layouts_stage'
 
 class SynchroniseLayoutsStage(stage.RottnestCompilerStage):
     TAG = STAGE_TAG
