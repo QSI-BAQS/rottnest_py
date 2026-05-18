@@ -259,7 +259,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
     def initialise_composer(self, layouts, executable):
         arch = self._architectures.get_current_architecture()
         self.composer = arch.composer(layouts, list(executable.get_qubits()))
-        self.composer.reset_result()
+        self.composer.setup()
 
     def _task_start_workers(self, *args):
         '''

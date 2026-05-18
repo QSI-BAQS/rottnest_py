@@ -10,18 +10,18 @@ EXES := $(patsubst ${SRCDIR}/%.hs, ${SRCDIR}/%, ${SRCFILES})
 
 .PHONY: all package test clean gridsynth build
 
-all: package
+all: build
+
+build: package
 
 package: gridsynth
 	pip install -r requirements.txt
 	pip install -e .
 
-gridsynth : ${OBJFILES}
-
-build : ${OBJFILES}
+gridsynth: ${OBJFILES}
 
 ${SRCDIR}/% : ${SRCDIR}/%.hs
-	$(GHC) -package random -package newsynth $^
+	$(GHC) $^
 
 test:
 	pytest --forked
