@@ -162,7 +162,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
             priority_commands.SYNCHRONISE_PRIORITY: self._task_priority_setup,
             priority_commands.GET_CALLGRAPH: self._task_get_callgraph,
             priority_commands.GET_VISUALISER: self._task_get_visualiser,
-            priority_commands.GET_VISUALISER: self._task_get_visualiser_next,
+            priority_commands.GET_VISUALISER_NEXT: self._task_get_visualiser_next,
         }
 
     def __del__(self, *args, **kwargs):
@@ -751,10 +751,11 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         ))
         return
 
-    def _task_get_visualiser_next(self):
+    def _task_get_visualiser_next(self, *args):
         '''
             Gets the callgraph
         '''
+        print("ARGS: ", args)
         self.priority_task_queue.put((
             priority_commands.GET_VISUALISER_NEXT,
         ))

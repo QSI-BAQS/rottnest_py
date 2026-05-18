@@ -24,6 +24,9 @@ class RunPoolStage(stage.RottnestCompilerStage):
         self._reporting = reporting
 
         if self._reporting:
+            '''
+                For websocket attachment
+            '''
             from rottnest.server.app.application import RottnestApplication
             self._app = RottnestApplication.try_get_instance()
 

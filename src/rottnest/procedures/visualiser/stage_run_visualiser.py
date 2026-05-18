@@ -1,7 +1,7 @@
 '''
     Runs the visualiser    
 '''
-
+from rottnest.procedures import stage
 from rottnest.process_pool import get_pool
 
 STAGE_TAG = 'run_visualiser'
@@ -41,19 +41,11 @@ class RunVisualiserStage(stage.RottnestCompilerStage):
         pool = get_pool() 
         pool.get_visualiser(self.graph_id)
 
-    def poll(self):
+    def poll(self, compiler_environment=None):
         pool = get_pool()
         obj = pool.get_visualiser_status()
         if obj is not None:
             self._complete = True
-
-            # Reports over the websocket
-            if self._reporting:
-                app_instance = RottnestApplication.try_get_instance()
-                if app_instance is not None:
-                    app_instance.websocket_result_write(obj)
-            else:
-                self.result = obj  
 
     def complete(self):
         return self._complete
