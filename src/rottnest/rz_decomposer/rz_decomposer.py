@@ -1,7 +1,7 @@
 import abc
 from typing import Iterable
 
-DEFAULT_PRECISION = 10 
+DEFAULT_PRECISION = 5
 
 class RzDecomposer(abc.ABC):
     '''

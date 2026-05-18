@@ -4,7 +4,7 @@
 from rottnest.procedures import stage
 from rottnest.process_pool import get_pool
 from rottnest.procedures.procedure_manager import MPSCChannelProvider
-from rottnest.procedures.procedure_manager.mpsc_common import MPSC_CALLGRAPH_RUNNODE_CHANNEL_TAG
+from rottnest.procedures.procedure_manager.mpsc_common import MPSC_VISUALISER_CHANNEL_TAG
 
 
 STAGE_TAG = 'run_visualiser'
@@ -33,7 +33,7 @@ class RunVisualiserStage(stage.RottnestCompilerStage):
 
         if self._reporting:
             mpsc_instance = MPSCChannelProvider.get_instance()
-            mpsc_writer, _mpscstate = mpsc_instance.get_writer(MPSC_CALLGRAPH_RUNNODE_CHANNEL_TAG)
+            mpsc_writer, _mpscstate = mpsc_instance.get_writer(MPSC_VISUALISER_CHANNEL_TAG)
             self._writer = mpsc_writer
 
         

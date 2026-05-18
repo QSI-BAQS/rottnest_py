@@ -5,7 +5,7 @@ from rottnest.server.protocol.operation import CallGraph as SpecOperations
 from rottnest.server.websocket.websocket_operations.operations_spec import \
      WebSocketOperationsSpecification
 
-from rottnest.procedures.procedure_manager.mpsc_common import MPSC_CALLGRAPH_CHANNEL_TAG, MPSC_CALLGRAPH_RUNNODE_CHANNEL_TAG
+from rottnest.procedures.procedure_manager.mpsc_common import MPSC_CALLGRAPH_CHANNEL_TAG, MPSC_VISUALISER_CHANNEL_TAG
 from rottnest.procedures.procedure_manager.mpsc_channel import MPSCChannelProvider
 from rottnest.procedures.procedure_manager import ProcedureManagerSelector
 
@@ -151,16 +151,16 @@ class CallGraphOperations(WebSocketOperationsSpecification):
 
     def run_graph_node(self, websocket, graph_id):
         '''
-           Runs the graph node itself - This should attempt to run layout
-               in some way?
+           Runs the graph node itself - Will retrieve the visualiser
+           object and allow it to be viewable
         '''
         proc_manager = ProcedureManagerSelector.get_instance().get_default()
-        runnode_proc = GetVisualiserProcedure(graph_id=graph_id)
 
         mpsc_provider: MPSCChannelProvider = MPSCChannelProvider.get_instance()
-        mpsc_provider.recreate_channel(MPSC_CALLGRAPH_RUNNODE_CHANNEL_TAG)
-        mpsc_reader, _mpscstate = mpsc_provider.get_reader(MPSC_CALLGRAPH_RUNNODE_CHANNEL_TAG)
+        mpsc_provider.recreate_channel(MPSC_VISUALISER_CHANNEL_TAG)
+        mpsc_reader, _mpscstate = mpsc_provider.get_reader(MPSC_VISUALISER_CHANNEL_TAG)
 
+        runnode_proc = GetVisualiserProcedure(graph_id=graph_id)
 
 
         state_object = GetGraphStateObject(websocket,
@@ -207,15 +207,15 @@ class CallGraphOperations(WebSocketOperationsSpecification):
         reader = state_object.get_reader()
         proc = state_object.get_procedure()
         graph_package = GET_RUNNODE_MSG_INVALID_TEMPLATE.copy()
-
         if not proc.was_aborted():
             callgraph_results = reader.read()
             if callgraph_results is not None:
-                # NOTE: Why is the id 1?
-                items = callgraph_results.get_object()
-                results = self.translate_items(items)
+                
+                item = callgraph_results.get_object()
+                visual_object = item[1].vis_obj
+                
                 graph_package = GET_RUNNODE_MSG_FINISH_TEMPLATE.copy()\
-                    .set_visual_visualisation(results)
+                    .set_visualisation(visual_object)
 
         
         actions.websocket_write(wsock, graph_package.build_and_package())
@@ -279,6 +279,7 @@ class CallGraphOperations(WebSocketOperationsSpecification):
         proc = state_object.get_procedure()
         graph_package = GET_GRAPH_MSG_INVALID_TEMPLATE.copy()
 
+        
         if not proc.was_aborted():
             callgraph_results = reader.read()
             if callgraph_results is not None:

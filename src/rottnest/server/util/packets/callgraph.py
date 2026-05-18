@@ -62,7 +62,8 @@ class CallGraphPacketBuilder:
         '''
         packet_kind_str = self.packet_kind.name
         if self.packet_kind in { CallGraphPacketKind.Graph,
-            CallGraphPacketKind.RootGraph, CallGraphPacketKind.Node }:
+            CallGraphPacketKind.RootGraph, CallGraphPacketKind.Node,
+            CallGraphPacketKind.VisualObject }:
             return {
                 'kind' : packet_kind_str,
                 'result' : self.result_package

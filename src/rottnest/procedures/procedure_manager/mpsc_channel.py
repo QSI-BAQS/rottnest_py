@@ -283,7 +283,7 @@ class MPSCChannelProvider:
         '''
         if key in self.channel_map:
             if not silent:
-                print(f"Channel '{key}' was exists, a new channel is not being started")
+                print(f"Channel '{key}' exists, a new channel is not being started")
             return MPSCChannelState.CHANNEL_EXISTS
 
         channel = MPSCChannel(key)
@@ -385,20 +385,27 @@ class MPSCChannelProvider:
         if channel_key not in self.channel_map:
             return MPSCChannelState.INVALID
 
-        channel = self.channel_map[channel_key]
-        reader = self.channel_reader_refs[channel_key]
-        writers = self.channel_writer_refs[channel_key]
+        channel = None if channel_key not in self.channel_map else \
+            self.channel_map[channel_key]
+        reader = None if channel_key not in self.channel_reader_refs else \
+            self.channel_reader_refs[channel_key]
+        writers = None if channel_key not in self.channel_writer_refs \
+            else self.channel_writer_refs[channel_key]
 
-        reader.set_state(MPSCChannelState.READER_STOPPED)
-        for w in writers:
-            w.set_state(MPSCChannelState.WRITER_STOPPED)
+        if reader is not None:
+            reader.set_state(MPSCChannelState.READER_STOPPED)
+            del self.channel_reader_refs[channel_key]
 
-        channel.set_state(MPSCChannelState.CHANNEL_DESTROYED)
+        if writers is not None:
+            for idx, w in enumerate(writers):
+                w.set_state(MPSCChannelState.WRITER_STOPPED)
+                del writers[idx]
+            del self.channel_writer_refs[channel_key]
 
-        # Will now clean up
-        del self.channel_reader_refs[channel_key]
-        del self.channel_writer_refs[channel_key]
-        del self.channel_map[channel_key]
+
+        if channel is not None:
+            channel.set_state(MPSCChannelState.CHANNEL_DESTROYED)
+            del self.channel_map[channel_key]
 
         return MPSCChannelState.CHANNEL_DESTROYED
 

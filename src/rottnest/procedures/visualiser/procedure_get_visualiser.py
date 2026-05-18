@@ -20,6 +20,7 @@ class GetVisualiserProcedure(procedure.RottnestCompilerProcedure):
             dependencies=None
         ):
 
+        self._aborted = False
         stage = RunVisualiserStage(
                 graph_id = graph_id,
                 reporting = reporting,
@@ -37,3 +38,10 @@ class GetVisualiserProcedure(procedure.RottnestCompilerProcedure):
            Capabilities to abort the procedure 
         '''
         self._complete = True
+        self._aborted = True
+
+    def was_aborted(self):
+        '''
+           Checks to see if the procedure was aborted or not 
+        '''
+        return self._aborted
