@@ -495,11 +495,11 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
             return None
         return status
 
-    def clear_buffers(self):
+    def clear_buffers(self, *exceptions):
         '''
             Reset all buffer state
         '''
-        self.ipc.clear_all()
+        self.ipc.clear_all(*exceptions)
 
 
     def get_visualiser(self, graph_id):
