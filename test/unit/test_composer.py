@@ -10,6 +10,11 @@ from rottnest.architecture_interface.rottnest_composer import ComposerStackFrame
 # Patch over result composer get_tocks() so that it can be used as-is
 ResultsComposer.get_tocks = lambda *a, **ka: 1
 
+# Patch over result composer parallel compose so that it can be used as-is
+def parallel_compose_results(self, other):
+    self.__iadd__(other)
+ResultsComposer.parallel_compose = parallel_compose_results
+
 class MockComputeUnit():
     def __init__(self, unit_id, qubit_labels=dict()):
         self.unit_id = unit_id
@@ -33,8 +38,64 @@ def unit_res_pair(res_obj, unit_id, qubit_labels=dict()):
 def generic_stack_frame(rottnest_hash=0):
     return ComposerStackFrame(rottnest_hash, ResultsComposer, {}, memory_manager=MemoryManager(ResultsComposer))
 
-def generic_composer():
-    return RottnestComposer({0:"dummy_layout"}, [])
+def generic_composer(composer_type=RottnestComposer):
+    return composer_type({0:"dummy_layout"}, [])
+
+
+class TestMemoryManagerFrame():
+    COST_INIT = "INIT"
+    COST_STORE = "STORE"
+    COST_LOAD = "LOAD"
+    COST_DELETE = "DELETE"
+    COST_IDLE = "IDLE"
+    def __init__(self, id):
+        self.id = id
+        self.costs = {
+            TestMemoryManagerFrame.COST_INIT: 0,
+            TestMemoryManagerFrame.COST_STORE: 0,
+            TestMemoryManagerFrame.COST_LOAD: 0,
+            TestMemoryManagerFrame.COST_DELETE: 0,
+            TestMemoryManagerFrame.COST_IDLE: 0
+        }
+
+    def cost_labels(self, labels, cost_type):
+        self.costs[cost_type] += len(labels)
+
+    def cost_idle(self, n):
+        self.costs[TestMemoryManagerFrame.COST_IDLE] += n
+
+
+class TestMemoryManager(MemoryManager):
+    def __init__(self, results_composer_constructor):
+        self.ResultsComposer = results_composer_constructor
+        self.frames = {}
+
+    def frame_create(self, frame_id, labels):
+        self.frames[frame_id] = TestMemoryManagerFrame(frame_id)
+        self.frames[frame_id].cost_labels(labels, TestMemoryManagerFrame.COST_INIT)
+
+    def frame_delete(self, frame_id, labels):
+        self.frames[frame_id].cost_labels(labels, TestMemoryManagerFrame.COST_DELETE)
+
+        res = self.ResultsComposer(self.frames[frame_id].costs)
+
+        return res
+
+    def store(self, frame_id, labels):
+        self.frames[frame_id].cost_labels(labels, TestMemoryManagerFrame.COST_STORE)
+
+    def load(self, frame_id, labels):
+        self.frames[frame_id].cost_labels(labels, TestMemoryManagerFrame.COST_LOAD)
+
+    def idle(self, frame_id, n_cycles):
+        self.frames[frame_id].cost_idle(n_cycles)
+
+
+class ComposerWithMemoryManager(RottnestComposer):
+    @staticmethod
+    def memory_manager_constructor():
+        return TestMemoryManager
+
 
 
 class StackFrameTests(unittest.TestCase):
@@ -180,7 +241,7 @@ class CompositionTests(unittest.TestCase):
             works as expected
         '''
         composer = generic_composer()
-        composer.reset_result()
+        composer.setup()
 
         unit, res = unit_res_pair({'val': 1}, 1, {1:'dummy qubit'})
 
@@ -196,7 +257,7 @@ class CompositionTests(unittest.TestCase):
             results works as expected (aggregtate final result)
         '''
         composer = generic_composer()
-        composer.reset_result()
+        composer.setup()
 
         test_pairs = list(
             unit_res_pair({'val': i}, i, {1:'dummy qubit'}) for i in range(10)
@@ -219,7 +280,7 @@ class CompositionTests(unittest.TestCase):
             corresponding results in a different order works as expected
         '''
         composer = generic_composer()
-        composer.reset_result()
+        composer.setup()
 
         unit_count = 10
 
@@ -243,7 +304,7 @@ class CompositionTests(unittest.TestCase):
             Ensure that submitting to a single layer of vertical cache works
         '''
         composer = generic_composer()
-        composer.reset_result()
+        composer.setup()
 
         # Submit a misc. unit
         composer.submit(MockComputeUnit(1))
@@ -269,7 +330,7 @@ class CompositionTests(unittest.TestCase):
             Ensure that submitting to horizontal cache entries in a single layer works
         '''
         composer = generic_composer()
-        composer.reset_result()
+        composer.setup()
 
         first_cachable = MockCachable(1)
 
@@ -300,7 +361,7 @@ class CompositionTests(unittest.TestCase):
             Ensure that cache entries can be requested and are then aggregated
         '''
         composer = generic_composer()
-        composer.reset_result()
+        composer.setup()
 
         cachable = MockCachable(1)
 
@@ -322,7 +383,7 @@ class CompositionTests(unittest.TestCase):
             Test vertical (nested) caching
         '''
         composer = generic_composer()
-        composer.reset_result()
+        composer.setup()
 
         outer_cachable = MockCachable(1)
         composer.cache_entry_start(outer_cachable)
@@ -365,7 +426,7 @@ class CompositionTests(unittest.TestCase):
                              B --- B         <- populates cache here
         '''
         composer = generic_composer()
-        composer.reset_result()
+        composer.setup()
 
         a_cache = MockCachable('a')
         composer.cache_entry_start(a_cache)
@@ -392,7 +453,7 @@ class CompositionTests(unittest.TestCase):
             Test deeply nested cache
         '''
         composer = generic_composer()
-        composer.reset_result()
+        composer.setup()
 
         cache_layers = []
 
@@ -418,7 +479,7 @@ class CompositionTests(unittest.TestCase):
             all corresponding results have been composed
         '''
         composer = generic_composer()
-        composer.reset_result()
+        composer.setup()
 
         test_pairs = list(unit_res_pair({'val': i}, i) for i in range(10))
 
@@ -457,7 +518,7 @@ class CompositionTests(unittest.TestCase):
                 after the second C is requested
         '''
         composer = generic_composer()
-        composer.reset_result()
+        composer.setup()
 
         deferred_unit, deferred_res = unit_res_pair({'val': 1}, 1)
 
@@ -505,7 +566,7 @@ class CompositionTests(unittest.TestCase):
                   a = 2b + c + d = 3c + 3 + 100
         '''
         composer = generic_composer()
-        composer.reset_result()
+        composer.setup()
 
         b_cachable = MockCachable('b')
         c_cachable = MockCachable('c')
@@ -573,7 +634,7 @@ class CompositionTests(unittest.TestCase):
 
     def test_cache_request_deeply_nested_defer(self):
         composer = generic_composer()
-        composer.reset_result()
+        composer.setup()
 
         deferred_unit, deferred_res = unit_res_pair({'val': 10}, 10)
 
@@ -601,6 +662,244 @@ class CompositionTests(unittest.TestCase):
 
         self.assertEqual(composer.get_result()._obj['val'], sum(range(1, 11)))
 
+
+class MemoryManagerTests(unittest.TestCase):
+    def test_memory_trivial_load_delete(self):
+        '''
+            Ensure trivial load and delete costs are incurred on cache start/end
+        '''
+        composer = generic_composer(ComposerWithMemoryManager)
+        composer.setup()
+
+        cachable = MockCachable(1, qubits=['a', 'b', 'c'])
+
+        composer.cache_entry_start(cachable)
+
+        unit, res = unit_res_pair({'val': 1}, 1)
+
+        composer.submit(unit)
+        composer.all_submitted()
+        composer.receive(res)
+
+        composer.cache_entry_end(cachable)
+
+        self.assertTrue(composer.complete())
+
+        res = composer.get_result()._obj
+
+        # Three labels passed in
+        self.assertEqual(res[TestMemoryManagerFrame.COST_INIT], 3)
+        # Idle == calls to receive (as get_tocks is fixed at 1, and there's no layering)
+        self.assertEqual(res[TestMemoryManagerFrame.COST_IDLE], 1)
+        self.assertEqual(res[TestMemoryManagerFrame.COST_DELETE], 0)
+        self.assertEqual(res[TestMemoryManagerFrame.COST_LOAD], 0)
+        self.assertEqual(res[TestMemoryManagerFrame.COST_STORE], 0)
+
+
+    def test_memory_load_delete_submit_qubits(self):
+        '''
+            Ensure a submit with some qubits actually associated is costed in memory
+        '''
+        composer = generic_composer(ComposerWithMemoryManager)
+        composer.setup()
+
+        cachable = MockCachable(1)
+
+        composer.cache_entry_start(cachable)
+
+        unit, res = unit_res_pair({'val': 1}, 1, qubit_labels={'a': 1, 'b': 2})
+
+        composer.submit(unit)
+        composer.all_submitted()
+        composer.receive(res)
+
+        composer.cache_entry_end(cachable)
+
+        self.assertTrue(composer.complete())
+
+        res = composer.get_result()._obj
+
+        self.assertEqual(res[TestMemoryManagerFrame.COST_INIT], 0)
+        # Idle == calls to receive (as above)
+        self.assertEqual(res[TestMemoryManagerFrame.COST_IDLE], 1)
+        self.assertEqual(res[TestMemoryManagerFrame.COST_DELETE], 0)
+        # We incur load/store costs for the unit with 2 qubits above
+        self.assertEqual(res[TestMemoryManagerFrame.COST_LOAD], 2)
+        self.assertEqual(res[TestMemoryManagerFrame.COST_STORE], 2)
+
+
+    def test_memory_multiple_submit(self):
+        '''
+            Ensure a sequence of submits are still costed properly
+        '''
+        composer = generic_composer(ComposerWithMemoryManager)
+        composer.setup()
+
+        cachable = MockCachable(1)
+
+        composer.cache_entry_start(cachable)
+
+        unit1, res1 = unit_res_pair({'val': 1}, 1, qubit_labels={'a': 1, 'b': 2})
+        unit2, res2 = unit_res_pair({'val': 2}, 2, qubit_labels={'a': 2, 'b': 3})
+
+        composer.submit(unit1)
+        composer.submit(unit2)
+        composer.all_submitted()
+        composer.receive(res2)
+        composer.receive(res1)
+
+        composer.cache_entry_end(cachable)
+
+        self.assertTrue(composer.complete())
+
+        res = composer.get_result()._obj
+
+        self.assertEqual(res[TestMemoryManagerFrame.COST_INIT], 0)
+        # Idle == calls to receive (as above)
+        self.assertEqual(res[TestMemoryManagerFrame.COST_IDLE], 2)
+        self.assertEqual(res[TestMemoryManagerFrame.COST_DELETE], 0)
+        # We incur load/store costs for the unit with 2 qubits above
+        self.assertEqual(res[TestMemoryManagerFrame.COST_LOAD], 4)
+        self.assertEqual(res[TestMemoryManagerFrame.COST_STORE], 4)
+
+
+    def test_memory_multiple_cache(self):
+        '''
+            Ensure memory works correctly across multiple layers of cache
+        '''
+        composer = generic_composer(ComposerWithMemoryManager)
+        composer.setup()
+
+        cachable1 = MockCachable(1)
+        cachable2 = MockCachable(2)
+
+        composer.cache_entry_start(cachable1)
+
+        unit1, res1 = unit_res_pair({'val': 1}, 1, qubit_labels={'a': 1, 'b': 2})
+        unit2, res2 = unit_res_pair({'val': 2}, 2, qubit_labels={'a': 2, 'b': 3})
+
+        composer.submit(unit1)
+
+        composer.cache_entry_start(cachable2)
+
+        composer.receive(res1)
+
+        composer.submit(unit2)
+
+        composer.all_submitted()
+
+        composer.receive(res2)
+
+        composer.cache_entry_end(cachable2)
+
+        composer.cache_entry_end(cachable1)
+
+        self.assertTrue(composer.complete())
+
+        res = composer.get_result()._obj
+
+        self.assertEqual(res[TestMemoryManagerFrame.COST_INIT], 0)
+        # Idle == calls to receive + layer resolution
+        self.assertEqual(res[TestMemoryManagerFrame.COST_IDLE], 3)
+        self.assertEqual(res[TestMemoryManagerFrame.COST_DELETE], 0)
+        # We incur load/store costs for 2x of the units with 2 qubits above
+        self.assertEqual(res[TestMemoryManagerFrame.COST_LOAD], 4)
+        self.assertEqual(res[TestMemoryManagerFrame.COST_STORE], 4)
+
+
+    def test_memory_multiple_cache_with_requests(self):
+        '''
+            Ensure memory works correctly across multiple layers of cache,
+            with cache requests
+        '''
+        composer = generic_composer(ComposerWithMemoryManager)
+        composer.setup()
+
+        cachable1 = MockCachable(1)
+        cachable2 = MockCachable(2)
+
+        composer.cache_entry_start(cachable1)
+
+        unit1, res1 = unit_res_pair({'val': 1}, 1, qubit_labels={'a': 1, 'b': 2})
+        unit2, res2 = unit_res_pair({'val': 2}, 2, qubit_labels={'a': 2, 'b': 3})
+
+        composer.submit(unit1)
+
+        composer.cache_entry_start(cachable2)
+
+        composer.receive(res1)
+
+        composer.submit(unit2)
+
+        composer.all_submitted()
+
+        composer.receive(res2)
+
+        composer.cache_entry_end(cachable2)
+
+        composer.cache_request(cachable2)
+
+        composer.cache_entry_end(cachable1)
+
+        self.assertTrue(composer.complete())
+
+        res = composer.get_result()._obj
+
+        self.assertEqual(res[TestMemoryManagerFrame.COST_INIT], 0)
+        # Idle == calls to receive + layer resolution + cache request
+        self.assertEqual(res[TestMemoryManagerFrame.COST_IDLE], 4)
+        self.assertEqual(res[TestMemoryManagerFrame.COST_DELETE], 0)
+        # We incur load/store costs for 4x of the units with 2 qubits above
+        self.assertEqual(res[TestMemoryManagerFrame.COST_LOAD], 6)
+        self.assertEqual(res[TestMemoryManagerFrame.COST_STORE], 6)
+
+
+    def test_memory_multiple_cache_deferred(self):
+        '''
+            Ensure memory works correctly across multiple layers of cache,
+            with cache requests and deference thereof
+        '''
+        composer = generic_composer(ComposerWithMemoryManager)
+        composer.setup()
+
+        cachable1 = MockCachable(1)
+        cachable2 = MockCachable(2)
+
+        composer.cache_entry_start(cachable1)
+
+        unit1, res1 = unit_res_pair({'val': 1}, 1, qubit_labels={'a': 1, 'b': 2})
+        unit2, res2 = unit_res_pair({'val': 2}, 2, qubit_labels={'a': 2, 'b': 3})
+
+        composer.submit(unit1)
+
+        composer.cache_entry_start(cachable2)
+
+        composer.receive(res1)
+
+        composer.submit(unit2)
+
+        composer.all_submitted()
+
+        composer.cache_entry_end(cachable2)
+
+        composer.cache_request(cachable2)
+
+        composer.cache_entry_end(cachable1)
+
+        # Deferred receive
+        composer.receive(res2)
+
+        self.assertTrue(composer.complete())
+
+        res = composer.get_result()._obj
+
+        self.assertEqual(res[TestMemoryManagerFrame.COST_INIT], 0)
+        # Idle == calls to receive + layer resolution + cache request
+        self.assertEqual(res[TestMemoryManagerFrame.COST_IDLE], 4)
+        self.assertEqual(res[TestMemoryManagerFrame.COST_DELETE], 0)
+        # We incur load/store costs for 4x of the units with 2 qubits above
+        self.assertEqual(res[TestMemoryManagerFrame.COST_LOAD], 6)
+        self.assertEqual(res[TestMemoryManagerFrame.COST_STORE], 6)
 
 
 if __name__ == "__main__":
