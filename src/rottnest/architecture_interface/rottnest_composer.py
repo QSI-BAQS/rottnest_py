@@ -56,11 +56,11 @@ class RottnestComposer(abc.ABC):
         self.ResultsComposer = self.results_composer_constructor()
         self.StackFrame = self.stack_frame_constructor()
 
-        # Memory management system
-        self.memory_manager = self.memory_manager_constructor()(self.ResultsComposer)
-
         # Layouts
         self.layouts = list(map(LayoutProxy.add_layout, layouts))
+
+        # Memory management system
+        self.memory_manager = self.memory_manager_constructor()(self.ResultsComposer)
 
         # Initial stack frames
         self.setup()
