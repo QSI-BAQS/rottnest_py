@@ -8,7 +8,8 @@ import unittest
 from rottnest.architecture_interface.rottnest_composer import ComposerStackFrame, RottnestComposer, ResultsComposer, MemoryManager
 
 # Patch over result composer get_tocks() so that it can be used as-is
-ResultsComposer.get_tocks = lambda *a, **ka: 1
+# NOTE: By default we ignore idling costs
+ResultsComposer.get_tocks = lambda s: 0
 
 # Patch over result composer parallel compose so that it can be used as-is
 def parallel_compose_results(self, other):
@@ -29,11 +30,18 @@ class MockCachable():
         self.op = type("DummyOp", (), dict(qubits=qubits))()
         self.non_participatory_qubits = 0
 
-def unit_res_pair(res_obj, unit_id, qubit_labels=dict()):
-    return (
-        MockComputeUnit(unit_id, qubit_labels),
-        ResultsComposer(res_obj, unit_id=unit_id)
-    )
+
+def mk_unit_res_pair_factory(res_type):
+    def unit_res_pair_factory(res_obj, unit_id, qubit_labels=dict(), **kwargs):
+        return (
+            MockComputeUnit(unit_id, qubit_labels),
+            res_type(res_obj, unit_id=unit_id, **kwargs)
+        )
+
+    return unit_res_pair_factory
+
+
+unit_res_pair = mk_unit_res_pair_factory(ResultsComposer)
 
 def generic_stack_frame(rottnest_hash=0):
     return ComposerStackFrame(rottnest_hash, ResultsComposer, {}, memory_manager=MemoryManager(ResultsComposer))
@@ -47,22 +55,21 @@ class TestMemoryManagerFrame():
     COST_STORE = "STORE"
     COST_LOAD = "LOAD"
     COST_DELETE = "DELETE"
-    COST_IDLE = "IDLE"
     def __init__(self, id):
         self.id = id
+        self.idle = 0
         self.costs = {
             TestMemoryManagerFrame.COST_INIT: 0,
             TestMemoryManagerFrame.COST_STORE: 0,
             TestMemoryManagerFrame.COST_LOAD: 0,
             TestMemoryManagerFrame.COST_DELETE: 0,
-            TestMemoryManagerFrame.COST_IDLE: 0
         }
 
     def cost_labels(self, labels, cost_type):
         self.costs[cost_type] += len(labels)
 
     def cost_idle(self, n):
-        self.costs[TestMemoryManagerFrame.COST_IDLE] += n
+        self.idle += n
 
 
 class TestMemoryManager(MemoryManager):
@@ -97,6 +104,46 @@ class ComposerWithMemoryManager(RottnestComposer):
         return TestMemoryManager
 
 
+
+class ResultsComposerWithTocks(ResultsComposer):
+    '''
+        ResultsComposer with "proper" tocks, so that idling can be
+        tested
+    '''
+    def __init__(self, result_obj=None, tocks=0, n_obj=1, unit_id=None):
+        self.tocks = tocks
+        if result_obj is None:
+            result_obj = {}
+        super().__init__(result_obj=result_obj, n_obj=n_obj, unit_id=unit_id)
+
+    def get_tocks(self):
+        return self.tocks
+
+    def parallel_compose(self, other):
+        # Parallel, we take the max of the two times
+        self.tocks = max(self.tocks, other.tocks)
+        for k, v in other._obj.items():
+            self._obj[k] = self._obj.get(k, 0) + v
+        self._obj["IDLE"] = self.tocks
+
+    def __iadd__(self, other):
+        # Sequential, we take full tock time
+        self.tocks += other.tocks
+        for k, v in other._obj.items():
+            self._obj[k] = self._obj.get(k, 0) + v
+        return self
+
+    def __add__(self, other):
+        self.__iadd__(other)
+
+
+class TockCostingComposer(ComposerWithMemoryManager):
+    @staticmethod
+    def results_composer_constructor():
+        return ResultsComposerWithTocks
+
+
+tock_res_pair = mk_unit_res_pair_factory(ResultsComposerWithTocks)
 
 class StackFrameTests(unittest.TestCase):
     def test_frame_submit_recv_single(self):
@@ -690,7 +737,6 @@ class MemoryManagerTests(unittest.TestCase):
         # Three labels passed in
         self.assertEqual(res[TestMemoryManagerFrame.COST_INIT], 3)
         # Idle == calls to receive (as get_tocks is fixed at 1, and there's no layering)
-        self.assertEqual(res[TestMemoryManagerFrame.COST_IDLE], 1)
         self.assertEqual(res[TestMemoryManagerFrame.COST_DELETE], 0)
         self.assertEqual(res[TestMemoryManagerFrame.COST_LOAD], 0)
         self.assertEqual(res[TestMemoryManagerFrame.COST_STORE], 0)
@@ -720,8 +766,6 @@ class MemoryManagerTests(unittest.TestCase):
         res = composer.get_result()._obj
 
         self.assertEqual(res[TestMemoryManagerFrame.COST_INIT], 0)
-        # Idle == calls to receive (as above)
-        self.assertEqual(res[TestMemoryManagerFrame.COST_IDLE], 1)
         self.assertEqual(res[TestMemoryManagerFrame.COST_DELETE], 0)
         # We incur load/store costs for the unit with 2 qubits above
         self.assertEqual(res[TestMemoryManagerFrame.COST_LOAD], 2)
@@ -755,8 +799,6 @@ class MemoryManagerTests(unittest.TestCase):
         res = composer.get_result()._obj
 
         self.assertEqual(res[TestMemoryManagerFrame.COST_INIT], 0)
-        # Idle == calls to receive (as above)
-        self.assertEqual(res[TestMemoryManagerFrame.COST_IDLE], 2)
         self.assertEqual(res[TestMemoryManagerFrame.COST_DELETE], 0)
         # We incur load/store costs for the unit with 2 qubits above
         self.assertEqual(res[TestMemoryManagerFrame.COST_LOAD], 4)
@@ -799,8 +841,6 @@ class MemoryManagerTests(unittest.TestCase):
         res = composer.get_result()._obj
 
         self.assertEqual(res[TestMemoryManagerFrame.COST_INIT], 0)
-        # Idle == calls to receive + layer resolution
-        self.assertEqual(res[TestMemoryManagerFrame.COST_IDLE], 3)
         self.assertEqual(res[TestMemoryManagerFrame.COST_DELETE], 0)
         # We incur load/store costs for 2x of the units with 2 qubits above
         self.assertEqual(res[TestMemoryManagerFrame.COST_LOAD], 4)
@@ -846,8 +886,6 @@ class MemoryManagerTests(unittest.TestCase):
         res = composer.get_result()._obj
 
         self.assertEqual(res[TestMemoryManagerFrame.COST_INIT], 0)
-        # Idle == calls to receive + layer resolution + cache request
-        self.assertEqual(res[TestMemoryManagerFrame.COST_IDLE], 4)
         self.assertEqual(res[TestMemoryManagerFrame.COST_DELETE], 0)
         # We incur load/store costs for 4x of the units with 2 qubits above
         self.assertEqual(res[TestMemoryManagerFrame.COST_LOAD], 6)
@@ -894,12 +932,137 @@ class MemoryManagerTests(unittest.TestCase):
         res = composer.get_result()._obj
 
         self.assertEqual(res[TestMemoryManagerFrame.COST_INIT], 0)
-        # Idle == calls to receive + layer resolution + cache request
-        self.assertEqual(res[TestMemoryManagerFrame.COST_IDLE], 4)
         self.assertEqual(res[TestMemoryManagerFrame.COST_DELETE], 0)
         # We incur load/store costs for 4x of the units with 2 qubits above
         self.assertEqual(res[TestMemoryManagerFrame.COST_LOAD], 6)
         self.assertEqual(res[TestMemoryManagerFrame.COST_STORE], 6)
+
+
+    def test_memory_trivial_tocks(self):
+        composer = generic_composer(TockCostingComposer)
+        composer.setup()
+
+        cachable1 = MockCachable(1)
+
+        composer.cache_entry_start(cachable1)
+
+        unit1, res1 = tock_res_pair({'val': 1}, 1, qubit_labels={'a': 1, 'b': 2}, tocks=1)
+
+        composer.submit(unit1)
+        composer.all_submitted()
+
+        # idle cachable1 layer for 1 tock
+        composer.receive(res1)
+
+        # idle outer (result) layer for tock cost of cachable1
+        # and merge cachable1 into the outer layer
+        composer.cache_entry_end(cachable1)
+
+        self.assertTrue(composer.complete())
+
+        res = composer.get_result()._obj
+
+        self.assertEqual(res["IDLE"], 1)
+
+
+    def test_memory_trivial_multiple_tocks(self):
+        composer = generic_composer(TockCostingComposer)
+        composer.setup()
+
+        cachable1 = MockCachable(1)
+
+        composer.cache_entry_start(cachable1)
+
+        unit1, res1 = tock_res_pair({'val': 1}, 1, qubit_labels={'a': 1, 'b': 2}, tocks=2)
+        unit2, res2 = tock_res_pair({'val': 2}, 2, qubit_labels={'a': 1, 'b': 2}, tocks=1)
+
+        composer.submit(unit1)
+        composer.submit(unit2)
+        composer.all_submitted()
+
+        # idle cachable1 layer for 2 tocks (1 per result)
+        composer.receive(res1)
+        composer.receive(res2)
+
+        # idle outer (result) layer for tock cost of cachable1
+        # and merge cachable1 into the outer layer
+        composer.cache_entry_end(cachable1)
+
+        self.assertTrue(composer.complete())
+
+        res = composer.get_result()._obj
+
+        self.assertEqual(res["IDLE"], 3)
+
+
+    def test_memory_multiple_cache_tocks(self):
+        composer = generic_composer(TockCostingComposer)
+        composer.setup()
+
+        cachable1 = MockCachable(1)
+        cachable2 = MockCachable(2)
+
+        composer.cache_entry_start(cachable1)
+        composer.cache_entry_start(cachable2)
+
+        unit1, res1 = tock_res_pair({'val': 1}, 1, qubit_labels={'a': 1, 'b': 2}, tocks=1)
+        unit2, res2 = tock_res_pair({'val': 2}, 2, qubit_labels={'a': 1, 'b': 2}, tocks=1)
+
+        composer.submit(unit1)
+        composer.submit(unit2)
+        composer.all_submitted()
+
+        # idle cachable1 layer for 2 tocks (1 per result)
+        composer.receive(res1)
+        composer.receive(res2)
+
+        # idle outer (result) layer for tock cost of cachable1
+        # and merge cachable1 into the outer layer
+        composer.cache_entry_end(cachable2)
+        composer.cache_entry_end(cachable1)
+
+        self.assertTrue(composer.complete())
+
+        res = composer.get_result()._obj
+
+        self.assertEqual(res["IDLE"], 2)
+
+
+    def test_memory_tocks_with_cache_request(self):
+        composer = generic_composer(TockCostingComposer)
+        composer.setup()
+
+        cachable1 = MockCachable(1)
+        cachable2 = MockCachable(2)
+
+        unit1, res1 = tock_res_pair({'val': 1}, 1, qubit_labels={'a': 1, 'b': 2}, tocks=1)
+        unit2, res2 = tock_res_pair({'val': 2}, 2, qubit_labels={'a': 1, 'b': 2}, tocks=3)
+
+
+        composer.cache_entry_start(cachable1)
+        # idle 1
+        composer.submit(unit1)
+        composer.cache_entry_start(cachable2)
+
+        # idle 3
+        composer.submit(unit2)
+        composer.all_submitted()
+
+        composer.receive(res2)
+        composer.receive(res1)
+
+        composer.cache_entry_end(cachable2)
+
+        # Cache request -> additional idle 3
+        composer.cache_request(cachable2)
+
+        composer.cache_entry_end(cachable1)
+
+        self.assertTrue(composer.complete())
+
+        res = composer.get_result()._obj
+
+        self.assertEqual(res["IDLE"], 7)
 
 
 if __name__ == "__main__":
