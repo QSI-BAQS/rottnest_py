@@ -1,7 +1,7 @@
 '''
     Layout proxy unit tests
 '''
-import unittest 
+import unittest
 import random
 
 from rottnest.compute_units.layout_proxy import LayoutProxy
@@ -23,8 +23,9 @@ class LayoutProxyTests(unittest.TestCase):
 
         layout_vals = {}
         idx = 0
-        for _ in range(100): 
-            layout_vals[idx] = random.randint(100, 1000) 
+        for _ in range(100):
+            layout_vals[idx] = random.randint(100, 1000)
+            idx += 1
 
         for idx, mem in layout_vals.items():
             LayoutProxy.add_layout_with_id(
@@ -42,8 +43,9 @@ class LayoutProxyTests(unittest.TestCase):
         '''
         layout_vals = {}
         idx = 0
-        for _ in range(100): 
-            layout_vals[idx] = random.randint(100, 1000) 
+        for _ in range(100):
+            layout_vals[idx] = random.randint(100, 1000)
+            idx += 1
 
         for idx, mem in layout_vals.items():
             LayoutProxy.add_layout_with_id(
@@ -51,7 +53,7 @@ class LayoutProxyTests(unittest.TestCase):
                 self.generate_layout_obj(mem)
             )
 
-        layouts = LayoutProxy.flush() 
+        layouts = LayoutProxy.flush()
         assert len(LayoutProxy.saved_layouts) == 0
 
         LayoutProxy.reload_layouts(layouts)
@@ -62,4 +64,4 @@ class LayoutProxyTests(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unitest.main()
+    unittest.main()
