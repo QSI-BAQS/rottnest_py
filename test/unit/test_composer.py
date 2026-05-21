@@ -124,6 +124,8 @@ class ResultsComposerWithTocks(ResultsComposer):
         self.tocks = max(self.tocks, other.tocks)
         for k, v in other._obj.items():
             self._obj[k] = self._obj.get(k, 0) + v
+        # Since we expose idling costs directly in _obj,
+        # overwrite the (incorrect) summation above
         self._obj["IDLE"] = self.tocks
 
     def __iadd__(self, other):
@@ -1037,7 +1039,6 @@ class MemoryManagerTests(unittest.TestCase):
 
         unit1, res1 = tock_res_pair({'val': 1}, 1, qubit_labels={'a': 1, 'b': 2}, tocks=1)
         unit2, res2 = tock_res_pair({'val': 2}, 2, qubit_labels={'a': 1, 'b': 2}, tocks=3)
-
 
         composer.cache_entry_start(cachable1)
         # idle 1
