@@ -455,7 +455,8 @@ class ComposerStackFrame:
 
     def receive(self, result):
         '''
-            Compute units received that are part of this stack fram
+            Compute units received that are part of this 
+            stack frame
         '''
         self.result += result
         self.n_received += result.get_n_compute_units()
