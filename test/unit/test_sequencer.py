@@ -8,6 +8,7 @@ from functools import reduce
 from rottnest.compute_units.layout_proxy import LayoutProxy
 from rottnest.compute_units.sequencer import Sequencer
 from rottnest.architecture_interface.rottnest_architecture import RottnestArchitecture
+from rottnest.input_parsers.interrupt import INTERRUPT
 
 from rottnest.plugins import architectures
 
@@ -21,6 +22,7 @@ class MockParser():
     def traverse(self):
         for moment in self.circuit:
             yield [moment,]
+            yield INTERRUPT
 
 dummy_layout = { "mem_bound": 1000 }
 
