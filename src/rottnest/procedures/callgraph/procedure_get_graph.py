@@ -11,6 +11,7 @@ class GetGraphProcedure(procedure.RottnestCompilerProcedure):
     def __init__(self, *, tag=TAG, dependencies=None, asynchronous=True,\
                  graph_id=None):
 
+
         self.graph_id = graph_id
         self._complete = False
         self._was_aborted = False
@@ -36,7 +37,7 @@ class GetGraphProcedure(procedure.RottnestCompilerProcedure):
 
     def try_retrieve(self, compiler_environment=None, reporting=True, single_pass=False):
         '''
-           Attempts to retrieve the callgraph but may not be able to do it immediately. 
+           Attempts to retrieve the callgraph but may not eb able to do it immediately. 
         '''
         
         pool = get_pool()
@@ -51,12 +52,8 @@ class GetGraphProcedure(procedure.RottnestCompilerProcedure):
             return True
         
 
-    def execute(
-            self,
-            compiler_environment=None,
-            reporting=True,
-            single_pass=False
-        ) -> bool | None:
+    def execute(self, compiler_environment=None, reporting=True, single_pass=False)\
+         -> bool | None:
         '''
            Executes/Dispatches a task to operate on the process pool
                - Get the process pool object
@@ -74,4 +71,11 @@ class GetGraphProcedure(procedure.RottnestCompilerProcedure):
         '''
         if self._complete is not True:
             self._complete = self.try_retrieve()
+        
+        
+    def complete(self):
+        '''
+           Checks to see if the current procedure is complete or not 
+        '''
+        return self._complete
 

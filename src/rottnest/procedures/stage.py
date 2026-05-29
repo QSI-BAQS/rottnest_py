@@ -4,7 +4,7 @@
 '''
 import abc
 
-def stage_tag(stage: StageInterface):
+def stage_tag(stage):
     '''
         Helper method that maps stage objects to tags
     '''

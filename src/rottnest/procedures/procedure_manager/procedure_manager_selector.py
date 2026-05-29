@@ -2,6 +2,7 @@ from .concurrent_procedure_manager import ConcurrentProcedureManager
 from .serial_procedure_manager import SerialProcedureManager
 from .procedure_manager import ProcedureManager
 
+<<<<<<< HEAD
 def get_procedure_manager():
     '''
         Singleton instance getter
@@ -10,6 +11,8 @@ def get_procedure_manager():
     pm = ProcedureManagerSelector().get_instance().get_default_instance()
     return pm
 
+=======
+>>>>>>> 0de0c85254dbc876525db903237ec8693fa09a07
 
 class DoubleInitialisationException(Exception):
     '''
