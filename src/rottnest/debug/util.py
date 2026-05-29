@@ -26,7 +26,6 @@ def with_debug_log(*, msg: str | None = None, \
        Specified here 
     '''
 
-
     def _with_debug(fn_to_wrap: Callable[A, T]) -> Callable[A, T]:
         '''
            Debug log is a decorator function that will

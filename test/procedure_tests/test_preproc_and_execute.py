@@ -18,7 +18,8 @@ from rottnest.process_pool import get_pool
 class PreprocessorProcedureTest(unittest.TestCase):
 
     def test_full_run(self):
-
+        '''
+        '''
         executables.load_modules_from_strings(test_utils.__file__)
         executables.set_current_executable(
             SampleExecutable.get_name() 
