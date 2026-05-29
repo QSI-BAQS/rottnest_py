@@ -43,18 +43,22 @@ class RzPrecisionStage(stage.RottnestCompilerStage):
         # Error budget for rz
         budget = get_error_budget()
         err = budget.get_rz_precision_budget() 
-    
-        self._prec_rz = int(
-            np.ceil(
-                np.log2(
-                    rz_counts / err
+        if rz_counts == 0: 
+            print("No Rz gates found")
+            self._prec_rz = 1
+       
+        else: 
+            self._prec_rz = int(
+                np.ceil(
+                    np.log2(
+                        rz_counts / err
+                    )
                 )
             )
-        )
 
         # Get the decomposer
         decomposer = get_rz_decomposer() 
-        decomposer.set_precision(self._prec_rz)
+        decomposer.set_rz_precision(self._prec_rz)
  
         self._complete = True
 

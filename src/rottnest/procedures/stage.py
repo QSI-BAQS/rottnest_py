@@ -51,7 +51,7 @@ class RottnestCompilerStage(abc.ABC):
         tag: str | None = None,
         dependencies: list[str | type] | None = None,
         co_dependencies: list[str | type] | None = None,
-        asynchronous: bool = False
+        asynchronous: bool = False,
     ): 
         '''
         Constructor for a stage
@@ -68,7 +68,6 @@ class RottnestCompilerStage(abc.ABC):
 
         :: asynchronous : bool :: Does this stage execute asynchronously
         '''
-        
         # Default to whatever is passed in
         if tag is None:
             # Prevent a recursion
@@ -82,12 +81,10 @@ class RottnestCompilerStage(abc.ABC):
         if co_dependencies is None:
             co_dependencies = list()
 
-
         self._dependencies = dependencies 
         self._co_dependencies = co_dependencies 
 
         self._complete: bool = False
-
         self._asynchronous = asynchronous
 
     def get_tag(self) -> str | None:
@@ -185,11 +182,12 @@ class RottnestCompilerStage(abc.ABC):
         '''
         pass
 
-    def poll(self):
+    def poll(self, compiler_environment=None):
         '''
             Function to perform or re-trigger some incremental work for the stage
         '''
         pass
+
 
     # def is_asynchronous(self):
     #     '''

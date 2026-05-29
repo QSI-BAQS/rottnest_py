@@ -1,4 +1,3 @@
-from rottnest.server.responder import responder
 
 import os
 # from rottnest.debug.monitor import DebugMonitor
@@ -102,6 +101,8 @@ class ApplicationConfig:
            Reasonable default static method to load programs
            and architectures that are core plugins 
         '''
+        from rottnest.server.responder import responder
+
         return ApplicationConfig().add_loader(
             AppComponentLoader(
                                PROGRAM_REGISTRY_CFG,
@@ -145,7 +146,7 @@ def arch_plugin_loader(pth: str):
        Loads the plugins but also ensures the mapping
        for the api exist 
     '''
-
+    from rottnest.server.responder import responder
     from rottnest.plugins import architectures
 
     for key, arch in architectures.get_architectures().items():

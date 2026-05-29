@@ -9,7 +9,7 @@ import cirq
 # These workers have been tested without the pool elsewhere
 from rottnest.compute_units.layout_proxy import LayoutProxy
 
-from rottnest.preprocessor.architecture import PreprocessorArchitecture
+from rottnest_preprocessor.preprocessor.architecture import PreprocessorArchitecture
 
 from rottnest.test_utils.executable import sample_executable 
 

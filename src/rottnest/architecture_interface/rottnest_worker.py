@@ -3,30 +3,30 @@
 '''
 
 import abc
-
+import queue as queue_module
 import multiprocessing as mp
-import traceback
-import time
 
-from ..input_parsers.rz_tag_tracker import RzTagTracker
-from ..compute_units.compute_unit import ComputeUnit
 from ..compute_units.layout_proxy import LayoutProxy
 from cabaliser.widget import Widget
+
 # Commands as constants
 # Load from this location to prevent duplication
 
 PING = 'ping'
 PONG = 'pong'
-SET_PRECISION = 'set_precision'
+SET_RZ_PRECISION = 'set_rz_precision'
 EXEC_COMPUTE_UNIT  = 'exec_compute_unit'
 EXEC_GRAPH_STATE = 'exec_widget'
 GET_GRAPH = 'get_graph'
 LOAD_LAYOUT = 'load_layout'
-HALT = 'halt'
+SHUTDOWN = 'shutdown'
 
-from rottnest.rz_decomposer.rz_decomposer import DEFAULT_PRECISION
+from rottnest.rz_decomposer import DEFAULT_PRECISION, get_rz_decomposer, set_rz_precision
+
 
 # TODO: Replace with more generic decomposition manager
+
+GET_TIMEOUT = 1
 
 class RottnestWorker(abc.ABC):
     '''
@@ -50,13 +50,19 @@ class RottnestWorker(abc.ABC):
 
         self.worker_tasks = {
             PING: self.ping,
-            SET_PRECISION: self.set_precision,
+            SET_RZ_PRECISION: self.set_precision,
             EXEC_COMPUTE_UNIT: self.task_execute_compute_unit,
             EXEC_GRAPH_STATE: self.task_execute_graph_state,
             GET_GRAPH: self.get_graph,
             LOAD_LAYOUT: self.load_layout,
-            HALT: self.halt
+            SHUTDOWN: self.shutdown
         }
+
+        # Additional tasks for priority workers
+        if self._priority:
+            # In init import to avoid circular dependency issues
+            from rottnest.priority_process import priority_worker_tasks 
+            self.worker_tasks |= priority_worker_tasks
 
         # Workers enabled blinding
         # Architecture details are contained to workers
@@ -76,7 +82,7 @@ class RottnestWorker(abc.ABC):
         '''
             Dispatch method for the main worker loop
         '''
-        return self.main(task_queue, worker_results_queue, worker_comms_queue)
+        self.main(task_queue, worker_results_queue, worker_comms_queue)
 
     @classmethod
     def entrypoint(
@@ -94,21 +100,23 @@ class RottnestWorker(abc.ABC):
             Default entrypoint function
             Invokes the dispatch call
         '''
-
         worker = cls(
             layouts=layouts,
             priority=priority,
             blind=blind,
             debug=debug
         )
-
+        # Run main worker loop
         worker(task_queue, worker_results_queue, worker_comms_queue)
+        return
 
-    def main(self, task_queue: mp.Queue, worker_results_queue: mp.Queue, comms_queue):
+    def main(self, task_queue: mp.Queue, worker_results_queue: mp.Queue, comms_queue: mp.Queue):
         '''
             Worker loop - queries
         '''
-        print("Worker started:", mp.current_process().name, flush=True)
+        if self._priority:
+            self.priority_main(task_queue, worker_results_queue, comms_queue)
+            return
         self.running = True
         while self.running:
 
@@ -118,13 +126,37 @@ class RottnestWorker(abc.ABC):
                 queue = task_queue
             else:
                 continue
-            task, *args = queue.get()
+            try:
+                task, *args = queue.get(True, GET_TIMEOUT)
+            except queue_module.Empty:
+                continue
             response = self.worker_tasks[task](*args)
             if response is not None:
-                worker_results_queue.put(response)
+                worker_results_queue.put((task, response))
         return
 
-    def halt(
+    def priority_main(self, task_queue: mp.Queue, worker_results_queue: mp.Queue, comms_queue: mp.Queue): 
+
+        self.running = True
+        while self.running:
+            try:
+                # if not comms_queue.empty():
+                queue = comms_queue
+                if comms_queue.empty():
+                    queue = task_queue
+                # else:
+                #     continue
+
+                task, *args = queue.get(True, GET_TIMEOUT)
+                response = (task, self.worker_tasks[task](*args))
+                if response is not None:
+                    worker_results_queue.put((task, response))
+            except queue_module.Empty as _e:
+                pass
+        return
+
+
+    def shutdown(
             self,
             *args,
         ):
@@ -150,7 +182,7 @@ class RottnestWorker(abc.ABC):
             Set the Rz decomposition precision for the workers
             :: precision : int :: Precision in bits
         '''
-        self.get_rz_decomposer().set_precision(precision)
+        self.get_rz_decomposer().set_rz_precision(precision)
 
     def load_layout(self, layout_id: int, layout_json: dict):
         '''
@@ -192,7 +224,7 @@ class RottnestWorker(abc.ABC):
             Within the worker this is intended to be a
             singleton method
         '''
-        raise NotImplementedError
+        return get_rz_decomposer()
 
     def task_execute_compute_unit(
             self,
@@ -234,7 +266,7 @@ class RottnestWorker(abc.ABC):
             unit_id: int,
             layout_id: int,
             widget: "Widget",
-            rz_tag_tracker: RzTagTracker
+            rz_tag_tracker: "RzTagTracker"
         ) -> dict:
         '''
             Task wrapper to execute a graph state
@@ -259,16 +291,6 @@ class RottnestWorker(abc.ABC):
             This performs the graph state
              compilation on the process pool,
              blinding the worker to the computation
-        '''
-        raise NotImplementedError
-
-    def get_graph(
-            self,
-            *args,
-        ):
-        '''
-            Synchronises back end graph object unrolling with front end objects
-            TODO: Replace
         '''
         raise NotImplementedError
 
@@ -297,6 +319,31 @@ class RottnestWorker(abc.ABC):
         '''
         raise NotImplementedError
 
+    ###
+    # Priority Worker Methods
+    ###
+
+    def execute_compute_unit_visualiser(
+        self,
+        compute_unit: "ComputeUnit"
+        ) -> dict:
+        '''
+            This is a task for the architecture
+        '''
+        raise NotImplementedError 
+
+
+    def get_graph(
+            self,
+            *args,
+        ):
+        '''
+            Synchronises back end graph object unrolling with front end objects
+            TODO: Replace
+        '''
+        raise NotImplementedError
+
+
     @staticmethod
     def __MISSING() -> dict:
         return {
@@ -308,7 +355,7 @@ class RottnestWorker(abc.ABC):
     def __FAILED(
             error,
             traceback,
-            compute_unit: ComputeUnit,
+            compute_unit: "ComputeUnit",
             cache_hash: str,
             unit_id = None,
             ) -> dict:

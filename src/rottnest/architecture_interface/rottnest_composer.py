@@ -63,15 +63,7 @@ class RottnestComposer(abc.ABC):
         self.layouts = list(map(LayoutProxy.add_layout, layouts))
 
         # Initial stack frames
-        # Top level frame has a cache hash of __START
-        self.stack_frames = [
-            self.StackFrame(
-                RottnestComposer.__START,
-                self.ResultsComposer,
-                qubit_map={},
-                memory_manager=self.memory_manager
-            )
-        ]
+        self.setup()
 
         # TODO : This may be a problem if we ever have composers in parallel
         # (we hopefully shouldn't)
@@ -83,25 +75,39 @@ class RottnestComposer(abc.ABC):
         self._all_submitted = False
 
 
-    def reset_result(self):
+    def setup(self, initial_qubits=None):
         '''
+            Composer context reset and setup function
             Resets the current result from;
                 - The top of the stack (replaced with a fresh stack frame)
                 - The start symbol (replaced with the above fresh stack frame)
             This allows safe composer reuse with full cache (minus result entry)
         '''
-        self.stack_frames[0] = self.StackFrame(
-            RottnestComposer.__START,
-            self.ResultsComposer,
-            qubit_map={},
-            memory_manager=self.memory_manager
+        if initial_qubits is None:
+            # TODO
+            # This is not currently used but is a stub
+            # for a potential future implementation
+            initial_qubits = set()
+
+        initial_frame = self.StackFrame(
+                    RottnestComposer.__START,
+                    self.ResultsComposer,
+                    qubit_map={},
+                    memory_manager=self.memory_manager
+            )
+
+        self.stack_frames = [initial_frame]
+        self.memory_manager.frame_create(
+            initial_frame.get_id(),
+            initial_qubits
         )
+
         self._all_submitted = False
 
         # TODO : Maybe reset cache deferences?
 
+        # TODO : this should hook the instance
         RottnestComposer.result_cache[RottnestComposer.__START] = self.stack_frames[0]
-
 
     def submit(self, compute_unit):
         '''
@@ -139,7 +145,7 @@ class RottnestComposer(abc.ABC):
 
     def cache_entry_start(self, cache_obj):
         '''
-            managerCreates a new stack frame
+            Creates a new stack frame
         '''
         # Store all qubits to create clean cache context
 
@@ -177,9 +183,9 @@ class RottnestComposer(abc.ABC):
 
     def cache_entry_end(self, cache_obj):
         '''
-            Sequencer should provide asser that this function is not
-            called unless all compute units for the stack frame are
-            compiled
+            Sequencer should provide assertion that this
+             function is not called unless all compute 
+             units for the stack frame are compiled
         '''
         # NOTE: Work around for the meantime
         if self.stack_frames[-1].cache_hash() != cache_obj.cache_hash():

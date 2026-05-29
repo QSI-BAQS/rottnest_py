@@ -17,8 +17,16 @@ class PoolProcedure(procedure.RottnestCompilerProcedure):
         manager = pool.stage_start_pool_manager.StartPoolManagerStage(
             dependencies=[patchers.get_tag()] 
         )
-        synch = pool.stage_synchronise.SynchronisePoolStage(
+        reset_context = pool.stage_reset_context.ResetContextStage(
             dependencies = [manager.get_tag()]
+        )
+
+        clear_buffers_initial = pool.stage_clear_buffers.ClearPoolBuffersStage(
+            dependencies = [manager.get_tag()],
+            tag = "Clear Buffers Before Job"
+        )
+        synch = pool.stage_synchronise.SynchronisePoolStage(
+            dependencies = [clear_buffers_initial.get_tag()]
         )
         workers = pool.stage_start_pool.StartPoolStage(
             dependencies = [synch.get_tag()] 
@@ -32,17 +40,27 @@ class PoolProcedure(procedure.RottnestCompilerProcedure):
            dependencies = [run.get_tag()]
         )
 
+
         shutdown = pool.stage_shutdown_pool.ShutdownPoolStage(
             dependencies = [results.get_tag()]
         )
+
+        clear_buffers_final = pool.stage_clear_buffers.ClearPoolBuffersStage(
+            dependencies = [shutdown.get_tag()],
+            tag = "Clear Buffers to Finalise"
+        )
+
         stages = [
             patchers,
             manager,
+            reset_context,
+            clear_buffers_initial,
             synch,
             workers,
             run,
             results,
-            shutdown
+            shutdown,
+            clear_buffers_final
         ]
         super().__init__(None, stages=stages, tag=tag, dependencies=dependencies, asynchronous=asynchronous)
 

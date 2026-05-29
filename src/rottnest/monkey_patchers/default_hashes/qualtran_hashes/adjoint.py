@@ -4,29 +4,32 @@
 from Crypto.Hash import MD5
 import cirq
 from qualtran._infra.adjoint import Adjoint
+from pyLIQTR.utils.circuit_decomposition import circuit_decompose_multi
+from cirq import DecompositionContext, SimpleQubitManager
 
-def adjoint_hash(_, operation): 
-    # TODO: Hash over cabaliser ops 
+# Note: maybe this fails for things that aren't qualtran
+#       (can you even get a non-bloq inside a qualtran Adjoint?)
+shim_adjoint_sub = lambda sub: type(f"WrappedAdjointSubShim<{type(sub)}>", (), dict(gate=sub))()
+
+def adjoint_hash(_, operation):
     hsh = MD5.new(str(operation.gate.__class__).encode('ascii'))
     nested = False
-    for i in cirq.decompose(operation):
-        # Concetenate hashes of hashable objects under the adjoint  
-        # This lets our adjoint itself be cacheable up to cirq objects 
-        # TODO: Add hashing functions to cirq objects 
-        try:
-            op_hash = i._rottnest_hash()
-            if op_hash is not None:
-                nested = True
-                hsh.update(op_hash)
-        except:
-            pass
-    if not nested:
-        # Not nested, hash using the id of the object to guarantee uniqueness
-        # As the resulting object is stored in the hash table this address won't be released
-        # until the hash table is cleared
-        hsh.update(
-            id(operation).to_bytes(length=8, byteorder='little')
-        )
+
+    adjoint_sub = operation.gate.subbloq
+    wrapped_adjoint_sub = shim_adjoint_sub(adjoint_sub)
+
+    try:
+        # Assumes that bloqs are using _rottnest_hash(_, o) interface
+        wrapped_hash = adjoint_sub._rottnest_hash(wrapped_adjoint_sub)
+        if wrapped_hash is not None:
+            hsh.update(wrapped_hash)
+            return hsh.digest()
+    # Non-cachable wrapped object - treat this as unique
+    # (and so hash by id)
+    except:
+        pass
+
+    hsh.update(id(operation).to_bytes(length=8, byteorder='little'))
     return hsh.digest()
 
 TARGETS = {

@@ -1,0 +1,15 @@
+SYNCHRONISE_PRIORITY = 'synchronise_priority'
+
+SYNCHRONISE_MODULES = 'synchronise_modules'
+SYNCHRONISE_LAYOUTS = 'synchronise_layouts'
+
+SET_ARCHITECTURE = 'set_architecture'
+
+SET_EXECUTABLE = 'set_executable'
+SET_EXECUTABLE_PARAMS = 'set_executable_params'
+
+GET_CALLGRAPH = 'get_callgraph'
+GET_CALLGRAPH_STATUS = 'get_callgraph_status'
+
+GET_VISUALISER = 'get_visualiser'
+GET_VISUALISER_NEXT = 'get_visualiser_next'

@@ -5,6 +5,8 @@
 '''
 from .stage import RottnestCompilerStage #,stage_tag
 from . import exceptions
+from rottnest.debug.util import with_debug_log
+
 
 import time
 
@@ -108,8 +110,11 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
                     stage.dependencies_resolved(self) 
                     and stage.codependencies_resolved(self)
                     ):
+                    # TODO: Convert the below to a debug log
+                    print("Executing: {proc} {id} -> {stage}".format(proc=self.get_tag(), id=hex(id(self)), stage=stage.get_tag()))
                     stage.execute(self)
-                  
+            
+ 
                     if stage.is_codependent():
                         self._current_codepenent_stages[tag] = stage
  
@@ -145,8 +150,8 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
             unresolved = unresolved_nxt
 
             return self.complete() 
-            
-    # BUG: Something within this method is triggering a race condition
+
+    @with_debug_log()
     def poll(self, environment = None):
         '''
             Polling function during asynchronous execution

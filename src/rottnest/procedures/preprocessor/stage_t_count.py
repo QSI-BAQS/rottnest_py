@@ -46,7 +46,7 @@ class TCountStage(stage.RottnestCompilerStage):
 
         # Get the precision in bits
         decomposer = get_rz_decomposer() 
-        precision_bits = decomposer.get_precision()
+        precision_bits = decomposer.get_rz_precision()
 
         # Precision as a float
         precision = 2 ** (-1 * precision_bits)

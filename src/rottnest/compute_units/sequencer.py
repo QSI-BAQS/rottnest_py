@@ -37,7 +37,6 @@ class Sequencer():
     def priority(self, gate, layout):
         pass
 
-
     def sequence_pyliqtr(self, parser):
         '''
             Performs sequencing over a PyliqtrParser, providing an iterator yielding

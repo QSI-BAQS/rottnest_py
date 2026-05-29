@@ -13,7 +13,6 @@ class StartPoolManagerStage(stage.RottnestCompilerStage):
             asynchronous=False
         )
 
-
     def execute(self, compiler_environment):
         '''
             Starts the pool manager task

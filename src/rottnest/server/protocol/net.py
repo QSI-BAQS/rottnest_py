@@ -3,9 +3,7 @@
     name space and are composed by the main `Rottnest`
     class 
 '''
-
 from types import FunctionType, MethodType, ClassMethodDescriptorType
-
 import json
 
 def _compose(cls, parent=None):
@@ -92,6 +90,13 @@ class Procedure:
     get_state = 'get_state'
     list_all = 'list_all'
 
+class Synchronise:
+    '''
+        Synchronise related messages        
+    '''
+    load = "load"
+    info = "info"
+
 class RottnestPacketBuilder:
     '''
        Allows for building/composing a packet to be sent 
@@ -138,24 +143,32 @@ class RottnestPacketBuilder:
                               'payload': self.payload
                           })
 
+
 class Rottnest:
     '''
         Root - Rottnest namespace which includes all protocl messages
     '''
     err = 'err'
+    liveness = 'live'
     arch = _compose(Arch)
     layout = _compose(Layout)
     executable = _compose(Executable)
     callgraph = _compose(CallGraph)
     data = _compose(Data)
     procedure = _compose(Procedure)
+    synchronise = _compose(Synchronise)
 
     
     @classmethod
     def start_packet(cls, name: str):
         return RottnestPacketBuilder(name)
 
+    @classmethod
+    def make_message(cls, name: str):
+        return RottnestPacketBuilder.message(name)
+
 '''
    Single instance which these are encompassed under 
 '''
 Rottnest = _compose(Rottnest)
+

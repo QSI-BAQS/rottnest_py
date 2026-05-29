@@ -15,7 +15,7 @@ class IPCManager:
 
     def fetch(
             self,
-            target: str = None,
+            target: str | None = None,
             *,
             max_fetch: int = 5,
             blocking: bool = False,
@@ -62,7 +62,18 @@ class IPCManager:
             self.get_item(None, blocking=False)
         return
 
-    def clear(self, target):
+
+    def clear(self, *targets):
+        '''
+            Clears a queue, saving memory
+            :: targets : str :: List of names of 
+             queues to clear 
+        '''
+        for target in targets:
+            self._clear(target)
+
+
+    def _clear(self, target: str):
         '''
             Clears a queue, saving memory
         '''
@@ -71,14 +82,36 @@ class IPCManager:
         if lst is not None:
             del lst
 
+    def clear_all(self, *retained):
+        '''
+            Clears all message queues
+            :: retained : str :: Fields to retain
+        '''
+        self.flush()
+        old_queues = self._msg_queues
+        self._msg_queues = dict()
+
+        # Re-attach old queues
+        for ret in retained: 
+            if ret in old_queues:
+                self._msg_queues[ret] = old_queues[ret]
+        return
+
     def batch_get(self, target):
         '''
             Clears a message queue
+            # TODO: there seems to be some errors in this function
         '''
-        if None is not (queue := self._msg_queues.get(target, None)):
+        # Initial fetch to populate
+        init = self.fetch(target)
+
+        if None is not (queue := 
+            self._msg_queues.get(target, None)
+        ):
             if len(queue) > 0:
                 # Hotswap a new list
-                # Any dangling refs should write to the old one
+                # Any dangling refs should write to the 
+                #  old one
                 self._msg_queues[target] = list()
                 return queue
 
