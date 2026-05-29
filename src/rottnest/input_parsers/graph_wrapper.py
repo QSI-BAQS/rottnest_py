@@ -21,7 +21,7 @@ class GraphWrapper:
         '''
         return self.parser
 
-    def to_dict(self):
+    def to_dict(self,expands=False):
         '''
            Generates a dictionary object 
         '''
@@ -29,7 +29,8 @@ class GraphWrapper:
             'handle_id': self.handle_id,
             'name': self.name,
             'description': self.description,
-            'rottnest_hash': self.rottnest_hash
+            'rottnest_hash': self.rottnest_hash,
+            'expands': expands
         }
         
     @classmethod

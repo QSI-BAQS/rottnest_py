@@ -1,3 +1,4 @@
+from rottnest.priority_process.commands import GET_VISUALISER_NEXT
 import time
 import multiprocessing as mp
 
@@ -332,6 +333,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         task_name, *args = task_queue.get(block=True, timeout=TIMEOUT)
 
         task = self._tasks.get(task_name, None)
+            
         if task is None:
             raise Exception(f"Unknown task: {task_name}")
         else:
@@ -758,7 +760,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         '''
             Gets the callgraph
         '''
-        print("ARGS: ", args)
         self.priority_task_queue.put((
             priority_commands.GET_VISUALISER_NEXT,
         ))

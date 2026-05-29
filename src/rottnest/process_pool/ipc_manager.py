@@ -15,7 +15,7 @@ class IPCManager:
 
     def fetch(
             self,
-            target: str = None,
+            target: str | None = None,
             *,
             max_fetch: int = 5,
             blocking: bool = False,
