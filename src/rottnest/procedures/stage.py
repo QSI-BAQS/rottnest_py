@@ -3,20 +3,8 @@
     Abstract base class for a compiler stage
 '''
 import abc
-from typing import Protocol
 
-class StageInterface(Protocol):
-    
-    TAG: str
-
-
-    def get_tag(self):
-        '''
-            Retrieves the tag held by the stage_tag object
-        '''
-        ...
-
-def stage_tag(stage: StageInterface):
+def stage_tag(stage):
     '''
         Helper method that maps stage objects to tags
     '''
@@ -46,7 +34,7 @@ def stage_tag(stage: StageInterface):
         raise Exception(f"{stage} is not a tagged objedt")
 
 
-class RottnestCompilerStage(abc.ABC, StageInterface):
+class RottnestCompilerStage(abc.ABC):
     '''
         RottnestCompilerStage
         Interface for compiler stages
