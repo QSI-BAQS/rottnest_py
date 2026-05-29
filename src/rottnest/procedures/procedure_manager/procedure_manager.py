@@ -45,11 +45,7 @@ class AppContextType(Protocol):
         pass
 
 
-<<<<<<< HEAD
 class ProcedureManager:
-=======
-class ProcedureManager(RottnestCompilerStage):
->>>>>>> 0de0c85254dbc876525db903237ec8693fa09a07
     '''
         ProcedureManager class,
             * Single Instance object that will manage

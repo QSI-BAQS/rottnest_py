@@ -38,7 +38,6 @@ class ConcurrentProcedureManager(ProcedureManager):
         super().__init__(app)
 
 
-<<<<<<< HEAD
     def dispatch(
                 self,
                 proc: RottnestCompilerProcedure,
@@ -46,25 +45,13 @@ class ConcurrentProcedureManager(ProcedureManager):
                 complete_callback=None,
                 finaliser_callback=None,
                 procedure_state_obj=None) -> bool:
-=======
-    def dispatch(self,
-                    proc: RottnestCompilerProcedure,
-                    poll_callback=None,
-                    complete_callback=None,
-                    finaliser_callback=None,
-                    procedure_state_obj=dict()) -> bool:
->>>>>>> 0de0c85254dbc876525db903237ec8693fa09a07
-                      
         '''
            Defers the execution to the queue
                Will be executed when time is available 
         '''
-<<<<<<< HEAD
         if procedure_state_obj is None:
             procedure_state_obj = dict()
 
-=======
->>>>>>> 0de0c85254dbc876525db903237ec8693fa09a07
         procedure_tuple = ProcedureTuple.with_tagger(
                                 self,
                                 proc,
