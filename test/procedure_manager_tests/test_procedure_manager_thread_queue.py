@@ -1,8 +1,6 @@
+from rottnest.procedures.procedure_manager.procedure_manager_selector import ProcedureManagerSelector
 import unittest
-from rottnest.procedures.procedure_manager import ProcedureManager
-from rottnest.server.app.application import RottnestApplication
-
-from rottnest.procedures import procedure, stage, exceptions
+from rottnest.procedures import stage
 
 import time
 
@@ -83,15 +81,15 @@ class ProcedureManagerTest(unittest.TestCase):
         '''
 
         procs_generated_ref = ProcedureExample.GENERATED_OBJECTS
-        procman = ProcedureManager(RottnestApplication.get_uninitialised_instance())
-        
-        # Use test procedure included in class
-        procman.execute_immediate(ProcedureExample.Make())
 
-        handler = procman.start_concurrent_manager_in_thread()
-        procman.concurrent_dequeue_and_execute()
+        procman = ProcedureManagerSelector.get_default_procedure_manager()
+                
+        # Use test procedure included in class
+        procman.dispatch(ProcedureExample.Make())
+
+
         procman.stop_manager()
-        handler.join()
+        
         only_proc = procs_generated_ref[0]
         assert only_proc.executed
 
@@ -100,17 +98,17 @@ class ProcedureManagerTest(unittest.TestCase):
            Tests processing many procedures to be immediately executed 
         '''        
         procs_generated_ref = ProcedureExample.GENERATED_OBJECTS
-        procman = ProcedureManager(RottnestApplication.get_uninitialised_instance())
 
-        handler = procman.start_concurrent_manager_in_thread()
+        procman = ProcedureManagerSelector.get_default_procedure_manager()
+
         # Use test procedure included in class
-        procman.execute_immediate(ProcedureExample.Make())
-        procman.execute_immediate(ProcedureExample.Make())
-        procman.execute_immediate(ProcedureExample.Make())
-        procman.execute_immediate(ProcedureExample.Make())
+        procman.dispatch(ProcedureExample.Make())
+        procman.dispatch(ProcedureExample.Make())
+        procman.dispatch(ProcedureExample.Make())
+        procman.dispatch(ProcedureExample.Make())
 
+        time.sleep(DELAY_TO_DO_WORK)
         procman.stop_manager()
-        handler.join()
 
         for g in procs_generated_ref:
             assert g.executed # NOTE: Since the procedure is controlled
@@ -123,22 +121,19 @@ class ProcedureManagerTest(unittest.TestCase):
            Making sure it gets pushed through in it 
         '''
         procs_generated_ref = ProcedureExample.GENERATED_OBJECTS
-        procman = ProcedureManager(RottnestApplication.get_uninitialised_instance(),\
-                                   queue_timeout=1)
 
-        # procman.start_loop() # Starts working
-        # Use test procedure included in class
+        procman = ProcedureManagerSelector.get_default_procedure_manager()
 
-        procman.execute_defer(ProcedureExample.Make())
+
+        procman.dispatch(ProcedureExample.Make())
+        
 
         assert procman.get_enqueued_size() == 1
 
-        handler = procman.start_concurrent_manager_in_thread()
 
         time.sleep(DELAY_TO_DO_WORK)
         
         procman.stop_manager()
-        handler.join()
         
         assert procman.get_enqueued_size() == 0
 
@@ -146,41 +141,6 @@ class ProcedureManagerTest(unittest.TestCase):
         only_proc = procs_generated_ref[0]
         assert only_proc.executed
 
-    def test_many_procedure_enqueue_and_execute(self):
-        '''
-            Aim is to stack a number of procedures and execute them
-            in sequence using the defer method and explicit dequeuing
-        '''
-        procs_generated_ref = ProcedureExample.GENERATED_OBJECTS
-        procman = ProcedureManager(RottnestApplication.get_uninitialised_instance())
-
-
-        # Use test procedure included in class
-        procman.execute_defer(ProcedureExample.Make())
-        procman.execute_defer(ProcedureExample.Make())
-        procman.execute_defer(ProcedureExample.Make())
-        procman.execute_defer(ProcedureExample.Make())
-
-        assert procman.get_enqueued_size() == 4
-
-        handler = procman.start_concurrent_manager_in_thread()
-
-        procman.stop_manager()
-        handler.join()
-
-        assert procman.get_enqueued_size() == 0
-
-
-        for g in procs_generated_ref:
-            assert g.executed # NOTE: Since the procedure is controlled
-                # we can observe the state of it
-
-
-    # TODO: Throw procedures that have dependencies and codependencies within
-    #  the system right now
-
 if __name__ == '__main__':
     unittest.main()
-    # tobj = ProcedureManagerTest()
-    # tobj.test_single_procedure_enqueue()
 

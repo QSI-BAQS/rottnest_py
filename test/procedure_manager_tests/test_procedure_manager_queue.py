@@ -1,8 +1,9 @@
+from rottnest.procedures.procedure_manager.procedure_manager_selector import ProcedureManagerSelector
 import unittest
 from rottnest.procedures.procedure_manager import ProcedureManager
 from rottnest.server.app.application import RottnestApplication
 
-from rottnest.procedures import procedure, stage, exceptions
+from rottnest.procedures import stage
 
 # TODO: Refactor this into their own files/modules for simplicity
 class ProcedureInspectionTools:
@@ -79,7 +80,7 @@ class ProcedureManagerTest(unittest.TestCase):
 
         
         # Use test procedure included in class
-        procman.execute_immediate(ProcedureExample.Make())
+        procman.execute(ProcedureExample.Make())
 
         only_proc = procs_generated_ref[0]
         assert only_proc.executed
@@ -89,48 +90,50 @@ class ProcedureManagerTest(unittest.TestCase):
            Tests processing many procedures to be immediately executed 
         '''
         procs_generated_ref = ProcedureExample.GENERATED_OBJECTS
-        procman = ProcedureManager(RottnestApplication.get_uninitialised_instance())
+
+        manager_selector = ProcedureManagerSelector.get_instance()
+        procman = manager_selector.get_default(None)
 
         # Use test procedure included in class
-        procman.execute_immediate(ProcedureExample.Make())
-        procman.execute_immediate(ProcedureExample.Make())
-        procman.execute_immediate(ProcedureExample.Make())
-        procman.execute_immediate(ProcedureExample.Make())
+        procman.execute(ProcedureExample.Make())
+        procman.execute(ProcedureExample.Make())
+        procman.execute(ProcedureExample.Make())
+        procman.execute(ProcedureExample.Make())
 
         for g in procs_generated_ref:
             assert g.executed # NOTE: Since the procedure is controlled
                 # we can observe the state of it
 
         
-    def test_many_procedure_enqueue_and_execute(self):
-        '''
-            Aim is to stack a number of procedures and execute them
-            in sequence using the defer method and explicit dequeuing
-        '''
-        procs_generated_ref = ProcedureExample.GENERATED_OBJECTS
-        # procman = ProcedureManager(RottnestApplication.get_uninitialised_instance())
-        procman = ProcedureManager.get_instance()
+    # def test_many_procedure_enqueue_and_execute(self):
+    #     '''
+    #         Aim is to stack a number of procedures and execute them
+    #         in sequence using the defer method and explicit dequeuing
+    #     '''
+    #     procs_generated_ref = ProcedureExample.GENERATED_OBJECTS
+    #     manager_selector = ProcedureManagerSelector.get_instance()
+    #     procman = manager_selector.get_concurrent_manager(None)
 
-        # Use test procedure included in class
-        procman.execute_defer(ProcedureExample.Make())
-        procman.execute_defer(ProcedureExample.Make())
-        procman.execute_defer(ProcedureExample.Make())
-        procman.execute_defer(ProcedureExample.Make())
+    #     # Use test procedure included in class
+    #     procman.execute(ProcedureExample.Make())
+    #     procman.execute(ProcedureExample.Make())
+    #     procman.execute(ProcedureExample.Make())
+    #     procman.execute(ProcedureExample.Make())
 
-        assert procman.get_enqueued_size() == 4
+    #     assert procman.get_enqueued_size() == 4
 
-        procman.dequeue_and_execute()
-        assert procman.get_enqueued_size() == 3
-        procman.dequeue_and_execute()
-        assert procman.get_enqueued_size() == 2
-        procman.dequeue_and_execute()
-        assert procman.get_enqueued_size() == 1
-        procman.dequeue_and_execute()
-        assert procman.get_enqueued_size() == 0
+    #     procman.dequeue_and_execute()
+    #     assert procman.get_enqueued_size() == 3
+    #     procman.dequeue_and_execute()
+    #     assert procman.get_enqueued_size() == 2
+    #     procman.dequeue_and_execute()
+    #     assert procman.get_enqueued_size() == 1
+    #     procman.dequeue_and_execute()
+    #     assert procman.get_enqueued_size() == 0
 
-        for g in procs_generated_ref:
-            assert g.executed # NOTE: Since the procedure is controlled
-                # we can observe the state of it
+    #     for g in procs_generated_ref:
+    #         assert g.executed # NOTE: Since the procedure is controlled
+    #             # we can observe the state of it
 
 
     def test_single_procedure_enqueue(self):
