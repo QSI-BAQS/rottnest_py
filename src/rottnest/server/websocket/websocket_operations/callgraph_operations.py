@@ -12,7 +12,7 @@ from rottnest.procedures.procedure_manager import ProcedureManagerSelector
 import time
     
 POLL_TIME_DELAY = 2
-POLL_RETRY_COUNT = 60
+POLL_RETRY_COUNT = 3
 
 STATE_CALLGRAPH_RESULTS_KEY = 'graph_results'
 STATE_NODE_STATUS_KEY = 'node_status'
@@ -26,7 +26,7 @@ GET_RUNNODE_MSG_ISSUED_TEMPLATE = CallGraphPacketBuilder.make().set_get_run_node
 
 GET_GRAPH_MSG_POLL_TEMPLATE = CallGraphPacketBuilder.make().set_graph_not_ready()
 GET_GRAPH_MSG_FINISH_TEMPLATE = CallGraphPacketBuilder.make()
-GET_GRAPH_MSG_INVALID_TEMPLATE = CallGraphPacketBuilder.make().set_error('Graph could not be computed or returned')
+GET_GRAPH_MSG_INVALID_TEMPLATE = CallGraphPacketBuilder.make().set_graph_unavailable()
 GET_GRAPH_MSG_ISSUED_TEMPLATE = CallGraphPacketBuilder.make().set_get_graph_confirmation()
 
 TRANSLATE_HANDLE = 'handle_id'
@@ -34,6 +34,8 @@ TRANSLATE_NAME = 'name'
 TRANSLATE_DESC = 'description'
 TRANSLATE_HASH = 'rottnest_hash'
 TRANSLATE_EXPANDS = 'expands'
+
+
 
 
 class GetGraphStateObject():
@@ -98,6 +100,8 @@ class CallGraphOperations(WebSocketOperationsSpecification):
 
     OPERATIONS = SpecOperations
 
+    GET_GRAPH_ACTIVE = False
+
     def __init__(self):
         '''
            Initialises operations object and checks to see
@@ -127,27 +131,36 @@ class CallGraphOperations(WebSocketOperationsSpecification):
         '''
         proc_manager = ProcedureManagerSelector.get_instance().get_default()
 
-        mpsc_provider: MPSCChannelProvider = MPSCChannelProvider.get_instance()
-        mpsc_provider.recreate_channel(MPSC_CALLGRAPH_CHANNEL_TAG)
-        mpsc_reader, _mpscstate = mpsc_provider.get_reader(MPSC_CALLGRAPH_CHANNEL_TAG)
+        mpsc_provider: MPSCChannelProvider | None  = MPSCChannelProvider.get_instance()
+        is_active = CallGraphOperations.GET_GRAPH_ACTIVE
+
+        if mpsc_provider and not is_active:
+            mpsc_provider.recreate_channel(MPSC_CALLGRAPH_CHANNEL_TAG)
+            mpsc_reader, _mpscstate = mpsc_provider.get_reader(
+                    MPSC_CALLGRAPH_CHANNEL_TAG)
 
 
-        getgraph_proc = GetGraphProcedure(graph_id=graph_id)
+            getgraph_proc = GetGraphProcedure(graph_id=graph_id)
 
-        state_object = GetGraphStateObject(websocket,
-                                        getgraph_proc,
-                                        mpsc_reader,
-                                        POLL_RETRY_COUNT)
+            state_object = GetGraphStateObject(websocket,
+                                            getgraph_proc,
+                                            mpsc_reader,
+                                            POLL_RETRY_COUNT)
 
 
-        proc_manager.dispatch(
-                            getgraph_proc,
-                            self.get_graph_poll,
-                            None,
-                            self.get_graph_finalise,
-                            state_object)
+            CallGraphOperations.GET_GRAPH_ACTIVE = True
+            proc_manager.dispatch(
+                                getgraph_proc,
+                                self.get_graph_poll,
+                                None,
+                                self.get_graph_finalise,
+                                state_object)
+        
+        
+            return GET_GRAPH_MSG_ISSUED_TEMPLATE.copy().build()
+        else:
+            return GET_GRAPH_MSG_POLL_TEMPLATE.copy().build()
 
-        return GET_GRAPH_MSG_ISSUED_TEMPLATE.copy().build()
 
     def run_graph_node(self, websocket, graph_id):
         '''
@@ -156,24 +169,26 @@ class CallGraphOperations(WebSocketOperationsSpecification):
         '''
         proc_manager = ProcedureManagerSelector.get_instance().get_default()
 
-        mpsc_provider: MPSCChannelProvider = MPSCChannelProvider.get_instance()
-        mpsc_provider.recreate_channel(MPSC_VISUALISER_CHANNEL_TAG)
-        mpsc_reader, _mpscstate = mpsc_provider.get_reader(MPSC_VISUALISER_CHANNEL_TAG)
+        mpsc_provider: MPSCChannelProvider | None = MPSCChannelProvider.get_instance()
+        if mpsc_provider:
+            mpsc_provider.recreate_channel(MPSC_VISUALISER_CHANNEL_TAG)
+            mpsc_reader, _mpscstate = mpsc_provider.get_reader(
+                                    MPSC_VISUALISER_CHANNEL_TAG)
 
-        runnode_proc = GetVisualiserProcedure(graph_id=graph_id)
-
-
-        state_object = GetGraphStateObject(websocket,
-                                        runnode_proc,
-                                        mpsc_reader,
-                                        POLL_RETRY_COUNT)
-        proc_manager.dispatch(
-                            runnode_proc,
-                            self.get_visualisation_poll,
-                            None,
-                            self.get_visualisation_finalise,
-                            state_object)
-        return GET_RUNNODE_MSG_ISSUED_TEMPLATE.copy().build()
+            runnode_proc = GetVisualiserProcedure(graph_id=graph_id)
+            state_object = GetGraphStateObject(websocket,
+                                            runnode_proc,
+                                            mpsc_reader,
+                                            POLL_RETRY_COUNT)
+            proc_manager.dispatch(
+                                runnode_proc,
+                                self.get_visualisation_poll,
+                                None,
+                                self.get_visualisation_finalise,
+                                state_object)
+            return GET_RUNNODE_MSG_ISSUED_TEMPLATE.copy().build()
+        else:
+            return GET_GRAPH_MSG_INVALID_TEMPLATE.copy().build()
 
     def get_visualisation_poll(self, state_object: GetGraphStateObject):
         '''
@@ -278,6 +293,7 @@ class CallGraphOperations(WebSocketOperationsSpecification):
         reader = state_object.get_reader()
         proc = state_object.get_procedure()
         graph_package = GET_GRAPH_MSG_INVALID_TEMPLATE.copy()
+        CallGraphOperations.GET_GRAPH_ACTIVE = False
 
         
         if not proc.was_aborted():
@@ -289,5 +305,4 @@ class CallGraphOperations(WebSocketOperationsSpecification):
                 graph_package = GET_GRAPH_MSG_FINISH_TEMPLATE.copy()\
                     .set_graph(results)
 
-        
         actions.websocket_write(wsock, graph_package.build_and_package())

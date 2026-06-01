@@ -3,7 +3,6 @@
 '''
 import numpy as np
 
-from rottnest.plugins import architectures, executables
 from rottnest.procedures import stage
 
 from rottnest.rz_decomposer import get_rz_decomposer
@@ -32,13 +31,13 @@ class RzPrecisionStage(stage.RottnestCompilerStage):
             asynchronous=False
         )
 
-    def execute(self, environment):
+    def execute(self, compiler_environment):
         '''
             Sets the number of bits of precision needed for the Rz decomposer
         '''
        
         # Gets the total number of rz gates
-        rz_counts = environment.get_rz_count()  
+        rz_counts = compiler_environment.get_rz_count()  
 
         # Error budget for rz
         budget = get_error_budget()

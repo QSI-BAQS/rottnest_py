@@ -20,6 +20,7 @@ class CallGraphPacketKind(Enum):
     GetVisualisationConfirmation = 'get_visualisation_confirmation'
     RunNodeConfirmation = 'run_node_confirmation'
     GraphNotReady = 'graph_not_ready'
+    GraphUnavailable = 'graph_unavailable'
     VisualisationNotReady = 'visualisation_not_ready'
     Compiling = 'node_compiling'
     Error = 'error'
@@ -85,6 +86,15 @@ class CallGraphPacketBuilder:
            Sets the graph is not ready state 
         '''
         self.packet_kind = CallGraphPacketKind.GraphNotReady
+        self.result_package = None
+        self.message = msg
+        return self
+
+    def set_graph_unavailable(self, msg="Graph is unavailable"):
+        '''
+           Sets the graph to be unavailable for the frontend 
+        '''
+        self.packet_kind = CallGraphPacketKind.GraphUnavailable
         self.result_package = None
         self.message = msg
         return self

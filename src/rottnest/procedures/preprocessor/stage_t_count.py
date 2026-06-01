@@ -36,20 +36,20 @@ class TCountStage(stage.RottnestCompilerStage):
             asynchronous=False
         )
 
-    def execute(self, environment):
+    def execute(self, compiler_environment):
         '''
             Resets a swapped architecture back to an
             original one            
         '''
         # Get the composer
-        rz_counts = environment.pool_procedure.get_results()
+        rz_counts = compiler_environment.pool_procedure.get_results()
 
         # Get the precision in bits
         decomposer = get_rz_decomposer() 
         precision_bits = decomposer.get_rz_precision()
 
         # Precision as a float
-        precision = 2 ** (-1 * precision_bits)
+        # precision = 2 ** (-1 * precision_bits)
         # Count the T states in the table
         t_count = 0
         for angle, count in rz_counts.items():

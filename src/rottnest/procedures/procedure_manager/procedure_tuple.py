@@ -21,7 +21,7 @@ class ProcedureEntityInvalidState(Exception):
        the procedure state should be in an INVALID or ABORTED state 
     '''
     def __init__(self, id):
-        super().__init__(f"Attempt to use Invalid Procedure with ID: {id}")
+        super().__init__(f"Attempted to use Invalid Procedure with ID: {id}")
 
 
 class ProcedureEntityStateTag(Enum):
@@ -77,6 +77,8 @@ class ProcedureEntityTag:
         # If it is an invalid state
         if self.state_tag == ProcedureEntityStateTag.INVALID:
             raise ProcedureEntityInvalidState(self.proc_id)
+
+        return self.state_tag
 
     def progress_to_active(self):
         '''
@@ -135,7 +137,7 @@ class ProcedureTuple:
                     poll_callback=None,
                     complete_callback=None,
                     finaliser_callback=None,
-                    state_obj=dict()) -> 'ProcedureTuple':
+                    state_obj=None) -> 'ProcedureTuple':
         '''
             Constructs the tuple and generates the id in place 
         '''
@@ -144,20 +146,20 @@ class ProcedureTuple:
         proc_entity_tag.progress_to_next_state()
         return ProcedureTuple(proc_entity_tag,
                               procedure,
+                              state_obj,
                               poll_callback,
                               complete_callback,
-                              finaliser_callback,
-                              state_obj)
+                              finaliser_callback)
         
 
     @classmethod
-    def only(cls, entity_id: ProcedureEntityTag,
+    def only(cls, proc_tag: ProcedureEntityTag,
              procedure: RottnestCompilerProcedure) -> 'ProcedureTuple':
         '''
            Makes it very clear that you are only constructing it with
            an entity id and procedure 
         '''
-        return ProcedureTuple(entity_id, procedure)
+        return ProcedureTuple(proc_tag, procedure)
 
     def get_entity_state(self) -> ProcedureEntityStateTag:
         '''

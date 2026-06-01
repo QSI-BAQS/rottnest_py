@@ -43,21 +43,20 @@ class ConcurrentProcedureManager(ProcedureManager):
                     poll_callback=None,
                     complete_callback=None,
                     finaliser_callback=None,
-                    procedure_state_obj=dict()) -> bool:
+                    procedure_state_obj=None) -> bool:
                       
         '''
            Defers the execution to the queue
                Will be executed when time is available 
         '''
         procedure_tuple = ProcedureTuple.with_tagger(
-                                self,
-                                proc,
-                                procedure_state_obj,
-                                poll_callback,
-                                complete_callback,
-                                finaliser_callback)
+                self,
+                procedure=proc,
+                poll_callback=poll_callback,
+                complete_callback=complete_callback,
+                finaliser_callback=finaliser_callback,
+                state_obj=procedure_state_obj)
 
-        # After it is constructed, it will progress to queued
         self._concurrent_enqueue_procedure_tuple(procedure_tuple)
         return True
 
