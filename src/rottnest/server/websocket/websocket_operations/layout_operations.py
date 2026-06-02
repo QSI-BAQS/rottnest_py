@@ -27,6 +27,16 @@ STATE_OBJ_APP_KEY = 'application'
 STATE_OBJ_PREPROC_KEY = 'preprocessor'
 
 
+class RunResultHeaderTag:
+    '''
+       Header tag for the run results to be categorised
+       broadly 
+    '''
+    HEADER_TAG = 'result_tag'
+
+    RESULT_ENTRY = 'RESULT_ENTRY'
+    FINAL_RESULT = 'FINAL_RESULT'
+
 class RunLayoutStateObject:
     '''
        Protocol to ensure the interface and methods
@@ -114,6 +124,43 @@ class LayoutOperations(WebSocketOperationsSpecification):
         is_complete = proc.complete()
         return is_complete
 
+    def run_layout_tag_output(self, entry, tag):
+        '''
+           Tags the object with relevant information 
+        '''
+        entry[RunResultHeaderTag.HEADER_TAG] = tag
+        return entry
+
+    def run_layout_write_back(self, state_object: RunLayoutStateObject,
+                              is_poll=True):
+        '''
+           Generalisation for both poll and finalise 
+        '''
+        websocket_proxy = state_object.get_websocket_proxy()
+        websocket = websocket_proxy.get_websocket()
+        actions = websocket_proxy.get_actions()
+        preproc = state_object.get_procedure()
+        reader = state_object.get_reader()
+
+        if is_poll:
+            preproc.poll()
+
+        current_messages = reader.read_all()
+        header = RunResultHeaderTag.RESULT_ENTRY
+        for msg in current_messages:
+            result_data = msg.get_object()
+            if msg.is_iterable():
+                for entry in result_data:
+                    result = self.run_layout_tag_output(entry,
+                                header)
+                    actions.websocket_result_write(websocket, result)
+            else:
+                header = RunResultHeaderTag.FINAL_RESULT
+                result = self.run_layout_tag_output(result_data, header)
+                actions.websocket_result_write(websocket, result)
+                
+                    
+
     def run_layout_poll_extraction(self, state_object: RunLayoutStateObject):
         '''
            Given a layout, the operation should attempt to poll
@@ -122,20 +169,7 @@ class LayoutOperations(WebSocketOperationsSpecification):
 
            These should be the results it can extract  
         '''
-        websocket_proxy = state_object.get_websocket_proxy()
-        websocket = websocket_proxy.get_websocket()
-        actions = websocket_proxy.get_actions()
-        preproc = state_object.get_procedure()
-        reader = state_object.get_reader()
-        
-        preproc.poll()
-        current_messages = reader.read_all()
-
-        for msg in current_messages:
-            if msg.is_iterable():                
-                actions.websocket_stream_write(websocket, msg.get_object())
-            else:
-                actions.websocket_result_write(websocket, msg.get_object())
+        self.run_layout_write_back(state_object)
                         
     def run_layout_finalise(self, state_object: RunLayoutStateObject):
         '''
@@ -144,17 +178,7 @@ class LayoutOperations(WebSocketOperationsSpecification):
             after completion of a run
             These should be the results it can extract  
         '''
-        websocket_proxy = state_object.get_websocket_proxy()
-        websocket = websocket_proxy.get_websocket()
-        actions = websocket_proxy.get_actions()
-        reader = state_object.get_reader()
-        current_messages = reader.read_all()
-        
-        for msg in current_messages:
-            if msg.is_iterable():                
-                actions.websocket_stream_write(websocket, msg.get_object())
-            else:
-                actions.websocket_result_write(websocket, msg.get_object())
+        self.run_layout_write_back(state_object, is_poll=False)
         
 
     def poll_layout_status(self, websocket, layout_id):

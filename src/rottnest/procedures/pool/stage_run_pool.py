@@ -22,10 +22,11 @@ class RunPoolStage(stage.RottnestCompilerStage):
         self._reporting = reporting
 
         if self._reporting:
-            mpsc_provider_instance: MPSCChannelProvider = MPSCChannelProvider.get_instance()
-            self._writer, _mpsc_state = mpsc_provider_instance.get_writer(
-                MPSC_LAYOUT_CHANNEL_TAG
-            )
+            mpsc_provider_instance: MPSCChannelProvider | None = MPSCChannelProvider.get_instance()
+            if mpsc_provider_instance is not None:
+                self._writer, _mpsc_state = mpsc_provider_instance.get_writer(
+                    MPSC_LAYOUT_CHANNEL_TAG
+                )
 
 
         super().__init__(tag=tag, dependencies=dependencies, asynchronous=True)
@@ -34,6 +35,25 @@ class RunPoolStage(stage.RottnestCompilerStage):
         # TODO: load layout IDs
         pool = get_pool()
         pool.run_sequence([0])
+
+
+    def _websocket_write(self, pool) -> bool:
+        '''
+           Generalises the the reporting mechanism to a method 
+        '''
+        valid_write = False
+        if self._reporting and self._writer is not None:
+            valid_write = True
+            if self._complete:
+                res = pool.get_final_results()
+                if res is not None:
+                    self._writer.write(res)
+            else:
+                stream = pool.get_results_stream()
+                if len(stream) > 0:
+                    self._writer.write_iter(stream)
+
+        return valid_write
 
     def poll(self, compiler_environment=None):
         '''
@@ -45,27 +65,11 @@ class RunPoolStage(stage.RottnestCompilerStage):
             status == PoolStatus.FINISHED
         )
 
-        if self._reporting and not self._complete:
-            if self._writer is not None:
-                stream = pool.get_results_stream()
-                if len(stream) > 0:
-                    self._writer.write_iter(stream)
-            else:
-                pool.flush_results_cache()
-            
-        else:
-            # Not reporting, clear buffers
+        if self._websocket_write(pool) is False:
             pool.flush_results_cache()
 
     def complete(self):
         pool = get_pool()
-        if self._reporting and self._complete: 
-            if self._writer is not None:
-                pool = get_pool()
-                res = pool.get_final_results()
-                self._writer.write(res)
-            else:
-                pool.flush_results_cache()
-        else:
-            pool.flush_results_cache()                
+        if self._websocket_write(pool) is False:
+            pool.flush_results_cache()
         return self._complete

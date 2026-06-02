@@ -99,7 +99,6 @@ class CallGraphOperations(WebSocketOperationsSpecification):
     '''
 
     OPERATIONS = SpecOperations
-
     GET_GRAPH_ACTIVE = False
 
     def __init__(self):
@@ -204,7 +203,7 @@ class CallGraphOperations(WebSocketOperationsSpecification):
         if counter < limit:
             state_object.increment_counter()
             proc.poll()
-            time.sleep(POLL_TIME_DELAY)
+            # time.sleep(POLL_TIME_DELAY) # Yield here
             graph_package = GET_RUNNODE_MSG_POLL_TEMPLATE.copy()\
                 .build_and_package()
             actions.websocket_write(wsock, graph_package)
@@ -222,6 +221,7 @@ class CallGraphOperations(WebSocketOperationsSpecification):
         reader = state_object.get_reader()
         proc = state_object.get_procedure()
         graph_package = GET_RUNNODE_MSG_INVALID_TEMPLATE.copy()
+
         if not proc.was_aborted():
             callgraph_results = reader.read()
             if callgraph_results is not None:
@@ -249,7 +249,7 @@ class CallGraphOperations(WebSocketOperationsSpecification):
         if counter < limit:
             state_object.increment_counter()
             proc.poll()
-            time.sleep(POLL_TIME_DELAY)
+            # time.sleep(POLL_TIME_DELAY) #trigger a yield here
             graph_package = GET_GRAPH_MSG_POLL_TEMPLATE.copy()\
                 .build_and_package()
             actions.websocket_write(wsock, graph_package)
