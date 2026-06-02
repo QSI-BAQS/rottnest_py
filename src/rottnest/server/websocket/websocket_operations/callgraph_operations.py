@@ -203,7 +203,7 @@ class CallGraphOperations(WebSocketOperationsSpecification):
         if counter < limit:
             state_object.increment_counter()
             proc.poll()
-            # time.sleep(POLL_TIME_DELAY) # Yield here
+            time.sleep(POLL_TIME_DELAY) # Yield here
             graph_package = GET_RUNNODE_MSG_POLL_TEMPLATE.copy()\
                 .build_and_package()
             actions.websocket_write(wsock, graph_package)
@@ -249,7 +249,7 @@ class CallGraphOperations(WebSocketOperationsSpecification):
         if counter < limit:
             state_object.increment_counter()
             proc.poll()
-            # time.sleep(POLL_TIME_DELAY) #trigger a yield here
+            time.sleep(POLL_TIME_DELAY) #trigger a yield here
             graph_package = GET_GRAPH_MSG_POLL_TEMPLATE.copy()\
                 .build_and_package()
             actions.websocket_write(wsock, graph_package)
