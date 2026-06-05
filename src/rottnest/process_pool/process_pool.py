@@ -537,3 +537,24 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
             if status is IPCManager.NOT_FOUND:
                 return None
         return status 
+
+    def get_postprocessing_data(self):
+        '''
+            Requests postprocessing data from the pool
+        '''
+        self.manager_priority_task_queue.put(
+            (commands.GET_POSTPROCESSING_DATA,)
+        ) 
+
+    def poll_postprocessing_data(self):
+        '''
+            Requests postprocessing data from the pool
+        '''
+        status = self.ipc.get_item(
+            commands.GET_POSTPROCESSING_DATA,
+            blocking=False
+        )
+        if status is IPCManager.NOT_FOUND:
+            return None
+        return status
+

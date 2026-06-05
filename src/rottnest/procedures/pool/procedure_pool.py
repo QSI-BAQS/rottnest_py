@@ -8,7 +8,15 @@ class PoolProcedure(procedure.RottnestCompilerProcedure):
 
     TAG = STAGE_TAG
 
-    def __init__(self, *, reporting=True, tag=None, dependencies=None, asynchronous=True):
+    def __init__(
+            self,
+            *,
+            reporting=True,
+            postprocess=False,
+            tag=None,
+            dependencies=None,
+            asynchronous=True
+        ):
 
         # Patch the parser
         # This needs to be reflected by the pool manager 
@@ -40,9 +48,16 @@ class PoolProcedure(procedure.RottnestCompilerProcedure):
            dependencies = [run.get_tag()]
         )
 
+        shutdown_deps = [results.get_tag()]
+        # If post-processing is required
+        if postprocess:
+            postprocessing = pool.stage_get_postprocessing.GetPostprocessingDataStage(
+                dependencies = [results.get_tag()]
+            )
+            shutdown_deps.append(postprocessing.get_tag())
 
         shutdown = pool.stage_shutdown_pool.ShutdownPoolStage(
-            dependencies = [results.get_tag()]
+            dependencies = shutdown_deps
         )
 
         clear_buffers_final = pool.stage_clear_buffers.ClearPoolBuffersStage(
@@ -58,9 +73,17 @@ class PoolProcedure(procedure.RottnestCompilerProcedure):
             synch,
             workers,
             run,
-            results,
+            results
+        ]
+
+
+        if postprocess:
+            stages.append(postprocessing)
+
+        stages += [ 
             shutdown,
             clear_buffers_final
         ]
+
         super().__init__(None, stages=stages, tag=tag, dependencies=dependencies, asynchronous=asynchronous)
 

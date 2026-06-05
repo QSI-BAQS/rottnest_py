@@ -1,3 +1,3 @@
 from .procedure_pool import PoolProcedure
 
-from . import stage_start_pool_manager, stage_start_pool, stage_run_pool, stage_shutdown_pool, stage_synchronise, stage_get_results, stage_clear_buffers, stage_reset_context
+from . import stage_start_pool_manager, stage_start_pool, stage_run_pool, stage_shutdown_pool, stage_synchronise, stage_get_results, stage_clear_buffers, stage_reset_context, stage_get_postprocessing

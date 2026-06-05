@@ -17,6 +17,7 @@ class PreprocAndExecuteProcedure(procedure.RottnestCompilerProcedure):
             dependencies = [preproc.get_tag()],
             asynchronous = True,
             reporting=reporting,
+            postprocess=True
         )
         
         stages = [

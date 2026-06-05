@@ -160,6 +160,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
             commands.SET_RZ_PRECISION: self._task_set_rz_precision,
 
             commands.GET_CURRENT_RESULTS: self._task_get_results,
+            commands.GET_POSTPROCESSING_DATA: self._task_get_postprocessing_data,
             priority_commands.SYNCHRONISE_PRIORITY: self._task_priority_setup,
             priority_commands.GET_CALLGRAPH: self._task_get_callgraph,
             priority_commands.GET_VISUALISER: self._task_get_visualiser,
@@ -230,7 +231,19 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         self.cache_hash_stack = []
         PyliqtrParser.force_cache_flush()
 
-        
+
+    def _task_get_postprocessing_data(self, *args):
+        '''
+            Gets posprocessing data from the composer
+        '''
+        try:
+            post = self.composer.get_postprocessing_data()
+            return post
+        except NotImplementedError:
+            # TODO better error handling
+            print("Composer not set")
+            return "ERROR" 
+       
 
     def _task_synchronise_layouts(self, *args):
         '''

@@ -311,6 +311,12 @@ class RottnestComposer(abc.ABC):
             self.stack_frames[-1].compose_stack_frames(RottnestComposer.result_cache[cache_obj.cache_hash()])
             return True
 
+    def get_memory_manager(self):
+        '''
+            Memory manager getter
+        '''
+        return self.memory_manager
+
 
 class ComposerStackFrame:
     '''
@@ -661,6 +667,15 @@ class ResultsComposer:
         '''
         raise NotImplementedError
 
+
+    def get_postprocessing_data(self):
+        '''
+            Ambit method for retrieving any relevant post-processing data from the 
+            architecture run
+        '''
+        raise NotImplementedError
+
+    
     def to_runchart(self):
         '''
             Converts the object to a format for
