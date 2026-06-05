@@ -20,7 +20,7 @@ T = typing.TypeVar('T')
 GLB_COUNTER = 0
 
 '''
-   Format string as part of a not implemented exception 
+   Format string as part of a not implemented exception
 '''
 PLUGIN_NOT_IMPL_ERROR = "Target {} in module {} does not return a string when calling static or class method get_name()"
 
@@ -87,9 +87,9 @@ class PluginManager(typing.Generic[T]):
             for module in self._modules
         ]
 
-    def get_non_filepath_module_names(self) -> list[str]:   
+    def get_non_filepath_module_names(self) -> list[str]:
         '''
-            Get string names for all loaded modules 
+            Get string names for all loaded modules
             Without modules that were loaded from paths.
         '''
         return [
@@ -97,15 +97,15 @@ class PluginManager(typing.Generic[T]):
             for module in self._modules
             if module not in self._file_paths
         ]
-        
- 
+
+
     def get_loaded_filepaths(self) -> list[str]:
         '''
             Gets any modules loaded by file path
             Useful for synchronising
         '''
         return list(self._file_paths.values())
-       
+
     def get_synchronisation_strings(self):
         '''
             Shorthand for getting string
@@ -115,7 +115,7 @@ class PluginManager(typing.Generic[T]):
             self.get_non_filepath_module_names()
             + self.get_loaded_filepaths()
         )
- 
+
     @classmethod
     def default_loader(cls) -> type['PluginManager']:
         '''
@@ -124,7 +124,7 @@ class PluginManager(typing.Generic[T]):
         return default_loader(
             cls._config_file_name,
             cls
-        )        
+        )
 
     def load_config(self, filepath: str):
         '''
@@ -200,7 +200,7 @@ class PluginManager(typing.Generic[T]):
             return module_objects
         except FileNotFoundError as fe:
             print(str(fe))
-            return FileNotFoundError
+            raise FileNotFoundError()
 
     @staticmethod
     def _load_modules_from_config(filepath) -> list[types.ModuleType]:
@@ -246,13 +246,13 @@ class PluginManager(typing.Generic[T]):
         return plugin_obj
 
     def load_modules_from_strings(self, *args):
-        for entry in args: 
+        for entry in args:
             try:
                 module = PluginManager._load_module_from_module_string(
-                   entry 
+                   entry
                 )
                 self._modules.add(module)
-                continue  
+                continue
             except Exception as e:
                 print(str(e))
 
@@ -284,7 +284,7 @@ class PluginManager(typing.Generic[T]):
         '''
             Setter for the currently selected option
         '''
-        
+
         option = self[key]
         if option is None:
             print(f"Unknown option {key}")
@@ -297,7 +297,7 @@ class PluginManager(typing.Generic[T]):
         '''
         return self._parameters
 
-    
+
     def set_parameters(self, parameters):
         '''
             Parameters setter

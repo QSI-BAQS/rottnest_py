@@ -1,73 +1,155 @@
+'''
+    Tests the base functionality of a rottnest worker
+'''
+
 import unittest
 
-from rottnest.architecture_interface.rottnest_worker import RottnestWorker
-from rottnest.architecture_interface.rottnest_worker import PING, PONG, SET_PRECISION, EXEC_COMPUTE_UNIT, EXEC_GRAPH_STATE, GET_GRAPH, LOAD_LAYOUT
+from rottnest.architecture_interface.rottnest_worker import RottnestWorker, PING, PONG, SET_RZ_PRECISION, EXEC_COMPUTE_UNIT, EXEC_GRAPH_STATE, GET_GRAPH, LOAD_LAYOUT, SHUTDOWN
 
+from queue import Empty
 
-'''
-    Trivial duck-typed queue for capturing and testing get/put
-'''
-class MockWorkerQueue():
-    def __init__(self, mock_get_v=None):
-        self.mock_get_v = mock_get_v
-        self.put_res = []
+def task(tsk, *args):
+    return (tsk, args)
 
-    def get(self):
-        return self.mock_get_v
+class MockQueue():
+    def __init__(self, *contents):
+        self.contents = list(contents)
+        self.received = []
 
-    def put(self, v):
-        self.put_res.append(v)
-
-    def inspect_put(self):
-        res = self.put_res
-        self.put_res = []
-        return res
-
-
-class TestWorkerSanity(unittest.TestCase):
-    def test_init(self):
+    def get(self, *a, **ka):
         '''
-            Inspect an instantiated worker
+            ignores blocking/timeout
         '''
-        worker = RottnestWorker()
-        self.assertEqual(worker.running, True)
-        self.assertTrue(all(task in worker.worker_tasks for task in [PING, SET_PRECISION, EXEC_COMPUTE_UNIT, EXEC_GRAPH_STATE, GET_GRAPH, LOAD_LAYOUT]))
+        if not self.contents:
+            raise Empty("Mock queue is empty")
+        item = self.contents.pop(0)
+        # Exceptions (timeout, etc.) can be emulated by just adding
+        # them to the list of contents on creation
+        if isinstance(item, type) and issubclass(item, Exception):
+            raise item()
+        return item
+
+    def put(self, item, *a, **ka):
+        self.received.append(item)
+
+    def get_received(self):
+        return self.received
+
+    def empty(self):
+        return not bool(self.contents)
 
 
-    def test_init_blind(self):
-        '''
-            Ensure that blind workers cannot GET_GRAPH
-        '''
-        worker = RottnestWorker(blind=True)
-        self.assertEqual(worker.worker_tasks[GET_GRAPH], worker.not_supported)
+STEPPED_BOOLEAN_UNSET_SENTINEL = object()
+
+def get_stepped_boolean(self):
+    if self._stepped_boolean_count is STEPPED_BOOLEAN_UNSET_SENTINEL:
+        return False
+    if self._stepped_boolean_count <= 0:
+        return False
+    self._stepped_boolean_count -= 1
+    return True
+
+def get_stepped_boolean_or_err(self):
+    if self._stepped_boolean_count is STEPPED_BOOLEAN_UNSET_SENTINEL:
+        return False
+    if self._stepped_boolean_count <= 0:
+        raise Exception("Consumed stepped boolean on a loop, expected it to be unset")
+    self._stepped_boolean_count -= 1
+    return True
+
+def set_stepped_boolean(self, v):
+    if v is False:
+        self._stepped_boolean_count = STEPPED_BOOLEAN_UNSET_SENTINEL
 
 
-    def test_init_entrypoint(self):
-        '''
-            Test spawning and entering a worker from the class entrypoint
-        '''
-        # Patch running from a raw attribute to a property that is True, then False
-        running_states = [True, False]
-        RottnestWorker.running = property(lambda s: running_states.pop(0), lambda s, v: None)
-        mock_tasks = MockWorkerQueue((PING, ()))
-        mock_responses = MockWorkerQueue()
-        worker = RottnestWorker.entrypoint(mock_tasks, mock_responses)
-        self.assertTrue(PONG in mock_responses.inspect_put())
+def rottnest_worker_set_loop_steps(n, err_on_elapse=False):
+    # Dubious - now rather than looping as True forever, will be True n times, then False
+    RottnestWorker.running = property(
+        get_stepped_boolean if not err_on_elapse else get_stepped_boolean_or_err,
+        set_stepped_boolean
+    )
+    RottnestWorker._stepped_boolean_count = n
 
 
-    def test_init_entrypoint_blind(self):
-        '''
-            Ensures that spawning a worker via entrypoint maintains blindness
-        '''
-        # Patch running from a raw attribute to a property that is True, then False
-        running_states = [True, False]
-        RottnestWorker.running = property(lambda s: running_states.pop(0), lambda s, v: None)
-        mock_tasks = MockWorkerQueue((GET_GRAPH, ('fake_arg',)))
-        mock_responses = MockWorkerQueue()
-        RottnestWorker.entrypoint(mock_tasks, mock_responses, blind=True)
-        self.assertTrue(RottnestWorker().not_supported() in mock_responses.inspect_put())
+class RottnestWorkerTest(unittest.TestCase):
+    def test_startup_entrypoint(self):
+        # We just want to start the worker
+        rottnest_worker_set_loop_steps(1)
 
-# TODO : Test worker tasks (many are currently NotImplemented?
+        task_queue = MockQueue()
+        result_queue = MockQueue()
+        comms_queue = MockQueue()
+
+        RottnestWorker.entrypoint(
+            task_queue,
+            result_queue,
+            comms_queue,
+        )
+
+    def test_startup_entrypoint_priority(self):
+        # We just want to start the worker
+        rottnest_worker_set_loop_steps(1)
+
+        task_queue = MockQueue()
+        result_queue = MockQueue()
+        comms_queue = MockQueue()
+
+        RottnestWorker.entrypoint(
+            task_queue,
+            result_queue,
+            comms_queue,
+            priority=True
+        )
+
+    def test_worker_shutdown(self):
+        rottnest_worker_set_loop_steps(5, err_on_elapse=True)
+
+        task_queue = MockQueue(task(SHUTDOWN))
+        result_queue = MockQueue()
+        comms_queue = MockQueue()
+
+        RottnestWorker.entrypoint(
+            task_queue,
+            result_queue,
+            comms_queue,
+        )
+
+    def test_ping_pong(self):
+        rottnest_worker_set_loop_steps(5, err_on_elapse=True)
+
+        task_queue = MockQueue(
+            task(PING),
+            task(SHUTDOWN)
+        )
+        result_queue = MockQueue()
+        comms_queue = MockQueue()
+
+        RottnestWorker.entrypoint(
+            task_queue,
+            result_queue,
+            comms_queue,
+        )
+
+        self.assertTrue((PING, PONG) in result_queue.get_received(), f"Expected (PING <task>, PONG <result>), got {result_queue.get_received()} instead")
+
+    def test_priority_ping_pong(self):
+        rottnest_worker_set_loop_steps(5, err_on_elapse=True)
+
+        task_queue = MockQueue(
+            task(PING),
+            task(SHUTDOWN)
+        )
+        result_queue = MockQueue()
+        comms_queue = MockQueue()
+
+        RottnestWorker.entrypoint(
+            task_queue,
+            result_queue,
+            comms_queue,
+            priority=True
+        )
+
+        self.assertTrue((PING, PONG) in result_queue.get_received(), f"Expected (PING <task>, PONG <result>), got {result_queue.get_received()} instead")
 
 
 if __name__ == "__main__":

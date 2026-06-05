@@ -56,11 +56,11 @@ class RottnestComposer(abc.ABC):
         self.ResultsComposer = self.results_composer_constructor()
         self.StackFrame = self.stack_frame_constructor()
 
-        # Memory management system
-        self.memory_manager = self.memory_manager_constructor()(self.ResultsComposer)
-
         # Layouts
         self.layouts = list(map(LayoutProxy.add_layout, layouts))
+
+        # Memory management system
+        self.memory_manager = self.memory_manager_constructor()(self.ResultsComposer)
 
         # Initial stack frames
         self.setup()
@@ -133,15 +133,16 @@ class RottnestComposer(abc.ABC):
 
         # All units should belong to the same stack frame
         stack_frame = self.unhook_compute_unit(compute_unit_ids[0])
-        stack_frame.receive(result_composer)
 
         # Memory management
         for cu_id in compute_unit_ids:
             compute_unit = self._compute_units[cu_id]
-    
+
             self.memory_manager.idle(stack_frame.get_id(), result_composer.get_tocks())
             self.memory_manager.store(stack_frame.get_id(), self._compute_units[cu_id].get_qubit_labels().keys())
             self._compute_units.pop(cu_id)
+
+        stack_frame.receive(result_composer)
 
     def cache_entry_start(self, cache_obj):
         '''
@@ -184,7 +185,7 @@ class RottnestComposer(abc.ABC):
     def cache_entry_end(self, cache_obj):
         '''
             Sequencer should provide assertion that this
-             function is not called unless all compute 
+             function is not called unless all compute
              units for the stack frame are compiled
         '''
         # NOTE: Work around for the meantime
@@ -205,7 +206,7 @@ class RottnestComposer(abc.ABC):
             self.stack_frames[-1].register_cache_deference(old_frame)
         else:
             # Compose into caller
-            # TODO: Get labels 
+            # TODO: Get labels
             mem_cost = self.memory_manager.frame_delete(old_frame.get_id(), [])
 
             # Compose costs from memory unit with the frame
@@ -329,11 +330,11 @@ class ComposerStackFrame:
         self.qubit_map = qubit_map
 
         self._id = ComposerStackFrame.CTR
-        ComposerStackFrame.CTR += 1 
+        ComposerStackFrame.CTR += 1
 
         self.rottnest_hash = rottnest_hash
         self.ResultsComposer = results_composer_constructor
-        
+
         self.memory_manager = memory_manager
 
 
@@ -379,7 +380,7 @@ class ComposerStackFrame:
             raise Exception(f"Cache resolution triggered merging non-child frame {frame.cache_hash()} into {self.cache_hash()}")
 
         first_instance = True
-        # Loop over the number of times this frame is a child 
+        # Loop over the number of times this frame is a child
         # Compose each instance
         for i in range(self.deferred_frames.pop(frame)):
 
@@ -505,7 +506,7 @@ class MemoryManager:
 
     def frame_create(self, frame_id: int, labels: list):
         '''
-            Costs memory movement to create a frame context 
+            Costs memory movement to create a frame context
         '''
         return self.ResultsComposer()
 
@@ -518,7 +519,7 @@ class MemoryManager:
 
     def store(self, frame_id: int, labels: list):
         '''
-            Costs storing memory 
+            Costs storing memory
         '''
         return self.ResultsComposer()
 
@@ -536,7 +537,7 @@ class MemoryManager:
 
     def logical_patches(self) -> int:
         '''
-            Number of logical patches needed so far 
+            Number of logical patches needed so far
         '''
         return 0
 
@@ -637,7 +638,7 @@ class ResultsComposer:
             Useful for memory unit operations
         '''
         pass
-        
+
 
     def get_n_compute_units(self):
         '''
@@ -663,7 +664,7 @@ class ResultsComposer:
     def to_runchart(self):
         '''
             Converts the object to a format for
-            display on the runchart 
+            display on the runchart
         '''
         return str(self._obj)
 
