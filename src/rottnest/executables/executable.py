@@ -19,7 +19,7 @@ class RottnestExecutable(abc.ABC):
     NO_ANALYTICAL_METHOD = object()
 
     RZ_PREC = 'prec_rz'
-    base_params = {RZ_PREC: (int, DEFAULT_PRECISION)}
+    base_params = {}
 
 
     def __init__(self, pandora=True, prec_rz=None, **kwargs):
@@ -38,8 +38,6 @@ class RottnestExecutable(abc.ABC):
             self.__class__.get_private_parameters()
             | self.__class__.get_parameters()
         )
-        # NOTE: Bug triggered here - 8/04/2026 - 4:11pm
-        # NOTE: No issue on - 10/04/2026
         for param_name in params:
             param_type, param_value = params[param_name]
             
@@ -126,7 +124,6 @@ default to a counter in the preprocessing pass
         # Set this classes params last
         params |= cls._parameters()
         return params
-
 
     @classmethod
     def get_private_parameters(cls):
