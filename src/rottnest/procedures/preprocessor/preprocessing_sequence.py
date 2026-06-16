@@ -1,7 +1,7 @@
 '''
     Handles the pre-processing pass
 '''
-from rottnest.executables.executable import RottnestExecutable 
+from rottnest.executables.executable import RottnestExecutable
 
 from rottnest.process_pool.singleton import get_pool
 from rottnest.process_pool.pool_status import PoolStatus
@@ -26,10 +26,10 @@ class PreprocessPass(StatusTracked):
         self._pandora_complete = False
 
         # Gets a reference to the process pool singleton
-        # By having a strict order of passes, this proxies ownership 
-        # FE gains read access, and ability to subvert ownership  
+        # By having a strict order of passes, this proxies ownership
+        # FE gains read access, and ability to subvert ownership
         # only if it terminates the pass
-        self.pool = get_pool() 
+        self.pool = get_pool()
 
     def __call__(self):
         '''
@@ -50,7 +50,7 @@ class PreprocessPass(StatusTracked):
         '''
         if self.complete():
             return True
-        
+
 
     def complete(self):
         '''
@@ -59,22 +59,22 @@ class PreprocessPass(StatusTracked):
         if not self._complete:
             self._complete = self.t_complete()
         return self._complete
-            
+
     def pandora_complete(self):
         '''
             Checks if the Pandora dispatch has completed
         '''
         if not self._pandora_complete:
-            # TODO: Pandora polling  
+            # TODO: Pandora polling
             self._pandora_complete = True
-        return self.pandora_complete: 
+        return self.pandora_complete
 
     def rz_complete(self):
         '''
             Checks if Rz precision calculations are complete
         '''
         if not self.pandora_complete():
-            # Cannot complete, or indeed start until Pandora preprocessing has finished 
+            # Cannot complete, or indeed start until Pandora preprocessing has finished
             return False
 
         if not self._rz_complete:
@@ -95,7 +95,7 @@ class PreprocessPass(StatusTracked):
             # If Rz is not complete, don't worry about this yet
             return False
         return self._t_complete
-        
+
 
     def preprocess_rz_prec(self, executable) -> int:
         '''
@@ -103,14 +103,14 @@ class PreprocessPass(StatusTracked):
             Returns precision in bits
         '''
         prec = executable.get_rz_precision()
-        if prec is RottnestExecutable.NO_ANALYTICAL_METHOD:  
+        if prec is RottnestExecutable.NO_ANALYTICAL_METHOD:
            rz_counts = self.preprocess_rz_count()
         return prec
-        
+
 
     def setup_rz_counter_layout():
         '''
-            Setup a naive layout for Rz counting 
+            Setup a naive layout for Rz counting
         '''
         if LayoutProxy.get_layout(RZ_COUNTER_ID) is None:
             memory_bound = 1000
@@ -124,15 +124,15 @@ class PreprocessPass(StatusTracked):
         '''
         # Setup the pool
         self.pool.set_architecture_module(
-            'Rz Counter' 
+            'Rz Counter'
         )
 
-        # Synch pool state 
+        # Synch pool state
         self.pool.synchronise()
 
         # Start workers
         self.pool.start_workers()
-         
+
         # Run the sequence
         self.pool.run_sequence([RZ_COUNTER_ID])
 
@@ -144,5 +144,5 @@ class PreprocessPass(StatusTracked):
         '''
             Passes objects to Pandora process for injection
         '''
-        for key, pandora_obj in executable.precompute(): 
+        for key, pandora_obj in executable.precompute():
             ...

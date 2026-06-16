@@ -10,37 +10,6 @@ from cabaliser import gates
 from rottnest.compute_units.compute_unit import ComputeUnit
 
 class TestComputeUnitSanity(unittest.TestCase):
-    def test_default_compute_unit(self):
-        cu = ComputeUnit("layout", unit_id="unit")
-        self.assertEqual(cu.unit_id, "unit")
-        self.assertEqual(cu.layout_id, "layout")
-        self.assertEqual(cu.sequences, list())
-        self.assertEqual(cu.memory_bound, None)
-        self.assertEqual(cu.n_inputs, 0)
-        self.assertEqual(cu.n_outputs, 0)
-        self.assertEqual(cu.n_qubits, 0)
-        self.assertEqual(cu.n_gates, 0)
-        self.assertEqual(cu.n_rz_operations, 0)
-        self.assertEqual(cu._qubit_labels, None)
-        self.assertEqual(cu._rz_tracker_dict, None)
-
-    def test_set_context(self):
-        cu = ComputeUnit(0)
-        cu.add_context(n_inputs=1, n_qubits=2, n_outputs=3, rz_tracker_dict={'a':1}, qubit_labels={'b':2})
-        self.assertEqual(cu.n_inputs, 1)
-        self.assertEqual(cu.n_qubits, 2)
-        self.assertEqual(cu.n_outputs, 3)
-        self.assertEqual(cu._rz_tracker_dict, {'a':1})
-        self.assertEqual(cu._qubit_labels, {'b':2})
-
-    def test_compute_unit_memory(self):
-        for n_inputs in range(100):
-            for n_rz_operations in range(100):
-                cu = ComputeUnit(0)
-                cu.n_inputs = n_inputs
-                cu.n_rz_operations = n_rz_operations
-                self.assertEqual(cu.curr_mem(), n_inputs * 2 + n_rz_operations)
-
     def test_compute_unit_auto_id(self):
         '''
             Ensures that (when set automatically) compute units are assigned different

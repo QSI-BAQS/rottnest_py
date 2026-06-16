@@ -48,7 +48,14 @@ class ProcedureManagerSelector:
             ProcedureManagerSelector._selector_instance = self
         else:
             raise DoubleInitialisationException()
-            
+
+    @classmethod
+    def get_default_procedure_manager(context: object | None=None):
+        '''
+           Gets the default procedure manager 
+        '''
+        instance = ProcedureManagerSelector.get_instance()
+        return instance.get_concurrent_manager(context)          
 
     @classmethod
     def get_instance(cls) -> 'ProcedureManagerSelector':

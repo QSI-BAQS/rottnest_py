@@ -68,7 +68,6 @@ class RottnestWebSocketCommon:
             On results from composer objects    
             NOTE: Better rename or generalise this method
         '''
-        print("Sending")
         websocket.send(Rottnest\
                        .start_packet(Rottnest.data.run_result)\
                        .set_payload(results)\

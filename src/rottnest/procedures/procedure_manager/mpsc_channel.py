@@ -4,8 +4,11 @@
     
 '''
 from enum import Enum
+from typing import TypeAlias, Union
 
 MPSC_CHANNEL_CAPACITY = 4096 #Objects, not bytes
+
+MPSCChannelProviderObject: TypeAlias = Union['MPSCChannelProvider', None]
 
 class MPSCChannelState(Enum):
     '''
@@ -50,20 +53,20 @@ class MPSCChannelMessage:
         self.kind = kind
 
     @classmethod
-    def make_object(cls, obj):
+    def make_object(cls, obj) -> 'MPSCChannelMessage':
         '''
            Makes a message that is a singular object 
         '''
         return MPSCChannelMessage(MPSCChannelMessageKind.OBJECT, obj)
 
     @classmethod
-    def make_iterable(cls, iterable_object):
+    def make_iterable(cls, iterable_object) -> 'MPSCChannelMessage':
         '''
             Makes a message that contains an iterable object
         '''
         return MPSCChannelMessage(MPSCChannelMessageKind.ITERABLE, iterable_object)
 
-    def is_iterable(self):
+    def is_iterable(self) -> bool:
         '''
            Method to outline if it is iterable or not 
         '''
@@ -75,7 +78,7 @@ class MPSCChannelMessage:
         '''
         return self.data
 
-    def get_message_kind(self):
+    def get_message_kind(self) -> MPSCChannelMessageKind:
         '''
            Gets the message kind for others to switch on 
         '''
@@ -93,10 +96,17 @@ class MPSCChannel:
         '''
            Initialises a MPSC Channel - Will have a reader and writer 
         '''
+        self.key = key
         self.buffer: list[MPSCChannelMessage] = []
         self.capacity = capacity
         self.length = 0
         self.state = MPSCChannelState.CHANNEL_CREATED
+
+    def get_key(self):
+        '''
+           Gets the key of the channel 
+        '''
+        return self.key
 
 
     def get_capacity(self):
@@ -249,7 +259,7 @@ class MPSCChannelProvider:
        that can be retrieved given a key
        State information is provided on the request of the channel (eiter reading or writing) 
     '''
-    _instance = None
+    _instance: MPSCChannelProviderObject = None
 
     def __init__(self):
         '''
@@ -264,19 +274,19 @@ class MPSCChannelProvider:
 
 
     @classmethod
-    def get_instance(cls):
+    def get_instance(cls) -> MPSCChannelProviderObject:
         '''
            Gets the singleton instance of the provider 
         '''
-        inst = MPSCChannelProvider._instance
+        inst: MPSCChannelProvider | None = MPSCChannelProvider._instance
         if inst is None:
             inst = MPSCChannelProvider()
             MPSCChannelProvider._instance = inst
 
-        return inst
+        return MPSCChannelProvider._instance
 
 
-    def create_channel(self, key: str, silent=False) -> MPSCChannelState:
+    def create_channel(self, key: str, silent=False) -> tuple[MPSCChannelState, MPSCChannel | None]:
         '''
            Creates a channel under a key, does not assign reader or writer
            If the channel exists, it will return INVALID 
@@ -284,12 +294,12 @@ class MPSCChannelProvider:
         if key in self.channel_map:
             if not silent:
                 print(f"Channel '{key}' exists, a new channel is not being started")
-            return MPSCChannelState.CHANNEL_EXISTS
+            return (MPSCChannelState.CHANNEL_EXISTS, None)
 
         channel = MPSCChannel(key)
         self.channel_map[key] = channel
         
-        return MPSCChannelState.CHANNEL_CREATED
+        return (MPSCChannelState.CHANNEL_CREATED, channel)
         
 
     def get_reader(self, key: str) -> tuple[MPSCReader | None, MPSCChannelState]:
@@ -409,7 +419,8 @@ class MPSCChannelProvider:
 
         return MPSCChannelState.CHANNEL_DESTROYED
 
-    def recreate_channel(self, key: str) -> MPSCChannelState:
+    def recreate_channel(self, key: str) -> tuple[MPSCChannelState,
+        MPSCChannel | None]:
         '''
             Recreates the channel, even if it exists or not
             WARNING: This may leave orphan readers and writers

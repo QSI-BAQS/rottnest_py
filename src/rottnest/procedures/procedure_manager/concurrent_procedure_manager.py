@@ -53,14 +53,13 @@ class ConcurrentProcedureManager(ProcedureManager):
             procedure_state_obj = dict()
 
         procedure_tuple = ProcedureTuple.with_tagger(
-                                self,
-                                proc,
-                                procedure_state_obj,
-                                poll_callback,
-                                complete_callback,
-                                finaliser_callback)
+                self,
+                procedure=proc,
+                poll_callback=poll_callback,
+                complete_callback=complete_callback,
+                finaliser_callback=finaliser_callback,
+                state_obj=procedure_state_obj)
 
-        # After it is constructed, it will progress to queued
         self._concurrent_enqueue_procedure_tuple(procedure_tuple)
         return True
 
