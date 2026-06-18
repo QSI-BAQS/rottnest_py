@@ -1,13 +1,14 @@
 '''
     Manages loading of executables
 '''
-from ..config import executables_file_name
-from ..executables.executable import ROTTNEST_EXECUTABLE_MODULE_TAG, RottnestExecutable
-from .plugin_manager import PluginManager
-
 from rottnest.rz_decomposer import DEFAULT_PRECISION
 
-class ExecutablePlugins(PluginManager[RottnestExecutable]):
+from ..config import executables_file_name
+from ..executables.executable import ROTTNEST_EXECUTABLE_MODULE_TAG, RottnestExecutable
+
+from .plugin_manager import PluginManager
+
+class ExecutablePlugins(PluginManager):
     '''
        Executable Plugin manager
     '''
@@ -21,7 +22,7 @@ class ExecutablePlugins(PluginManager[RottnestExecutable]):
         '''
 
         if modules is None:
-            modules = list()
+            modules = []
 
         # Load from config
         super().__init__(
@@ -33,11 +34,11 @@ class ExecutablePlugins(PluginManager[RottnestExecutable]):
     @staticmethod
     def from_config_or_default(path) -> 'ExecutablePlugins':
         '''
-           Loading config or default, gets the executable plugins instance 
+           Loading config or default, gets the executable plugins instance
         '''
         modules = []
         plugins = ExecutablePlugins(modules=modules, config_path=path)
-        
+
         return plugins
 
     @staticmethod
@@ -47,15 +48,15 @@ class ExecutablePlugins(PluginManager[RottnestExecutable]):
            push into it
         '''
         plugins = ExecutablePlugins(modules=modules, config_path=None)
-        
+
         return plugins
-        
-    
+
+
     def get_executable_params(self):
         '''
             Parameters for executable
         '''
-        return self.get_parameters() 
+        return self.get_parameters()
 
     def get_precision(self):
         '''
@@ -68,13 +69,13 @@ class ExecutablePlugins(PluginManager[RottnestExecutable]):
 
     def set_executable_params(self, **params) -> None:
         '''
-           Sets executable parameters 
+           Sets executable parameters
         '''
         self.set_parameters(params)
 
     def set_executable_params_from_dict(self, params: dict) -> None:
         '''
-           Sets executable parameters 
+           Sets executable parameters
            This method only exists to skip unpacking and repacking
         '''
         self.set_parameters(params)
@@ -85,7 +86,7 @@ class ExecutablePlugins(PluginManager[RottnestExecutable]):
         '''
         stripped_params = {}
         for key, val in params.items():
-            type_info, value = val 
+            _type_info, value = val
             stripped_params[key] = value
 
         return stripped_params
@@ -116,8 +117,8 @@ class ExecutablePlugins(PluginManager[RottnestExecutable]):
         '''
         self._set_current_option(key)
         if self._current_option is not None:
-            current_option: RottnestExecutable = self._current_option        
-    
+            current_option: RottnestExecutable = self._current_option
+
             # Sets default params
             self.set_executable_params_from_dict(
                 self.__process_default_params(
@@ -125,8 +126,7 @@ class ExecutablePlugins(PluginManager[RottnestExecutable]):
                 )
             )
             return True
-        else:
-            return False
+        return False
 
     def get_executable_names(self) -> list[str]:
         '''
