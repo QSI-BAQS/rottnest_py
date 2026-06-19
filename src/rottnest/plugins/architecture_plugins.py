@@ -84,15 +84,12 @@ class ArchitecturePlugins(PluginManager):
     def get_architecture_params(self):
         '''
            Gets the architecture parameters
-           TODO: This has not been implemented 
         '''
-        # TODO: Implement the params method, this is currently missing
-        return {}
+        return self.get_parameters()
 
-    def set_architecture_params(self, **kwags):
+    def set_architecture_params(self, **params) -> None:
         '''
-           Sets the new parameters adn updates the
+           Sets the new parameters and updates the
            architecture information 
         '''
-        # TODO: Update the architecture parameters as needed
-        #       This still needs to be implemented
+        self.set_parameters(params)

@@ -7,28 +7,24 @@
 import os
 import sys
 import types
-import typing
 import importlib
 
 from collections import OrderedDict
 
 from .. import config
 
-T = typing.TypeVar('T')
 
-# Used for unique namespaces for dynamically loaded plugins
-GLB_COUNTER = 0
-
-'''
-   Format string as part of a not implemented exception
-'''
+#   Format string as part of a not implemented exception
 PLUGIN_NOT_IMPL_ERROR = "Target {} in module {} does not return a string when calling static or class method get_name()"
 
-class PluginManager(typing.Generic[T]):
+class PluginManager:
     '''
        Architecture Plugin manager
     '''
     _config_file_name: str | None = None
+    # Used for unique namespaces for dynamically loaded plugins
+    GLB_COUNTER = 0
+
 
     def __init__(
             self,
@@ -53,7 +49,7 @@ class PluginManager(typing.Generic[T]):
         self._options: dict = {}
 
         # Currently selection option
-        self._current_option: T | None = None
+        self._current_option: None = None
 
         # Dynamically definable parameter field
         self._parameters = {}
@@ -98,7 +94,6 @@ class PluginManager(typing.Generic[T]):
             if module not in self._file_paths
         ]
 
-
     def get_loaded_filepaths(self) -> list[str]:
         '''
             Gets any modules loaded by file path
@@ -117,7 +112,7 @@ class PluginManager(typing.Generic[T]):
         )
 
     @classmethod
-    def default_loader(cls) -> type['PluginManager']:
+    def default_loader(cls) -> 'PluginManager':
         '''
             Wrapper to load from a default configuration
         '''
@@ -134,21 +129,22 @@ class PluginManager(typing.Generic[T]):
 
     def load_options_from_config(self, filepath: str):
         '''
-            Loads from a config file
-            superclass
+            Loads from a config file superclass
         '''
         options = self._load_options_from_config(filepath)
+
         if options is None:
             raise FileNotFoundError
-        else:
-            self._options |= options
-        return None
+
+        self._options |= options
 
     def load_options_from_modules(self, *modules):
         '''
             In place wrapper that updates options in place
         '''
-        self._options |= self._load_options_from_modules(*modules)
+        self._options |= self._load_options_from_modules(
+            *modules
+        )
 
     def _load_options_from_modules(self, *modules) -> dict:
         '''
@@ -172,12 +168,14 @@ class PluginManager(typing.Generic[T]):
                 print(f'To expose a target at the module level, please set an iterable "{self._module_tag}" variable in the module\'s main namespace (e.g. __init__.py)')
                 continue
 
-            plugin_targets = plugin_targets
             for target in plugin_targets:
                 try:
                     key = target.get_name()
                     if not isinstance(key, str):
-                        raise NotImplementedError(PLUGIN_NOT_IMPL_ERROR.format(target, module))
+                        raise NotImplementedError(
+    PLUGIN_NOT_IMPL_ERROR.format(target, module)
+                        )
+
                     loaded_options[key] = target
                     self._modules.add(module)
                 except AttributeError:
@@ -198,15 +196,15 @@ class PluginManager(typing.Generic[T]):
                 *modules
             )
             return module_objects
-        except FileNotFoundError as fe:
-            print(str(fe))
-            raise FileNotFoundError()
+        except FileNotFoundError as err:
+            print(str(err))
+            raise FileNotFoundError() from err
 
     @staticmethod
     def _load_modules_from_config(filepath) -> list[types.ModuleType]:
         modules = []
-        with open(filepath, mode='r', encoding='ascii') as config:
-            for entry in config:
+        with open(filepath, mode='r', encoding='ascii') as config_file:
+            for entry in config_file:
                 entry = entry.strip('\n')
                 module = None
                 try:
@@ -218,7 +216,6 @@ class PluginManager(typing.Generic[T]):
                         module = PluginManager._load_module_from_file_path(entry)
                     except Exception as _e:
                         print(f"Failed to load {entry}: {_e}")
-                        pass
 
                 if module is None:
                     print(f"Entry {entry} could not be processed")
@@ -232,9 +229,8 @@ class PluginManager(typing.Generic[T]):
            Loads a python module from file
         '''
         # Load counter for unique namespacing
-        global GLB_COUNTER
-        plugin_name = f'dynamically_loaded_module_{GLB_COUNTER}'
-        GLB_COUNTER += 1
+        plugin_name = f'dynamically_loaded_module_{PluginManager.GLB_COUNTER}'
+        PluginManager.GLB_COUNTER += 1
 
         spec = importlib.util.spec_from_file_location(plugin_name, filepath) # ty: ignore
         plugin_obj = importlib.util.module_from_spec(spec) # ty: ignore
@@ -246,6 +242,10 @@ class PluginManager(typing.Generic[T]):
         return plugin_obj
 
     def load_modules_from_strings(self, *args):
+        '''
+            Loads modules from strings
+            Defers to either a python module load or a path
+        '''
         for entry in args:
             try:
                 module = PluginManager._load_module_from_module_string(
@@ -310,7 +310,7 @@ class PluginManager(typing.Generic[T]):
 # Using the default loader built-in now
 def default_loader(
         config_file_name: str | None,
-        constructor: typing.Type['PluginManager'],
+        constructor: type['PluginManager'],
         ) -> type['PluginManager']:
     '''
         default_loader
@@ -335,8 +335,7 @@ def default_loader(
             return constructor(
                 config_path=config_path
             )
-        else:
-            print("Unable to load configuration" + config_path)
+        print("Unable to load configuration" + config_path)
     # No configuration files found
     return constructor()
 
@@ -353,4 +352,3 @@ def _load_default_config(conf_name, plugin_obj):
                 plugin_obj.load_options_from_config(config_path)
             except Exception as e:
                 print(str(e))
-

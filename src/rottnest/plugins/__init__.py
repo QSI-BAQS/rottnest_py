@@ -1,6 +1,12 @@
+'''
+    Plugin manager system
+'''
+
 from .architecture_plugins import ArchitecturePlugins
 from .executable_plugins import ExecutablePlugins
 
+executables = ExecutablePlugins.default_loader()
+architectures = ArchitecturePlugins.default_loader()
 
 def override_architectures(architectures_override: ArchitecturePlugins):
     '''
@@ -8,13 +14,10 @@ def override_architectures(architectures_override: ArchitecturePlugins):
     '''
     global architectures
     architectures = architectures_override
-    
+
 def override_executables(executables_override: ExecutablePlugins):
     '''
        Allows for overriding the architecture plugins 
     '''
     global executables
     executables = executables_override
-
-executables = ExecutablePlugins.default_loader()
-architectures = ArchitecturePlugins.default_loader()
