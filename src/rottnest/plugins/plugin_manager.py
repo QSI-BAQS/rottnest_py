@@ -17,6 +17,7 @@ from .. import config
 #   Format string as part of a not implemented exception
 PLUGIN_NOT_IMPL_ERROR = "Target {} in module {} does not return a string when calling static or class method get_name()"
 
+
 class PluginManager:
     '''
        Architecture Plugin manager
@@ -24,7 +25,6 @@ class PluginManager:
     _config_file_name: str | None = None
     # Used for unique namespaces for dynamically loaded plugins
     GLB_COUNTER = 0
-
 
     def __init__(
             self,
@@ -173,7 +173,7 @@ class PluginManager:
                     key = target.get_name()
                     if not isinstance(key, str):
                         raise NotImplementedError(
-    PLUGIN_NOT_IMPL_ERROR.format(target, module)
+                            PLUGIN_NOT_IMPL_ERROR.format(target, module)
                         )
 
                     loaded_options[key] = target
@@ -183,10 +183,11 @@ class PluginManager:
 
         return loaded_options
 
-    def _load_options_from_config(self, filepath: str) -> dict | type[FileNotFoundError]:
+    def _load_options_from_config(self, filepath: str) -> dict:
         '''
             Wrapper for loading from a config file
             Returns modules extracted from the config file
+            Raises a FileNotFound error if the file is not found
         '''
         try:
             modules = self._load_modules_from_config(
@@ -232,8 +233,8 @@ class PluginManager:
         plugin_name = f'dynamically_loaded_module_{PluginManager.GLB_COUNTER}'
         PluginManager.GLB_COUNTER += 1
 
-        spec = importlib.util.spec_from_file_location(plugin_name, filepath) # ty: ignore
-        plugin_obj = importlib.util.module_from_spec(spec) # ty: ignore
+        spec = importlib.util.spec_from_file_location(plugin_name, filepath)  # ty: ignore
+        plugin_obj = importlib.util.module_from_spec(spec)  # ty: ignore
 
         # NOTE: There should be better way instead of relying on sys here
         sys.modules[plugin_name] = plugin_obj
@@ -297,13 +298,11 @@ class PluginManager:
         '''
         return self._parameters
 
-
     def set_parameters(self, parameters):
         '''
             Parameters setter
         '''
         self._parameters = parameters
-
 
 
 # NOTE: Moved it from config

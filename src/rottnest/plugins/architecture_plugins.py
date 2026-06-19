@@ -10,6 +10,7 @@ from .plugin_manager import PluginManager
 
 ROTTNEST_ARCHITECTURE_MODULE_TAG = 'rottnest_architectures'
 
+
 class ArchitecturePlugins(PluginManager):
     '''
        Architecture Plugin manager
@@ -30,8 +31,8 @@ class ArchitecturePlugins(PluginManager):
 
         # Load from config
         super().__init__(
-            module_tag = ROTTNEST_ARCHITECTURE_MODULE_TAG,
-            modules = modules,
+            module_tag=ROTTNEST_ARCHITECTURE_MODULE_TAG,
+            modules=modules,
             config_path=config_path
         )
 
@@ -80,7 +81,6 @@ class ArchitecturePlugins(PluginManager):
         '''
         return list(self._options.keys())
 
-
     def get_architecture_params(self):
         '''
            Gets the architecture parameters
@@ -90,6 +90,6 @@ class ArchitecturePlugins(PluginManager):
     def set_architecture_params(self, **params) -> None:
         '''
            Sets the new parameters and updates the
-           architecture information 
+           architecture information
         '''
         self.set_parameters(params)
