@@ -1,3 +1,7 @@
+'''
+    Widget Sequencer
+'''
+
 from itertools import cycle
 
 from rottnest.input_parsers.qubit_label_tracker import QubitLabelTracker
@@ -7,27 +11,33 @@ from rottnest.compute_units.compute_unit import ComputeUnit
 from rottnest.compute_units.layout_proxy import LayoutProxy
 from rottnest.monkey_patchers.cirq_patcher import MIN_SEQUENCE_LEN
 
+
 class Sequencer():
     '''
         Widget Sequencer
     '''
-    def __init__(self,
+    def __init__(
+            self,
             *layouts,
-            sequence_length = 100,
-            global_context = None,
-            composer = None
+            _sequence_length: int = 100,
+            global_context=None,
+            composer=None
             ):
+        '''
+            Constructor
+        '''
 
         # Map layouts to proxies
         # TODO: determine ownership of this vs ids
 
-        #print("Layouts: ", layouts)
-        #print("", )
         self._layout_proxies = list(map(LayoutProxy, layouts))
         self.priority_shim = []
 
-        # Worst case: CNOT operation on a pair of new qubits induces two teleportations (2x2)
-        self.sequence_length = int(self._layout_proxies[0].mem_bound() * 0.8) // 4
+        # Worst case: CNOT operation on a pair of new qubits
+        # induces two teleportations (2x2)
+        self.sequence_length = int(
+                self._layout_proxies[0].mem_bound() * 0.8
+            ) // 4
 
         if global_context is None:
             global_context = QubitLabelTracker()
@@ -35,12 +45,14 @@ class Sequencer():
         self.composer = composer
 
     def priority(self, gate, layout):
-        pass
+        '''
+            Unused
+        '''
 
     def sequence_pyliqtr(self, parser):
         '''
-            Performs sequencing over a PyliqtrParser, providing an iterator yielding
-            bounded-size ComputeUnits
+            Performs sequencing over a PyliqtrParser, providing an iterator
+            yielding bounded-size ComputeUnits
 
             IN:
                 parser [PyliqtrParser]
@@ -50,11 +62,11 @@ class Sequencer():
 
 
             OUT: [Iterator<ComputeUnit>]
-                A series of ComputeUnits holding sequential components of the overall
-                object being parsed
+                A series of ComputeUnits holding sequential components of
+                the overall object being parsed
         '''
-        # Determine if layouts are being drawn from a fixed pool (explicitly passed
-        # and loaded via the LayoutProxy) or from a composer
+        # Determine if layouts are being drawn from a fixed pool (explicitly
+        # passed and loaded via the LayoutProxy) or from a composer
         if self.composer is None:
             layout_generator = cycle(self._layout_proxies)
         else:
@@ -67,7 +79,10 @@ class Sequencer():
         # Ensure any lingering global context is discarded
         cirq_parser.reset_context()
 
-        compute_unit = ComputeUnit(curr_layout.layout_id, mem_bound=curr_layout.mem_bound())
+        compute_unit = ComputeUnit(
+            curr_layout.layout_id,
+            mem_bound=curr_layout.mem_bound()
+        )
 
         yield_unit = False
 
@@ -75,27 +90,30 @@ class Sequencer():
         for cirq_object in parser.traverse():
             op_iter = cirq_parser.parse(cirq_object)
             for op_seq in op_iter:
-                # Interrupt forces an early yield to force distinct Pyliqtr sequences
+                # Interrupt forces an early yield to force
+                # distinct Pyliqtr sequences
                 if op_seq == INTERRUPT:
                     if op_seq.cache_hash() is not NON_CACHING:
-                        # directly provide op_seq object, then grab the next one
-                        # (ignoring anything else we would've done with a regular op_seq)
+                        # Directly provide op_seq object, then grab the next
+                        # one (ignoring anything else we would've done with
+                        # a regular op_seq)
                         yield op_seq
                         continue
-                    # The sequence is NON_CACHING, and we have at least one sequence in the
-                    # compute unit - this means we need to provide that compute unit
+                    # The sequence is NON_CACHING, and we have at least one
+                    #  sequence in the compute unit - this means we need to
+                    #  provide that compute unit
                     if len(compute_unit.sequences) > 0:
                         yield_unit = True
-                        # Void the op_seq so we don't append it while falling through
-                        # to yield the current unit
+                        # Void the op_seq so we don't append it while falling
+                        #  through to yield the current unit
                         op_seq = None
-                    # We don't have to yield current, and this is an interrupt (not to be
-                    # added to a unit)
+                    # We don't have to yield current, and this is an interrupt
+                    #  (not to be added to a unit)
                     else:
                         continue
                 else:
-                    # If we got given a short sequence, pack it into the current
-                    # sequence and yield it
+                    # If we got given a short sequence, pack it into the
+                    #  current sequence and yield it
                     if cirq_parser.sequence_length <= MIN_SEQUENCE_LEN:
                         compute_unit.append(op_seq)
                         yield_unit = True
@@ -106,7 +124,6 @@ class Sequencer():
                     # prepare to yield
                     # Technically, this should never occur
                     elif cirq_parser.curr_mem() > compute_unit.memory_bound - MIN_SEQUENCE_LEN:
-                        #raise Exception("Exceeded membound")
                         yield_unit = True
 
                 if yield_unit:
@@ -119,17 +136,23 @@ class Sequencer():
 
                     # Prepare a new unit on the next layout and reset the context
                     curr_layout = next(layout_generator)
-                    compute_unit = ComputeUnit(curr_layout.layout_id, mem_bound=curr_layout.mem_bound())
+                    compute_unit = ComputeUnit(
+                        curr_layout.layout_id,
+                        mem_bound=curr_layout.mem_bound()
+                    )
                     cirq_parser.reset_context()
                     cirq_parser.sequence_length = self.sequence_length
 
-                # Add the current operation sequence to our unit (if it hasn't already been consumed)
+                # Add the current operation sequence to our unit
+                # (if it hasn't already been consumed)
                 if op_seq is not None:
                     compute_unit.append(op_seq)
 
                     # Update remaining sequence length
-                    cirq_parser.sequence_length = (self.sequence_length * 4 - cirq_parser.curr_mem()) // 4
-
+                    cirq_parser.sequence_length = (
+                        self.sequence_length * 4
+                        - cirq_parser.curr_mem()
+                    ) // 4
 
         # Handle lingering sequence(s), yielding whatever remains
         if len(compute_unit) > 0:

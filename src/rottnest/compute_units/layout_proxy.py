@@ -3,6 +3,7 @@
 '''
 from typing import Generator
 
+
 class LayoutProxy:
     '''
         This class does an interesting double shift
@@ -53,7 +54,6 @@ class LayoutProxy:
         cls.saved_layouts[layout_id] = layout
         cls._refresh_proxy_by_id(layout_id)
 
-
     @classmethod
     def _refresh_proxy_by_id(cls, layout_id):
         '''
@@ -91,50 +91,45 @@ class LayoutProxy:
         cls.saved_proxies = {}
         return layouts
 
-
     @classmethod
-    def reload_layouts(cls, layouts):
+    def reload_layouts(cls, layouts) -> None:
         '''
             Reloads a collection of layouts
         '''
         for idx, layout in layouts.items():
             cls.add_layout_with_id(idx, layout)
-        return
 
     @classmethod
     def get_layout(cls, layout_id) -> dict:
+        '''
+            Layout getter
+        '''
         return cls.saved_layouts.get(layout_id, None)
 
     @classmethod
     def check_pregenerated(cls, layout_id):
+        '''
+            Checks if a pre-generated object already exists
+        '''
         if layout_id not in cls.saved_layouts:
             raise ValueError(f"Unknown layout with id {layout_id}")
         return layout_id in cls.saved_proxies
 
     def __new__(cls, layout_id):
+        '''
+            Intercepts constructor with pseudo-singletons
+            hooked to the layout id
+        '''
         if cls.check_pregenerated(layout_id):
             return cls.saved_proxies[layout_id]
-        else:
-            return object.__new__(LayoutProxy)
+        return object.__new__(LayoutProxy)
 
     def __init__(
-        self,
-        layout_id
-        ):
+            self,
+            layout_id
+            ):
         '''
             Compute Unit Constructor
-            :: bell_rate : float :: Number of bell states generated per toc for one interface
-            :: t_rate : float :: Average number of T states generated per toc
-            :: reg_max : int :: Maximum number of allocatable registers
-            :: t_buffer_max : int :: Maximum number of bufferable T states
-            :: bell_buffer_max : int :: Maximum number of bufferable Bell states
-
-            Given factory warm up times, t_rate should be calculated including the warm up period
-            The rate should be calculated over the stage 1 and stage 2 times
-            The rate should be capped at t_buffer_max
-
-            TODO: More complex, but forward speculating some diminishing number of additional T
-            gates generated during stage 3
         '''
 
         if self.check_pregenerated(layout_id):
@@ -164,10 +159,10 @@ class LayoutProxy:
     def refresh_mem_bound(self):
         '''
             Recompute memory bound
-            Required if arch_module has changed, otherwise the previous mem_bound will
-            be used
+            Required if arch_module has changed, otherwise
+            the previous mem_bound will be used
         '''
-        # Cursed, but also the way __init__ does it???
+        # Currently used to avoid a circular import
         from rottnest.plugins import architectures
         arch_module = architectures.get_current_architecture()
 
@@ -176,4 +171,7 @@ class LayoutProxy:
         )
 
     def to_json(self):
+        '''
+            Maps to a json object for serialisation
+        '''
         return LayoutProxy.get_layout(self.layout_id)
