@@ -94,8 +94,8 @@ class Synchronise:
     '''
         Synchronise related messages        
     '''
-    load = "load"
-    info = "info"
+    get_state = "get"
+    set_state = "set"
 
 class RottnestPacketBuilder:
     '''
