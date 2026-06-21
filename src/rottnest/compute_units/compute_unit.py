@@ -1,33 +1,39 @@
-from cabaliser.widget import Widget
-from rottnest.input_parsers.rz_tag_tracker import RzTagTracker
-from .layout_proxy import LayoutProxy
+'''
+    Wrapper object for Cabaliser sequences to be passed to a worker
+'''
 
-'''
-Wrapper object for cabaliser sequences
-'''
+from cabaliser.widget import Widget
+
+from rottnest.input_parsers.rz_tag_tracker import RzTagTracker
+from rottnest.compute_units.layout_proxy import LayoutProxy
 
 
 class ComputeUnit():
+    '''
+        Wrapper object for Cabaliser sequences to be passed to a worker
+    '''
 
     counter = 0
 
     @classmethod
     def get_unit_id(cls):
+        '''
+            Unit ID generator
+        '''
         unit_id = cls.counter
         cls.counter += 1
         return unit_id
 
-    '''
-        Wrapped object for sending
-    '''
     def __init__(
                 self,
-                layout_id,
+                layout_id: int,
                 *,
-                unit_id: str=None,
-                mem_bound=None
+                unit_id: str = None,
+                mem_bound: int = None
             ):
-
+        '''
+            Constructor
+        '''
         if unit_id is None:
             unit_id = ComputeUnit.get_unit_id()
         self.unit_id = unit_id
@@ -36,7 +42,7 @@ class ComputeUnit():
         self.memory_bound = mem_bound
 
         self.layout_id = layout_id
-        self.sequences = list()
+        self.sequences = []
 
         # Context trackers
         self.n_inputs = 0
@@ -84,6 +90,9 @@ class ComputeUnit():
         return len(self.sequences)
 
     def append(self, sequence):
+        '''
+            Adds a sequence to the compute unit
+        '''
         self.n_gates += len(sequence)
         self.n_rz_operations += sequence.n_rz_operations
         self.sequences.append(sequence)
@@ -112,6 +121,9 @@ class ComputeUnit():
         return self._qubit_labels
 
     def export(self):
+        '''
+            Helper function
+        '''
         return {
             'n_inputs': self.n_inputs,
             'n_outputs': self.n_outputs,

@@ -4,9 +4,13 @@
 from rottnest.rz_decomposer import DEFAULT_PRECISION
 
 from ..config import executables_file_name
-from ..executables.executable import ROTTNEST_EXECUTABLE_MODULE_TAG, RottnestExecutable
+from ..executables.executable import (
+    ROTTNEST_EXECUTABLE_MODULE_TAG,
+    RottnestExecutable
+)
 
 from .plugin_manager import PluginManager
+
 
 class ExecutablePlugins(PluginManager):
     '''
@@ -26,9 +30,9 @@ class ExecutablePlugins(PluginManager):
 
         # Load from config
         super().__init__(
-            module_tag = ROTTNEST_EXECUTABLE_MODULE_TAG,
-            modules = modules,
-            config_path = config_path
+            module_tag=ROTTNEST_EXECUTABLE_MODULE_TAG,
+            modules=modules,
+            config_path=config_path
         )
 
     @staticmethod
@@ -50,7 +54,6 @@ class ExecutablePlugins(PluginManager):
         plugins = ExecutablePlugins(modules=modules, config_path=None)
 
         return plugins
-
 
     def get_executable_params(self):
         '''
@@ -80,7 +83,7 @@ class ExecutablePlugins(PluginManager):
         '''
         self.set_parameters(params)
 
-    def __process_default_params(self, params:dict) -> dict:
+    def __process_default_params(self, params: dict) -> dict:
         '''
             Strips type information from default param dicts
         '''

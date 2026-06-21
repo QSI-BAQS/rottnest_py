@@ -5,6 +5,7 @@
 '''
 from rottnest.architecture_interface import rottnest_designer
 
+
 class PreprocessDesigner(rottnest_designer.RottnestDesigner):
     '''
         Designer proxy for the preprocessor
@@ -15,9 +16,11 @@ class PreprocessDesigner(rottnest_designer.RottnestDesigner):
     DEFAULT_MEM_BOUND = 1000
 
     @classmethod
-    def get_mem_bound(cls, *args, **kwargs):
+    def get_mem_bound(cls, *_args, **_kwargs):
+        '''
+            Const getter
+        '''
         return cls.DEFAULT_MEM_BOUND
-
 
     @staticmethod
     def get_designer_metadata():
@@ -25,8 +28,6 @@ class PreprocessDesigner(rottnest_designer.RottnestDesigner):
            Gets the designer metadata for the frontend that will
            outline the position of the frontend files to be loaded
         '''
-        # TODO: Please complete the designer data for this
-        # object so it can be used
         return []
 
     @staticmethod
@@ -36,8 +37,6 @@ class PreprocessDesigner(rottnest_designer.RottnestDesigner):
            outline functions that will be callable by when
            messages map to the websocket protocol
         '''
-        # TODO: Please complete the designer data for this
-        # object so it can be used.
         return {
             "api": {
                 "mask": "rz_counter",

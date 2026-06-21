@@ -1,17 +1,27 @@
+'''
+    Rz Collector worker object
+'''
 from rottnest.architecture_interface.rottnest_worker import RottnestWorker
 
 from .rz_collection_composer import RzCollectionResultsComposer
 
+
 class RzCollectionWorker(RottnestWorker):
+    '''
+        Worker for Rz collection
+    '''
 
     def __init__(self, *args, **kwargs):
+        '''
+            Constructor
+        '''
         super().__init__(*args, **kwargs)
 
     def get_stats(
             self,
             compiled_widget,
             compute_unit,
-            non_participatory_qubits
+            _non_participatory_qubits
             ) -> dict:
         '''
             Extract stats (in this case, just the rz totals)
@@ -19,20 +29,21 @@ class RzCollectionWorker(RottnestWorker):
         return self.execute_compute_unit(compute_unit)
 
     def execute_graph_state(
-            self,
-            unit_id: int,
-            layout_id: int,
-            widget_json: dict,
-            rz_tag_tracker_dict: dict
-        ):
-        # TODO : Is it possible to map widget (JSON)
-        # back to gates?
+                self,
+                unit_id: int,
+                layout_id: int,
+                widget_json: dict,
+                rz_tag_tracker: dict
+            ):
+        '''
+            The collector only works on compute units
+        '''
         raise NotImplementedError
 
     def execute_compute_unit(
-            self,
-            compute_unit: "ComputeUnit"
-        ):
+                self,
+                compute_unit: "ComputeUnit"
+            ):
         '''
             For an rz collector, execution is just counting rz by tag
         '''
@@ -49,8 +60,7 @@ class RzCollectionWorker(RottnestWorker):
                     )
         return compute_unit.unit_id, rz_counter
 
-    def set_precision(self, precision):
+    def set_precision(self, precision) -> None:
         '''
             No need to set precision
         '''
-        pass
