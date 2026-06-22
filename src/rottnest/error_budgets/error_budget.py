@@ -3,16 +3,17 @@
 '''
 import abc
 
+
 class ErrorBudget(abc.ABC):
     '''
         Error budget base class
     '''
 
     def __init__(
-            self,
-            p_physical: float,
-            target_error: float
-        ):
+                self,
+                p_physical: float,
+                target_error: float
+            ):
         '''
             Error budget base class
         '''

@@ -12,11 +12,12 @@ class EvenDistribution(ErrorBudget):
     MODEL_NAME = "Bounded Sum"
     DEFAULT_COEFF = 4
 
-    def __init__(self,
-        p_physical=1e-3,
-        target_error = 1e-2,
-        coeff = None
-    ):
+    def __init__(
+                self,
+                p_physical: float = 1e-3,
+                target_error: float = 1e-2,
+                coeff: float = None
+            ):
         '''
             Constructor for an even distribution
         '''
@@ -40,10 +41,11 @@ class EvenDistribution(ErrorBudget):
         '''
             Getter for model parameters
         '''
-        return (cls.get_base_model_parameters()
-        | {
-            'coeff': (float, cls.DEFAULT_COEFF)
-          }
+        return (
+            cls.get_base_model_parameters()
+            | {
+                'coeff': (float, cls.DEFAULT_COEFF)
+              }
         )
 
     def get_rz_precision_budget(self) -> float:
