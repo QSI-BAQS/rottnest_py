@@ -13,7 +13,7 @@ class RzCollectionResultsComposer(rottnest_composer.ResultsComposer):
     '''
         Composer for Rz tags
     '''
-    def __init__(self, result_obj=None, n_obj=1, unit_id=None):
+    def __init__(self, result_obj=None, n_obj=1, unit_id=None, cached=False):
         '''
             Constructor
         '''
@@ -23,7 +23,8 @@ class RzCollectionResultsComposer(rottnest_composer.ResultsComposer):
         super().__init__(
             result_obj=result_obj,
             n_obj=n_obj,
-            unit_id=unit_id
+            unit_id=unit_id,
+            cached=False
         )
 
     def __add__(self, other):

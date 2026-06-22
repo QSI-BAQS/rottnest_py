@@ -1,4 +1,3 @@
-# TODO: Parameterisation
 '''
     pyLIQTR gates trigger the call-graph tracker
     Each pyLIQTR gate is decomposed into the following
@@ -190,7 +189,7 @@ class PyliqtrParser:
                 participatory = (
                     tmp.all_qubits()
                 )
-
+                
                 yield CACHED(
                     rottnest_hash,
                     request_type=CACHED.START,

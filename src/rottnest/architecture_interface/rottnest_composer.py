@@ -170,7 +170,11 @@ class RottnestComposer(abc.ABC):
             qubit_map=qubit_map,
             memory_manager=self.memory_manager
         )
-        self.memory_manager.frame_create(stack_frame.get_id(), input_qubits)
+        
+        self.memory_manager.frame_create(
+            stack_frame.get_id(),
+            input_qubits
+        )
 
         # Prev Frame
         prev_frame = self.stack_frames[-1]
@@ -344,7 +348,7 @@ class ComposerStackFrame:
         self.memory_manager = memory_manager
 
 
-        self.result = self.ResultsComposer()
+        self.result = self.ResultsComposer(cached=True)
 
         self.all_submitted = False
         self.compilation_complete = False
@@ -565,17 +569,16 @@ class ResultsComposer:
          addition
     '''
 
-    # A useful symbol
-    # TODO Check if this is used
-    END_COMPUTATION = 'END_COMPUTATION'
+    # Marks the object as a cache object
+    CACHED = 'CACHED'
 
     def __init__(
-        self,
-        result_obj: dict | None = None,
-        n_obj = 1,
-        unit_id = None,
-        end_computation = False
-        ):
+            self,
+            result_obj: dict | None = None,
+            n_obj = 1,
+            unit_id = None,
+            cached= False
+            ):
         '''
             Constructor
         '''
@@ -592,13 +595,7 @@ class ResultsComposer:
             self._unit_ids.append(unit_id)
         self._n_obj = n_obj
 
-        self._end_computation = end_computation
-
-    def end_computation(self):
-        '''
-            End computation getter
-        '''
-        return self._end_computation
+        self._cached = cached
 
     def items(self):
         return self._obj.items()
@@ -646,13 +643,23 @@ class ResultsComposer:
         '''
         pass
 
-
     def get_n_compute_units(self):
         '''
         '''
         return max(len(self._unit_ids), self._n_obj)
 
     def to_args(self):
+        '''
+            Emits constructor arguments
+            Should be paired with from_args such that:
+            self.__class__.from_args(self.to_args()) == self
+        '''
+        args = self._to_args()
+        if self._cached:
+            args[self.CACHED] = self._cached
+        return args
+
+    def _to_args(self):
         '''
             Emits constructor arguments
             Should be paired with from_args such that:
@@ -668,7 +675,6 @@ class ResultsComposer:
         '''
         raise NotImplementedError
 
-
     def get_postprocessing_data(self):
         '''
             Ambit method for retrieving any relevant post-processing data from the 
@@ -676,7 +682,6 @@ class ResultsComposer:
         '''
         raise NotImplementedError
 
-    
     def to_runchart(self):
         '''
             Converts the object to a format for
