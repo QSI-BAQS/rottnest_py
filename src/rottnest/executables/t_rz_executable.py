@@ -1,14 +1,10 @@
 '''
-    Derived class from RottnestExecutable for T Rz based compilation  
+    Derived class from RottnestExecutable for T Rz based compilation
 '''
 
-# TODO: Fix this
-#from rottnest.monkey_patchers import pyliqtr_patcher
-from rottnest.pandora.pandora_cache import pandora_cache
-
+# from rottnest.pandora.pandora_cache import pandora_cache
 from rottnest.executables.executable import RottnestExecutable
 
-from pyLIQTR.utils.circuit_decomposition import circuit_decompose_multi
 
 class T_RZ_RottnestExecutable(RottnestExecutable):
     '''
@@ -26,33 +22,23 @@ class T_RZ_RottnestExecutable(RottnestExecutable):
             Naively assume that these are all
             T gates
         '''
-        if self._n_T is None:
-            qc = self._generate_circuit()
-            self._n_T = self.count_t_cirq(qc)
-        return self._n_T
-
 
     def n_rz(self) -> int:
         '''
             Calculate number of rz gates required
         '''
-        if self._n_rz is None:
-            qc = self._generate_circuit()
-            self._n_rz = self.count_rz_cirq(qc)
-        return self._n_rz
 
-
-    def precompute(self):
+    def precompute(self, *_args, **_kwargs):
         '''
             Collects all hashed operations and injects them into Pandora
-        '''
+
         if self._pandora:
             circuit = self._generate_circuit()
             for layer in circuit_decompose_multi(circuit, self._cache_layer):
                 for op in layer:
                     if type(op.gate) in pyliqtr_patcher.hash_function_patchers:
                         if not pandora_cache.in_cache(op):
-                            hsh = op._rottnest_hash()
+                            _hsh = op._rottnest_hash()
                             # NOTE: This apparently
                             pandora_cache.bind_hash(op)
-
+        '''
