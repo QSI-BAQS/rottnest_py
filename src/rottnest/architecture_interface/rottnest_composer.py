@@ -207,7 +207,7 @@ class RottnestComposer(abc.ABC):
         else:
             # Compose into caller
             # TODO: Get labels
-            mem_cost = self.memory_manager.frame_delete(old_frame.get_id(), [])
+            mem_cost = self.memory_manager.frame_delete(old_frame.get_id())
 
             # Compose costs from memory unit with the frame
 
@@ -462,7 +462,7 @@ class ComposerStackFrame:
 
     def receive(self, result):
         '''
-            Compute units received that are part of this 
+            Compute units received that are part of this
             stack frame
         '''
         self.result += result
@@ -671,12 +671,12 @@ class ResultsComposer:
 
     def get_postprocessing_data(self):
         '''
-            Ambit method for retrieving any relevant post-processing data from the 
+            Ambit method for retrieving any relevant post-processing data from the
             architecture run
         '''
         raise NotImplementedError
 
-    
+
     def to_runchart(self):
         '''
             Converts the object to a format for
