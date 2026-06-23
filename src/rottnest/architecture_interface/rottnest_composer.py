@@ -206,6 +206,7 @@ class RottnestComposer(abc.ABC):
         # Frame hasn't received everything, or possibly has its own deferred cache
         if not old_frame.complete():
             self.stack_frames[-1].register_cache_deference(old_frame)
+            self.memory_manager.frame_pop(old_frame.get_id())
         else:
             # Compose into caller
             # TODO: Get labels
@@ -518,6 +519,12 @@ class MemoryManager:
             Costs memory movement to create a frame context
         '''
         return self.ResultsComposer()
+
+    def frame_pop(self, frame_id: int):
+        '''
+            Pops frame from memory manager stack without 
+            collecting compilation data
+        '''
 
     def frame_delete(self, frame_id: int, labels: list):
         '''
