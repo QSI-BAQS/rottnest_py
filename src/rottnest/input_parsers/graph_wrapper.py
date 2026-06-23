@@ -23,7 +23,7 @@ class GraphWrapper:
 
     def to_dict(self,expands=False):
         '''
-           Generates a dictionary object 
+           Generates a dictionary object
         '''
         return {
             'handle_id': self.handle_id,
@@ -32,12 +32,11 @@ class GraphWrapper:
             'rottnest_hash': self.rottnest_hash,
             'expands': expands
         }
-        
+
     @classmethod
     def from_dict(cls, obj: dict):
         '''
             Reconstruction from dictionary
             Omits the parser
         '''
-        return cls(**obj) 
-
+        return cls(**obj)
