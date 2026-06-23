@@ -9,9 +9,7 @@ import abc
 
 from typing import Type
 
-
 from rottnest.compute_units.layout_proxy import LayoutProxy
-# from rottnest.architecture_interface.rottnest_composer import ResultsComposer
 
 class RottnestComposer(abc.ABC):
     '''
@@ -571,6 +569,9 @@ class ResultsComposer:
 
     # Marks the object as a cache object
     CACHED = 'CACHED'
+    CACHED_ARG = 'cached'
+
+    
 
     def __init__(
             self,
