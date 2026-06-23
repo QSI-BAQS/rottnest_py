@@ -685,10 +685,10 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
             
             # Drop cache object to queue
             if res_obj is not False: 
-                self.manager_completion_queue.put(
+                self.manager_completion_queue.put((
                         rottnest_worker.EXEC_COMPUTE_UNIT,
                         res_obj.to_args(),
-                )
+                ))
 
         self.cache_time += time.time() - cache_start
 
