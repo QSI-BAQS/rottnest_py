@@ -95,11 +95,6 @@ class PyliqtrParser:
         cirq.CCXPowGate,
     ))
 
-    # Targets to discard as unnecessary
-    discard_targets = frozenset((
-        qualtran.bloqs.bookkeeping.free.Free,
-    ))
-
     @classmethod
     def update_tracking_targets(cls, targets):
         '''
@@ -235,9 +230,7 @@ class PyliqtrParser:
                 if tracking_identity in [ BloqAsCirqGate ]:
                     tracking_identity = type(operation.gate.bloq)
 
-                if tracking_identity in self.discard_targets:
-                    pass
-                elif tracking_identity in self.tracking_targets:
+                if tracking_identity in self.tracking_targets:
                     # Tracking object
                     # Add to sequence, create new shim
 
@@ -267,9 +260,7 @@ class PyliqtrParser:
                             g_identity = type(g.gate.bloq)
 
                         # In case the gate decomposes into tracking targets
-                        if g_identity in self.discard_targets:
-                            pass
-                        elif g_identity in self.tracking_targets:
+                        if g_identity in self.tracking_targets:
                             self.sequence.append(g)
 
                             _curr_shim.set_parent(operation)

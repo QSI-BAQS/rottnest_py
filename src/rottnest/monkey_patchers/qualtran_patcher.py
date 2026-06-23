@@ -1,14 +1,18 @@
 '''
-    Monkey Patchers for Qualtran objects 
+    Monkey Patchers for Qualtran objects
     Hash functions are overloaded for caching
     Hashes must include the class name to avoid collisions
-    on common integer sequences  
+    on common integer sequences
 '''
+import cirq
+import qualtran
+import numpy
+
 from types import MethodType
 
 from Crypto.Hash import MD5
 
-from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate 
+from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate
 
 from .default_hashes import qualtran_hashes
 
@@ -18,11 +22,24 @@ class BloqWrapper:
         Tiny wrapper to remap bloqascirq objects
     '''
     def __init__(self, bloq):
-        self.gate = bloq 
+        self.gate = bloq
 
 def bloq_as_cirq_hash(_, operation):
     wrapper = BloqWrapper(operation.gate.bloq)
     return hash_function_patchers[operation.gate.bloq.__class__](None, wrapper)
+
+
+def qualtran_free_as_cirq_op(self, qubit_manager, reg):
+    '''
+        Implements as_cirq_op for mapping qualtran Free to measure
+    '''
+    # unpack from array
+    reg, *_ = reg
+    return (
+        cirq.measure(reg),
+        {'reg': numpy.array([reg])}
+    )
+
 
 hash_function_patchers = {
     BloqAsCirqGate: bloq_as_cirq_hash,
@@ -43,6 +60,9 @@ def monkey_patch(patchers=None):
             gate_type._cached_rottnest_hash = None
             gate_type._rottnest_hash = bound_method
 
+    # Explicit patching of Free -> MeasureGate mapping
+    qualtran.bloqs.bookkeeping.Free.as_cirq_op = qualtran_free_as_cirq_op
+
 # Perform the monkey patching
-# This will inject the _rottnest_hash method on import 
+# This will inject the _rottnest_hash method on import
 monkey_patch()
