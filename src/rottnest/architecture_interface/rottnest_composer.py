@@ -319,7 +319,7 @@ class RottnestComposer(abc.ABC):
             self.stack_frames[-1].compose_stack_frames(
                 res_obj
             )
-            return res_obj 
+            return res_obj.get_result() 
 
     def get_memory_manager(self):
         '''
