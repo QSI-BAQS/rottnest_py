@@ -1,22 +1,20 @@
-from types import MethodType
-from functools import partial
-
+'''
+    Parser for cirq objects
+    Maps to compute units of Cabaliser operations
+'''
 import cirq
-import cabaliser.gates as cabaliser_gates
 from cabaliser.operation_sequence import OperationSequence
 
 from rottnest.input_parsers.qubit_label_tracker import QubitLabelTracker
-from rottnest.input_parsers.rz_tag_tracker import RzTagTracker
+from rottnest.input_parsers.rz_tag_tracker import get_shared_rz_tracker 
 
 # Load and run the monkey patcher for cirq objects
 from rottnest.monkey_patchers import cirq_patcher
-from rottnest.monkey_patchers.cirq_patcher import known_gates
 from rottnest.input_parsers.interrupt import INTERRUPT, NON_CACHING
 
-#from rottnest.pandora.pandora_sequencer import PandoraSequencer
+from rottnest.monkey_patchers.cirq_patcher import known_gates
 
-# TODO: remove
-shared_rz_tag_tracker = RzTagTracker()
+#from rottnest.pandora.pandora_sequencer import PandoraSequencer
 
 class CirqParser:
     '''
@@ -31,9 +29,7 @@ class CirqParser:
         self._qubit_labels = QubitLabelTracker()
 
         if rz_tracker is None:
-            global shared_rz_tag_tracker
-            rz_tracker = shared_rz_tag_tracker
-
+            rz_tracker = get_shared_rz_tracker()
         self._rz_tracker = rz_tracker
 
     def __len__(self):
@@ -42,7 +38,7 @@ class CirqParser:
         '''
         return len(self._qubit_labels) + self._rz_tracker.n_rz_gates
 
-    def reset_context(self, *sequences):
+    def reset_context(self, *_sequences):
         '''
             Resets local context
         '''
@@ -53,11 +49,14 @@ class CirqParser:
         return prev_context
 
     def curr_mem(self):
+        '''
+            Current memory tracked by parser
+        '''
         return len(self._qubit_labels) * 2 + self._rz_tracker.n_rz_gates
 
     def extract_context(self):
         '''
-        TODO: Tighten this
+            Extracts the context of the parser to pass to the compute unit
         '''
         n_inputs = len(self._qubit_labels)
         n_rz_gates = self._rz_tracker.n_rz_gates
@@ -78,9 +77,11 @@ class CirqParser:
     def parse(
         self,
         circ_iter: cirq.circuits.circuit.Circuit,
-        widget = None
+        _widget = None
     ):
-
+        '''
+            Parses the object into interrupts and shims
+        '''
         # This needs to be better
         # TODO: Fix cyclic dependency in pandora sequencer
         if isinstance(circ_iter, type(None)): #PandoraSequencer):
@@ -126,15 +127,24 @@ class CirqShim:
     '''
 
     def __init__(self):
+        '''
+            Shim constructor
+        '''
         # List of gates object
         self._lst = []
         self.fully_decomposed = True
         self._parent_str = None
 
     def cache_hash(self):
+        '''
+            Shims are not cacheable and have no hash
+        '''
         return None
 
     def append(self, obj):
+        '''
+            Adds an object to the shim
+        '''
         self._lst.append(obj)
 
     def __iter__(self):
@@ -145,28 +155,48 @@ class CirqShim:
             yield (element,)
 
     def to_operation_sequence(self):
+        '''
+            Iterates over the elements in the shim
+        '''
         return iter(self._lst)
 
     def traverse(self):
+        '''
+            Leaf object of dag, traversal is self
+        '''
         yield self
 
     def flatten(self):
+        '''
+            Leaf object of dag, flatten is self
+        '''
         return iter(self._lst)
 
     def __str__(self):
+        '''
+            String representation
+        '''
         return f"Shim: {self._parent_str}"
 
     def set_parent(self, operation):
+        '''
+            Sets the parent of the node
+        '''
         self._parent_str = str(operation.gate.__class__)
 
     def decompose(self):
+        '''
+            Leaf object of dag, decomposition is self
+        '''
         return iter(self)
 
     def parse(self):
         '''
             Shims require no parsing
         '''
-        pass
 
     def __len__(self):
+        '''
+            Operation in the shim
+        '''
         return len(self._lst)
