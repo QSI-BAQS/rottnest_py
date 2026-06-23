@@ -532,20 +532,20 @@ class MemoryManager:
             collecting compilation data
         '''
 
-    def frame_delete(self, frame_id: int, labels: list):
+    def frame_delete(self, frame_id: int, labels=None: list):
         '''
             Frame context finished
             The labels passed should be preserved, the rest may be dropped
         '''
         return self.ResultsComposer()
 
-    def store(self, frame_id: int, labels: list):
+    def store(self, frame_id: int, labels=None: list):
         '''
             Costs storing memory
         '''
         return self.ResultsComposer()
 
-    def load(self, frame_id: int, labels: list):
+    def load(self, frame_id: int, labels=None: list):
         '''
             Costs storing memory
         '''
