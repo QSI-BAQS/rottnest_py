@@ -663,7 +663,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         '''
         return self.composer.stack_frames[0].result.to_args()
 
-
     def process_elem_cache(
         self,
         cache_obj
@@ -682,7 +681,14 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
 
         elif cache_obj.request_type == CACHED.REQUEST:
             # Process result from cache
-            self.composer.cache_request(cache_obj)
+            res_obj = self.composer.cache_request(cache_obj)
+            
+            # Drop cache object to queue
+            if res_obj is not False: 
+                self.manager_completion_queue.put(
+                        rottnest_worker.EXEC_COMPUTE_UNIT,
+                        res_obj,
+                )
 
         self.cache_time += time.time() - cache_start
 

@@ -312,8 +312,14 @@ class RottnestComposer(abc.ABC):
             return False
         else:
             # Compose the cache request result into the active frame
-            self.stack_frames[-1].compose_stack_frames(RottnestComposer.result_cache[cache_obj.cache_hash()])
-            return True
+            res_obj = RottnestComposer.result_cache[
+                cache_obj.cache_hash()
+            ]
+
+            self.stack_frames[-1].compose_stack_frames(
+                res_obj
+            )
+            return res_obj 
 
     def get_memory_manager(self):
         '''
