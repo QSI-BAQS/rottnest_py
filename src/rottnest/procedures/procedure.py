@@ -5,10 +5,8 @@
 '''
 from .stage import RottnestCompilerStage #,stage_tag
 from . import exceptions
-from rottnest.debug.util import with_debug_log
 
 
-import time
 
 class RottnestCompilerProcedure(RottnestCompilerStage):
     '''
@@ -151,7 +149,6 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
 
             return self.complete() 
 
-    @with_debug_log()
     def poll(self, environment = None):
         '''
             Polling function during asynchronous execution
