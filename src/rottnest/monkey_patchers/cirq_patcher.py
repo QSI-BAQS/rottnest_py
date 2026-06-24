@@ -74,7 +74,28 @@ pauli_X = partial(simple_operator, cabaliser_gates.X)
 pauli_Y = partial(simple_operator, cabaliser_gates.Y)
 pauli_Z = partial(simple_operator, cabaliser_gates.Z)
 
-measure = partial(simple_operator, cabaliser_gates.MEAS)
+
+def measure_operator(cabaliser_op):
+    '''
+        Acts as a simple operator, but tracks the qubit labels
+    '''
+    def _wrap(
+            gate,  # Look...
+            self,
+            operation_sequence: OperationSequence,
+            qubit_labels: QubitLabelTracker,
+            rz_tags: RzTagTracker):
+
+        operation_sequence.append(
+            cabaliser_op,
+            *qubit_labels.gets(*self.qubits)
+        )
+        # Measures the labels
+        qubit_labels.measure(*self.qubits)
+
+    return _wrap, 1
+
+measure = partial(measure_operator, cabaliser_gates.MEAS)
 
 
 def h_pow():

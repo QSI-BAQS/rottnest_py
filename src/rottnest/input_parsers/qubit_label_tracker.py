@@ -45,9 +45,16 @@ class QubitLabelTracker:
 
         Acts an adapter
     '''
-    def __init__(self, context: RegisterContext = None, global_context: RegisterContext = None):
+    def __init__(
+                self,
+                context: RegisterContext = None,
+                global_context: RegisterContext = None
+            ):
+
         self._labels = dict()
         self._local_labels = dict()
+        self._measured_labels = set()
+
         if context is None:
             context = RegisterContext(global_context=global_context) 
         self._context = context
@@ -72,7 +79,22 @@ class QubitLabelTracker:
         return index
 
     def gets(self, *labels):
+        '''
+            Updates label tracking
+        '''
         return tuple(map(self.get, labels))
+
+    def measure(self, *labels):
+        '''
+            Tracks the measured labels
+        '''
+        self._measured_labels |= set(labels)
+
+    def get_measured_qubit_labels(self):
+        '''
+            Getter for the measured labels
+        '''
+        return self._measured_labels
     
     def to_dict(self):
         '''

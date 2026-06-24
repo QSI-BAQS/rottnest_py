@@ -117,15 +117,12 @@ class RottnestComposer(abc.ABC):
 
         # Hook this one for later
         self._compute_units[compute_unit.unit_id] = compute_unit
+        self.memory_manager.free(stack_frame.get_id(), compute_unit.get_measured_qubit_labels())
 
     def receive(self, result_composer: "ResultsComposer"):
         '''
             Receiving a result from a compilation
         '''
-        #if result_composer.end_computation():
-        #    # TODO set pending remaining compute units
-        #    return
-
         #result = self.ResultsComposer(result)
         compute_unit_ids = result_composer.get_compute_unit_ids()
 
@@ -136,10 +133,25 @@ class RottnestComposer(abc.ABC):
         for cu_id in compute_unit_ids:
             compute_unit = self._compute_units[cu_id]
 
-            self.memory_manager.idle(stack_frame.get_id(), result_composer.get_tocks())
-            self.memory_manager.store(stack_frame.get_id(), self._compute_units[cu_id].get_qubit_labels().keys())
-            self._compute_units.pop(cu_id)
+            self.memory_manager.idle(
+                stack_frame.get_id(),
+                result_composer.get_tocks()
+            )
 
+            store_labels = (
+                set(
+                    compute_unit.get_qubit_labels().keys()
+                ).difference( 
+                    compute_unit.get_measured_qubit_labels()
+                )
+            )
+                 
+
+            self.memory_manager.store(
+                stack_frame.get_id(), 
+                store_labels
+            )
+            self._compute_units.pop(cu_id)
         stack_frame.receive(result_composer)
 
     def cache_entry_start(self, cache_obj):
@@ -176,7 +188,6 @@ class RottnestComposer(abc.ABC):
 
         # Prev Frame
         prev_frame = self.stack_frames[-1]
-        #prev_frame.non_participatory_qubits += cache_obj.non_participatory_qubits
 
         # Stack frame goes on the bottom
         self.stack_frames.append(stack_frame)
@@ -556,6 +567,11 @@ class MemoryManager:
             Costs idling for n cycles
         '''
         return self.ResultsComposer()
+
+    def free(self, frame_id: int, labels: set) -> None:
+        '''
+            Indicates that this memory has been freed
+        '''
 
     def logical_patches(self) -> int:
         '''

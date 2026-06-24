@@ -61,11 +61,14 @@ class CirqParser:
         n_inputs = len(self._qubit_labels)
         n_rz_gates = self._rz_tracker.n_rz_gates
         n_qubits = 2 * n_inputs + n_rz_gates
-        n_outputs = n_inputs
+
+        measured_qubits = self._qubit_labels.get_measured_qubit_labels()
+
+        n_outputs = n_inputs - len(measured_qubits)
         rz_tracker = self._rz_tracker.to_dict()
         label_tracker = self._qubit_labels.to_dict()
 
-        return n_inputs, n_qubits, n_outputs, rz_tracker, label_tracker
+        return n_inputs, n_qubits, n_outputs, rz_tracker, label_tracker, measured_qubits
 
     def extract_rz_tracker(self) -> dict:
         '''
@@ -88,14 +91,20 @@ class CirqParser:
             yield from circ_iter.to_operation_sequence()
             return
 
-        op = OperationSequence(max(self.sequence_length, cirq_patcher.MIN_SEQUENCE_LEN))
+        op = OperationSequence(
+            max(
+                self.sequence_length,
+                cirq_patcher.MIN_SEQUENCE_LEN
+            )
+        )
 
         for moment in circ_iter:
             for operation in moment:
                 # TODO: Clean up the shim interface
                 if isinstance(operation, tuple):
                     operation = operation[0]
-
+            
+                # Handle interrupts
                 if operation == INTERRUPT:
                     if operation.cache_hash() is not NON_CACHING:
                         yield operation
@@ -114,8 +123,20 @@ class CirqParser:
                 # Append operation to next sequence
                 if operation.gate._n_cabaliser_ops + len(op) > self.sequence_length:
                     yield op
-                    op = OperationSequence(max(self.sequence_length, cirq_patcher.MIN_SEQUENCE_LEN))
-                operation.gate._parse_cabaliser(operation, op, self._qubit_labels, self._rz_tracker)
+                    op = OperationSequence(
+                        max(
+                            self.sequence_length,
+                            cirq_patcher.MIN_SEQUENCE_LEN
+                        )
+                    )
+
+                operation.gate._parse_cabaliser(
+                    operation,
+                    op, 
+                    self._qubit_labels, 
+                    self._rz_tracker
+                )
+
         if len(op) > 0:
             yield op
         return
