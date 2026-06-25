@@ -573,7 +573,7 @@ class MemoryManager:
             Indicates that this memory has been freed
         '''
 
-    def logical_patches(self) -> int:
+    def get_logical_patches(self) -> int:
         '''
             Number of logical patches needed so far
         '''
