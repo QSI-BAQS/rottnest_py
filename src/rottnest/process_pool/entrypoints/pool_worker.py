@@ -10,7 +10,7 @@ from . import process_type
 from rottnest.process_pool.single_instantiation import block_instantiation
 
 
-class PoolWorkerProcessHandler(ProcessEntrypoint)
+class PoolWorkerProcessHandler(ProcessEntrypoint):
     '''
         Entrypoint helper for the worker
     '''

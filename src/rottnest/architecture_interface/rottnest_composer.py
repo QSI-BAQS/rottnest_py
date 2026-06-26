@@ -360,7 +360,7 @@ class ComposerStackFrame:
         self.memory_manager = memory_manager
 
 
-        self.result = self.ResultsComposer(CACHED=True)
+        self.result = self.ResultsComposer(CACHED=True) 
 
         self.all_submitted = False
         self.compilation_complete = False
@@ -539,19 +539,19 @@ class MemoryManager:
             collecting compilation data
         '''
 
-    def frame_delete(self, frame_id: int, labels: list = None):
+    def frame_delete(self, frame_id: int, labels: list | None = None):
         '''
             Frame context finished
             The labels passed should be preserved, the rest may be dropped
         '''
         return self.ResultsComposer()
 
-    def store(self, frame_id: int, labels: list = None) -> None:
+    def store(self, frame_id: int, labels: list | None = None) -> None:
         '''
             Costs storing memory
         '''
 
-    def load(self, frame_id: int, labels: list = None) -> None:
+    def load(self, frame_id: int, labels: list | None = None) -> None:
         '''
             Costs storing memory
         '''
