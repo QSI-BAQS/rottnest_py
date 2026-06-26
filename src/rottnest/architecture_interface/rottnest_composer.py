@@ -117,15 +117,12 @@ class RottnestComposer(abc.ABC):
 
         # Hook this one for later
         self._compute_units[compute_unit.unit_id] = compute_unit
+        self.memory_manager.free(stack_frame.get_id(), compute_unit.get_measured_qubit_labels())
 
     def receive(self, result_composer: "ResultsComposer"):
         '''
             Receiving a result from a compilation
         '''
-        #if result_composer.end_computation():
-        #    # TODO set pending remaining compute units
-        #    return
-
         #result = self.ResultsComposer(result)
         compute_unit_ids = result_composer.get_compute_unit_ids()
 
@@ -136,10 +133,24 @@ class RottnestComposer(abc.ABC):
         for cu_id in compute_unit_ids:
             compute_unit = self._compute_units[cu_id]
 
-            self.memory_manager.idle(stack_frame.get_id(), result_composer.get_tocks())
-            self.memory_manager.store(stack_frame.get_id(), self._compute_units[cu_id].get_qubit_labels().keys())
-            self._compute_units.pop(cu_id)
+            self.memory_manager.idle(
+                stack_frame.get_id(),
+                result_composer.get_tocks()
+            )
 
+            store_labels = (
+                set(
+                    compute_unit.get_qubit_labels().keys()
+                ).difference( 
+                    compute_unit.get_measured_qubit_labels()
+                )
+            )
+                 
+            self.memory_manager.store(
+                stack_frame.get_id(), 
+                store_labels
+            )
+            self._compute_units.pop(cu_id)
         stack_frame.receive(result_composer)
 
     def cache_entry_start(self, cache_obj):
@@ -158,9 +169,6 @@ class RottnestComposer(abc.ABC):
         # Example only
         qubit_map = {}
 
-        #qubit_map = {self.stack_frames[-1].qubit_map[qubit] for qubit in input_qubits}
-        #self.mem_load(input_qubits)
-
         # Create new stack frame with loaded qubits
         stack_frame = self.StackFrame(
             cache_obj.cache_hash(),
@@ -176,7 +184,6 @@ class RottnestComposer(abc.ABC):
 
         # Prev Frame
         prev_frame = self.stack_frames[-1]
-        #prev_frame.non_participatory_qubits += cache_obj.non_participatory_qubits
 
         # Stack frame goes on the bottom
         self.stack_frames.append(stack_frame)
@@ -353,7 +360,7 @@ class ComposerStackFrame:
         self.memory_manager = memory_manager
 
 
-        self.result = self.ResultsComposer(cached=True)
+        self.result = self.ResultsComposer(CACHED=True)
 
         self.all_submitted = False
         self.compilation_complete = False
@@ -539,17 +546,15 @@ class MemoryManager:
         '''
         return self.ResultsComposer()
 
-    def store(self, frame_id: int, labels: list = None):
+    def store(self, frame_id: int, labels: list = None) -> None:
         '''
             Costs storing memory
         '''
-        return self.ResultsComposer()
 
-    def load(self, frame_id: int, labels: list = None):
+    def load(self, frame_id: int, labels: list = None) -> None:
         '''
             Costs storing memory
         '''
-        return self.ResultsComposer()
 
     def idle(self, frame_id: int, n_cycles: int) -> "ResultsComposer":
         '''
@@ -557,7 +562,12 @@ class MemoryManager:
         '''
         return self.ResultsComposer()
 
-    def logical_patches(self) -> int:
+    def free(self, frame_id: int, labels: set) -> None:
+        '''
+            Indicates that this memory has been freed
+        '''
+
+    def get_logical_patches(self) -> int:
         '''
             Number of logical patches needed so far
         '''
@@ -591,7 +601,7 @@ class ResultsComposer:
             result_obj: dict | None = None,
             n_obj = 1,
             unit_id = None,
-            cached= False
+            CACHED = False
             ):
         '''
             Constructor
@@ -609,7 +619,7 @@ class ResultsComposer:
             self._unit_ids.append(unit_id)
         self._n_obj = n_obj
 
-        self._cached = cached
+        self._cached = CACHED
 
     def items(self):
         return self._obj.items()

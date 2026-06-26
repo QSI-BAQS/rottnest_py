@@ -58,12 +58,24 @@ class TestMemoryManagerFrame():
     def __init__(self, id):
         self.id = id
         self.idle = 0
+        self.active_labels = set()
         self.costs = {
             TestMemoryManagerFrame.COST_INIT: 0,
             TestMemoryManagerFrame.COST_STORE: 0,
             TestMemoryManagerFrame.COST_LOAD: 0,
             TestMemoryManagerFrame.COST_DELETE: 0,
         }
+
+    def store(self, labels):
+        pre_store = len(self.active_labels)
+        self.active_labels = self.active_labels.difference(set(labels))
+        self.costs[TestMemoryManagerFrame.COST_STORE] += pre_store - len(self.active_labels)
+
+    def load(self, labels):
+        label_set = set(labels)
+        new_labels = len(label_set.difference(self.active_labels))
+        self.costs[TestMemoryManagerFrame.COST_LOAD] += new_labels
+        self.active_labels = self.active_labels | set(labels)
 
     def cost_labels(self, labels, cost_type):
         self.costs[cost_type] += len(labels)
@@ -81,7 +93,12 @@ class TestMemoryManager(MemoryManager):
         self.frames[frame_id] = TestMemoryManagerFrame(frame_id)
         self.frames[frame_id].cost_labels(labels, TestMemoryManagerFrame.COST_INIT)
 
-    def frame_delete(self, frame_id, labels):
+    def frame_pop(self, frame_id):
+        pass
+
+    def frame_delete(self, frame_id, labels=None):
+        if labels is None:
+            labels = []
         self.frames[frame_id].cost_labels(labels, TestMemoryManagerFrame.COST_DELETE)
 
         res = self.ResultsComposer(self.frames[frame_id].costs)
@@ -89,10 +106,10 @@ class TestMemoryManager(MemoryManager):
         return res
 
     def store(self, frame_id, labels):
-        self.frames[frame_id].cost_labels(labels, TestMemoryManagerFrame.COST_STORE)
+        self.frames[frame_id].store(labels)
 
     def load(self, frame_id, labels):
-        self.frames[frame_id].cost_labels(labels, TestMemoryManagerFrame.COST_LOAD)
+        self.frames[frame_id].load(labels)
 
     def idle(self, frame_id, n_cycles):
         self.frames[frame_id].cost_idle(n_cycles)
@@ -110,7 +127,7 @@ class ResultsComposerWithTocks(ResultsComposer):
         ResultsComposer with "proper" tocks, so that idling can be
         tested
     '''
-    def __init__(self, result_obj=None, tocks=0, n_obj=1, unit_id=None):
+    def __init__(self, result_obj=None, tocks=0, n_obj=1, unit_id=None, cached=False):
         self.tocks = tocks
         if result_obj is None:
             result_obj = {}
@@ -786,7 +803,7 @@ class MemoryManagerTests(unittest.TestCase):
         composer.cache_entry_start(cachable)
 
         unit1, res1 = unit_res_pair({'val': 1}, 1, qubit_labels={'a': 1, 'b': 2})
-        unit2, res2 = unit_res_pair({'val': 2}, 2, qubit_labels={'a': 2, 'b': 3})
+        unit2, res2 = unit_res_pair({'val': 2}, 2, qubit_labels={'c': 2, 'd': 3})
 
         composer.submit(unit1)
         composer.submit(unit2)

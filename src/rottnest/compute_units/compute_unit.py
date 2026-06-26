@@ -55,13 +55,16 @@ class ComputeUnit():
         self.n_rz_operations = 0
         self.n_gates = 0
 
+        self._measured_qubit_labels = None 
+
     def add_context(
             self,
             n_inputs: int,
             n_qubits: int,
             n_outputs: int,
             rz_tracker_dict: dict,
-            qubit_labels: dict):
+            qubit_labels: dict,
+            measured_qubit_labels: set):
         '''
             Adds contextual information to the compute unit object
         '''
@@ -70,6 +73,7 @@ class ComputeUnit():
         self.n_qubits = n_qubits
         self._rz_tracker_dict = rz_tracker_dict
         self._qubit_labels = qubit_labels
+        self._measured_qubit_labels = measured_qubit_labels
 
     def extract_rz_tracker(self):
         '''
@@ -119,6 +123,12 @@ class ComputeUnit():
             Returns the qubit labels
         '''
         return self._qubit_labels
+
+    def get_measured_qubit_labels(self):
+        '''
+            Getter for measured qubit labels
+        '''
+        return self._measured_qubit_labels
 
     def export(self):
         '''
