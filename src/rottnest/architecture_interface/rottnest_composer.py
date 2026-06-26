@@ -146,7 +146,6 @@ class RottnestComposer(abc.ABC):
                 )
             )
                  
-
             self.memory_manager.store(
                 stack_frame.get_id(), 
                 store_labels
@@ -169,9 +168,6 @@ class RottnestComposer(abc.ABC):
 
         # Example only
         qubit_map = {}
-
-        #qubit_map = {self.stack_frames[-1].qubit_map[qubit] for qubit in input_qubits}
-        #self.mem_load(input_qubits)
 
         # Create new stack frame with loaded qubits
         stack_frame = self.StackFrame(
@@ -364,7 +360,7 @@ class ComposerStackFrame:
         self.memory_manager = memory_manager
 
 
-        self.result = self.ResultsComposer(cached=True)
+        self.result = self.ResultsComposer(CACHED=True)
 
         self.all_submitted = False
         self.compilation_complete = False
@@ -550,17 +546,15 @@ class MemoryManager:
         '''
         return self.ResultsComposer()
 
-    def store(self, frame_id: int, labels: list = None):
+    def store(self, frame_id: int, labels: list = None) -> None:
         '''
             Costs storing memory
         '''
-        return self.ResultsComposer()
 
-    def load(self, frame_id: int, labels: list = None):
+    def load(self, frame_id: int, labels: list = None) -> None:
         '''
             Costs storing memory
         '''
-        return self.ResultsComposer()
 
     def idle(self, frame_id: int, n_cycles: int) -> "ResultsComposer":
         '''
@@ -607,7 +601,7 @@ class ResultsComposer:
             result_obj: dict | None = None,
             n_obj = 1,
             unit_id = None,
-            cached= False
+            CACHED = False
             ):
         '''
             Constructor
@@ -625,7 +619,7 @@ class ResultsComposer:
             self._unit_ids.append(unit_id)
         self._n_obj = n_obj
 
-        self._cached = cached
+        self._cached = CACHED
 
     def items(self):
         return self._obj.items()
