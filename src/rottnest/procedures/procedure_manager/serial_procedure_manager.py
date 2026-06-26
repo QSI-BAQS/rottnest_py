@@ -174,6 +174,7 @@ class SerialProcedureManager(ProcedureManager):
            sent by producers and consumed by the manager
                - These are async procedures
         '''
+        self.has_stopped = False
         while not self.soft_stop:
             # Blocks until N seconds and throws an exception
             # or has data available
@@ -182,4 +183,5 @@ class SerialProcedureManager(ProcedureManager):
             except queue.Empty:
                 # Is to be ignored
                 pass
-            
+
+        self.has_stopped = True

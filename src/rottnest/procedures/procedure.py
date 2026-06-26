@@ -149,7 +149,7 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
 
             return self.complete() 
 
-    def poll(self, environment = None):
+    def poll(self, compiler_environment = None):
         '''
             Polling function during asynchronous execution
         '''

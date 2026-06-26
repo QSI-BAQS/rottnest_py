@@ -13,11 +13,10 @@ class MPSCChannelMessageSuite(unittest.TestCase):
 
 
     def test_construct_message(self):
-
         msg = MPSCChannelMessage(MPSCChannelMessageKind.OBJECT, 'Hello!')
 
         assert msg.get_object() == 'Hello!'
-        assert msg.get_message_kind == MPSCChannelMessageKind.OBJECT
+        assert msg.get_message_kind() == MPSCChannelMessageKind.OBJECT
         assert msg.is_iterable() is False
         
     def test_construct_message_iter(self):
@@ -25,15 +24,15 @@ class MPSCChannelMessageSuite(unittest.TestCase):
         msg = MPSCChannelMessage(MPSCChannelMessageKind.ITERABLE, [1, 2, 3])
 
         assert msg.get_object() == [1, 2, 3]
-        assert msg.get_message_kind == MPSCChannelMessageKind.ITERABLE
+        assert msg.get_message_kind() == MPSCChannelMessageKind.ITERABLE
         assert msg.is_iterable()
         
     def test_construct_message_cls_method(self):
 
-        msg = MPSCChannelMessage.make_object([1, 2, 3])
+        msg = MPSCChannelMessage.make_object('Hello!')
 
         assert msg.get_object() == 'Hello!'
-        assert msg.get_message_kind == MPSCChannelMessageKind.OBJECT
+        assert msg.get_message_kind() == MPSCChannelMessageKind.OBJECT
         assert msg.is_iterable() is False
         
     def test_construct_message_iter_cls_method(self):

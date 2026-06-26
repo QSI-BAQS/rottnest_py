@@ -2,12 +2,13 @@ from .concurrent_procedure_manager import ConcurrentProcedureManager
 from .serial_procedure_manager import SerialProcedureManager
 from .procedure_manager import ProcedureManager
 
+
 def get_procedure_manager():
     '''
         Singleton instance getter
         This should be used for most applications
     '''
-    pm = ProcedureManagerSelector().get_instance().get_default_instance()
+    pm = ProcedureManagerSelector.get_instance().get_default_procedure_manager()
     return pm
 
 class DoubleInitialisationException(Exception):
@@ -50,7 +51,7 @@ class ProcedureManagerSelector:
             raise DoubleInitialisationException()
 
     @classmethod
-    def get_default_procedure_manager(context: object | None=None):
+    def get_default_procedure_manager(context: object | None=None, start: bool = True):
         '''
            Gets the default procedure manager 
         '''
@@ -75,26 +76,28 @@ class ProcedureManagerSelector:
         return self.get_concurrent_manager(app)
         
         
-    def get_concurrent_manager(self, app: object | None) -> ConcurrentProcedureManager:
+    def get_concurrent_manager(self, app: object | None, start: bool = True) -> ConcurrentProcedureManager:
         '''
            Gets the concurrent manager
            This will maintain the instance itself 
         '''
         if self.concurrent_instance is None:
             self.concurrent_instance = ConcurrentProcedureManager(app)
-            self.concurrent_instance.start_manager_in_thread()
+            if start:
+                self.concurrent_instance.start_manager_in_thread()
 
         return self.concurrent_instance
         
-    def get_serial_manager(self, app: object | None) -> SerialProcedureManager:
+    def get_serial_manager(self, app: object | None, start: bool = True) -> SerialProcedureManager:
         '''
            Gets the serial manager
            This wil maintain the instance itself 
         '''
         if self.serial_instance is None:
             self.serial_instance = SerialProcedureManager(app)
-            self.serial_instance.start_manager_in_thread()
+            if start:
+                self.serial_instance.start_manager_in_thread()
             
 
         return self.serial_instance
-        
+

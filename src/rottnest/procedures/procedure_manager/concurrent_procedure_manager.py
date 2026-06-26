@@ -93,6 +93,7 @@ class ConcurrentProcedureManager(ProcedureManager):
            sent by producers and consumed by the manager
                - These are async procedures
         '''
+        self.has_stopped = False
         while not self.hard_stop:
             # Blocks until N seconds and throws an exception
             # or has data available
@@ -110,7 +111,8 @@ class ConcurrentProcedureManager(ProcedureManager):
                 else:
                     # No active processes, wait until procedures are added
                     self._concurrent_dequeue_and_execute(timeout=self.queue_timeout)
-    
+
+        self.has_stopped = True
 
     def _get_active_list_length(self):
         '''

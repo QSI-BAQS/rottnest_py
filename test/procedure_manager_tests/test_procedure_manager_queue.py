@@ -44,6 +44,7 @@ class ProcedureExample(stage.RottnestCompilerStage):
 
         self.proc_id = ProcedureInspectionTools.generate_next_id()
         self.executed = False
+        self._complete = False
 
     @classmethod
     def Make(cls):
@@ -59,6 +60,7 @@ class ProcedureExample(stage.RottnestCompilerStage):
             Executes the procedure 
         '''
         self.executed = True
+        self._complete = True
 
     def get_tag(self):
         '''
@@ -76,7 +78,7 @@ class ProcedureManagerTest(unittest.TestCase):
         '''
 
         procs_generated_ref = ProcedureExample.GENERATED_OBJECTS
-        procman = ProcedureManager(RottnestApplication.get_uninitialised_instance())
+        procman = ProcedureManagerSelector.get_default_procedure_manager()
 
         
         # Use test procedure included in class
@@ -95,10 +97,10 @@ class ProcedureManagerTest(unittest.TestCase):
         procman = manager_selector.get_default(None)
 
         # Use test procedure included in class
-        procman.execute(ProcedureExample.Make())
-        procman.execute(ProcedureExample.Make())
-        procman.execute(ProcedureExample.Make())
-        procman.execute(ProcedureExample.Make())
+        procman.dispatch(ProcedureExample.Make())
+        procman.dispatch(ProcedureExample.Make())
+        procman.dispatch(ProcedureExample.Make())
+        procman.dispatch(ProcedureExample.Make())
 
         for g in procs_generated_ref:
             assert g.executed # NOTE: Since the procedure is controlled
@@ -142,10 +144,11 @@ class ProcedureManagerTest(unittest.TestCase):
            Making sure it gets pushed through in it 
         '''
         procs_generated_ref = ProcedureExample.GENERATED_OBJECTS
-        procman = ProcedureManager(RottnestApplication.get_uninitialised_instance())
+        procman = ProcedureManagerSelector.get_default_procedure_manager(
+                                            start=False)
 
         # Use test procedure included in class
-        procman.execute_defer(ProcedureExample.Make())
+        procman.dispatch(ProcedureExample.Make())
 
         assert procman.get_enqueued_size() == 1
         procman.dequeue_and_execute()

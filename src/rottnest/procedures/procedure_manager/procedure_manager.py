@@ -202,6 +202,12 @@ class ProcedureManager:
             Will complete remaining jobs before quitting
         '''
         self.soft_stop = True
+
+    def stopped(self):
+        '''
+           Outlines if the procedure manager has stopped 
+        '''
+        return self.has_stopped
     
     def terminate_manager(self):
         '''

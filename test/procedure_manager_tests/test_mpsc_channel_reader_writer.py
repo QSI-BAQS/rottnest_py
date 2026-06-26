@@ -9,6 +9,7 @@ DEBUG_CHANNEL3 = 'debug_channel_tag3'
 DEBUG_CHANNEL4 = 'debug_channel_tag4'
 DEBUG_CHANNEL5 = 'debug_channel_tag5'
 DEBUG_CHANNEL6 = 'debug_channel_tag6'
+DEBUG_CHANNEL7 = 'debug_channel_tag7'
 
 
 class MPSCChannelReaderWriterTestSuite(unittest.TestCase):
@@ -153,7 +154,7 @@ class MPSCChannelReaderWriterTestSuite(unittest.TestCase):
                         
                     data_list = reader.read_all()
 
-                    for data in data_list:
+                    for (i, data) in enumerate(data_list):
                         assert data is not None
                         assert data.get_object() is not None
                         assert data.get_object()[0] == i
@@ -189,7 +190,7 @@ class MPSCChannelReaderWriterTestSuite(unittest.TestCase):
                         
                     data_list = reader.read_all()
 
-                    for data in data_list:
+                    for (i, data) in enumerate(data_list):
                         assert data is not None
                         assert data.is_iterable()
                         assert data.get_object() is not None
@@ -206,14 +207,14 @@ class MPSCChannelReaderWriterTestSuite(unittest.TestCase):
     def test_channel_provider_create_channel_reader_and_writer_write_exceed_capacity(self):
         provider = MPSCChannelProvider.get_instance()
         if provider is not None:
-            state, channel = provider.create_channel(DEBUG_CHANNEL2)
+            state, channel = provider.create_channel(DEBUG_CHANNEL7)
 
             if channel is not None:
                 assert MPSCChannelState.CHANNEL_CREATED == state
                 assert MPSCChannelState.CHANNEL_CREATED == channel.get_state()
 
-                reader, rstate = provider.get_reader(DEBUG_CHANNEL2)
-                writer, wstate = provider.get_writer(DEBUG_CHANNEL2)
+                reader, rstate = provider.get_reader(DEBUG_CHANNEL7)
+                writer, wstate = provider.get_writer(DEBUG_CHANNEL7)
 
                 if reader is not None and writer is not None:
                     for i in range(4096):
