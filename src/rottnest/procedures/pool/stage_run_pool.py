@@ -36,14 +36,11 @@ class RunPoolStage(stage.RottnestCompilerStage):
         pool = get_pool()
         pool.run_sequence([0])
 
-
-    def _websocket_write(self, pool) -> bool:
+    def _report(self, pool):
         '''
            Generalises the the reporting mechanism to a method 
         '''
-        valid_write = False
         if self._reporting and self._writer is not None:
-            valid_write = True
             if self._complete:
                 res = pool.get_final_results()
                 if res is not None:
@@ -52,8 +49,9 @@ class RunPoolStage(stage.RottnestCompilerStage):
                 stream = pool.get_results_stream()
                 if len(stream) > 0:
                     self._writer.write_iter(stream)
-
-        return valid_write
+        else:
+            # Reporting not needed, flush
+            pool.flush_results_cache()
 
     def poll(self, compiler_environment=None):
         '''
@@ -64,12 +62,10 @@ class RunPoolStage(stage.RottnestCompilerStage):
         self._complete = (
             status == PoolStatus.FINISHED
         )
-
-        if self._websocket_write(pool) is False:
-            pool.flush_results_cache()
+        self._report(pool)
 
     def complete(self):
         pool = get_pool()
-        if self._websocket_write(pool) is False:
-            pool.flush_results_cache()
+        self._report(pool)
+
         return self._complete

@@ -683,11 +683,9 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
             # Process result from cache
             res_obj = self.composer.cache_request(cache_obj)
             
-            # Drop cache object to queue
             if res_obj is not False:
-                print("CACHE OBJECT Generated") 
                 self.manager_completion_queue.put((
-                        rottnest_worker.EXEC_COMPUTE_UNIT,
+                        commands.GET_RESULTS_STREAM,
                         res_obj.to_args(),
                 ))
 
