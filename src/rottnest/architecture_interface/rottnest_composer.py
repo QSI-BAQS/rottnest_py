@@ -229,7 +229,6 @@ class RottnestComposer(abc.ABC):
                 old_frame.get_tocks()
             )
 
-
     def all_submitted(self):
         '''
             All compute unit objects submitted
