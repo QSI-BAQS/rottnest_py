@@ -37,11 +37,24 @@ from rottnest.input_parsers.rz_tag_tracker import RzTagTracker
 from .default_hashes import cirq_hashes
 from .pyliqtr_patcher import monkey_patch as pyliqtr_monkey_patch
 
+from .cirq_single_qubit_measure import SingleQubitMeasure
+
 MIN_SEQUENCE_LEN = 5
 
 # Meeting interface spec
-# This dict should always be empty 
-hash_function_patchers = {} | cirq_hashes.TARGETS 
+# This dict should always be empty
+hash_function_patchers = {} | cirq_hashes.TARGETS
+
+
+'''
+    Patch cirq MeasurementGate (variadic) -> SingleQubitMeasure(s) for each qubit
+'''
+def cirq_measurement_decompose(self, qubits):
+    for qubit in qubits:
+        yield SingleQubitMeasure().on(qubit)
+
+cirq.MeasurementGate._decompose_ = cirq_measurement_decompose
+
 
 '''
 Format for monkey patching:
@@ -73,29 +86,6 @@ def simple_operator(cabaliser_op):
 pauli_X = partial(simple_operator, cabaliser_gates.X)
 pauli_Y = partial(simple_operator, cabaliser_gates.Y)
 pauli_Z = partial(simple_operator, cabaliser_gates.Z)
-
-
-def measure_operator(cabaliser_op):
-    '''
-        Acts as a simple operator, but tracks the qubit labels
-    '''
-    def _wrap(
-            gate,  # Look...
-            self,
-            operation_sequence: OperationSequence,
-            qubit_labels: QubitLabelTracker,
-            rz_tags: RzTagTracker):
-
-        operation_sequence.append(
-            cabaliser_op,
-            *qubit_labels.gets(*self.qubits)
-        )
-        # Measures the labels
-        qubit_labels.measure(*self.qubits)
-
-    return _wrap, 1
-
-measure = partial(measure_operator, cabaliser_gates.MEAS)
 
 
 def h_pow():
@@ -421,7 +411,7 @@ def wrapper_fn():
         return operation.gate._parse_cabaliser(operation, operation_sequence, qubit_labels, rz_tags)
     return _wrap, 1
 
-# Not currently supported: non-standard angles on these gates 
+# Not currently supported: non-standard angles on these gates
 # TODO: Write up decompositions
 cx_pow = partial(simple_operator, cabaliser_gates.CNOT)
 cz_pow = partial(simple_operator, cabaliser_gates.CZ)
@@ -433,6 +423,8 @@ def __blank(*args, **kwargs):
 
 # Monkey patching list
 # These will all be injected into their associated cirq class objects
+# Note that SingleQubitMeasure (custom, see cirq_single_qubit_measure.py) implements
+# this interface natively and so doesn't require patching
 known_gates = {
     cirq.ops.common_gates.HPowGate: h_pow,
     cirq.ops.common_gates.XPowGate: x_pow,
@@ -447,7 +439,6 @@ known_gates = {
     cirq.ops.common_gates.CXPowGate: cx_pow,
     cirq.ops.common_gates.CZPowGate: cz_pow,
     cirq.T : rz,
-    cirq.ops.common_gates.MeasurementGate: measure,
     cirq.ResetChannel: __blank,  # Delete from context
     cirq.ClassicallyControlledOperation: wrapper_fn, # Drop onto pauli tracker
     None.__class__: __blank, # I don't know why the classical operations kick up nones like this

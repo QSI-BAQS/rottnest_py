@@ -90,6 +90,8 @@ class PyliqtrParser:
 
     # Targets to decompose on the spot
     cirq_decomposing_targets = frozenset((
+        # Decomposes to our SingleQubitMeasure for cabaliser compat
+        cirq.MeasurementGate,
         cirq.ControlledGate,
         qualtran.bloqs.mcmt.and_bloq.And,
         cirq.CCXPowGate,
@@ -184,7 +186,7 @@ class PyliqtrParser:
                 participatory = (
                     tmp.all_qubits()
                 )
-                
+
                 yield CACHED(
                     rottnest_hash,
                     request_type=CACHED.START,
