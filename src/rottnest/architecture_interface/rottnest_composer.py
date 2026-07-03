@@ -141,13 +141,13 @@ class RottnestComposer(abc.ABC):
             store_labels = (
                 set(
                     compute_unit.get_qubit_labels().keys()
-                ).difference( 
+                ).difference(
                     compute_unit.get_measured_qubit_labels()
                 )
             )
-                 
+
             self.memory_manager.store(
-                stack_frame.get_id(), 
+                stack_frame.get_id(),
                 store_labels
             )
             self._compute_units.pop(cu_id)
@@ -163,8 +163,9 @@ class RottnestComposer(abc.ABC):
         operation = cache_obj.op
 
         # Get qubits that are pulled
-        # TODO: Not completed?
-        input_qubits = operation.qubits
+        # input_symbols are bound in the cache object st. they
+        # are actually the inputs (ie. no qualtran RIGHTs)
+        input_qubits = cache_obj.input_symbols
 
         # Example only
         qubit_map = {}
@@ -210,14 +211,20 @@ class RottnestComposer(abc.ABC):
 
         old_frame.last_submitted()
 
+        output_qubits = cache_obj.output_symbols
+
         # Frame hasn't received everything, or possibly has its own deferred cache
         if not old_frame.complete():
+            old_frame.register_output_qubits(output_qubits)
             self.stack_frames[-1].register_cache_deference(old_frame)
             self.memory_manager.frame_pop(old_frame.get_id())
         else:
             # Compose into caller
             # TODO: Get labels
-            mem_cost = self.memory_manager.frame_delete(old_frame.get_id())
+            mem_cost = self.memory_manager.frame_delete(
+                old_frame.get_id(),
+                qubit_labels = output_qubits
+            )
 
             # Compose costs from memory unit with the frame
 
@@ -325,7 +332,7 @@ class RottnestComposer(abc.ABC):
             self.stack_frames[-1].compose_stack_frames(
                 res_obj
             )
-            return res_obj.get_result() 
+            return res_obj.get_result()
 
     def get_memory_manager(self):
         '''
@@ -359,7 +366,7 @@ class ComposerStackFrame:
         self.memory_manager = memory_manager
 
 
-        self.result = self.ResultsComposer(CACHED=True) 
+        self.result = self.ResultsComposer(CACHED=True)
 
         self.all_submitted = False
         self.compilation_complete = False
@@ -375,6 +382,15 @@ class ComposerStackFrame:
 
         # A map frame -> n for the frames this frame depends on
         self.deferred_frames = dict()
+
+        # list of qubit labels (acquired from end cache object)
+        # only relevant when deferred
+        self.output_qubits = None
+
+        # tracks if a deferred frame has already been resolved
+        # a deferred frame should be resolved exactly once,
+        # inside some instance of resolve_deferred_child
+        self.deferred_resolved = False
 
     def get_id(self):
         '''
@@ -400,14 +416,13 @@ class ComposerStackFrame:
         if frame not in self.deferred_frames:
             raise Exception(f"Cache resolution triggered merging non-child frame {frame.cache_hash()} into {self.cache_hash()}")
 
-        first_instance = True
         # Loop over the number of times this frame is a child
         # Compose each instance
         for i in range(self.deferred_frames.pop(frame)):
 
             # First instance of a deferred frame, resolve its memory
-            if first_instance:
-                mem_cost = self.memory_manager.frame_delete(frame.get_id(), [])
+            if not frame.deferred_resolved:
+                mem_cost = self.memory_manager.frame_delete(frame.get_id(), frame.output_qubits)
 
                 # Compose costs from memory unit with the frame
                 frame.parallel_compose(mem_cost)
@@ -417,7 +432,8 @@ class ComposerStackFrame:
                     self.get_id(),
                     frame.get_tocks()
                 )
-                first_instance = False
+
+                frame.deferred_resolved = True
 
             self.compose_stack_frames(frame)
 
@@ -431,6 +447,9 @@ class ComposerStackFrame:
         '''
         self.deferred_frames[child_frame] = self.deferred_frames.get(child_frame, 0) + 1
         child_frame.parent_frames.add(self)
+
+    def register_output_qubits(self, qb):
+        self.output_qubits = qb
 
     def cache_hash(self):
         return self.rottnest_hash
@@ -531,11 +550,11 @@ class MemoryManager:
 
     def frame_pop(self, frame_id: int):
         '''
-            Pops frame from memory manager stack without 
+            Pops frame from memory manager stack without
             collecting compilation data
         '''
 
-    def frame_delete(self, frame_id: int, labels: list | None = None):
+    def frame_delete(self, frame_id: int, qubit_labels: list | None = None):
         '''
             Frame context finished
             The labels passed should be preserved, the rest may be dropped
@@ -590,7 +609,7 @@ class ResultsComposer:
     CACHED = 'CACHED'
     CACHED_ARG = 'cached'
 
-    
+
 
     def __init__(
             self,
