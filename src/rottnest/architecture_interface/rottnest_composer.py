@@ -45,6 +45,7 @@ class RottnestComposer(abc.ABC):
         '''
         return MemoryManager
 
+    frame_to_cache = dict()
 
     def __init__(self, layouts, qubits):
         # Tracks qubits irrespective of renaming
@@ -71,7 +72,6 @@ class RottnestComposer(abc.ABC):
         self.active_compute_units = {}
         self._compute_units = {}
         self._all_submitted = False
-
 
     def setup(self, initial_qubits=None):
         '''
@@ -178,6 +178,8 @@ class RottnestComposer(abc.ABC):
             memory_manager=self.memory_manager
         )
 
+        RottnestComposer.frame_to_cache[stack_frame] = cache_obj
+
         self.memory_manager.frame_create(
             stack_frame.get_id(),
             input_qubits
@@ -219,12 +221,19 @@ class RottnestComposer(abc.ABC):
             self.stack_frames[-1].register_cache_deference(old_frame)
             self.memory_manager.frame_pop(old_frame.get_id())
         else:
+            print(f"Frame {RottnestComposer.frame_to_cache[old_frame].op.gate}")
+            try:
+                print(f"Child of {RottnestComposer.frame_to_cache[self.stack_frames[-1]].op.gate}")
+            except:
+                print(f"Child of non-cached frame")
+            # print(f"\tin {RottnestComposer.frame_to_cache[old_frame].input_symbols}")
+            # print(f"\tout {RottnestComposer.frame_to_cache[old_frame].output_symbols}")
             # Compose into caller
-            # TODO: Get labels
             mem_cost = self.memory_manager.frame_delete(
                 old_frame.get_id(),
                 qubit_labels = output_qubits
             )
+            print()
 
             # Compose costs from memory unit with the frame
 
@@ -422,7 +431,15 @@ class ComposerStackFrame:
 
             # First instance of a deferred frame, resolve its memory
             if not frame.deferred_resolved:
+                print(f"Frame {RottnestComposer.frame_to_cache[frame].op.gate} (deferred)")
+                try:
+                    print(f"Child of {RottnestComposer.frame_to_cache[self].op.gate}")
+                except:
+                    print(f"Child of non-cached frame")
+                # print(f"\tin {RottnestComposer.frame_to_cache[frame].input_symbols}")
+                # print(f"\tout {RottnestComposer.frame_to_cache[frame].output_symbols}")
                 mem_cost = self.memory_manager.frame_delete(frame.get_id(), frame.output_qubits)
+                print()
 
                 # Compose costs from memory unit with the frame
                 frame.parallel_compose(mem_cost)
