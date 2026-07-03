@@ -451,15 +451,12 @@ class ComposerStackFrame:
             Composes stack frames
         '''
         self.idle(other.get_tocks())
-        self.non_participatory_qubits = 0
         self.get_result().compose(other.get_result())
 
     def idle(self, n_cycles):
         '''
             Adds idle volume to this stack frame
         '''
-        #self.idle_volume = n_cycles * self.non_participatory_qubits
-        #self.memory_unit.idle(n_cycles)
 
     def get_tocks(self):
         '''

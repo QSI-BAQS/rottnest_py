@@ -79,7 +79,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
 
         # Cache management
         # TODO: Move this into the composer
-        self.non_participatory_stack = [0]
         self.cache_hash_stack = [None]
 
         # Manager Communication queues
