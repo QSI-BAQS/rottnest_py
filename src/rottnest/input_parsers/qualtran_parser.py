@@ -51,6 +51,12 @@ def get_register_names(gate: "GateOperation | QualtranGate") -> tuple[list, list
         if sig_match in output_sigs:
             outputs.append(circ_match)
 
+    # TEMP : worst case is cirq style is something goes wrong w/ string matching
+    non_io = set(gate.qubits).difference(inputs).difference(outputs)
+    if non_io:
+        # print(f"Non-I/O for {gate.gate} - {gate.gate.signature}:\n{gate_labels}\n{non_io}")
+        return gate.qubits, gate.qubits
+
     return inputs, outputs
 
 def arbitrary_clifford():
