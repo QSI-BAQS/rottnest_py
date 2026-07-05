@@ -33,11 +33,11 @@ def qualtran_free_as_cirq_op(self, qubit_manager, reg):
     '''
         Implements as_cirq_op for mapping qualtran Free to measure
     '''
-    # unpack from array
-    reg, *_ = reg
     return (
-        cirq.measure(reg),
-        {'reg': numpy.array([reg])}
+        # Note that reg is variable size, which is supported
+        # by cirq.measure
+        cirq.measure(*reg),
+        {'reg': numpy.array(reg)}
     )
 
 
