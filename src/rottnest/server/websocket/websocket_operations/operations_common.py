@@ -26,8 +26,11 @@ class RottnestWebSocketCommon:
 
            Can raise an exception if the websocket has been shutdown
            or if the data is not serialisable
+
+           - Needs to handle when blocking could occur
         '''
         websocket.send(data)
+        
 
 
     def websocket_read(self, websocket: WebSocket):

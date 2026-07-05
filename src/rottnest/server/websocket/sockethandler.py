@@ -10,6 +10,7 @@ from rottnest.server.controller.layout import LayoutInterface
 from rottnest.server.controller.procedure import ProcedureInterface
 from rottnest.server.controller.sync import SynchroniseInterface
 from rottnest.server.controller.mapper import ControllerMapper
+from rottnest.server.websocket.websocket_service import WebSocketService
 import json
 
 WSGI_ENV_KEY = 'wsgi.websocket'
@@ -49,10 +50,12 @@ def websocket_construct():
     wsock = request.environ.get(WSGI_ENV_KEY)
     wsock_sem = Semaphore()
 
+    wsock_service = WebSocketService(wsock)
+    
     if not wsock:
         abort(WEBSOCKET_ABORT_STATUS, WEBSOCKET_ABORT_MSG)
 
-    return (wsock, wsock_sem)
+    return (wsock_service, wsock_sem)
 
 def websocket_handle():
     '''
@@ -95,7 +98,6 @@ def websocket_handle():
                 websocket_print_traceback()
                 websocket_send_message(wsock, websocket_error_description(e))
     except Exception as _e:
-        websocket_print_traceback()
         websocket_print_traceback()
 
 def websocket_print_traceback():

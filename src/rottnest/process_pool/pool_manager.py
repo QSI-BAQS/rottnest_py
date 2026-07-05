@@ -682,7 +682,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         elif cache_obj.request_type == CACHED.REQUEST:
             # Process result from cache
             res_obj = self.composer.cache_request(cache_obj)
-            
             if res_obj is not False:
                 self.manager_completion_queue.put((
                         commands.GET_RESULTS_STREAM,
