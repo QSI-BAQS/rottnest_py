@@ -117,3 +117,11 @@ class FrontEndSymbol:
             Serialisation function
         '''
         return {self._symbol: (self._name, self._symbol_type, self._description)}
+
+
+    def to_serializable_dict(self):
+        '''
+           This is to ensure that the type can be serialized 
+        '''
+
+        return {self._symbol: (self._name, self._symbol_type.__name__, self._description)}
