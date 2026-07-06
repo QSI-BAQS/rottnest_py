@@ -135,7 +135,7 @@ class RottnestComposer(abc.ABC):
 
             self.memory_manager.idle(
                 stack_frame.get_id(),
-                result_composer.get_tocks()
+                result_composer.get_sequential_tocks()
             )
 
             store_labels = (
@@ -242,7 +242,7 @@ class RottnestComposer(abc.ABC):
             # Idle the memory manager's next stack frame
             self.memory_manager.idle(
                 self.stack_frames[-1].get_id(),
-                old_frame.get_tocks()
+                old_frame.get_sequential_tocks()
             )
 
     def all_submitted(self):
@@ -447,7 +447,7 @@ class ComposerStackFrame:
                 # Idle the memory manager's next stack frame
                 self.memory_manager.idle(
                     self.get_id(),
-                    frame.get_tocks()
+                    frame.get_sequential_tocks()
                 )
 
                 frame.deferred_resolved = True
@@ -486,7 +486,6 @@ class ComposerStackFrame:
         '''
             Composes stack frames
         '''
-        self.idle(other.get_tocks())
         self.get_result().compose(other.get_result())
 
     def idle(self, n_cycles):
@@ -499,6 +498,12 @@ class ComposerStackFrame:
             Gets the runtime of this stack frame
         '''
         return self.get_result().get_tocks()
+
+    def get_sequential_tocks(self):
+        '''
+            Gets the runtime of this stack frame
+        '''
+        return self.get_result().get_sequential_tocks()
 
     def submit(self, compute_unit, n_submitted=1):
         '''
@@ -612,7 +617,7 @@ class ResultsComposer:
         __add__   :: Composition under addition
         __iadd__  :: In place addition
         serialise :: Maps to a front-end readable form
-        get_tocks :: Required for non-participatory qubits
+        get_sequential_tocks :: Required for non-participatory qubits
 
         This is a default implementation and should be
          overwritten by the architecture module
@@ -750,3 +755,10 @@ class ResultsComposer:
             Gets the number of tocks for this result object
         '''
         raise NotImplementedError("Results composer does not implement a get_tocks method")
+
+    def get_sequential_tocks(self):
+        '''
+            Gets the sequential runtime of this object in tocks
+            Does not include load/store idling
+        '''
+        raise NotImplementedError("Results composer does not implement a get_sequential_tocks method")
