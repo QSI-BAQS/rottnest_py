@@ -52,20 +52,21 @@ class CACHED(_INTERRUPT):
         self,
         cache_hash: bytes,
         request_type: object,
-        non_participatory_qubits: int = 0,
-        op = None
+        op = None,
+        input_symbols = None,
+        output_symbols = None
     ):
         '''
 Constructor for a cache interrupt
     :: cache_hash : bytes :: Hash of the cache request
     :: request_type : object :: Enum-like of singleton instances acting as a message interface
-    :: non_participatory_qubits : int :: Number of qubits that will idle across this cache
         '''
         self._cache_hash = cache_hash
         self.request_type = request_type
         self.op = op
         self.fully_decomposed = True
-        self.non_participatory_qubits = non_participatory_qubits
+        self.input_symbols = input_symbols
+        self.output_symbols = output_symbols
 
     def cache_hash(self):
         '''

@@ -35,7 +35,9 @@ from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate
 
 #from rottnest.pandora.pandora_sequencer import PandoraSequencer
 
+from . import qualtran_parser
 from . import cirq_parser
+
 from . import graph_wrapper
 
 from .graph_wrapper import GraphWrapper
@@ -153,20 +155,21 @@ class PyliqtrParser:
             if gate is None:
                 continue
 
+            # This is going to need some monkey patching :)
+            input_symbols, output_symbols = qualtran_parser.get_register_names(gate)
+
             # Cache check
             rottnest_hash = gate._rottnest_hash()
             if rottnest_hash is not None and self._caching:
                 if rottnest_hash in self.local_cache:
-                    non_participatory = len(
-                        self.circuit.all_qubits().difference(gate._qubits)
-                    )
                     # Need a mapping here
                     yield CACHED(
                         rottnest_hash,
                         request_type=CACHED.REQUEST,
                         op=gate,
-                        non_participatory_qubits=non_participatory
-                    )
+                        input_symbols=input_symbols,
+                        output_symbols=output_symbols
+                        )
                     continue
                 else:
                     self.local_cache.add(rottnest_hash)
@@ -179,19 +182,12 @@ class PyliqtrParser:
             if rottnest_hash is not None:
                 parser.rottnest_hash = rottnest_hash
 
-                non_participatory = (
-                    self.circuit.all_qubits().difference(tmp.all_qubits())
-                )
-
-                participatory = (
-                    tmp.all_qubits()
-                )
-
                 yield CACHED(
                     rottnest_hash,
                     request_type=CACHED.START,
                     op=gate,
-                    non_participatory_qubits=len(non_participatory)
+                    input_symbols=input_symbols,
+                    output_symbols=output_symbols
                 )
 
                 op = parser.op
@@ -202,7 +198,12 @@ class PyliqtrParser:
                 else:
                     yield parser
 
-                yield CACHED(rottnest_hash, request_type=CACHED.END)
+                yield CACHED(
+                        rottnest_hash,
+                        request_type=CACHED.END,
+                        input_symbols=input_symbols,
+                        output_symbols=output_symbols
+                    )
             else:
                 yield parser
 

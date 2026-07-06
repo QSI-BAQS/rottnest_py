@@ -84,6 +84,9 @@ class RzCollectionResultsComposer(rottnest_composer.ResultsComposer):
         '''
         return 0
 
+    def get_sequential_tocks(self):
+        return 0
+
     def to_args(self):
         '''
             Serialisation
