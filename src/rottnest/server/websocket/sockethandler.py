@@ -95,7 +95,6 @@ def websocket_handle():
                 websocket_print_traceback()
                 break
             except Exception as e:
-                websocket_print_traceback()
                 websocket_send_message(wsock, websocket_error_description(e))
     except Exception as _e:
         websocket_print_traceback()
