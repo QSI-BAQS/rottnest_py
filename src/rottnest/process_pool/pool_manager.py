@@ -641,7 +641,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         )
 
         self.manager_completion_queue.put(
-            (commands.GET_RESULTS_STREAM, result_obj.to_args())
+            (commands.GET_RESULTS_STREAM, result_obj.to_runchart())
         )
 
         # TODO: Batch
@@ -652,7 +652,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         '''
             Asynch sending of totals
         '''
-        totals = self.composer.stack_frames[0].result.to_args()
+        totals = self.composer.stack_frames[0].result.to_runchart()
         self.manager_completion_queue.put((commands.GET_CURRENT_RESULTS, totals))
 
     def _task_get_results(self, *args, **kwargs):
@@ -660,7 +660,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
             Sends the results
             Wrapper around send total
         '''
-        return self.composer.stack_frames[0].result.to_args()
+        return self.composer.stack_frames[0].result.to_runchart()
 
     def process_elem_cache(
         self,
@@ -684,7 +684,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
             if res_obj is not False:
                 self.manager_completion_queue.put((
                         commands.GET_RESULTS_STREAM,
-                        res_obj.to_args(),
+                        res_obj.to_runchart(),
                 ))
 
         self.cache_time += time.time() - cache_start

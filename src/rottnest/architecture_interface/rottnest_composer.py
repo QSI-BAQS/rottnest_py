@@ -611,6 +611,7 @@ class ResultsComposer:
     CACHED = 'CACHED'
     CACHED_ARG = 'cached'
 
+    _WARN_TOARGS_USE = False
 
 
     def __init__(
@@ -709,7 +710,7 @@ class ResultsComposer:
         raise NotImplementedError
 
     @staticmethod
-    def from_args(self, *args, **kwargs):
+    def from_args(*args, **kwargs):
         '''
             Constructor from args
             Rebuilds the class instance over a serial interface
@@ -728,7 +729,10 @@ class ResultsComposer:
             Converts the object to a format for
             display on the runchart
         '''
-        return str(self._obj)
+        if not ResultsComposer._WARN_TOARGS_USE:
+            ResultsComposer._WARN_TOARGS_USE = True
+            print("WARN: Plugin does not implement specialised .to_runchart method, .using to_args")
+        return self.to_args()
 
     def get_tocks(self):
         '''
