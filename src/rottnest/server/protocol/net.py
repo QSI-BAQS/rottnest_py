@@ -5,6 +5,9 @@
 '''
 from types import FunctionType, MethodType, ClassMethodDescriptorType
 import json
+import math
+
+
 
 def _compose(cls, parent=None):
     '''
@@ -102,6 +105,10 @@ class RottnestPacketBuilder:
        Allows for building/composing a packet to be sent 
     '''
 
+    INFINITY_SWAP_SYMBOL = 1.7976931348623157e+308
+    NEG_INFINITY_SWAP_SYMBOL = -1.7976931348623157e+308
+    NAN_SWAP_SYMBOL = None
+
     def __init__(self, message_kind: str):
         '''
            Initialiser, will provide the payload 
@@ -134,14 +141,49 @@ class RottnestPacketBuilder:
         return self
 
 
+    def validate_and_swap_values(self, payload: dict):
+        '''
+           Python implements non-standard JSON spec for some convenience reasons
+           We need to check to see if we have a non-compliant JSON value
+           within out dictionary
+
+           - Note: It does not detect cycles
+        '''
+        
+        stack = [(payload, k) for k in payload.keys()]
+
+        while len(stack) > 0:
+
+            (ref, key) = stack.pop()
+            current = ref[key]
+            
+            if isinstance(current, dict):
+                for k, v in current.items():
+                    stack.append((current, k))
+
+            elif isinstance(current, list):
+                for i, v in enumerate(current):
+                    stack.append((current, i))
+
+            elif isinstance(current, float):
+                if current == math.inf:
+                    ref[key] = RottnestPacketBuilder.INFINITY_SWAP_SYMBOL
+                elif current == -math.inf:
+                    ref[key] = RottnestPacketBuilder.NEG_INFINITY_SWAP_SYMBOL
+                elif current == math.nan:
+                    ref[key] = RottnestPacketBuilder.NAN_SWAP_SYMBOL
+
+        return payload
+
     def build(self):
         '''
            Builds the packet and serialises it 
         '''
+        payload = self.validate_and_swap_values(self.payload)
         return json.dumps({
                               'message': self.message_kind,
-                              'payload': self.payload
-                          })
+                              'payload': payload
+                          }, allow_nan=False)
 
 
 class Rottnest:
