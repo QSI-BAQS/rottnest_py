@@ -75,8 +75,8 @@ class Gridsynth(rz_decomposer.RzDecomposer):
         '''
             Returns a series of gates that perform Z(PI * p / q) with some epsilon precision
         '''
-        if precision is None:
-            precision = self.precision
+        #if precision is None:
+        precision = self.precision
 
         approx_angle = Decimal(p) / Decimal(q)
         if abs(approx_angle) % self.DEC_Z < self.precision_decimal:
