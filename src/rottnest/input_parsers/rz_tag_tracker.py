@@ -60,7 +60,7 @@ class RzTagTracker:
         if tag == MEASUREMENT_GATE_TAG:
             # Measurement gate tag
             angle = 0
-            eps = 10
+            eps = None 
         else:
             eps = self._eps[tag]
             if eps is None:
