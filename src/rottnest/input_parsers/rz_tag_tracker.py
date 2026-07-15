@@ -17,7 +17,7 @@ class RzTagTracker:
         assumptions that no two gates will have
         the same angle and differing values of eps 
     '''
-    def __init__(self, default_eps = None):
+    def __init__(self, *_, **__):
         # Reserve tag 0 
         self._angles_to_tags = {None: None}
         self._tags_to_angles = [None] 
@@ -32,7 +32,6 @@ class RzTagTracker:
             Serialisation function for passing over the network
         '''
         return {
-            'default_eps': self.default_eps,
             'eps': self._eps,
             'tags_to_angles': list(self._tags_to_angles),
         }
@@ -42,7 +41,7 @@ class RzTagTracker:
         '''
             Deserialisation function 
         '''
-        tracker = RzTagTracker(default_eps=serialised['default_eps'])
+        tracker = RzTagTracker()
         tracker._tags_to_angles = serialised['tags_to_angles'] 
         tracker._eps = serialised['eps']
         return tracker
