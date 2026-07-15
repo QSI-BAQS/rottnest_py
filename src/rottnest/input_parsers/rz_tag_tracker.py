@@ -1,7 +1,7 @@
 from typing import Union
 
 from rottnest.rz_decomposer.angle_to_rational import angle_to_rational 
-from rottnest.rz_decomposer.rz_decomposer import DEFAULT_PRECISION 
+from rottnest.rz_decomposer import get_rz_precision
 
 from cabaliser.gate_constructors import MEASUREMENT_GATE_TAG 
 
@@ -23,11 +23,6 @@ class RzTagTracker:
         self._tags_to_angles = [None] 
         self._eps = [None] # Per tag eps 
         self.n_rz_gates = 0
-    
-        if default_eps is None:
-            default_eps = DEFAULT_PRECISION + 3
-    
-        self.default_eps = default_eps
 
     def __getitem__(self, tag):
         return self._tags_to_angles[tag]
@@ -57,23 +52,23 @@ class RzTagTracker:
         '''
             Helper function to turn a tag into a rz_decomposer input
         '''
+
+        eps = get_rz_precision()
         if tag == MEASUREMENT_GATE_TAG:
             # Measurement gate tag
             angle = 0
-            eps = None 
         else:
-            eps = self._eps[tag]
-            if eps is None:
-                eps = self.default_eps
-            else:
-                eps = max(eps, self.default_eps)
+            # TODO: Decide how to override this
+            # Deferring precision for now
+            #eps = self._eps[tag]
+            #if eps is None:
+            #    eps = self.default_eps
+            #else:
+            #    eps = max(eps, self.default_eps)
 
             angle = self._tags_to_angles[tag]
 
         angle = angle % 2
-
-        if eps is None: 
-            eps = self.default_eps 
 
         return angle_to_rational(angle, precision=eps)
 

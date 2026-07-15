@@ -1,6 +1,8 @@
 from typing import Union
 from decimal import Decimal
 
+from .singleton import get_rz_precision
+
 # Bound on float accuracy in Python 
 FLOAT_PRECISION_BOUND = 54
 FLOAT_EPS_BOUND = 2 ** FLOAT_PRECISION_BOUND 
@@ -60,6 +62,8 @@ def angle_to_rational(
         Converts an angle to a rational
         TODO: This also requires increasing the precision of the initial rotation by 1 
     '''
+    if precision is None:
+        precision = get_rz_precision()
 
     angle = Decimal(angle) % I_ANGLE 
     # Increasing the precision by 2 ** 3 bounded the error on the conversion to rational   
