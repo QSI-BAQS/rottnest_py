@@ -611,9 +611,6 @@ class ResultsComposer:
     CACHED = 'CACHED'
     CACHED_ARG = 'cached'
 
-    _WARN_TOARGS_USE = False
-
-
     def __init__(
             self,
             result_obj: dict | None = None,
@@ -729,9 +726,6 @@ class ResultsComposer:
             Converts the object to a format for
             display on the runchart
         '''
-        if not ResultsComposer._WARN_TOARGS_USE:
-            ResultsComposer._WARN_TOARGS_USE = True
-            print("WARN: Plugin does not implement specialised .to_runchart method, .using to_args")
         return self.to_args()
 
     def get_tocks(self):
