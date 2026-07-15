@@ -3,8 +3,15 @@ import base64
 import pyLIQTR
 # TODO: Fix imports and refactor this
 #from rottnest.pandora.pandora_sequencer import PandoraSequencer
-from rottnest.pandora import pandora_connection
-from rottnest.compute_units.layout_proxy import LayoutProxy
+
+
+try:
+    from rottnest.pandora import pandora_connection
+    from rottnest.compute_units.layout_proxy import LayoutProxy
+    from pandora.targeted_decomposition import add_cache_db
+except:
+    pass
+
 
 try:
     from pyLIQTR.qubitization.qubitized_gates import QubitizedRotation, QubitizedReflection
@@ -14,7 +21,6 @@ try:
 except:
     pass
 
-from pandora.targeted_decomposition import add_cache_db
 
 class PandoraCacheOp:
     '''
