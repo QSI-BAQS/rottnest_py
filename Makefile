@@ -20,6 +20,10 @@ package: gridsynth
 
 gridsynth: ${OBJFILES}
 
+update: 
+	git pull origin master
+	make build
+
 ${SRCDIR}/% : ${SRCDIR}/%.hs
 	$(GHC) $^
 
