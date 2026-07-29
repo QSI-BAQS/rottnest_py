@@ -41,6 +41,40 @@ def qualtran_free_as_cirq_op(self, qubit_manager, reg):
     )
 
 
+def qualtran_effect_as_cirq_op(self, qubit_manager, q):
+    '''
+        Discards the <X>_Effect family of bloqs
+        produced by adjoints on <X>_States
+    '''
+    # TODO : do we need to do something with the trailing q
+    # nothing
+    return (
+        None,
+        {}
+    )
+
+
+def qualtran_allocate_as_cirq_op(self, qubit_manager):
+    '''
+        Allocate reduces to a register with no gate
+    '''
+    reg = qubit_manager.qalloc(self.dtype.num_qubits)
+    return (
+        None,
+        {"reg": numpy.array(reg)}
+    )
+
+
+# bind module for naming below
+zb = qualtran.bloqs.basic_gates.z_basis
+
+qualtran_effects = [
+    zb.ZeroEffect,
+    zb.OneEffect,
+    zb.IntEffect,
+]
+
+
 hash_function_patchers = {
     BloqAsCirqGate: bloq_as_cirq_hash,
 } | qualtran_hashes.TARGETS
@@ -62,6 +96,11 @@ def monkey_patch(patchers=None):
 
     # Explicit patching of Free -> MeasureGate mapping
     qualtran.bloqs.bookkeeping.Free.as_cirq_op = qualtran_free_as_cirq_op
+    qualtran.bloqs.bookkeeping.Allocate.as_cirq_op = qualtran_allocate_as_cirq_op
+
+    for effect_bloq in qualtran_effects:
+        effect_bloq.as_cirq_op = qualtran_effect_as_cirq_op
+
 
 # Perform the monkey patching
 # This will inject the _rottnest_hash method on import

@@ -97,6 +97,8 @@ class PyliqtrParser:
         cirq.ControlledGate,
         qualtran.bloqs.mcmt.and_bloq.And,
         cirq.CCXPowGate,
+        cirq.CSwapGate,
+        qualtran.bloqs.basic_gates.CSwap,
     ))
 
     @classmethod

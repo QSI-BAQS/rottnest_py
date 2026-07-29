@@ -393,6 +393,42 @@ def ry():
 
     return _wrap, 5
 
+
+def swap():
+    '''
+        SWAP gate
+    '''
+    def _wrap(
+        gate,
+        self,
+        operation_sequence: OperationSequence,
+        qubit_labels: QubitLabelTracker,
+        rz_tags: RzTagTracker,
+    ):
+        t1, t2 = qubit_labels.gets(*self.qubits)
+
+        if self.gate.exponent == 1.0:
+            operation_sequence.append(
+                cabaliser_gates.CNOT,
+                t1, t2,
+            )
+
+            operation_sequence.append(
+                cabaliser_gates.CNOT,
+                t2, t1,
+            )
+
+            operation_sequence.append(
+                cabaliser_gates.CNOT,
+                t1, t2,
+            )
+        else:
+            raise Exception("SWAP w/ exponent != 1.0 is unsupported")
+
+    return _wrap, 3
+
+
+
 def wrapper_fn():
     '''
         Strips classical control units
@@ -439,6 +475,7 @@ known_gates = {
     cirq.ops.common_gates.CXPowGate: cx_pow,
     cirq.ops.common_gates.CZPowGate: cz_pow,
     cirq.T : rz,
+    cirq.SwapPowGate: swap,
     cirq.ResetChannel: __blank,  # Delete from context
     cirq.ClassicallyControlledOperation: wrapper_fn, # Drop onto pauli tracker
     None.__class__: __blank, # I don't know why the classical operations kick up nones like this
