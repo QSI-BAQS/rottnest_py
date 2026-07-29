@@ -99,6 +99,7 @@ class PyliqtrParser:
         cirq.CCXPowGate,
         cirq.CSwapGate,
         qualtran.bloqs.basic_gates.CSwap,
+        qualtran.bloqs.basic_gates.IntState,
     ))
 
     @classmethod
