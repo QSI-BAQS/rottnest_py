@@ -1,6 +1,7 @@
 from .procedure_tuple import ProcedureTuple
 from .procedure_manager import ProcedureManager
 from ..procedure import RottnestCompilerProcedure
+from .poll_execution import PollExecutionType
 import queue
 
 class ConcurrentProcedureManager(ProcedureManager):
@@ -21,7 +22,7 @@ class ConcurrentProcedureManager(ProcedureManager):
     '''
 
 
-    def __init__(self, app: object = None, queue_timeout=3):
+    def __init__(self, app: object = None, queue_timeout=1):
         '''
            Initialises the manager
                * app - access to the application which has
@@ -44,7 +45,8 @@ class ConcurrentProcedureManager(ProcedureManager):
                 poll_callback=None,
                 complete_callback=None,
                 finaliser_callback=None,
-                procedure_state_obj=None) -> bool:
+                procedure_state_obj=None,
+                poll_type=(PollExecutionType.Immediate, None, None)) -> bool:
         '''
            Defers the execution to the queue
                Will be executed when time is available 

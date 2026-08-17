@@ -1,8 +1,9 @@
-from .procedure_tuple import ProcedureTuple, ProcedureEntityStateTag
+from .procedure_tuple import ProcedureTuple, ProcedureEntityStateTag, PollExecutionType
 from .procedure_manager import ProcedureElement, ProcedureManager, ProcedureManagerTimeout
 from ..procedure import RottnestCompilerProcedure
 import queue
 
+from typing import Any
     
 
 class SerialProcedureManager(ProcedureManager):
@@ -35,8 +36,8 @@ class SerialProcedureManager(ProcedureManager):
 
         # NOTE: Switching over to a procedure manage
         # that has many background tasks running
-        self.active_procedures = list()
-        self.dispose_procedures_buffer = list()
+        self.active_procedures: list[Any] = list()
+        self.dispose_procedures_buffer: list[Any] = list()
 
         super().__init__(app)
 
@@ -137,11 +138,12 @@ class SerialProcedureManager(ProcedureManager):
     
                 
     def dispatch(self,
-                    proc: RottnestCompilerProcedure,
-                    poll_callback=None,
-                    complete_callback=None,
-                    finaliser_callback=None,
-                    procedure_state_obj=dict()) -> bool:
+                proc: RottnestCompilerProcedure,
+                poll_callback=None,
+                complete_callback=None,
+                finaliser_callback=None,
+                procedure_state_obj=dict(),
+                poll_type=(PollExecutionType.Immediate, None, None)) -> bool:
                       
         '''
            Defers the execution to the queue
