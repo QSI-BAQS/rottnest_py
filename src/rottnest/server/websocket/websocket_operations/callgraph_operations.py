@@ -183,12 +183,15 @@ class CallGraphOperations(WebSocketOperationsSpecification):
                                             runnode_proc,
                                             mpsc_reader,
                                             POLL_RETRY_COUNT)
+
             proc_manager.dispatch(
                                 runnode_proc,
                                 self.get_visualisation_poll,
                                 None,
                                 self.get_visualisation_finalise,
-                                state_object)
+                                state_object,
+                                PollExecutionType.make_then_yield(2, POLL_RETRY_COUNT))
+
             return GET_RUNNODE_MSG_ISSUED_TEMPLATE.copy().build()
         else:
             return GET_GRAPH_MSG_INVALID_TEMPLATE.copy().build()
@@ -206,8 +209,7 @@ class CallGraphOperations(WebSocketOperationsSpecification):
 
         # if counter < limit:
         state_object.increment_counter()
-        # proc.poll()
-        # time.sleep(POLL_TIME_DELAY) # Yield here
+        proc.poll()
         graph_package = GET_RUNNODE_MSG_POLL_TEMPLATE.copy()\
             .build_and_package()
         actions.websocket_write(wsock, graph_package)
@@ -250,15 +252,15 @@ class CallGraphOperations(WebSocketOperationsSpecification):
         limit = state_object.get_limit()
         actions = wproxy.get_actions()
         
-        if counter < limit:
-            state_object.increment_counter()
-            proc.poll()
-            time.sleep(POLL_TIME_DELAY) #trigger a yield here
-            graph_package = GET_GRAPH_MSG_POLL_TEMPLATE.copy()\
-                .build_and_package()
-            actions.websocket_write(wsock, graph_package)
-        else:
-            proc.abort_procedure()
+        # if counter < limit:
+        # state_object.increment_counter()
+        proc.poll()
+        # time.sleep(POLL_TIME_DELAY) #trigger a yield here
+        graph_package = GET_GRAPH_MSG_POLL_TEMPLATE.copy()\
+            .build_and_package()
+        actions.websocket_write(wsock, graph_package)
+        # else:
+            # proc.abort_procedure()
 
 
 
