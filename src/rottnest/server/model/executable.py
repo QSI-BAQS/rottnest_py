@@ -25,6 +25,7 @@ def get_current_executable() -> dict:
     # kv[1][1] - Argument 
     exec_params = list(map(lambda kv: [kv[0], kv[1][0].__name__, kv[1][1]],\
                            exec_data.get_parameters().items()))
+    breakpoint()
     exec_dict = {
         "name": exec_data.get_name(),
         "parameters": exec_params
