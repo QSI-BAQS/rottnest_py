@@ -3,12 +3,14 @@
 '''
 from rottnest.server.interface_spec.route_interface import RouteInterface
 from rottnest.server.interface_spec.specs.procedure_spec import MODULE_PREFIX, \
-    EXECUTE_PROCEDURE_DEFER, EXECUTE_PROCEDURE_IMMEDIATE, GET_PROCEDURE_STATE
+    EXECUTE_PROCEDURE_DEFER, EXECUTE_PROCEDURE_IMMEDIATE, GET_PROCEDURE_STATE, GET_PROCEDURES
 
 from rottnest.server.model import procedure_manager as model 
 
 from rottnest.server.util.result import Result
 
+PROCEDURE_PAYLOAD = 'payload'
+PROCEDURE_ID = 'procedure_id'
 
 class ProcedureInterface(RouteInterface):
     '''
@@ -22,12 +24,8 @@ class ProcedureInterface(RouteInterface):
             Skips the queue and uses a procedure key to then
             immediately run it and retrieve the result
         '''
-        return Result.Ok(cls.load_and_model_call(
-            message,
-            EXECUTE_PROCEDURE_IMMEDIATE,
-            model.procedure_manager_submit_procedure_sync
-        ))
-
+        return Result.Ok(model.procedure_manager_submit_procedure_sync(message[PROCEDURE_PAYLOAD]))
+        
     @RouteInterface.bind_route(MODULE_PREFIX, EXECUTE_PROCEDURE_DEFER) 
     @classmethod
     def run_procedure_defer(cls, message, **kwargs) -> Result:
@@ -35,11 +33,7 @@ class ProcedureInterface(RouteInterface):
             Given a procedure key or id, we are able to retrieve the procedure
             and submit it to the queue
         '''
-        return Result.Ok(cls.load_and_model_call(
-            message,
-            EXECUTE_PROCEDURE_DEFER,
-            model.procedure_manager_submit_procedure_async                     
-        ))
+        return Result.Ok(model.procedure_manager_submit_procedure_sync(message[PROCEDURE_PAYLOAD]))
 
     @RouteInterface.bind_route(MODULE_PREFIX, GET_PROCEDURE_STATE) 
     @classmethod
@@ -48,8 +42,14 @@ class ProcedureInterface(RouteInterface):
             Gets the current procedure state of a procedure that is
             completed, queued or active
         '''
-        return Result.Ok(cls.load_and_model_call(
-            message,
-            GET_PROCEDURE_STATE,
-            model.procedure_manager_get_procedure_state                  
-        ))
+        procedure_id = message[PROCEDURE_PAYLOAD][PROCEDURE_ID]
+        return Result.Ok(model.procedure_manager_get_procedure_state(procedure_id))
+    
+    @RouteInterface.bind_route(MODULE_PREFIX, GET_PROCEDURES) 
+    @classmethod
+    def get_procedure_table(cls, message, **kwargs) -> Result:
+        '''
+            Gets the current procedure state of a procedure that is
+            completed, queued or active
+        '''
+        return Result.Ok(model.procedure_manager_get_active_procedure_list())
