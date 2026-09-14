@@ -25,7 +25,7 @@ def procedure_manager_submit_procedure_async(procedure):
     return result
 
 
-def procedure_manager_get_procedure_state(procedure_id):
+def get_procedure_state(procedure_id):
     '''
        Given a procedure id that the manager
        would have tagged with a integer (pylong)
@@ -36,7 +36,7 @@ def procedure_manager_get_procedure_state(procedure_id):
 
 
 
-def procedure_manager_get_procedure_table():
+def get_procedure_table():
     '''
         Gets the list of active procedures that are part
         of the 
@@ -46,7 +46,7 @@ def procedure_manager_get_procedure_table():
     return result
 
 
-def procedure_manager_abort_procedure(procedure_id: int):
+def abort_procedure(procedure_id: int):
     '''
         Abort the procedure given a particular id
     '''
