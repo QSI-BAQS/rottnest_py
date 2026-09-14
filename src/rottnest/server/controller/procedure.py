@@ -13,7 +13,14 @@ from rottnest.server.util.result import Result
 class ProcedureInterface(RouteInterface):
     '''
         Interface for the procedure_manager controllers
+        This defines the following operations
+            * Launching a procedure based on its tag
+            * Getting the status of a procedure based on its id
+            * Getting the status of all procedures
+            * Aborting a procedure that is currently running
     '''
+
+    
    
     @RouteInterface.bind_route(MODULE_PREFIX, EXECUTE_PROCEDURE_IMMEDIATE) 
     @classmethod
@@ -53,3 +60,18 @@ class ProcedureInterface(RouteInterface):
             GET_PROCEDURE_STATE,
             model.procedure_manager_get_procedure_state                  
         ))
+
+    def abort_procedure(cls, message, **kwargs) -> Result:
+        '''
+            Aborts a procedure based on the id that is given
+                * If the id matches an existing procedure that the manager
+                   is managing, it will trigger an abort
+                * If the id does not match, it should outline that
+                    that the procedure does not exist 
+        '''
+        return Result.Ok(cls.load_and_model_call(
+            message,
+            GET_PROCEDURE_STATE,
+            model.procedure_manager_abort_procedure      
+        ))
+        

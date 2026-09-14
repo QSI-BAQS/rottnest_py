@@ -36,11 +36,19 @@ def procedure_manager_get_procedure_state(procedure_id):
 
 
 
-def procedure_manager_get_procedure_list():
+def procedure_manager_get_procedure_table():
     '''
-        It will get the list of the available procedures
-        that the manager can execute
+        Gets the list of active procedures that are part
+        of the 
+    '''
+    procmanager = ProcedureManager.get_instance()
+    result = procmanager.get_procedure_table()
+    return result
 
-        TODO: This needs to be clarified
+
+def procedure_manager_abort_procedure(procedure_id: int):
     '''
-    return []
+        Abort the procedure given a particular id
+    '''
+    procmanager = ProcedureManager.get_instance()
+    result = procmanager.

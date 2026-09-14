@@ -4,6 +4,7 @@ from typing import Protocol
 from threading import Thread
 
 from .procedure_tuple import ProcedureEntityTag, ProcedureTuple
+from .poll_execution import PollExecutionTuple, PollExecutionType
 from ..procedure import RottnestCompilerProcedure
 from ..stage import RottnestCompilerStage
 
@@ -166,11 +167,13 @@ class ProcedureManager:
         raise NotImplementedError
         
     def dispatch(self,
-                    proc: RottnestCompilerProcedure,
-                    poll_callback=None,
-                    complete_callback=None,
-                    finaliser_callback=None,
-                    procedure_state_obj=dict()) -> bool:
+                proc: RottnestCompilerProcedure,
+                poll_callback=None,
+                complete_callback=None,
+                finaliser_callback=None,
+                procedure_state_obj=dict(),
+                poll_type:PollExecutionTuple=
+                (PollExecutionType.Immediate, None, None)) -> bool:
                       
         '''
             Will use dispatch immediate but should be overriden to
@@ -251,5 +254,6 @@ class ProcedureManager:
         '''
 
         self.run_manager()
+        return None
         
         

@@ -2,6 +2,10 @@ from enum import Enum
 from typing import Protocol
 from rottnest.procedures.procedure import RottnestCompilerProcedure
 from rottnest.procedures.procedure_manager.procedure_state_hook import ProcedureStateHook
+from .poll_execution import PollExecutionType
+
+import time
+import math
 
 class ProcedureTagger(Protocol):
     '''
@@ -32,7 +36,8 @@ class ProcedureEntityStateTag(Enum):
     CONSTRUCTED = 1
     QUEUED = 2
     ACTIVE = 3
-    COMPLETED = 4
+    PAUSED = 4
+    COMPLETED = 5
     INVALID = -1
 
 class ProcedureEntityTag:
@@ -106,6 +111,7 @@ class ProcedureEntityTag:
         '''
         self.state_tag = ProcedureEntityStateTag.INVALID
 
+
 class ProcedureTuple:
     '''
        Tuple that will hold onto a state object for the
@@ -117,7 +123,8 @@ class ProcedureTuple:
                  state_obj=dict(),
                  poll_callback=None,
                  complete_callback=None,
-                 finaliser_callback=None):
+                 finaliser_callback=None,
+                 poll_type=(PollExecutionType.Immediate, None, None)):
         '''
            Initialises the procedure tuple as a way to handle
            the operations right now 
@@ -125,6 +132,10 @@ class ProcedureTuple:
         self.entity_object = entity_obj
         self.procedure = procedure
         self.procedure_state = state_obj
+        self.poll_exec_type = poll_type[0]
+
+        self.poll_delay: int | None = poll_type[1]
+        self.poll_timeout: int | None = poll_type[2]
         self.procedure_hook = ProcedureStateHook(state_obj,
                                         poll_callback,
                                         complete_callback,
@@ -137,19 +148,31 @@ class ProcedureTuple:
                     poll_callback=None,
                     complete_callback=None,
                     finaliser_callback=None,
-                    state_obj=None) -> 'ProcedureTuple':
+                    state_obj=None,
+                    poll_type=(PollExecutionType.Immediate, None, None)
+                )-> 'ProcedureTuple':
         '''
             Constructs the tuple and generates the id in place 
         '''
         entity_id = tagger.get_next_id()
         proc_entity_tag = ProcedureEntityTag.make(entity_id)
         proc_entity_tag.progress_to_next_state()
+
+        def _abort_wrapper():
+            procedure.abort_procedure()
+
+        poll_callback = PollExecutionType.rewrap_for_yieldable(
+                                        poll_type,
+                                        poll_callback,
+                                        _abort_wrapper)
+
         return ProcedureTuple(proc_entity_tag,
                               procedure,
                               state_obj,
                               poll_callback,
                               complete_callback,
-                              finaliser_callback)
+                              finaliser_callback,
+                              poll_type)
         
 
     @classmethod
