@@ -44,7 +44,6 @@ def get_procedure_table():
     result = procmanager.get_procedure_table()
     return result
 
-
 def abort_procedure(procedure_id):
     '''
        Given a procedure id, the procedure that is running should be aborted 

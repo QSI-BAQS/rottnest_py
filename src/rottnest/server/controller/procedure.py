@@ -36,13 +36,6 @@ class ProcedureInterface(RouteInterface):
         procedure_id = message[PROCEDURE_PAYLOAD][PROCEDURE_ID]
         return model.get_procedure_state(procedure_id)
 
-    @RouteInterface.bind_route(MODULE_PREFIX, ABORT_PROCEDURE)
-    @classmethod
-    def get_procedures(cls, message, **kwargs) -> Result:
-        '''
-            Gets the procedures that are currently active
-        '''
-        return Result.Ok(model.get_procedure_table())
         
     @RouteInterface.bind_route(MODULE_PREFIX, ABORT_PROCEDURE)
     @classmethod
@@ -65,4 +58,4 @@ class ProcedureInterface(RouteInterface):
             Gets the current procedure state of a procedure that is
             completed, queued or active
         '''
-        return Result.Ok(model.procedure_manager_get_active_procedure_list())
+        return Result.Ok(model.get_procedure_table())
