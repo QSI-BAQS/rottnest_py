@@ -112,18 +112,17 @@ class FrontEndSymbol:
         self._symbol_type = symbol_type
         self._description = description
 
-    def get_symbol(self):
+    def get_details(self) -> tuple[str, str, str]:
         '''
-           Gets the symbol 
-        '''
-        return self._symbol
-
-    def get_details(self):
-        '''
-           Gets the details as a tuple 
+           Gets the details associated 
         '''
         return (self._name, self._symbol_type.__name__, self._description)
-    
+
+    def get_symbol(self) -> str:
+        '''
+           Gets the symbol associated 
+        '''
+        return self._symbol
 
     def to_dict(self):
         '''

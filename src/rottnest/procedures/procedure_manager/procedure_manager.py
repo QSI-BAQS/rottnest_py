@@ -150,6 +150,22 @@ class ProcedureManager:
         '''
             Returns the procedure table related to the
             current active procedures
+            - This must be serialisable
+        '''
+        raise NotImplementedError
+
+    def get_resolved_procedure_buffer(self) -> list[ProcedureTuple]:
+        '''
+           Returns the procedures that have been resolved 
+            - This must be serialisable
+        '''
+        raise NotImplementedError
+
+    def get_collected_procedures(self) -> list[ProcedureTuple]:
+        '''
+           Returns the procedures that have been resolved (in a buffer)
+               and the procedures that are currently operating 
+            - This must be serialisable
         '''
         raise NotImplementedError
 
@@ -163,6 +179,13 @@ class ProcedureManager:
     def get_manager_queue(self) -> Queue:
         '''
             Gets the queue in which procedures are stored
+        '''
+        raise NotImplementedError
+
+    def abort_procedure(self, procedure_id: int) -> None:
+        '''
+           Given a procedure id, if the procedure exists
+           the procedure is to be aborted 
         '''
         raise NotImplementedError
         

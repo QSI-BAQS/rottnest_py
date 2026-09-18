@@ -5,7 +5,6 @@
 '''
 from rottnest.procedures.procedure_manager import ProcedureManager
 
-
 def procedure_manager_submit_procedure_sync(procedure):
     '''
        Procedure that will be executed immediately
@@ -46,9 +45,11 @@ def get_procedure_table():
     return result
 
 
-def abort_procedure(procedure_id: int):
+def abort_procedure(procedure_id):
     '''
-        Abort the procedure given a particular id
+       Given a procedure id, the procedure that is running should be aborted 
     '''
     procmanager = ProcedureManager.get_instance()
-    result = procmanager.
+    result = procmanager.abort_procedure(procedure_id)
+    return { 'procedure_id': procedure_id, issued: True }
+

@@ -38,6 +38,7 @@ class ProcedureEntityStateTag(Enum):
     ACTIVE = 3
     PAUSED = 4
     COMPLETED = 5
+    ABORTED = 6
     INVALID = -1
 
 class ProcedureEntityTag:
@@ -85,6 +86,18 @@ class ProcedureEntityTag:
 
         return self.state_tag
 
+    def attempt_abort_procedure(self):
+        '''
+           Sets the state to aborting
+        '''
+        self.state_tag = ProcedureEntityStateTag.ABORTING
+
+    def set_to_aborted(self):
+        '''
+            Sets the state to aborted
+        '''
+        self.state_tag = ProcedureEntityStateTag.ABORTED
+
     def progress_to_active(self):
         '''
            For immediate execution mode, it will just jump from constructed to
@@ -98,6 +111,12 @@ class ProcedureEntityTag:
         '''
         return self.state_tag
 
+    def get_state_tag_name(self):
+        '''
+            Gets the tag of the entity
+        '''
+        return self.state_tag.name
+    
     def set_state(self, state_tag: ProcedureEntityStateTag):
         '''
             Sets the current state tag for the execution
@@ -174,7 +193,6 @@ class ProcedureTuple:
                               finaliser_callback,
                               poll_type)
         
-
     @classmethod
     def only(cls, proc_tag: ProcedureEntityTag,
              procedure: RottnestCompilerProcedure) -> 'ProcedureTuple':
@@ -183,6 +201,42 @@ class ProcedureTuple:
            an entity id and procedure 
         '''
         return ProcedureTuple(proc_tag, procedure)
+
+    def to_dict(self):
+        '''
+           Converts the tuple to a dictionary that can be
+           serialised 
+        '''
+        return {
+            "procedure_id": self.entity_object.get_procedure_id(),
+            "procedure_tag": self.procedure.TAG,
+            "state_tag": self.entity_object.get_state_tag_name(),
+        }
+
+    def attempt_to_abort_procedure(self):
+        '''
+           Sets the procedure to be aborted 
+        '''
+        self.entity_object.abort_procedure()
+
+    def run_abort_on_procedure(self):
+        '''
+           Triggers the `abort` call on the procedure 
+        '''
+        self.procedure.abort()
+        self.entity_object.set_to_aborted()
+
+    def is_aborted(self):
+        '''
+           Checks to see if the procedure has been aborted 
+        '''
+        return self.get_entity_state() == ProcedureEntityStateTag.ABORTED
+
+    def to_be_aborted(self):
+        '''
+           Checks to see if the procedure is to be aborted 
+        '''
+        return self.get_entity_state() == ProcedureEntityStateTag.ABORTING
 
     def get_entity_state(self) -> ProcedureEntityStateTag:
         '''

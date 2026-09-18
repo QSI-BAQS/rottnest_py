@@ -81,13 +81,46 @@ class ConcurrentProcedureManager(ProcedureManager):
         
         return result
 
+    def abort_procedure(self, procedure_id: int) -> None:
+        '''
+           Given a procedure id, if the procedure exists
+           the procedure is to be aborted 
+        '''
+        proc = self.get_procedure(procedure_id)
+        if proc is not None:
+            proc.attempt_to_abort_procedure()
+                
+    def get_procedure_table(self) -> list[ProcedureTuple]:
+        '''
+           Gets the list of active procedures 
+        '''
+        return list(map(lambda p: p.to_dict(), self.active_procedures))
+
+    def get_resolved_procedure_buffer(self) -> list[ProcedureTuple]:
+        '''
+           Returns the procedures that have been resolved 
+            - This must be serialisable
+        '''
+        # NOTE: We need to work on this
+        raise NotImplementedError
+        # return list(map(lambda p: p, self.dispose_procedures_buffer))
+    
+    def get_collected_procedures(self) -> list[ProcedureTuple]:
+        '''
+           Returns the procedures that have been resolved (in a buffer)
+               and the procedures that are currently operating 
+            - This must be serialisable
+        '''
+        table = self.get_procedure_table()
+        # table.extend(self.get_resolved_procedure_buffer())
+        return table
+
     def get_enqueued_size(self) -> int:
         '''
             Gets the number of elements currently enqueued
             within the procedure manager
         '''
         return len(self.queued_id_set)
-
 
     def run_manager(self):
         '''
@@ -176,13 +209,12 @@ class ConcurrentProcedureManager(ProcedureManager):
             active_list.pop(dispose_idx)
 
 
-    def _concurrent_execute_on_procedure(self, proc_index):
+    def _concurrent_execute_on_procedure(self, proc_index: int):
         '''
            Given a procedure, it will operate on it
            from the active list
         '''
         proc_tuple: ProcedureTuple = self.active_procedures[proc_index]
-        entity_obj = proc_tuple.get_entity_tag()
         procedure_state = proc_tuple.get_procedure_state_object()
         proc_final_callback = proc_tuple.get_finaliser_callback()
 
@@ -190,18 +222,20 @@ class ConcurrentProcedureManager(ProcedureManager):
         procedure_wrapper_poll = proc_tuple.get_poll_callback()
         procedure = proc_tuple.get_procedure()
 
-        
-        if procedure_wrapper_complete(procedure_state):
-            entity_obj.progress_to_next_state()
-            self.queued_id_set.remove(entity_obj.proc_id)
-            self.dispose_procedures_buffer.append(proc_index)
-            if proc_final_callback is not None:
-                proc_final_callback(procedure_state)
-        else:
-            if procedure_wrapper_poll is not None:
-                procedure_wrapper_poll(procedure_state)
+        if proc_tuple.to_be_aborted():
+            proc_tuple.run_abort_on_procedure()
+        elif not proc_tuple.is_aborted():
+            if procedure_wrapper_complete(procedure_state):
+                proc_tuple.get_entity_tag().progress_to_next_state()
+                self.queued_id_set.remove(proc_tuple.get_entity_tag().get_procedure_id())
+                self.dispose_procedures_buffer.append(proc_index)
+                if proc_final_callback is not None:
+                    proc_final_callback(procedure_state)
             else:
-                procedure.poll()
+                if procedure_wrapper_poll is not None:
+                    procedure_wrapper_poll(procedure_state)
+                else:
+                    procedure.poll()
 
     def _concurrent_enqueue_procedure_tuple(self, procedure_tuple):
         '''
