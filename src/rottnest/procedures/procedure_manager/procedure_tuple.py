@@ -236,7 +236,7 @@ class ProcedureTuple:
         '''
            Checks to see if the procedure is to be aborted 
         '''
-        return self.get_entity_state() == ProcedureEntityStateTag.ABORTING
+        return self.get_entity_state() == ProcedureEntityStateTag.ABORTED
 
     def get_entity_state(self) -> ProcedureEntityStateTag:
         '''
