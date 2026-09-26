@@ -7,8 +7,6 @@ from types import FunctionType, MethodType, ClassMethodDescriptorType
 import json
 import math
 
-
-
 def _compose(cls, parent=None):
     '''
        Composing string via the type system symbols
@@ -60,6 +58,13 @@ class CallGraph:
     get_graph = 'get_graph'
     run_graph_node = 'run_graph_node'
     get_status = 'get_status'
+
+class PostProcessing:
+    '''
+       PostProcessing protocol messages 
+    '''
+    all = 'all'
+    entry = 'entry'
 
 
 class Data:
@@ -199,7 +204,7 @@ class Rottnest:
     data = _compose(Data)
     procedure = _compose(Procedure)
     synchronise = _compose(Synchronise)
-
+    postprocessing = _compose(PostProcessing)
     
     @classmethod
     def start_packet(cls, name: str):
