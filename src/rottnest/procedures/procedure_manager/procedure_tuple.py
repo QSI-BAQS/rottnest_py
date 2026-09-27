@@ -148,11 +148,12 @@ class ProcedureTuple:
            Initialises the procedure tuple as a way to handle
            the operations right now 
         '''
+        self.start_time = time.time()
         self.entity_object = entity_obj
         self.procedure = procedure
         self.procedure_state = state_obj
         self.poll_exec_type = poll_type[0]
-
+    
         self.poll_delay: int | None = poll_type[1]
         self.poll_timeout: int | None = poll_type[2]
         self.procedure_hook = ProcedureStateHook(state_obj,
@@ -177,7 +178,7 @@ class ProcedureTuple:
         entity_id = tagger.get_next_id()
         proc_entity_tag = ProcedureEntityTag.make(entity_id)
         proc_entity_tag.progress_to_next_state()
-
+        
         def _abort_wrapper():
             procedure.abort_procedure()
         poll_callback = PollExecutionType.rewrap_for_yieldable(
@@ -211,6 +212,7 @@ class ProcedureTuple:
             "procedure_id": self.entity_object.get_procedure_id(),
             "procedure_tag": self.procedure.TAG,
             "state_tag": self.entity_object.get_state_tag_name(),
+            "start_time": self.start_time
         }
 
     def attempt_to_abort_procedure(self):
