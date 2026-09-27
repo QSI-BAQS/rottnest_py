@@ -172,6 +172,7 @@ class ConcurrentProcedureManager(ProcedureManager):
 
             # proc_tuple is getting the entry from the queued_tasks
             if proc_tuple is not None:
+                proc_tuple.get_entity_tag().progress_to_next_state()
                 self.queued_tasks.task_done()
                 self.active_procedures.append(proc_tuple)
                 proc_tuple.execute()

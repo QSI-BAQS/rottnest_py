@@ -9,8 +9,6 @@ from rottnest.server.model import procedure_manager as model
 
 from rottnest.server.util.result import Result
 
-PROCEDURE_PAYLOAD = 'payload'
-PROCEDURE_ID = 'procedure_id'
 
 PROCEDURE_PAYLOAD = 'payload'
 PROCEDURE_ID = 'id'
@@ -34,7 +32,7 @@ class ProcedureInterface(RouteInterface):
             completed, queued or active
         '''
         procedure_id = message[PROCEDURE_PAYLOAD][PROCEDURE_ID]
-        return model.get_procedure_state(procedure_id)
+        return Result.Ok(model.get_procedure_state(procedure_id))
 
         
     @RouteInterface.bind_route(MODULE_PREFIX, ABORT_PROCEDURE)
