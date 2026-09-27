@@ -2,6 +2,7 @@
 import json
 
 from enum import Enum
+from geventwebsocket.websocket import WebSocket
 from rottnest.server.protocol.net import RottnestPacketBuilder, Rottnest
 
 class PostProcessingAction(Enum):
@@ -36,11 +37,12 @@ class PostProcessingEntry:
         '''
            Transform the object to a dict 
         '''
+
         return {
             'key': self.key,
             'kind': self.kind,
             'origin' : self.origin,
-            'message': self.message
+            'message': self.message,
             'aggregate': self.aggregate
         }
 
@@ -93,11 +95,11 @@ class PostProcessorRegistry:
            Will add an entry to the registry, if the entry exists, it will replace it
         '''
         action = PostProcessingAction.Added
-
+        key = entry.key
+        
         if key in self.entries:
             action = PostProcessingAction.Replaced
         
-        key = entry.key
         self.entries[key] = entry
 
         return action
@@ -140,7 +142,7 @@ class PostProcessorManager:
                 * aggregate - For multiple entries under the same key 
                 
     '''
-    instance = None
+    instance: "PostProcessorManager | None" = None
 
     def __init__(self):
         '''
