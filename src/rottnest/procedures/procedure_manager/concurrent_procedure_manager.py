@@ -60,7 +60,8 @@ class ConcurrentProcedureManager(ProcedureManager):
                 poll_callback=poll_callback,
                 complete_callback=complete_callback,
                 finaliser_callback=finaliser_callback,
-                state_obj=procedure_state_obj)
+                state_obj=procedure_state_obj,
+                poll_type=poll_type)
 
         self._concurrent_enqueue_procedure_tuple(procedure_tuple)
         return True

@@ -162,7 +162,8 @@ class ProcedureTuple:
 
 
     @classmethod
-    def with_tagger(cls, tagger: ProcedureTagger,
+    def with_tagger(cls,
+                    tagger: ProcedureTagger,
                     procedure: RottnestCompilerProcedure,
                     poll_callback=None,
                     complete_callback=None,
@@ -179,7 +180,6 @@ class ProcedureTuple:
 
         def _abort_wrapper():
             procedure.abort_procedure()
-
         poll_callback = PollExecutionType.rewrap_for_yieldable(
                                         poll_type,
                                         poll_callback,

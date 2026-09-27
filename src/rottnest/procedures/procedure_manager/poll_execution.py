@@ -13,12 +13,12 @@ class PollExecutionState:
        * next_tick
     '''
 
-    def __init__(self, delay: int, timeout: int | None = None):
+    def __init__(self, delay: int, timeout_s: int | None = None):
         '''
            Initialises with delay and timeout 
         '''
         self.delay = delay
-        self.timeout = timeout
+        self.timeout_s = timeout_s
         self.next_tick: float = 0
         self.first_start_time: float | None = None
         self.start_time: float = 0
@@ -33,10 +33,10 @@ class PollExecutionState:
            if timeout is None or snapshot_start has not been called
            it will return None
         '''
-        if self.timeout is None or self.first_start_time is None:
+        if self.timeout_s is None or self.first_start_time is None:
             return math.inf
         else:
-            return self.first_start_time + self.timeout
+            return self.first_start_time + self.timeout_s
 
     def snapshot_start(self):
         '''
@@ -94,7 +94,7 @@ class PollExecutionState:
 
         return ready
 
-    def timedout(self):
+    def timeout(self):
         '''
            Checks to see if the execution has encountered a timeout 
         '''
@@ -166,21 +166,19 @@ class PollExecutionType(Enum):
         if kind == PollExecutionType.ExecuteThenYield:
             def _exec_then_yield(proc_state):
                 'Executes then yields'
+
                 exec_state = yield_exec_state
 
                 if exec_state.timeout():
                     abort_callback()
                     return
                 if exec_state.is_ready():
-                
                     exec_state.snapshot_start()
                   
                     poll_callback(proc_state)
 
                     exec_state.snapshot_end()
                     exec_state.snapshot_nexttick()
-                else:
-                    print("Not ready yet")
                 
             return _exec_then_yield
         elif kind == PollExecutionType.ExecuteUntilYield:
