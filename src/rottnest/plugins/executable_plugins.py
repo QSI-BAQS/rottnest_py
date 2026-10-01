@@ -1,10 +1,8 @@
 '''
     Manages loading of executables
 '''
-from rottnest.rz_decomposer import DEFAULT_PRECISION
-
-from ..config import executables_file_name
-from ..executables.executable import (
+from rottnest.config import executables_file_name
+from rottnest.executables.executable import (
     ROTTNEST_EXECUTABLE_MODULE_TAG,
     RottnestExecutable
 )
@@ -60,15 +58,6 @@ class ExecutablePlugins(PluginManager):
             Parameters for executable
         '''
         return self.get_parameters()
-
-    def get_precision(self):
-        '''
-            Gets the precision
-        '''
-        return self.get_parameters().get(
-            RottnestExecutable.RZ_PREC,
-            DEFAULT_PRECISION
-        )
 
     def set_executable_params(self, **params) -> None:
         '''
