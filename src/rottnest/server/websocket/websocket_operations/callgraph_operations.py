@@ -12,7 +12,6 @@ from rottnest.procedures.procedure_manager.poll_execution import PollExecutionTu
 
 from typing import Any
 
-import time
     
 POLL_TIME_DELAY = 2
 POLL_RETRY_COUNT = 3
@@ -206,15 +205,11 @@ class CallGraphOperations(WebSocketOperationsSpecification):
         counter = state_object.get_counter()
         limit = state_object.get_limit()
         actions = wproxy.get_actions()
-
-        # if counter < limit:
         state_object.increment_counter()
         proc.poll()
         graph_package = GET_RUNNODE_MSG_POLL_TEMPLATE.copy()\
             .build_and_package()
         actions.websocket_write(wsock, graph_package)
-        # else:
-        #     proc.abort_procedure()
 
         
     def get_visualisation_finalise(self, state_object: GetGraphStateObject):
@@ -252,15 +247,10 @@ class CallGraphOperations(WebSocketOperationsSpecification):
         limit = state_object.get_limit()
         actions = wproxy.get_actions()
         
-        # if counter < limit:
-        # state_object.increment_counter()
         proc.poll()
-        # time.sleep(POLL_TIME_DELAY) #trigger a yield here
         graph_package = GET_GRAPH_MSG_POLL_TEMPLATE.copy()\
             .build_and_package()
         actions.websocket_write(wsock, graph_package)
-        # else:
-            # proc.abort_procedure()
 
 
 

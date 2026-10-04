@@ -90,6 +90,7 @@ class ConcurrentProcedureManager(ProcedureManager):
         proc = self.get_procedure(procedure_id)
         if proc is not None:
             proc.attempt_to_abort_procedure()
+        return proc
                 
     def get_procedure_table(self) -> list[ProcedureTuple]:
         '''

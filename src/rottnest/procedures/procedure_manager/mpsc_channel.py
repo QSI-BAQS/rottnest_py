@@ -8,7 +8,6 @@ from typing import TypeAlias, Union
 
 MPSC_CHANNEL_CAPACITY = 4096 #Objects, not bytes
 
-MPSCChannelProviderObject: TypeAlias = Union['MPSCChannelProvider', None]
 
 class MPSCChannelState(Enum):
     '''
@@ -259,7 +258,7 @@ class MPSCChannelProvider:
        that can be retrieved given a key
        State information is provided on the request of the channel (eiter reading or writing) 
     '''
-    _instance: MPSCChannelProviderObject = None
+    _instance: 'MPSCChannelProvider | None' = None
 
     def __init__(self):
         '''
@@ -274,7 +273,7 @@ class MPSCChannelProvider:
 
 
     @classmethod
-    def get_instance(cls) -> MPSCChannelProviderObject:
+    def get_instance(cls) -> 'MPSCChannelProvider | None':
         '''
            Gets the singleton instance of the provider 
         '''
