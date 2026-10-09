@@ -1,7 +1,7 @@
 '''
     Even distribution error model
 '''
-from .error_budget import ErrorBudget
+from rottnest.error_budgets.error_budget import ErrorBudget
 
 
 class EvenDistribution(ErrorBudget):
