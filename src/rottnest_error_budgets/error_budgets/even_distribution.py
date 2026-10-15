@@ -14,7 +14,6 @@ class EvenDistribution(ErrorBudget):
 
     def __init__(
                 self,
-                p_physical: float = 1e-3,
                 target_error: float = 1e-2,
                 coeff: float = None
             ):
@@ -27,17 +26,17 @@ class EvenDistribution(ErrorBudget):
 
         self.coeff = coeff
 
-        super().__init__(p_physical, target_error)
+        super().__init__(target_error)
 
     @classmethod
-    def get_model_name(cls):
+    def get_name(cls):
         '''
             Getter
         '''
         return cls.MODEL_NAME
 
     @classmethod
-    def get_model_parameters(cls):
+    def get_parameters(cls):
         '''
             Getter for model parameters
         '''
@@ -60,7 +59,7 @@ class EvenDistribution(ErrorBudget):
         '''
         return self.get_target_error() / self.coeff
 
-    def get_space_time_budget(self) -> float:
+    def get_topological_error_budget(self) -> float:
         '''
             Sets an even split
         '''
