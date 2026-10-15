@@ -427,6 +427,9 @@ def default_loader(
 
 
 def _load_default_config(conf_name, plugin_obj):
+    '''
+        Default config loader
+    '''
     for loc in config.configuration_locations:
         config_path = os.path.expanduser(f'{loc}/{conf_name}')
 
