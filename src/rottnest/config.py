@@ -5,7 +5,7 @@ configuration_locations = [
 # File names within config locations
 architectures_file_name = 'architectures'
 executables_file_name = 'executables'
-executables_file_name = 'error_budgets'
+error_budgets_file_name = 'error_budgets'
 
 
 N_PROCESSES = 3 
