@@ -4,9 +4,28 @@
 
 from .architecture_plugins import ArchitecturePlugins
 from .executable_plugins import ExecutablePlugins
+from .error_budget_plugins import ErrorBudgetPlugins
+
 
 executables = ExecutablePlugins.default_loader()
 architectures = ArchitecturePlugins.default_loader()
+error_budgets = ErrorBudgetPlugins.default_loader()
+
+
+plugin_managers = [executables, architectures, error_budgets]
+
+_from_tag = {
+    manager.get_module_tag()
+    for manager in plugin_managers 
+}
+
+def get_manager_from_tag(tag: str) -> "PluginManager":
+    '''
+        Getter mapping strings to plugin manager
+        Used to genericise calls to the interface over IPC 
+    '''
+    global _from_tag
+    return _from_tag.get(tag, None)
 
 def override_architectures(architectures_override: ArchitecturePlugins):
     '''

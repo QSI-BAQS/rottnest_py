@@ -13,7 +13,6 @@ from collections import OrderedDict
 
 from .. import config
 
-
 #   Format string as part of a not implemented exception
 PLUGIN_NOT_IMPL_ERROR = "Target {} in module {} does not return a string when calling static or class method get_name()"
 
@@ -50,6 +49,7 @@ class PluginManager:
 
         # Currently selection option
         self._current_option: None = None
+        self._instantiated_option: None = None
 
         # Dynamically definable parameter field
         self._parameters = {}
@@ -61,8 +61,14 @@ class PluginManager:
         if config_path is not None:
             self.load_options_from_config(config_path)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._options)
+
+    def get_module_tag(self) -> str:
+        '''
+            Module tag getter
+        '''
+        return self._module_tag
 
     def __getitem__(self, key):
         '''
@@ -161,7 +167,6 @@ class PluginManager:
                 self._module_tag,
                 None
             )
-
             # Module has no targets exposed
             if plugin_targets is None:
                 print(f"Module {module} does not contain any valid plugin targets")
@@ -281,16 +286,78 @@ class PluginManager:
         module = importlib.import_module(module_name)
         return module
 
-    def _set_current_option(self, key: str):
+    @classmethod
+    def from_config_or_default(cls, path) -> 'PluginManager':
         '''
-            Setter for the currently selected option
+           Loading config or default, gets the executable plugins instance
         '''
+        modules = []
+        plugins = cls(modules=modules, config_path=path)
+        return plugins
 
+    @classmethod
+    def with_modules(cls, modules: list[str]) -> 'PluginManager':
+        '''
+           Loadable variant which just expects modules to be
+           push into it
+        '''
+        plugins = cls(modules=modules, config_path=None)
+        return plugins
+
+
+    def get_options(self) -> dict:
+        '''
+            Returns the dictionary of options 
+        '''
+        return self._options
+
+    def get_option_keys(self) -> list[str]:
+        '''
+            Returns the keys of the current loaded options
+        '''
+        return list(self.get_options().keys())
+
+    def get_current_option(self) -> "Option":
+        '''
+            Gets the currently set option
+            Runs the constructor with params
+        '''
+        if self._current_option is None:
+            return None
+        
+        if self._instantiated_option is None:
+            self._instantiated_option = self._current_option(
+                **self.get_parameters()
+            )
+        return self._instantiated_option
+
+    def set_current_option(self, key: str, parameters = None):
+        '''
+            Setter for the currently option
+        '''
         option = self[key]
         if option is None:
+            # TODO: Error Handling
             print(f"Unknown option {key}")
         else:
             self._current_option = option
+
+        # Set parameters or default parameters
+        if parameters is None:
+            self.set_default_parameters()
+        else:
+            self.set_parameters(parameters)
+
+    def set_default_parameters(self): 
+        '''
+            Default parameter setter
+        '''
+        # Sets default params
+        self.set_parameters(
+            self.__process_default_params(
+                self.get_current_option().get_parameters()
+            )
+        )
 
     def get_parameters(self):
         '''
@@ -303,6 +370,26 @@ class PluginManager:
             Parameters setter
         '''
         self._parameters = parameters
+
+    def set_params_from_kwargs(self, **parameters) -> None:
+        '''
+           This method only exists to catch kwargs nicely 
+        '''
+        self.set_parameters(params)
+
+    def __process_default_params(self, params: dict) -> dict:
+        '''
+            Strips type information from default param dicts
+        '''
+        stripped_params = {}
+        for key, val in params.items():
+            _type_info, value = val
+            stripped_params[key] = value
+
+        return stripped_params
+
+
+
 
 
 # NOTE: Moved it from config
