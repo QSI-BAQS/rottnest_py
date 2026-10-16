@@ -53,4 +53,3 @@ class SetOptionTask(PoolTask):
         if plugin_tag == plugins.executables.get_plugin_tag():
             DecompositionPatchProcedure().execute()
 
-

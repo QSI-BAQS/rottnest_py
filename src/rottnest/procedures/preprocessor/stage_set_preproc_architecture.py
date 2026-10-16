@@ -3,6 +3,7 @@
 '''
 from rottnest.plugins import architectures, executables
 from rottnest.procedures import stage
+from rottnest_preprocessor.preprocessor.architecture import PreprocessorArchitecture
 
 STAGE_TAG = 'hotswap_architecture'
 
@@ -24,10 +25,9 @@ class SetPreprocessingArchitectureStage(stage.RottnestCompilerStage):
         '''
             Swaps the current rottnest architecture 
         '''
-        # Todo replace with dynamic string
         self._backup = architectures.get_current_architecture()
-        architectures.set_current_architecture(
-            'Rz Counter' 
+        architectures.set_current_option(
+            PreprocessorArchitecture.get_name() 
         )
         self._complete = True
 

@@ -43,13 +43,13 @@ class LoadPluginModulesStage(stage.RottnestCompilerStage):
         '''
             Getter for collected stages
         '''
-        return LoadPluginModulesStage._collected
+        return LoadPluginModulesStage._collector
 
     def execute(self, compiler_environment):
         '''
             Triggers the plugin manager 
         '''
-        plugin_manager.load_modules_from_strings(*self._module_strings)
+        self._plugin_manager.load_modules_from_strings(*self._module_strings)
         self._complete = True
 
     @classmethod

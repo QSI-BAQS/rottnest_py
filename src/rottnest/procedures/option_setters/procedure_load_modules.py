@@ -10,6 +10,7 @@ class LoadModulesProcedure(procedure.RottnestCompilerProcedure):
 
     def __init__(
             self,
+            module_keys: dict,
             *,
             tag=None,
             dependencies=None, 
@@ -18,10 +19,10 @@ class LoadModulesProcedure(procedure.RottnestCompilerProcedure):
         '''
             Constructor for the procedure
             Collects all constructors from the LoadPluginModuleStage subclasses
-            Matches the module tags to the kwargs of the procedure
+            Matches the module tags to the module_keys of the procedure
             If tags match, implements the stage, otherwise empty elements
         
-            This procedure requires that module strings in kwargs have keys of the form plugin_tag
+            This procedure requires that module keys dict has keys of the form plugin_tag
         ''' 
 
         # Get the collected stages from subclasses of the base stage
@@ -34,9 +35,11 @@ class LoadModulesProcedure(procedure.RottnestCompilerProcedure):
             key = constructor.PLUGIN_MANAGER.get_plugin_tag()
 
             # Extract module strings from kwargs
+            # Default to empty to pick up any default
+            # loading modules
             module_strings = []
-            if key in kwargs:
-                module_strings = kwargs[key]
+            if key in module_keys:
+                module_strings = module_keys[key]
            
             # Use the constructor to build the stage and append to the list of stages 
             # No stages share dependencies
