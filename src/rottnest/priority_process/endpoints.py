@@ -3,7 +3,7 @@
     These are thin layers that can be overridden later as needed
 '''
 from rottnest.procedures.decomposition_patchers import DecompositionPatchProcedure
-from rottnest.procedures.option_setters.project_setters import LoadModulesProcedure, SetArchitectureProcedure, SetExecutableProcedure  
+from rottnest.procedures.option_setters import procedure_set_option, procedure_load_modules
 from rottnest.procedures.option_setters.layout_setters import SynchroniseLayoutsProcedure
 
 from . import commands
@@ -32,12 +32,22 @@ def set_options(options_setter: dict):
         Sets plugin options
     '''
     for plugin_tag, (option_key, parameters) in option_setter.items():
-        pass
+        procedure_set_option.SetOptionProcedure(
+            plugin_tag,
+            option_key,
+            parameters
+        ) 
 
 @reload_visualiser
 def set_option(plugin_tag, option_key, parameters):
     '''
+        Sets an option
     '''
+    procedure_set_option.SetOptionProcedure(
+        plugin_tag,
+        option_key,
+        parameters
+    ) 
 
 
 @reload_visualiser
