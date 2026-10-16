@@ -29,6 +29,10 @@ class RottnestArchitecture(abc.ABC):
         raise NotImplementedError
 
     @classmethod
+    def get_parameters(cls) -> dict:
+        return {} 
+
+    @classmethod
     def worker_entrypoint(cls, *args, **kwargs) -> FunctionType:
         '''
         Returns an entrypoint function for a worker  
