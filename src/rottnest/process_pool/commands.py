@@ -11,6 +11,9 @@ STOP_WORKERS = 'stop_workers'
 
 TERMINATE = 'terminate'
 RUN_SEQUENCE = 'run_sequence'
+
+SET_OPTION = 'set_option'
+
 SET_ARCHITECTURE_MODULE = 'set_architecture_module'
 SET_EXECUTABLE = 'set_executable'
 SET_EXECUTABLE_PARAMS = 'set_executable_params'

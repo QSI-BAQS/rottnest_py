@@ -149,13 +149,18 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
             commands.RUN_SEQUENCE: self._task_run_sequence,
 
             commands.RESET_EXECUTION_CONTEXT: self._task_reset_execution_context,
-            commands.SYNCHRONISE_MODULES: self._task_synchronise_modules,
             commands.SYNCHRONISE_LAYOUTS: self._task_synchronise_layouts,
             commands.SYNCHRONISATION_STATUS: self._task_synchronisation_status,
 
+
+            # Plugin Commands
+            commands.SYNCHRONISE_MODULES: self._task_synchronise_modules,
             commands.SET_ARCHITECTURE_MODULE: self._task_set_architecture_module,
+
             commands.SET_EXECUTABLE: self._task_set_executable,
             commands.SET_EXECUTABLE_PARAMS: self._task_set_executable_params,
+
+
             commands.SET_RZ_PRECISION: self._task_set_rz_precision,
 
             commands.GET_CURRENT_RESULTS: self._task_get_results,
@@ -404,9 +409,10 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         '''
             Synchronises loaded modules
         '''
-        architectures = args[0]
-        executables = args[1]
-        procedure = LoadModulesProcedure(architectures, executables)
+        module_keys = args[0]
+        procedure = LoadModulesProcedure(
+            architectures, executables
+        )
         procedure.execute()
 
         # Maintain synchronisation with priority task
@@ -414,21 +420,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
             priority_commands.SYNCHRONISE_MODULES,
             self._architectures.get_synchronisation_strings(),
             self._executables.get_synchronisation_strings(),
-        ))
-
-
-
-    def _task_set_architecture_module(self, *args):
-        '''
-            Sets an architecture module from a key
-        '''
-        key = args[0]
-        SetArchitectureProcedure(key).execute()
-        # Synchronisation with the priority process
-        self.priority_task_queue.put((
-            priority_commands.SET_ARCHITECTURE,
-            self._architectures.get_current_architecture().get_name()
-
         ))
 
 

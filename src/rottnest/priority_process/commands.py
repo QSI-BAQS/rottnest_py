@@ -3,6 +3,8 @@ SYNCHRONISE_PRIORITY = 'synchronise_priority'
 SYNCHRONISE_MODULES = 'synchronise_modules'
 SYNCHRONISE_LAYOUTS = 'synchronise_layouts'
 
+SET_OPTION = 'set_option'
+
 SET_ARCHITECTURE = 'set_architecture'
 
 SET_EXECUTABLE = 'set_executable'

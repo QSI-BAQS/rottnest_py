@@ -245,6 +245,28 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
             (commands.STOP_WORKERS,)
         )
 
+    def set_option(
+        self,
+        plugin_manager_tag,
+        option_name,
+        option_parameters,
+    ):
+        '''
+            Option Setter
+            The option
+        '''
+        self.manager_priority_task_queue.put(
+            (
+                commands.SET_PLUGIN_OPTION,
+                (
+                    plugin_manager_tag,
+                    option_name,
+                    option_parameters,
+                )
+            )
+        )
+
+
     def set_architecture_module(
                 self,
                 architecture_module: str

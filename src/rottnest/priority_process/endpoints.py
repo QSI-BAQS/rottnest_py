@@ -19,12 +19,26 @@ def reload_visualiser(fn):
         return res
     return _wrap
 
-def synchronise_modules(architectures, executables):
+def synchronise_modules(module_keys: dict):
     '''
         Synchronises the modules
     '''
-    LoadModulesProcedure(architectures, executables).execute()
+    LoadModulesProcedure(module_keys).execute()
     return
+
+@reload_visualiser
+def set_options(options_setter: dict):
+    '''
+        Sets plugin options
+    '''
+    for plugin_tag, (option_key, parameters) in option_setter.items():
+        pass
+
+@reload_visualiser
+def set_option(plugin_tag, option_key, parameters):
+    '''
+    '''
+
 
 @reload_visualiser
 def synchronise_layouts(layouts:dict):
