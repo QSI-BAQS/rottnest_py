@@ -28,7 +28,7 @@ class RottnestParameter:
     '''
     BigInt = RottnestParameterType('BigInt', lambda x: int(x))
     BigDecimal = RottnestParameterType('BigDecimal', lambda x: float(x))
-
+    CodeString = RottnestParameterType('CodeString', lambda x: x)
 
     @classmethod
     def get_parameter_map(cls):
