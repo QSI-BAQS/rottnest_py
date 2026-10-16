@@ -28,16 +28,16 @@ class PluginManager:
     def __init__(
             self,
             *,
-            module_tag: str,
+            plugin_tag: str,
             modules: list,
             config_path=None):
         '''
             Generic plugin manager
             Used to manage loading resources from disparate modules
-            :: module_tag : str :: Default tag for module level names of resources
+            :: plugin_tag : str :: Default tag for module level names of resources
         '''
         # Tag for variable name in modules to extract
-        self._module_tag = module_tag
+        self._plugin_tag = plugin_tag
 
         # All modules loaded to extract options
         self._modules = set(modules)
@@ -64,11 +64,11 @@ class PluginManager:
     def __len__(self) -> int:
         return len(self._options)
 
-    def get_module_tag(self) -> str:
+    def get_plugin_tag(self) -> str:
         '''
             Module tag getter
         '''
-        return self._module_tag
+        return self._plugin_tag
 
     def __getitem__(self, key):
         '''
@@ -164,13 +164,13 @@ class PluginManager:
         for module in modules:
             plugin_targets = getattr(
                 module,
-                self._module_tag,
+                self._plugin_tag,
                 None
             )
             # Module has no targets exposed
             if plugin_targets is None:
                 print(f"Module {module} does not contain any valid plugin targets")
-                print(f'To expose a target at the module level, please set an iterable "{self._module_tag}" variable in the module\'s main namespace (e.g. __init__.py)')
+                print(f'To expose a target at the module level, please set an iterable "{self._plugin_tag}" variable in the module\'s main namespace (e.g. __init__.py)')
                 continue
 
             for target in plugin_targets:

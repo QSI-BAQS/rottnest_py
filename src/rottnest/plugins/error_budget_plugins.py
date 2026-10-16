@@ -30,7 +30,7 @@ class ErrorBudgetPlugins(PluginManager):
 
         # Load from config
         super().__init__(
-            module_tag=ROTTNEST_ERROR_BUDGET_MODULE_TAG,
+            plugin_tag=ROTTNEST_ERROR_BUDGET_MODULE_TAG,
             modules=modules,
             config_path=config_path
         )

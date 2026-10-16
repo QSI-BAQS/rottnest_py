@@ -15,7 +15,7 @@ error_budgets = ErrorBudgetPlugins.default_loader()
 plugin_managers = [executables, architectures, error_budgets]
 
 _from_tag = {
-    manager.get_module_tag()
+    manager.get_plugin_tag()
     for manager in plugin_managers 
 }
 
@@ -26,6 +26,16 @@ def get_manager_from_tag(tag: str) -> "PluginManager":
     '''
     global _from_tag
     return _from_tag.get(tag, None)
+
+def get_module_keys() -> dict:
+    '''
+        Gets strings by module tag
+    '''
+    return {
+        manager.get_plugin_tag():
+        manager.get_synchronisation_strings()
+        for manager in plugin_managers
+    }
 
 def override_architectures(architectures_override: ArchitecturePlugins):
     '''

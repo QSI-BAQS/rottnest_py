@@ -31,7 +31,7 @@ class ArchitecturePlugins(PluginManager):
 
         # Load from config
         super().__init__(
-            module_tag=ROTTNEST_ARCHITECTURE_MODULE_TAG,
+            plugin_tag=ROTTNEST_ARCHITECTURE_MODULE_TAG,
             modules=modules,
             config_path=config_path
         )
