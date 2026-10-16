@@ -31,7 +31,7 @@ class SynchroniseOptionStage(stage.RottnestCompilerStage):
             Synchronises with the process pool  
         '''
         option = self._plugin_manager.get_current_option()
-        plugin_type = self._plugin_manager.get_module_tag()
+        plugin_type = self._plugin_manager.get_plugin_tag()
         parameters = option.get_parameters()
 
         from rottnest.process_pool import get_pool

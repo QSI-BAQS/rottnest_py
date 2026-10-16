@@ -8,16 +8,21 @@ class SetOptionStage(stage.RottnestCompilerStage):
     '''
         Set option by key 
     '''
+    # Collector pattern as class variable
+    _collector = {} 
 
     def __init__(
             self,
             plugin_manager: "PluginManager", 
             option_key: str,
+            option_params: dict,
             *,
-            option_params=None,
             tag=None,
             dependencies=None,
         ):
+        '''
+            Constructor for set option
+        '''
 
         self._plugin_manager = plugin_manager
         self._option_key = option_key
@@ -32,19 +37,34 @@ class SetOptionStage(stage.RottnestCompilerStage):
             asynchronous=False
         )
 
+    def __init_subclass__(cls, **kwargs):
+        '''
+            Collector pattern
+            Used to aggregate all loaders
+        '''
+        super().__init_subclass__(**kwargs)
+        key = cls.PLUGIN_MANAGER.get_plugin_tag()
+        SetOptionStage._collector[key] = cls
+
+    @classmethod
+    def get_collected_stages(cls):
+        '''
+            Getter for collected stages
+        '''
+        return SetOptionStage._collector
+
     def execute(self, compiler_environment):
         '''
             Sets the plugin option 
         '''
-        self.plugin_manager.set_option(
+        self._plugin_manager.set_current_option(
             self._option_key
         )
 
-        if self._params is not None:
-            self.plugin_manager.set_parameters(
-                **self._option_params
+        if self._option_params is not None:
+            self._plugin_manager.set_parameters(
+                self._option_params
             )
-
         self._complete = True
 
     @classmethod

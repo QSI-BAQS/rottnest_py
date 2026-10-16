@@ -21,7 +21,7 @@ class LoadModulesProcedure(procedure.RottnestCompilerProcedure):
             Matches the module tags to the kwargs of the procedure
             If tags match, implements the stage, otherwise empty elements
         
-            This procedure requires that module strings in kwargs have keys of the form module_tag
+            This procedure requires that module strings in kwargs have keys of the form plugin_tag
         ''' 
 
         # Get the collected stages from subclasses of the base stage
@@ -31,7 +31,7 @@ class LoadModulesProcedure(procedure.RottnestCompilerProcedure):
         for constructor in stage_constructors:
 
             # Match the constructor to a kwargs key
-            key = constructor.PLUGIN_MANAGER.get_module_tag()
+            key = constructor.PLUGIN_MANAGER.get_plugin_tag()
 
             # Extract module strings from kwargs
             module_strings = []

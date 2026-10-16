@@ -11,12 +11,21 @@ STAGE_TAG = 'set_error_budget'
 class SetErrorBudgetStage(stage.RottnestCompilerStage):
     TAG = STAGE_TAG
 
-    def __init__(self, *, tag=None, dependencies=None, target_error=None, p_phys=None):
+    def __init__(
+            self,
+            *, 
+            tag=None, 
+            dependencies=None,
+            name: str, 
+        ):
         '''
             Constructor
+            Parameters field takes the arguments for the error budget constructor
         '''
-        self._target_error = target_error 
-        self._p_phys = p_phys
+        if parameters is None:
+            parameters = {}
+
+        self.parameters = parameters
 
         self._complete = False
         if dependencies is None:
