@@ -27,3 +27,10 @@ class PoolWorkerProcessHandler(ProcessEntrypoint):
 
     def main(self, worker, *args, **kwargs):
         worker.entrypoint(*args, **kwargs)
+
+
+def get_entrypoint():
+    '''
+        Dispatch function on base class method
+    '''
+    return PoolWorkerProcessHandler.get_entrypoint()

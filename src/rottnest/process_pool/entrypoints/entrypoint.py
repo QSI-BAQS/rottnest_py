@@ -1,7 +1,7 @@
 '''
     Abstract base class wrapper for process entrypoints
-    Handles spawn typing, setup and teardown of processes 
-    
+    Handles spawn typing, setup and teardown of processes
+
     This object doubles as a `handler` after instantatation
      which then manages the legal spawning of subprocess
      types
@@ -10,7 +10,7 @@
 import abc
 from rottnest.process_pool.single_instantiation import SingleInstantiation
 
-from . import process_type 
+from rottnest.process_pool.entrypoints import process_type
 
 class ProcessEntrypoint(SingleInstantiation, abc.ABC):
     '''
@@ -36,9 +36,12 @@ class ProcessEntrypoint(SingleInstantiation, abc.ABC):
 
         self._args = args
         self._kwargs = kwargs
-    
+
     @classmethod
     def entrypoint(cls, *args, **kwargs):
+        '''
+            Entrypoint function for a process
+        '''
         proc = cls(*args, **kwargs)
         proc.run()
 
@@ -49,7 +52,7 @@ class ProcessEntrypoint(SingleInstantiation, abc.ABC):
             This asserts that the spawned
             process is a legal child of the current
             context
-        ''' 
+        '''
         handler = get_current_process_handler()
 
         if handler is not None:
@@ -104,7 +107,7 @@ class ProcessEntrypoint(SingleInstantiation, abc.ABC):
 
     def finalise(self, *args, **kwargs):
         '''
-            Any finalisation needed 
+            Any finalisation needed
             This can do cleanup too
         '''
 
