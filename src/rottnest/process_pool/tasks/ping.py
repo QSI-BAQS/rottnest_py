@@ -1,9 +1,9 @@
 '''
     Simple ping task
 '''
-from .pool_task import PoolTask
 
 from rottnest.process_pool import commands, symbols
+from .pool_task import PoolTask
 
 class PingTask(PoolTask):
     '''
@@ -58,4 +58,3 @@ class PingManagerTask(PoolTask):
             Manager returns PONG
         '''
         return symbols.PONG
-
