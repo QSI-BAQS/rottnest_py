@@ -23,7 +23,7 @@ class TerminateTask(PoolTask):
             *args,
             **kwargs
     ):
-        pool_manager._task_stop_workers()
+        pool_manager.stop_workers()
         pool_manager.stop_priority_worker()
         pool_manager.manager_running = False
         return True

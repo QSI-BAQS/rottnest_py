@@ -76,7 +76,7 @@ class LayoutProxy:
         '''
             Gets all layouts
         '''
-        return cls.saved_layouts.items()
+        return list(cls.saved_layouts.items())
 
     @classmethod
     def flush(cls):

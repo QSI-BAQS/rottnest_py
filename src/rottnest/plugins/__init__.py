@@ -12,7 +12,7 @@ architectures = ArchitecturePlugins.default_loader()
 error_budgets = ErrorBudgetPlugins.default_loader()
 
 
-plugin_managers = [executables, architectures, error_budgets]
+plugin_managers = [architectures, executables, error_budgets]
 
 _from_tag = {
     manager.get_plugin_tag()

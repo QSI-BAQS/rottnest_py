@@ -12,7 +12,7 @@ from rottnest.compute_units.layout_proxy import LayoutProxy
 from rottnest.process_pool.singleton import get_pool
 from rottnest.process_pool.pool_status import PoolStatus
 
-from rottnest.plugins import architectures, executables
+from rottnest.plugins import architectures, executables, error_budgets
 
 from rottnest import test_utils
 from rottnest.test_utils.executable import SampleExecutable
@@ -28,22 +28,51 @@ class ProcessPoolTests(unittest.TestCase):
         Process pool tests
     '''
 
-    def test_ping(self):
+    def test_ping_manager(self):
         '''
             Tests ping through ipc
         '''
-
-        executables.load_modules_from_strings(test_utils.__file__)
-        executables.set_current_executable(SampleExecutable.get_name())
-        architectures.set_current_architecture(
-            'Rz Counter'
-        )
-
         pool = get_pool()
         pool.start()
 
         # Asserts correctness in here
         pool.ping_manager()
+
         pool.terminate()
 
 
+    def test_ping_workers(self):
+        '''
+            Tests ping workers through ipc
+        '''
+        executables.load_modules_from_strings(test_utils.__file__)
+        executables.set_current_option(SampleExecutable.get_name())
+        architectures.set_current_option(
+            'Rz Counter'
+        )
+        error_budgets.set_current_option('Bounded Sum')
+
+        pool = get_pool()
+        pool.start()
+
+        ## Asserts correctness in here
+        pool.ping_manager()
+
+        ## Synch pool state
+        pool.synchronise()
+
+        ## Start workers
+        pool.start_workers()
+
+        ## Asserts correctness in here
+        pool.ping_workers()
+
+        ## Shutdown
+        pool.stop_workers()
+        pool.terminate()
+
+
+if __name__ == '__main__':
+    tst = ProcessPoolTests()
+    #tst.test_ping_manager()
+    tst.test_ping_workers()

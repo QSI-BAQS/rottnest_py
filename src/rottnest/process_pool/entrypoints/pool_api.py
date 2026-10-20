@@ -45,8 +45,10 @@ class PoolAPIHandler(ProcessEntrypoint):
             ComputeUnitExecutorPoolManager,
         )
 
-    def main(self, worker, *args, **kwargs):
-        worker.entrypoint(*args, **kwargs)
+    def main(self, *args, **kwargs):
+        '''
+            API doesn't really have a main loop
+        '''
 
     @classmethod
     def entrypoint(cls):

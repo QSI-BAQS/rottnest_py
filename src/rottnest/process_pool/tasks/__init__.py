@@ -7,6 +7,7 @@ from . import set_option
 from . import synchronise_modules 
 from . import synchronise_layouts
 from . import set_rz_precision
+from . import workers 
 from . import terminate
 
 # Bind collected objects to namespace

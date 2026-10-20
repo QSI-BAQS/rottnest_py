@@ -24,6 +24,21 @@ class SetOptionTask(PoolTask):
         '''
         return commands.SET_OPTION
 
+    @classmethod
+    def submit(
+            cls,
+            plugin_manager: "PluginManager",
+            *args,
+            **kwargs
+        ):
+        '''
+            Build submission from the plugin manager
+        '''
+        tag = plugin_manager.get_plugin_tag()
+        option_key, parameters = plugin_manager.get_state()
+ 
+        return super().submit(tag, option_key, parameters)
+
     def task(
             self,
             pool_manager: "PoolManager",
@@ -52,4 +67,42 @@ class SetOptionTask(PoolTask):
         # Decomposition patch on executable update
         if plugin_tag == plugins.executables.get_plugin_tag():
             DecompositionPatchProcedure().execute()
+
+
+class SetOptionsTask(PoolTask):
+    '''
+        Sets multiple options
+    '''
+    @classmethod
+    def get_command(cls) -> str:
+        '''
+            Associated Command
+        '''
+        return commands.SET_OPTIONS
+
+    @classmethod
+    def submit(
+        cls,
+        *args,
+        **kwargs
+    ):
+       
+        options = {
+            manager.get_plugin_tag(): manager.get_state()
+            for manager in plugins.plugin_managers
+        } 
+        return super().submit(options)
+
+    def task(
+            self,
+            pool_manager,
+            options: dict[str, tuple],
+            *args,
+            **kwargs
+        ):
+
+        task = SetOptionTask()
+
+        for plugin_tag, option in options.items():
+            task(pool_manager, plugin_tag, *option)
 

@@ -5,6 +5,7 @@
 from rottnest.procedures.decomposition_patchers import DecompositionPatchProcedure
 from rottnest.procedures.option_setters import procedure_set_option, procedure_load_modules
 from rottnest.procedures.option_setters.layout_setters import SynchroniseLayoutsProcedure
+from rottnest.procedures.option_setters.procedure_load_modules import LoadModulesProcedure
 
 from . import commands
 from .callgraph import CallGraph
@@ -38,7 +39,7 @@ def set_options(options_setter: dict):
             parameters
         ) 
 
-@reload_visualiser
+#@reload_visualiser
 def set_option(plugin_tag, option_key, parameters):
     '''
         Sets an option
@@ -50,7 +51,7 @@ def set_option(plugin_tag, option_key, parameters):
     ) 
 
 
-@reload_visualiser
+#@reload_visualiser
 def synchronise_layouts(layouts:dict):
     '''
         Synchronises layouts
@@ -107,6 +108,7 @@ def next_visualiser():
     return Visualiser.next()
 
 priority_worker_tasks = {
+    commands.SET_OPTION: set_option,
     commands.SYNCHRONISE_MODULES: synchronise_modules,
     commands.SYNCHRONISE_LAYOUTS: synchronise_layouts,
     commands.SET_ARCHITECTURE: set_architecture,

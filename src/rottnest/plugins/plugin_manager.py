@@ -253,6 +253,7 @@ class PluginManager:
             Defers to either a python module load or a path
         '''
         for entry in args:
+            err = None
             try:
                 module = PluginManager._load_module_from_module_string(
                    entry
@@ -260,7 +261,7 @@ class PluginManager:
                 self._modules.add(module)
                 continue
             except Exception as e:
-                print(str(e))
+                err_module_string = e
 
             # Attempt to treat it as a file path
             try:
@@ -273,6 +274,7 @@ class PluginManager:
                     self._modules.add(module)
                     self._file_paths[module] = entry
             except Exception as e:
+                print(str(err_module_string))
                 print(str(e))
 
         # Force reload
@@ -352,12 +354,13 @@ class PluginManager:
         '''
             Default parameter setter
         '''
-        # Sets default params
-        self.set_parameters(
-            self.__process_default_params(
-                self.get_current_option().get_parameters()
+        if self.get_current_option() is not None:
+            # Sets default params
+            self.set_parameters(
+                self.__process_default_params(
+                    self.get_current_option().get_parameters()
+                )
             )
-        )
 
     def get_parameters(self):
         '''
@@ -388,8 +391,16 @@ class PluginManager:
 
         return stripped_params
 
-
-
+    def get_state(self) -> tuple[str, str, dict]:
+        '''
+            Gets the current state of the plugin
+        '''
+        option = self.get_current_option()
+        if option is not None:
+            option_tag = option.get_name()
+        else:
+            option_tag = None
+        return option_tag, self.get_parameters()
 
 
 # NOTE: Moved it from config
