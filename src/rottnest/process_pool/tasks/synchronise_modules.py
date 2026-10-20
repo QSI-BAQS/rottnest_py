@@ -3,6 +3,7 @@
 '''
 from .pool_task import PoolTask
 
+from rottnest.process_pool import commands
 from rottnest.priority_process import commands as priority_commands
 from rottnest.procedures.option_setters.procedure_load_modules import LoadModulesProcedure
 from rottnest import plugins
@@ -17,7 +18,20 @@ class SynchroniseModulesTask(PoolTask):
         '''
             Associated Command
         '''
-        return commands.SYNCHONISE_MODULES
+        return commands.SYNCHRONISE_MODULES
+
+    @classmethod
+    def submit(
+        cls,
+        *args,
+        **kwargs
+    ):
+        '''
+            Gets the module keys for synchronisation 
+        '''
+        return super().submit(
+            plugins.get_module_keys()
+        )
 
     def task(
             self,
