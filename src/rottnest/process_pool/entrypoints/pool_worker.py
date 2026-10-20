@@ -25,11 +25,25 @@ class PoolWorkerProcessHandler(ProcessEntrypoint):
             ComputeUnitExecutorPool
         )
 
-    def main(self, worker, *args, **kwargs):
-        worker.entrypoint(*args, **kwargs)
+    def main(self, *args, **kwargs):
+        self.worker.entrypoint(*args, **kwargs)
+
+    @classmethod
+    def get_entrypoint(cls):
+        '''
+            Gets the worker entrypoint
+        '''
+        # Validation in super
+        _ = super().get_entrypoint()
+
+        # Load the entrypoing inline from singleton 
+        # This avoids circulars between processes 
+        from rottnest.plugins import architectures
+        arch = architectures.get_current_option()
+        return arch.get_worker_entrypoint()
 
 
-def get_entrypoint():
+def get_entrypoint(architecture = None):
     '''
         Dispatch function on base class method
     '''
