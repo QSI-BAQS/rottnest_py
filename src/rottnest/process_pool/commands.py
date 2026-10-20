@@ -1,6 +1,7 @@
 '''
     Constants for process pool messaging
 '''
+from rottnest import plugins
 
 PING = 'ping'
 POLL = 'poll'
@@ -13,10 +14,8 @@ TERMINATE = 'terminate'
 RUN_SEQUENCE = 'run_sequence'
 
 SET_OPTION = 'set_option'
+SET_OPTIONS = 'set_options'
 
-SET_ARCHITECTURE_MODULE = 'set_architecture_module'
-SET_EXECUTABLE = 'set_executable'
-SET_EXECUTABLE_PARAMS = 'set_executable_params'
 SET_RZ_PRECISION = 'set_rz_precision'
 
 RESET_EXECUTION_CONTEXT = 'reset_execution_context'

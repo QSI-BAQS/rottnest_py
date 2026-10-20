@@ -5,7 +5,7 @@
 from rottnest.process_pool import commands, symbols
 from .pool_task import PoolTask
 
-class PingTask(PoolTask):
+class PingWorkersTask(PoolTask):
     '''
         Sets a plugin module option
     '''
@@ -26,8 +26,11 @@ class PingTask(PoolTask):
         # Requires that the pool is running
         assert pool_manager.pool_running
 
-        # This should not block
-        pool_manager.worker_task_queue.put((commands.PING,))
+        pool_manager.worker_task_queue.put(
+            (commands.PING,)
+        )
+
+        # Block awaiting pong
         res = pool_manager.worker_ipc.get_item(
             commands.PING,
             blocking=True

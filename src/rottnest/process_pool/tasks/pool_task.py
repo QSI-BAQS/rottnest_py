@@ -1,3 +1,6 @@
+'''
+    Base pool task
+'''
 import abc
 
 class PoolTask:
@@ -40,7 +43,8 @@ class PoolTask:
     def __call__(self, pool_manager, *args, **kwargs):
         '''
         '''
-        return self.task(pool_manager, *args, **kwargs)
+        res = self.task(pool_manager, *args, **kwargs)
+        return res
     
     @abc.abstractmethod
     def task(self, pool_manager, *args, **kwargs):    
@@ -55,14 +59,15 @@ class PoolTask:
         '''
 
     @classmethod
-    def submit(cls, *args):
+    def submit(cls, *args, **kwargs):
         '''
             Simple submit wrapper
             Allows all tasks to be two sided
         '''
         return (
             cls.get_command(),
-            args
+            args,
+            kwargs
         )
 
 def get_pool_manager_tasks() -> dict:
