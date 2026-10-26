@@ -10,6 +10,8 @@ class RunSequenceTask(PoolTask):
         Sets a plugin module option
     '''
 
+    EXPECT_RESPONSE = True
+
     @classmethod
     def get_command(cls) -> str:
         '''

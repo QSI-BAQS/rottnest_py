@@ -30,7 +30,6 @@ class SynchroniseLayoutsTask(PoolTask):
             Gets the module keys for synchronisation 
         '''
         layout_payload = list(LayoutProxy.get_layouts())
-        print("LAYOUTS: ", layout_payload)
         return super().submit(
             layout_payload 
         )
@@ -50,7 +49,8 @@ class SynchroniseLayoutsTask(PoolTask):
             LayoutProxy.add_layout_with_id(
                 layout_id, layout_json
             )
-
+            obj = LayoutProxy.get_layout(layout_id)
+        
         # Dispatch to priority task
         pool_manager.priority_task_queue.put((
             priority_commands.SYNCHRONISE_LAYOUTS,

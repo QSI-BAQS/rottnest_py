@@ -9,6 +9,7 @@ class PingWorkersTask(PoolTask):
     '''
         Sets a plugin module option
     '''
+    EXPECT_RESPONSE = True
 
     @classmethod
     def get_command(cls) -> str:
@@ -43,6 +44,7 @@ class PingManagerTask(PoolTask):
     '''
         Sets a plugin module option
     '''
+    EXPECT_RESPONSE = True
 
     @classmethod
     def get_command(cls) -> str:
@@ -67,13 +69,14 @@ class PollTask(PoolTask):
     '''
         Sets a plugin module option
     '''
+    EXPECT_RESPONSE = True
 
     @classmethod
     def get_command(cls) -> str:
         '''
             Associated Command
         '''
-        return commands.PING_MANAGER
+        return commands.POLL
 
     def task(
             self,
@@ -82,6 +85,7 @@ class PollTask(PoolTask):
             **kwargs
     ):
         '''
-            Manager returns PONG
+            Returns manager status
         '''
         return pool_manager.get_status() 
+

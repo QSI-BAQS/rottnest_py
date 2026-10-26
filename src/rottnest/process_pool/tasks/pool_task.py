@@ -3,10 +3,33 @@
 '''
 import abc
 
+def expect_response(fn):
+    '''
+        Behaviour check on whether a response is expected from this task 
+    '''
+    def _wrap(self, *args, **kwargs):
+        '''
+            Wrapper function
+        '''
+        result = fn(self, *args, **kwargs) 
+
+        if self.EXPECT_RESPONSE and result is None:
+            raise TypeError(f"{self.__class__.__name__} did not produce a response")
+
+        elif (not self.EXPECT_RESPONSE) and (result is not None): 
+            raise TypeError(f"{self.__class__.__name__} produced an unexpected response: {result}")
+
+        # Passed checks
+        return result
+    # Return the wrapper
+    return _wrap
+
+
 class PoolTask:
     '''
         Base pool task
     '''
+    EXPECT_RESPONSE = False
 
     # Collector pattern
     _collector = {} 
@@ -40,6 +63,7 @@ class PoolTask:
         '''
         return cls.get_command() 
  
+    @expect_response
     def __call__(self, pool_manager, *args, **kwargs):
         '''
         '''

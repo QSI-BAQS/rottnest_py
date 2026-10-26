@@ -11,6 +11,7 @@ from . import workers
 from . import run_sequence
 from . import terminate
 from . import reset_execution_context
+from . import results
 
 # Bind collected objects to namespace
 for task in get_pool_manager_tasks().values():

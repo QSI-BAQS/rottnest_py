@@ -47,6 +47,7 @@ class StopWorkersTask(PoolTask):
     '''
         Sets a plugin module option
     '''
+    EXPECT_RESPONSE = True 
 
     @classmethod
     def get_command(cls) -> str:
@@ -67,4 +68,4 @@ class StopWorkersTask(PoolTask):
         
         # This is better handled inside the pool
         # manager's context
-        pool_manager.stop_workers()
+        return pool_manager.stop_workers()
