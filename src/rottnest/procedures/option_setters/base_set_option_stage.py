@@ -15,7 +15,7 @@ class SetOptionStage(stage.RottnestCompilerStage):
             self,
             plugin_manager: "PluginManager", 
             option_key: str,
-            option_params: dict,
+            option_params: dict = None,
             *,
             tag=None,
             dependencies=None,
@@ -26,6 +26,8 @@ class SetOptionStage(stage.RottnestCompilerStage):
 
         self._plugin_manager = plugin_manager
         self._option_key = option_key
+        if option_params is None:
+            option_params = {}
         self._option_params = option_params
         
         if dependencies is None:

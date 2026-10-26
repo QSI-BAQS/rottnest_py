@@ -9,7 +9,7 @@ PLUGIN_MANAGER = 'PLUGIN_MANAGER'
 def option_stages_factory(
         name: str,
         plugin_manager: "PluginManager"
-    ):
+    ) -> dict[str, "RottnestCompilerStages"]:
     '''
         Factory for building option setters 
         Generates everything from the plugin system 
@@ -58,3 +58,4 @@ def option_stages_factory(
         stage.__init__ = inject_init
 
     return stages
+
