@@ -142,11 +142,11 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
 
         # Task selector
         self._tasks = {
-            commands.POLL: self._task_poll,
+            #commands.POLL: self._task_poll,
             #commands.START_WORKERS: self._task_start_workers,
             #commands.STOP_WORKERS: self._task_stop_workers,
             #commands.TERMINATE: self._task_terminate,
-            commands.RUN_SEQUENCE: self._task_run_sequence,
+            #commands.RUN_SEQUENCE: self._task_run_sequence,
 
             #commands.RESET_EXECUTION_CONTEXT: self._task_reset_execution_context,
             #commands.SYNCHRONISE_LAYOUTS: self._task_synchronise_layouts,
@@ -254,7 +254,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         '''
             Setup steps on the composer
         '''
-        arch = self._architectures.get_current_architecture()
+        arch = self._architectures.get_current_option()
         self.composer = arch.composer(layouts, list(executable.get_qubits()))
         self.composer.setup()
 
@@ -349,13 +349,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
             task_queue = self.manager_priority_task_queue,
             completion_queue = self.manager_completion_queue
         )
-
-    def _task_poll(self, *args):
-        '''
-           Gets manager status
-        '''
-        # This should not block
-        return self.get_status()
 
 #    def _task_ping(self, *args):
 #        '''
@@ -494,7 +487,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         PoolStatus.EXECUTING,
         PoolStatus.FINISHED
     )
-    def _task_run_sequence(self, *args):
+    def run_sequence(self, *args):
         '''
             Returns true if exiting, none otherwise
         '''
@@ -521,8 +514,8 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         ### CONTEXT SETUP
         arch_ids = args[0]
 
-        architecture = self._architectures.get_current_architecture()
-        executable = self._executables.get_current_executable()
+        architecture = self._architectures.get_current_option()
+        executable = self._executables.get_current_option()
 
         # Pass layouts to composer
         layouts = list(LayoutProxy.get_layouts())

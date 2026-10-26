@@ -61,3 +61,27 @@ class PingManagerTask(PoolTask):
             Manager returns PONG
         '''
         return symbols.PONG
+
+
+class PollTask(PoolTask):
+    '''
+        Sets a plugin module option
+    '''
+
+    @classmethod
+    def get_command(cls) -> str:
+        '''
+            Associated Command
+        '''
+        return commands.PING_MANAGER
+
+    def task(
+            self,
+            pool_manager: "PoolManager",
+            *args,
+            **kwargs
+    ):
+        '''
+            Manager returns PONG
+        '''
+        return pool_manager.get_status() 

@@ -305,18 +305,17 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
         '''
             Puts a run sequence to the worker queue
         '''
-        self.manager_priority_task_queue.put(
-            (
-                commands.RUN_SEQUENCE,
-                layout_ids
-            )
+        self.submit(
+            tasks.RunSequenceTask,
+            layout_ids
         )
 
     def poll(self):
         '''
             Checks the state of the running job
         '''
-        self.manager_priority_task_queue.put((commands.POLL,))
+        self.submit(tasks.PollTask)
+
         status = self.ipc.get_item(
             commands.POLL,
             blocking=True
@@ -462,10 +461,9 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
         '''
             Resets the execution context on the manager
         '''
-        self.manager_task_queue.put(
-            (commands.RESET_EXECUTION_CONTEXT,)
+        self.submit(
+            tasks.ResetExecutionContextTask
         ) 
-
 
     ###
     # PRIORITY PROCESS COMMANDS 
