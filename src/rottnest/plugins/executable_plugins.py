@@ -1,6 +1,9 @@
 '''
     Manages loading of executables
 '''
+
+import rottnest_qasm_executables
+
 from rottnest.rz_decomposer import DEFAULT_PRECISION
 
 from ..config import executables_file_name
@@ -26,7 +29,9 @@ class ExecutablePlugins(PluginManager):
         '''
 
         if modules is None:
-            modules = []
+            modules = [rottnest_qasm_executables]
+        else:
+            modules = [rottnest_qasm_executables] + modules
 
         # Load from config
         super().__init__(

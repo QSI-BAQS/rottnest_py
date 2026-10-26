@@ -151,6 +151,7 @@ default to a counter in the preprocessing pass
             { <name> : (type, None),
               <name> : (type, default_value)}
         '''
+        return {}
 
     @staticmethod
     def _private_parameters():
