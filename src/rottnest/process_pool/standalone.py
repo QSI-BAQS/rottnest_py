@@ -41,20 +41,16 @@ def compile(
     # Setup decompositions
     DecompositionPatchProcedure().execute()    
 
-    # Set architecture and ID
-    # If single layout, detect and make it a list
-    if isinstance(layouts, (list, tuple)):
-        layout_ids = list(range(len(layouts)))
-    else:
-        layout_ids = [0]
-        layouts = [layouts]
+    for layout in layouts:
+        LayoutProxy.add_layout(layout)
+    layouts = LayoutProxy.get_layouts()
 
     worker = architecture.worker()
     composer = architecture.composer(layouts, executable.get_qubits())
 
-    for layout_id, layout in zip(layout_ids, layouts):
+    for layout_id, layout in layouts:
         worker.load_layout(layout_id, layout)
-
+    layout_ids = [layout_id for layout_id, _ in layouts]
 
     worker.set_precision(get_rz_precision())
 
@@ -66,11 +62,16 @@ def compile(
 
     it = seq.sequence_pyliqtr(parser)
 
+    count = 0
+    cache_count = 0
     for obj in it: 
+        print(f"\rCompiling... {count} Cached: {cache_count}", end="", flush=True)
         if obj == INTERRUPT:
             process_elem_cache(obj, composer)
+            cache_count += 1
         else:
             process_elem_obj(obj, worker, composer, compile_from_graph=compile_from_graph)
+            count += 1
 
     return composer.get_result()
 

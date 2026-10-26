@@ -64,5 +64,3 @@ class ProcessPoolTests(unittest.TestCase):
         pool.ping()
         pool.stop_workers()
 
-
-

@@ -337,7 +337,6 @@ class PluginManager:
         '''
             Setter for the currently option
         '''
-        print(f"\t SET: {self.__class__.__name__} {key}")
         option = self[key]
         if option is None:
             # TODO: Error Handling

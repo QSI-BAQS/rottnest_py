@@ -27,3 +27,28 @@ class GetCurrentResultsTask(PoolTask):
             Returns manager status
         '''
         return pool_manager.get_current_results() 
+
+
+class GetPostprocessingDataTask(PoolTask):
+    '''
+       Gets the current results 
+    '''
+    EXPECT_RESPONSE = True
+
+    @classmethod
+    def get_command(cls) -> str:
+        '''
+            Associated Command
+        '''
+        return commands.GET_POSTPROCESSING_DATA
+
+    def task(
+            self,
+            pool_manager: "PoolManager",
+            *args,
+            **kwargs
+    ):
+        '''
+            Returns manager status
+        '''
+        return pool_manager.get_postprocessing_data() 

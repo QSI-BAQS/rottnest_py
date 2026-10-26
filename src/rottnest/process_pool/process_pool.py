@@ -288,6 +288,7 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
     def get_synchronisation_status(self) -> dict:
         '''
             Getter for worker and manager status
+            # TODO
         '''
         self.manager_priority_task_queue.put((commands.SYNCHRONISATION_STATUS,))
 
@@ -337,9 +338,7 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
         '''
             Broadcasts a shutdown to all workers
         '''
-        self.manager_priority_task_queue.put(
-            (commands.STOP_WORKERS,)
-        )
+        self.stop_workers()
 
     def shutdown_workers_status(self):
         '''
@@ -418,9 +417,7 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
         if not blocking:
             return [] 
 
-        self.manager_task_queue.put(
-            (commands.GET_CURRENT_RESULTS,)
-        ) 
+        self.submit(tasks.GetCurrentResultsTask)
         resp = self.ipc.get_item(
             commands.GET_CURRENT_RESULTS,
             blocking=True
@@ -436,8 +433,8 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
         # Flush any remaining results
         self.ipc.flush()
 
-        self.manager_task_queue.put(
-            (commands.GET_CURRENT_RESULTS,)
+        self.submit(
+            tasks.GetCurrentResultsTask            
         ) 
 
         results = self.ipc.batch_get(commands.GET_CURRENT_RESULTS)
@@ -541,9 +538,7 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
         '''
             Requests postprocessing data from the pool
         '''
-        self.manager_priority_task_queue.put(
-            (commands.GET_POSTPROCESSING_DATA,)
-        ) 
+        self.submit(tasks.GetPostprocessingDataTask)
 
     def poll_postprocessing_data(self):
         '''

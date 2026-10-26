@@ -9,6 +9,7 @@ class TerminateTask(PoolTask):
     '''
         Terminates the pool 
     '''
+    EXPECT_RESPONSE = True
 
     @classmethod
     def get_command(cls) -> str:

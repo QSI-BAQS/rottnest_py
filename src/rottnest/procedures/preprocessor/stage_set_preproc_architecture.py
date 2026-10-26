@@ -27,7 +27,7 @@ class SetPreprocessingArchitectureStage(stage.RottnestCompilerStage):
         '''
         self._backup = architectures.get_current_option()
         architectures.set_current_option(
-            PreprocessorArchitecture.get_name() 
+            PreprocessorArchitecture.get_name()
         )
         self._complete = True
 

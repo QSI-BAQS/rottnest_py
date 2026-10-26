@@ -53,6 +53,7 @@ class LayoutProxy:
         '''
         cls.saved_layouts[layout_id] = layout
         cls._refresh_proxy_by_id(layout_id)
+        return layout_id
 
     @classmethod
     def _refresh_proxy_by_id(cls, layout_id):
@@ -141,7 +142,7 @@ class LayoutProxy:
         self.layout_id = layout_id
 
         from rottnest.plugins import architectures
-        arch_module = architectures.get_current_architecture()
+        arch_module = architectures.get_current_option()
 
         self.num_registers = arch_module.designer().get_mem_bound(
             self.to_json()
@@ -164,7 +165,7 @@ class LayoutProxy:
         '''
         # Currently used to avoid a circular import
         from rottnest.plugins import architectures
-        arch_module = architectures.get_current_architecture()
+        arch_module = architectures.get_current_option()
 
         self.num_registers = arch_module.designer().get_mem_bound(
             self.to_json()

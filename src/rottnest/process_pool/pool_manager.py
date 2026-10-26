@@ -26,6 +26,7 @@ from rottnest.compute_units.layout_proxy import LayoutProxy
 
 from copy import deepcopy
 
+from rottnest.input_parsers.pyliqtr_parser import PyliqtrParser
 
 from rottnest.priority_process import commands as priority_commands
 
@@ -65,8 +66,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         self.manager_running = True
         self.pool_running = False
 
-
-        # Internal import to for instantiation
+        # Internal import for instantiation
         from rottnest.plugins import architectures, executables
 
         self._architectures = architectures
@@ -80,8 +80,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         self._precision = DEFAULT_PRECISION # TODO 
         # WARN: We need to address this conflict of names
 
-        # Cache management
-        # TODO: Move this into the composer
 
         # Manager Communication queues
         self.manager_task_queue = manager_task_queue
@@ -141,29 +139,13 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         ]
 
         # Task selector
-        self._tasks = {
-            #commands.POLL: self._task_poll,
-            #commands.START_WORKERS: self._task_start_workers,
-            #commands.STOP_WORKERS: self._task_stop_workers,
-            #commands.TERMINATE: self._task_terminate,
-            #commands.RUN_SEQUENCE: self._task_run_sequence,
-
-            #commands.RESET_EXECUTION_CONTEXT: self._task_reset_execution_context,
-            #commands.SYNCHRONISE_LAYOUTS: self._task_synchronise_layouts,
-            commands.SYNCHRONISATION_STATUS: self._task_synchronisation_status,
-
-
-            # Plugin Commands
-
-            commands.SET_RZ_PRECISION: self._task_set_rz_precision,
-
-            commands.GET_CURRENT_RESULTS: self._task_get_results,
-            commands.GET_POSTPROCESSING_DATA: self._task_get_postprocessing_data,
-            priority_commands.SYNCHRONISE_PRIORITY: self._task_priority_setup,
-            priority_commands.GET_CALLGRAPH: self._task_get_callgraph,
-            priority_commands.GET_VISUALISER: self._task_get_visualiser,
-            priority_commands.GET_VISUALISER_NEXT: self._task_get_visualiser_next,
-        } | get_pool_manager_tasks()
+        #self._tasks = {
+        #    priority_commands.SYNCHRONISE_PRIORITY: self._task_priority_setup,
+        #    priority_commands.GET_CALLGRAPH: self._task_get_callgraph,
+        #    priority_commands.GET_VISUALISER: self._task_get_visualiser,
+        #    priority_commands.GET_VISUALISER_NEXT: self._task_get_visualiser_next,
+        #}  
+        self._tasks = get_pool_manager_tasks()
 
     def __del__(self, *args, **kwargs):
         '''
@@ -237,7 +219,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         )
 
 
-    def _task_get_postprocessing_data(self, *args):
+    def get_postprocessing_data(self, *args):
         '''
             Gets posprocessing data from the composer
         '''
@@ -270,7 +252,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         '''
         # Build communication queues
         self.construct_worker_queues()
-        print(f"STARTING {N_PROCESSES} Workers")
         # Set the pool up
         self.pool = [
             self.ctx.Process(target=entrypoint,
@@ -286,7 +267,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         ]
 
         for proc in self.pool:
-            print("STARTED FROM POOL")
             proc.start()
         self.pool_running = True
 
@@ -323,7 +303,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
 
         # Extract task from queue
         recv = task_queue.get(block=True, timeout=TIMEOUT)
-        print("RECEIVED: ", recv)
 
         task_name, args, kwargs = recv 
         # Dispatch on task name
@@ -331,7 +310,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         if task is None:
             raise Exception(f"Unknown task: {task_name}")
         else:
-            print("INVOKING: ", task_name, args)
             # Invoke the task
             result = task(self, *args, **kwargs)
 
@@ -518,11 +496,12 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         executable = self._executables.get_current_option()
 
         # Pass layouts to composer
-        layouts = list(LayoutProxy.get_layouts())
+        layouts = LayoutProxy.get_layouts()
 
         # For now, just force all layouts to recompute mem bounds
         # against the new architecture
         LayoutProxy.force_proxy_refresh()
+
         self.initialise_composer(layouts, executable)
 
         # TODO : Make cache force flush a procedure
@@ -605,7 +584,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         totals = self.composer.stack_frames[0].result.to_runchart()
         self.manager_completion_queue.put((commands.GET_CURRENT_RESULTS, totals))
 
-    def _task_get_results(self, *args, **kwargs):
+    def get_current_results(self, *args, **kwargs):
         '''
             Sends the results
             Wrapper around send total
