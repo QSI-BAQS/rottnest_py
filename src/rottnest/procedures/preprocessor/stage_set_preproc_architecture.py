@@ -25,7 +25,7 @@ class SetPreprocessingArchitectureStage(stage.RottnestCompilerStage):
         '''
             Swaps the current rottnest architecture 
         '''
-        self._backup = architectures.get_current_architecture()
+        self._backup = architectures.get_current_option()
         architectures.set_current_option(
             PreprocessorArchitecture.get_name() 
         )

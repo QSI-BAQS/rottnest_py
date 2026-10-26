@@ -337,6 +337,7 @@ class PluginManager:
         '''
             Setter for the currently option
         '''
+        print(f"\t SET: {self.__class__.__name__} {key}")
         option = self[key]
         if option is None:
             # TODO: Error Handling
@@ -349,6 +350,9 @@ class PluginManager:
             self.set_default_parameters()
         else:
             self.set_parameters(parameters)
+
+        # Reset the instantiated instance
+        self._instantiated_option = None
 
     def set_default_parameters(self): 
         '''
