@@ -6,6 +6,12 @@ from rottnest.plugins import architectures
 from .utils import underscore_case
 
 class SynchroniseOptionStage(stage.RottnestCompilerStage):
+    '''
+        Option synchronisation stage
+    '''
+
+    # Collector pattern
+    _collector = set() 
 
     def __init__(
             self,
@@ -25,6 +31,21 @@ class SynchroniseOptionStage(stage.RottnestCompilerStage):
             dependencies=dependencies,
             asynchronous=False
         )
+
+    def __init_subclass__(cls, *args, **kwargs):
+        '''
+            Collector pattern
+            Builds a synchronise all procedure
+        '''
+        super().__init_subclass__(*args, **kwargs)
+        SynchroniseOptionStage._collector.add(cls)
+
+    @classmethod
+    def get_collected_stages(cls):
+        '''
+            Getter for the collector
+        '''
+        return SynchroniseOptionStage._collector
 
     def execute(self, compiler_environment):
         '''

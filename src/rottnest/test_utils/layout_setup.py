@@ -12,13 +12,14 @@ def setup_layout(*args, layout=None, layout_id = None):
         # decorator
         def _wrap(*args, **kwargs):
             _setup_layout()
+            return fn(*args, **kwargs)
         return _wrap
 
     # Not a decorator
-    _setup_layout
+    return _setup_layout
 
 
-def _setup_layout(layout = None, layou_id = None):
+def _setup_layout(layout = None, layout_id = None):
     if layout_id is None:
         layout_id = 0
     if layout is None:

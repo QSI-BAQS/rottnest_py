@@ -1,44 +1,62 @@
 import unittest
 
-from rottnest.process_pool.tasks import set_option
+from rottnest.process_pool.tasks import SetOptionTask
 
 from rottnest.test_utils.proxy_pool_manager import ProxyPoolManager
+from rottnest.test_utils.plugin_setup import setup_plugins
 
 from rottnest_preprocessor.preprocessor.architecture import PreprocessorArchitecture
 from rottnest_error_budgets.error_budgets.even_distribution import EvenDistribution
 
+from rottnest.test_utils import SampleExecutable
+
 class SetOptionTaskTest(unittest.TestCase):
 
+    def queue_introspection(self, mgr):
+        assert not mgr.priority_task_queue.empty()
+        res = mgr.priority_task_queue.get()
+        assert res[0] == SetOptionTask.get_priority_worker_command()
+        assert mgr.priority_task_queue.empty()
+
     def test_example_executable(self):
-        # TODO: Update this to QASM when implemented 
-        set_option.SetOptionTask()(
-            ProxyPoolManager(),
+
+        exe = SampleExecutable.get_name()
+        setup_plugins(executable=exe)
+
+        mgr = ProxyPoolManager()
+        SetOptionTask(
+            mgr,
             'rottnest_executables',
-            'Fermi-Hubbard',
+            SampleExecutable.get_name(),
+            SampleExecutable.get_parameters(),
             None
         )
+        self.queue_introspection(mgr)
 
     def test_architecture(self):
-        set_option.SetOptionTask()(
-            ProxyPoolManager(),
+        mgr = ProxyPoolManager()
+
+        SetOptionTask(
+            mgr,
             'rottnest_architectures',
             PreprocessorArchitecture.get_name(),
             None
         )
-
+        self.queue_introspection(mgr)
 
     def test_error_budgets(self):
-        set_option.SetOptionTask()(
-            ProxyPoolManager(),
+        mgr = ProxyPoolManager()
+
+        SetOptionTask(
+            mgr,
             'rottnest_error_budgets',
             EvenDistribution.get_name(),
             None
         )
-
-
-
-
+        self.queue_introspection(mgr)
 
 if __name__ == '__main__':
     tst = SetOptionTaskTest()
-    tst.test_blank()
+    tst.test_example_executable()
+    tst.test_error_budgets()
+    tst.test_architecture()

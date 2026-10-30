@@ -30,13 +30,20 @@ class PoolTask:
         Base pool task
     '''
     EXPECT_RESPONSE = False
+    _SKIP_BIND = False
 
     # Collector pattern
     _collector = {} 
 
     def __init_subclass__(cls, *args, **kwargs):
-        super().__init_subclass__(*args, **kwargs)
-        PoolTask._collector[cls.get_command()] = cls
+        '''
+            Collector builder
+        '''
+        res = super().__init_subclass__(*args, **kwargs)
+        if not cls._SKIP_BIND:
+            assert cls.get_command not in PoolTask._collector
+            PoolTask._collector[cls.get_command()] = cls
+        return res
 
     @classmethod
     @abc.abstractmethod 
@@ -94,6 +101,37 @@ class PoolTask:
             kwargs
         )
 
+class PriorityWorkerTask(PoolTask):
+    '''
+        Task that redirects to the priority worker
+    '''
+    _SKIP_BIND = True
+
+    def __init_subclass__(cls, *args, **kwargs):
+        cls._SKIP_BIND = False
+        res = super().__init_subclass__(*args, **kwargs)
+        return res
+
+
+    @classmethod
+    def get_priority_worker_command(cls) -> str:
+        '''
+            Optional
+            For cases where the poll IPC header
+            differs from the command
+        '''
+        return cls.get_command()
+
+    def task(self, pool_manager, *args, **kwargs):    
+        '''
+            Default task is a redirect and submit
+        '''
+        pool_manager.submit_priority(
+            self.get_priority_worker_command(),
+            *args,
+            **kwargs
+        )
+
 def get_pool_manager_tasks() -> dict:
     '''
         Triggers the task collector
@@ -102,4 +140,3 @@ def get_pool_manager_tasks() -> dict:
         command: task() 
         for command, task in PoolTask._collector.items()
     }
-

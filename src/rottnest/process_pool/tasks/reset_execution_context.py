@@ -17,7 +17,7 @@ class ResetExecutionContextTask(PoolTask):
         '''
             Associated Command
         '''
-        return commands.SET_OPTION
+        return commands.RESET_EXECUTION_CONTEXT
 
     def task(
             self,

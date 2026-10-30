@@ -1,14 +1,14 @@
 '''
     Module Synchronisation Command
 '''
-from .pool_task import PoolTask
+from .pool_task import PriorityWorkerTask
 
 from rottnest.process_pool import commands
 from rottnest.priority_process import commands as priority_commands
 from rottnest.procedures.option_setters.procedure_load_modules import LoadModulesProcedure
 from rottnest import plugins
 
-class SynchroniseModulesTask(PoolTask):
+class SynchroniseModulesTask(PriorityWorkerTask):
     '''
        Synchronises modules 
     '''
@@ -19,6 +19,13 @@ class SynchroniseModulesTask(PoolTask):
             Associated Command
         '''
         return commands.SYNCHRONISE_MODULES
+
+    @classmethod
+    def get_priority_worker_command(cls) -> str:
+        '''
+            Command to priority worker
+        '''
+        return priority_commands.SYNCHRONISE_MODULES
 
     @classmethod
     def submit(
@@ -51,8 +58,8 @@ class SynchroniseModulesTask(PoolTask):
         module_keys = plugins.get_module_keys()
 
         # Maintain synchronisation with priority task
-        pool_manager.priority_task_queue.put((
-            priority_commands.SYNCHRONISE_MODULES,
+        pool_manager.submit_priority(
+            self.get_priority_worker_command(),
             module_keys
-        ))
+        )
 

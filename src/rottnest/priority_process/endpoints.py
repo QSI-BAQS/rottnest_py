@@ -37,18 +37,19 @@ def set_options(options_setter: dict):
             plugin_tag,
             option_key,
             parameters
-        ) 
+        ).execute() 
 
 #@reload_visualiser
 def set_option(plugin_tag, option_key, parameters):
     '''
         Sets an option
     '''
+    print("PRIOIRTY SET: ", plugin_tag, option_key)
     procedure_set_option.SetOptionProcedure(
         plugin_tag,
         option_key,
         parameters
-    ) 
+    ).execute() 
 
 
 #@reload_visualiser

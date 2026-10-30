@@ -13,6 +13,9 @@ from . import terminate
 from . import reset_execution_context
 from . import results
 
+# Priority tasks
+from . import callgraph
+
 # Bind collected objects to namespace
 for task in get_pool_manager_tasks().values():
     locals()[task.__class__.__name__] = task

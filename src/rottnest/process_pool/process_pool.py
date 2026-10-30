@@ -117,7 +117,7 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
             self,
             task: "PoolTask",
             *args,
-            priority: bool = False,
+            priority: bool = True,
             **kwargs
         ):
         '''
@@ -254,16 +254,12 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
             Option Setter
             The option
         '''
-        self.manager_priority_task_queue.put(
-            (
-                commands.SET_PLUGIN_OPTION,
-                (
-                    plugin_manager_tag,
-                    option_name,
-                    option_parameters,
-                )
-            )
-        )
+        self.submit(
+            tasks.SetOptionTask,
+            plugin_manager_tag,
+            option_name,
+            option_parameters
+        ) 
 
     def set_architecture_module(
                 self,
@@ -290,7 +286,10 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
             Getter for worker and manager status
             # TODO
         '''
-        self.manager_priority_task_queue.put((commands.SYNCHRONISATION_STATUS,))
+        self.submit(
+            task.GetSynchronisationStatus,
+            priority=True
+        )
 
         resp = self.ipc.fetch(
             commands.SYNCHRONISATION_STATUS,
@@ -474,23 +473,26 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
 
     def get_callgraph(self, graph_id):
         '''
-            Sends and asynch request to 
+            Sends an asynch request to get the callgraph 
         '''
-        self.manager_priority_task_queue.put(
-            (priority_commands.GET_CALLGRAPH, graph_id)
-        ) 
+        self.submit(
+            tasks.GetCallgraphTask,
+            graph_id, 
+            priority=True
+        )
 
     def get_callgraph_status(self):
         '''
             Gets a status object from the IPC
         '''
-        status = self.ipc.get_item(
-            priority_commands.GET_CALLGRAPH,
+        resp = self.fetch(
+            tasks.GetCallgraphTask,
             blocking=False
         )
-        if status is IPCManager.NOT_FOUND:
+
+        if resp is IPCManager.NOT_FOUND:
             return None
-        return status
+        return resp
 
     def clear_buffers(self, *exceptions):
         '''

@@ -16,3 +16,5 @@ for manager in plugin_managers:
         locals()[name] = stage
         locals()[procedure_name] = procedure 
 
+
+from .procedure_synchronise_options import SynchroniseOptionsProcedure

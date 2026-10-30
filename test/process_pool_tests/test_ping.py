@@ -30,8 +30,6 @@ class ProcessPoolTests(unittest.TestCase):
         # Asserts correctness in here
         pool.ping_manager()
 
-        pool.terminate()
-
     @setup_plugins_decorator()
     def test_ping_workers(self):
         '''
@@ -52,12 +50,12 @@ class ProcessPoolTests(unittest.TestCase):
         ## Asserts correctness in here
         pool.ping_workers()
 
+    def __del__(self):
         ## Shutdown
         pool.stop_workers()
         pool.terminate()
 
-
 if __name__ == '__main__':
     tst = ProcessPoolTests()
-    #tst.test_ping_manager()
+    tst.test_ping_manager()
     tst.test_ping_workers()

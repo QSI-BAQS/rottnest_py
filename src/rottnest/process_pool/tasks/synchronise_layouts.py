@@ -1,14 +1,14 @@
 '''
     Layout Synchronisation Command
 '''
-from .pool_task import PoolTask
+from .pool_task import PriorityWorkerTask 
 
 from rottnest.process_pool import commands
 from rottnest.priority_process import commands as priority_commands
 
 from rottnest.compute_units.layout_proxy import LayoutProxy
 
-class SynchroniseLayoutsTask(PoolTask):
+class SynchroniseLayoutsTask(PriorityWorkerTask):
     '''
        Synchronises modules 
     '''
@@ -19,6 +19,10 @@ class SynchroniseLayoutsTask(PoolTask):
             Associated Command
         '''
         return commands.SYNCHRONISE_LAYOUTS
+
+    @classmethod
+    def get_priority_worker_command(cls) -> str:
+        return priority_commands.SYNCHRONISE_LAYOUTS
 
     @classmethod
     def submit(
@@ -50,10 +54,9 @@ class SynchroniseLayoutsTask(PoolTask):
                 layout_id, layout_json
             )
             obj = LayoutProxy.get_layout(layout_id)
-        
-        # Dispatch to priority task
-        pool_manager.priority_task_queue.put((
-            priority_commands.SYNCHRONISE_LAYOUTS,
+       
+        # Synch with priority worker
+        pool_manager.submit_priority(
+            self.get_priority_worker_command(),
             list(LayoutProxy.get_layouts())
-        ))
-
+        ) 

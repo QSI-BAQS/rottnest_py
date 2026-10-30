@@ -1,7 +1,7 @@
 '''
     Module Synchronisation Command
 '''
-from .pool_task import PoolTask
+from .pool_task import PoolTask, PriorityWorkerTask
 
 from rottnest.process_pool import commands
 from rottnest.priority_process import commands as priority_commands
@@ -12,7 +12,7 @@ from rottnest.procedures.option_setters.procedure_set_option import SetOptionPro
 from rottnest import plugins
 
 
-class SetOptionTask(PoolTask):
+class SetOptionTask(PriorityWorkerTask):
     '''
         Sets a plugin module option
     '''
@@ -23,6 +23,14 @@ class SetOptionTask(PoolTask):
             Associated Command
         '''
         return commands.SET_OPTION
+
+    @classmethod
+    def get_priority_worker_command(cls) -> str:
+        '''
+            Command to be passed to the priority worker
+        '''
+        return priority_commands.SET_OPTION
+
 
     @classmethod
     def submit(
@@ -57,12 +65,12 @@ class SetOptionTask(PoolTask):
 
         # Maintain synchronisation 
         # with priority task
-        pool_manager.priority_task_queue.put((
-            priority_commands.SET_OPTION,
+        pool_manager.submit_priority(
+            self.get_priority_worker_command(), 
             plugin_tag,
             option_key,
             option_params
-        ))
+        )
 
         # Decomposition patch on executable update
         if plugin_tag == plugins.executables.get_plugin_tag():

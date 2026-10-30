@@ -206,16 +206,20 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
 
     def submit_priority(
         self,
-        task: "PoolTask",
+        priority_command: str,
         *args,
          **kwargs
     ):
         '''
-            Wraps the submission of tasks for the 
-            priority worker 
+            Submits to  
         '''
+        print("POOL MGR: ", priority_command, args, kwargs)
         self.priority_task_queue.put(
-            task.submit(*args, **kwargs)
+            (
+                priority_command,
+                args,
+                kwargs,
+            ),
         )
 
 
@@ -307,6 +311,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         task_name, args, kwargs = recv 
         # Dispatch on task name
         task = self._tasks.get(task_name, None)
+        print("Task: ", task_name)
         if task is None:
             raise Exception(f"Unknown task: {task_name}")
         else:
@@ -679,35 +684,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
             list(LayoutProxy.get_layouts())
         ))
 
-        return
-
-    def _task_get_callgraph(self, graph_id):
-        '''
-            Gets the callgraph
-        '''
-        self.priority_task_queue.put((
-            priority_commands.GET_CALLGRAPH,
-            graph_id
-        ))
-        return
-
-    def _task_get_visualiser(self, graph_id):
-        '''
-            Gets the callgraph
-        '''
-        self.priority_task_queue.put((
-            priority_commands.GET_VISUALISER,
-            graph_id
-        ))
-        return
-
-    def _task_get_visualiser_next(self, *args):
-        '''
-            Gets the callgraph
-        '''
-        self.priority_task_queue.put((
-            priority_commands.GET_VISUALISER_NEXT,
-        ))
         return
 
     ###
