@@ -7,6 +7,8 @@ from rottnest.procedures.option_setters import procedure_set_option, procedure_l
 from rottnest.procedures.option_setters.layout_setters import SynchroniseLayoutsProcedure
 from rottnest.procedures.option_setters.procedure_load_modules import LoadModulesProcedure
 
+from rottnest.plugins import architectures  
+
 from . import commands
 from .callgraph import CallGraph
 from .visualiser import Visualiser
@@ -25,7 +27,6 @@ def synchronise_modules(module_keys: dict):
         Synchronises the modules
     '''
     LoadModulesProcedure(module_keys).execute()
-    return
 
 @reload_visualiser
 def set_options(options_setter: dict):
@@ -39,52 +40,31 @@ def set_options(options_setter: dict):
             parameters
         ).execute() 
 
-#@reload_visualiser
+        # Reload visualiser
+        if plugin_tag == architectures.get_plugin_tag():
+                 Visualiser.setup_worker()
+
+
 def set_option(plugin_tag, option_key, parameters):
     '''
         Sets an option
     '''
-    print("PRIOIRTY SET: ", plugin_tag, option_key)
     procedure_set_option.SetOptionProcedure(
         plugin_tag,
         option_key,
         parameters
     ).execute() 
 
+    # Reload visualiser
+    if plugin_tag == architectures.get_plugin_tag():
+         Visualiser.setup_worker()
+       
 
-#@reload_visualiser
 def synchronise_layouts(layouts:dict):
     '''
         Synchronises layouts
     '''
     SynchroniseLayoutsProcedure(layouts).execute()
-    return
-
-@reload_visualiser
-def set_architecture(architecture: str):
-    '''
-        Sets the architecture
-    '''
-    SetArchitectureProcedure(architecture).execute()
-    return
-
-def set_executable(executable: str):
-    '''
-        Sets the executable
-    '''
-    SetExecutableProcedure(executable, params=None).execute()
-    # Call the decomposition immediately to hook everything
-    DecompositionPatchProcedure().execute()
-    CallGraph.flush_caches()
-    return
-
-def set_executable_params(params):
-    '''
-        Sets the executable parameters
-    '''
-    SetExecutableParametersProcedure(params).execute()
-    CallGraph.flush_caches()
-
     return
 
 def get_callgraph(graph_id: str) -> list:
@@ -112,9 +92,6 @@ priority_worker_tasks = {
     commands.SET_OPTION: set_option,
     commands.SYNCHRONISE_MODULES: synchronise_modules,
     commands.SYNCHRONISE_LAYOUTS: synchronise_layouts,
-    commands.SET_ARCHITECTURE: set_architecture,
-    commands.SET_EXECUTABLE: set_executable,
-    commands.SET_EXECUTABLE_PARAMS: set_executable_params,
     commands.GET_CALLGRAPH: get_callgraph,
     commands.GET_VISUALISER: get_visualiser
 }

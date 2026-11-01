@@ -213,7 +213,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         '''
             Submits to  
         '''
-        print("POOL MGR: ", priority_command, args, kwargs)
         self.priority_task_queue.put(
             (
                 priority_command,
@@ -311,7 +310,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         task_name, args, kwargs = recv 
         # Dispatch on task name
         task = self._tasks.get(task_name, None)
-        print("Task: ", task_name)
         if task is None:
             raise Exception(f"Unknown task: {task_name}")
         else:

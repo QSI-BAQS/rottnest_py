@@ -15,6 +15,8 @@ from . import results
 
 # Priority tasks
 from . import callgraph
+from . import visualiser 
+
 
 # Bind collected objects to namespace
 for task in get_pool_manager_tasks().values():

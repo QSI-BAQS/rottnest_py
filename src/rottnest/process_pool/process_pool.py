@@ -466,10 +466,12 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
     ###
 
     def synchronise_priority_process(self):
-        self.manager_priority_task_queue.put(
-            (priority_commands.SYNCHRONISE_PRIORITY,)
-        ) 
-
+        '''
+            Forces a refresh on priority state
+        '''
+        self.submit(
+            tasks.SynchronisePriorityProcess,
+        )
 
     def get_callgraph(self, graph_id):
         '''
@@ -503,11 +505,12 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
 
     def get_visualiser(self, graph_id):
         '''
-            Sends and asynch request to get a visualiser object 
+            Sends an asynch request to get a visualiser object 
         '''
-        self.manager_priority_task_queue.put(
-            (priority_commands.GET_VISUALISER, graph_id)
-        ) 
+        self.submit(
+            tasks.GetVisualiserTask,
+            graph_id
+        )
 
     def get_visualiser_next(self):
         '''

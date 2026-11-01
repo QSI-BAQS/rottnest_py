@@ -148,7 +148,6 @@ class RottnestWorker(abc.ABC):
                 #     continue
 
                 resp = queue.get(True, GET_TIMEOUT)
-                print("Priority TASK: ", resp)
                 task, args, kwargs = resp
                 response = (task, self.worker_tasks[task](*args, **kwargs))
                 if response is not None:

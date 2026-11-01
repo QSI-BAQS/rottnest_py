@@ -62,4 +62,3 @@ class SynchroniseModulesTask(PriorityWorkerTask):
             self.get_priority_worker_command(),
             module_keys
         )
-

@@ -3,9 +3,9 @@
 '''
 
 from rottnest.priority_process import commands
-from .pool_task import PoolTask
+from .pool_task import PriorityWorkerTask
 
-class GetVisualiserTask(PriorityPoolTask):
+class GetVisualiserTask(PriorityWorkerTask):
     '''
         Sets a plugin module option
     '''
@@ -16,7 +16,7 @@ class GetVisualiserTask(PriorityPoolTask):
         '''
         return commands.GET_VISUALISER
 
-class GetVisualiserNextTask(PriorityPoolTask):
+class GetVisualiserNextTask(PriorityWorkerTask):
     '''
         Sets a plugin module option
     '''
