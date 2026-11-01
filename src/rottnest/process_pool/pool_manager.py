@@ -624,7 +624,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
     def stop_workers(self):
         if not self.pool_running:
             # Pool isn't running, skip
-            return
+            return True
 
         for queue in self.worker_comms_queue:
             queue.put((rottnest_worker.SHUTDOWN,))

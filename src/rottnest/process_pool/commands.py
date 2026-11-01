@@ -15,6 +15,7 @@ RUN_SEQUENCE = 'run_sequence'
 
 SET_OPTION = 'set_option'
 SET_OPTIONS = 'set_options'
+GET_OPTIONS = 'get_options'
 
 SET_RZ_PRECISION = 'set_rz_precision'
 

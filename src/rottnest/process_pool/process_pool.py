@@ -284,18 +284,15 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
     def get_synchronisation_status(self) -> dict:
         '''
             Getter for worker and manager status
-            # TODO
         '''
         self.submit(
-            task.GetSynchronisationStatus,
+            tasks.GetOptionsTask,
             priority=True
         )
-
-        resp = self.ipc.fetch(
-            commands.SYNCHRONISATION_STATUS,
-            blocking = True
-        )
-        return resp
+        resp = self.fetch(tasks.GetOptionsTask)
+        if resp is not IPCManager.NOT_FOUND:
+            return resp
+        return None
 
     @status_update(
         PoolStatus.EXECUTING, 

@@ -31,7 +31,6 @@ class SetOptionTask(PriorityWorkerTask):
         '''
         return priority_commands.SET_OPTION
 
-
     @classmethod
     def submit(
             cls,
@@ -95,10 +94,7 @@ class SetOptionsTask(PoolTask):
         **kwargs
     ):
        
-        options = {
-            manager.get_plugin_tag(): manager.get_state()
-            for manager in plugins.plugin_managers
-        } 
+        options = plugins.get_state()
         return super().submit(options)
 
     def task(
@@ -113,4 +109,30 @@ class SetOptionsTask(PoolTask):
 
         for plugin_tag, option in options.items():
             task(pool_manager, plugin_tag, *option)
+
+
+class GetOptionsTask(PoolTask):
+    '''
+        Gets the synchronisation state of the manager 
+        ## Currently only used for testing
+    '''
+    EXPECT_RESPONSE = True
+
+    @classmethod
+    def get_command(cls) -> str:
+        '''
+            Associated Command
+        '''
+        return commands.GET_OPTIONS
+
+    def task(
+            self,
+            pool_manager,
+            *args,
+            **kwargs
+        ):
+        '''
+            Gets the state of each option
+        '''
+        return plugins.get_state()
 

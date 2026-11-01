@@ -37,16 +37,14 @@ def get_module_keys() -> dict:
         for manager in plugin_managers
     }
 
-def override_architectures(architectures_override: ArchitecturePlugins):
+def get_state() -> dict:
     '''
-       Allows for overriding the architecture plugins 
+        Gets the state of all plugins
     '''
-    global architectures
-    architectures = architectures_override
+    global plugin_managers
+    options = {
+        manager.get_plugin_tag(): manager.get_state()
+        for manager in plugin_managers
+    } 
+    return options
 
-def override_executables(executables_override: ExecutablePlugins):
-    '''
-       Allows for overriding the architecture plugins 
-    '''
-    global executables
-    executables = executables_override
