@@ -759,6 +759,7 @@ class ResultsComposer:
         '''
         raise NotImplementedError("Results composer does not implement a get_sequential_tocks method")
 
+
 class Postprocessor:
     '''
         This class maps final result tallies to physical
@@ -784,14 +785,71 @@ class Postprocessor:
         '''
         self.result = result
 
-    def set_postprocessing_parameters(self, *args, **kwargs):
+    @classmethod
+    def get_parameters(cls):
         '''
-            Sets any additional parameters
+        Class dispatch method to recursively collect parameters and default arguments
+        To set parameters for a given executable the default behaviour is to use the
+        _parameters method
+        Parameter priority is in order of a BFS over the bases of each object in the
+        inheritence hierachy
+        '''
+        params = {}
+        # Collect parameters from subclasses
+        for base in cls.__bases__:
+            if issubclass(base, Postprocessor) and base is not object:
+                # Recurse
+                params |= base.get_parameters()
+
+        # Set this classes params last
+        params |= cls._parameters()
+        return params
+
+    @classmethod
+    def get_private_parameters(cls):
+        '''
+        Class dispatch method to recursively collect private parameters and default arguments
+        To set parameters for a given executable the default behaviour is to use the
+        _parameters method
+        Parameter priority is in order of a BFS over the bases of each object in the
+        inheritence hierachy
+        '''
+        params = {}
+        # Collect parameters from subclasses
+        for base in cls.__bases__:
+            if issubclass(base, Postprocessor) and base is not Postprocessor:
+                # Recurse
+                params |= base.get_private_parameters()
+
+        # Set this classes params last
+        params |= cls._private_parameters()
+        return params
+
+    @staticmethod
+    def _parameters():
+        '''
+            Abstract method for returning tunable parameters
+            This is invoked through the class dispatch method get_parameters
+            The default behaviour for the dispatch method is to aggregate parameters
+            through inherited classes
+            { <name> : (type, None),
+              <name> : (type, default_value)}
         '''
 
-    def get_postprocessing_parameters(self) -> dict:
+    @staticmethod
+    def _private_parameters():
         '''
-            User modifiable parameters
+            Abstract method for returning tunable parameters
+            Private parameters are not exposed to the
+            front end
+
+            These parameters bind in the constructor
+            and are typically used for internal methods
+            without needing to rewrite __init__
+            unless more complex logic is needed
+
+            { <name> : (type, None),
+              <name> : (type, default_value)}
         '''
         return {}
 
