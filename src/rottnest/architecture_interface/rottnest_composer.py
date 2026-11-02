@@ -45,6 +45,14 @@ class RottnestComposer(abc.ABC):
         '''
         return MemoryManager
 
+    @staticmethod
+    def postprocessor_constructor() -> Type["Postprocessor"]
+        '''
+            Dispatch method for module hooking
+            of constructors
+        '''
+        return Postprocessor
+
     def __init__(self, layouts: dict, qubits):
         # Tracks qubits irrespective of renaming
         self.qubit_map = {qubit:i for i, qubit in enumerate(qubits)}
@@ -52,6 +60,7 @@ class RottnestComposer(abc.ABC):
         # Set dynamic constructors
         self.ResultsComposer = self.results_composer_constructor()
         self.StackFrame = self.stack_frame_constructor()
+        self.PostProcessor = self.postprocessor_constructor()
 
         # Layouts
         self.layouts = list(
@@ -176,7 +185,7 @@ class RottnestComposer(abc.ABC):
             cache_obj.cache_hash(),
             self.ResultsComposer,
             qubit_map=qubit_map,
-            memory_manager=self.memory_manager
+            memory_manager=self.get_memory_manager()
         )
 
         self.memory_manager.frame_create(
@@ -339,6 +348,12 @@ class RottnestComposer(abc.ABC):
             Memory manager getter
         '''
         return self.memory_manager
+
+    def get_postprocessor(self):
+        '''
+            Postprocessor getter
+        '''
+        return self.postprocessor
 
 
 class ComposerStackFrame:
@@ -743,3 +758,49 @@ class ResultsComposer:
             Does not include load/store idling
         '''
         raise NotImplementedError("Results composer does not implement a get_sequential_tocks method")
+
+class Postprocessor:
+    '''
+        This class maps final result tallies to physical
+        statistics 
+    '''
+
+    def __init__(self):
+        '''
+            Constructor
+        '''
+        self.layouts = None
+        self.result = None
+
+    def set_layouts(self, layouts):
+        '''
+            Setter for Postprocessor.layouts
+        '''
+        self.layouts = layouts
+
+    def set_result(self, result):
+        '''
+            Setter for Postprocessor.result
+        '''
+        self.result = result
+
+    def set_postprocessing_parameters(self, *args, **kwargs):
+        '''
+            Sets any additional parameters
+        '''
+
+    def get_postprocessing_parameters(self) -> dict:
+        '''
+            User modifiable parameters
+        '''
+        return {}
+
+    def postprocess(
+            self,
+            result: "ResultsComposer",
+            *args,
+            **kwargs
+        ) -> dict:
+        '''
+            Executes the post-processor
+        ''' 
