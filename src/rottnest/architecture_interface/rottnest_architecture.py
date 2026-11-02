@@ -29,14 +29,18 @@ class RottnestArchitecture(abc.ABC):
         raise NotImplementedError
 
     @classmethod
-    def worker_entrypoint(cls, *args, **kwargs) -> FunctionType:
+    def get_parameters(cls) -> dict:
+        return {} 
+
+    @classmethod
+    def get_worker_entrypoint(cls, *args, **kwargs) -> FunctionType:
         '''
         Returns an entrypoint function for a worker  
         Workers are worker pool members that injest 
         widgets and emit serialisable objects that 
         composers may ingest  
         '''
-        return cls.worker.entrypoint  # ty: ignore NOTE: Appears to be unresolved
+        return cls.worker().entrypoint 
 
     @staticmethod
     def worker(*args, **kwargs) -> Type["RottnestWorker"]:

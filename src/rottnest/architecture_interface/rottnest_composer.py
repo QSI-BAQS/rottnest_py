@@ -45,7 +45,7 @@ class RottnestComposer(abc.ABC):
         '''
         return MemoryManager
 
-    def __init__(self, layouts, qubits):
+    def __init__(self, layouts: dict, qubits):
         # Tracks qubits irrespective of renaming
         self.qubit_map = {qubit:i for i, qubit in enumerate(qubits)}
 
@@ -54,7 +54,10 @@ class RottnestComposer(abc.ABC):
         self.StackFrame = self.stack_frame_constructor()
 
         # Layouts
-        self.layouts = list(map(LayoutProxy.add_layout, layouts))
+        self.layouts = list(
+            LayoutProxy.add_layout_with_id(*layout)
+            for layout in layouts
+        )
 
         # Memory management system
         self.memory_manager = self.memory_manager_constructor()(self.ResultsComposer)
@@ -133,7 +136,7 @@ class RottnestComposer(abc.ABC):
 
             self.memory_manager.idle(
                 stack_frame.get_id(),
-                result_composer.get_sequential_tocks()
+                result_composer
             )
 
             store_labels = (
@@ -230,7 +233,7 @@ class RottnestComposer(abc.ABC):
             # Idle the memory manager's next stack frame
             self.memory_manager.idle(
                 self.stack_frames[-1].get_id(),
-                old_frame.get_sequential_tocks()
+                old_frame
             )
 
     def all_submitted(self):
@@ -427,7 +430,7 @@ class ComposerStackFrame:
                 # Idle the memory manager's next stack frame
                 self.memory_manager.idle(
                     self.get_id(),
-                    frame.get_sequential_tocks()
+                    frame
                 )
 
                 frame.deferred_resolved = True

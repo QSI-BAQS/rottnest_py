@@ -11,14 +11,12 @@ class ErrorBudget(abc.ABC):
 
     def __init__(
                 self,
-                p_physical: float,
                 target_error: float
             ):
         '''
             Error budget base class
         '''
-
-        self._p_physical = p_physical
+        # Global target error rate across all sources
         self._target_error = target_error
 
     @classmethod
@@ -33,7 +31,6 @@ class ErrorBudget(abc.ABC):
             Simple getter for some base parameters
         '''
         return {
-            'p_physical': (float, None),
             'target_error': (float, None)
         }
 
@@ -43,21 +40,9 @@ class ErrorBudget(abc.ABC):
             Getter for model parameters
         '''
 
-    def get_p_physical(self) -> float:
-        '''
-            Get the physical error rate
-        '''
-        return self._p_physical
-
-    def set_p_physical(self, p_physical):
-        '''
-            Setter for the physical error rate
-        '''
-        self._p_physical = p_physical
-
     def get_target_error(self) -> float:
         '''
-            Gets the target erro
+            Gets the target error
         '''
         return self._target_error
 
@@ -67,7 +52,7 @@ class ErrorBudget(abc.ABC):
         '''
         self._target_error = target_error
 
-    def validate(self, rz_err=None, t_err=None, stv_err=None):
+    def validate(self, rz_err=None, t_err=None, topological_errors=None):
         '''
             Validates that all errors are less than
             budget targets
@@ -81,13 +66,14 @@ class ErrorBudget(abc.ABC):
         '''
 
     @abc.abstractmethod
+    def get_topological_error_budget(self) -> float:
+        '''
+        Base topological budget getter
+        '''
+
+    @abc.abstractmethod
     def get_t_infidelity_budget(self) -> float:
         '''
             Base T infidelity budget getter
         '''
 
-    @abc.abstractmethod
-    def get_space_time_budget(self) -> float:
-        '''
-        Base space-time budget getter
-        '''

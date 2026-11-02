@@ -18,6 +18,9 @@ class ResetPreprocessingArchitectureStage(stage.RottnestCompilerStage):
     def __init__(self, *, tag=None, dependencies=None):
         self._complete = False
 
+        # Execute depends on `get_original_architecture`
+        # Which is bound to the environment by the 
+        # stage_set_preproc_architecture stage
         if dependencies is None:
             dependencies = [
                 stage_set_preproc_architecture.STAGE_TAG,
@@ -39,7 +42,7 @@ class ResetPreprocessingArchitectureStage(stage.RottnestCompilerStage):
         # Todo replace with dynamic string
         arch = environment.hotswap_architecture.get_original_architecture()
         
-        architectures.set_current_architecture(
+        architectures.set_current_option(
             arch.get_name()
         )
         self._complete = True
