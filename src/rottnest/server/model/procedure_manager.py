@@ -29,16 +29,22 @@ def get_procedure_state(procedure_id):
        Given a procedure id that the manager
        would have tagged with a integer (pylong)
     '''
+    obj = {
+        "procedure_id": None,
+        "error" : "Procedure Id is not in the active list" 
+    }
+
     procmanager = ProcedureManagerSelector.get_instance().get_default()
-    result = procmanager.get_procedure_state(procedure_id)
-    return result
-
-
+    result = procmanager.get_procedure(procedure_id)
+    if result is not None:
+        obj = result
+        
+    return obj
 
 def get_procedure_table():
     '''
         Gets the list of active procedures that are part
-        of the 
+        of the procedure manager
     '''
     procmanager = ProcedureManagerSelector.get_instance().get_default()
     result = procmanager.get_procedure_table()
@@ -50,5 +56,7 @@ def abort_procedure(procedure_id):
     '''
     procmanager = ProcedureManagerSelector.get_instance().get_default()
     result = procmanager.abort_procedure(procedure_id)
-    return { 'procedure_id': procedure_id, issued: True }
-
+    if result is not None:
+        return { 'procedure_id': procedure_id, 'issued': True }
+    else:
+        return { 'procedure_id': None, 'issued': False }
