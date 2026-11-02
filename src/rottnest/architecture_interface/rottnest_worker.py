@@ -127,10 +127,11 @@ class RottnestWorker(abc.ABC):
             else:
                 continue
             try:
-                task, *args = queue.get(True, GET_TIMEOUT)
+                resp = queue.get(True, GET_TIMEOUT)
+                task, args, kwargs = resp
             except queue_module.Empty:
                 continue
-            response = self.worker_tasks[task](*args)
+            response = self.worker_tasks[task](*args, **kwargs)
             if response is not None:
                 worker_results_queue.put((task, response))
         return

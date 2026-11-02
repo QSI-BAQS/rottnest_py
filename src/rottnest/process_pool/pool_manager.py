@@ -76,8 +76,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         self._status = PoolStatus.UNSTARTED
 
         self.composer = None
-        self._rz_precision = DEFAULT_PRECISION
-        self._precision = DEFAULT_PRECISION # TODO 
         # WARN: We need to address this conflict of names
 
 
@@ -124,7 +122,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
                 self.priority_result_queue,
                 self.priority_comms_queue,
                 [],
-                self._rz_precision,
+                get_rz_precision(),
                 True # Priority
                 ),
             daemon=True
@@ -203,6 +201,24 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         '''
         self._status = status
 
+    def _submit(
+            self,
+            queue: "Queue",
+            command: str,
+            *args,
+            **kwargs
+        ):
+        '''
+            Submits to a queue
+        '''        
+        queue.put(
+            (
+                command,
+                args,
+                kwargs,
+            ),
+        )
+
 
     def submit_priority(
         self,
@@ -211,16 +227,51 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
          **kwargs
     ):
         '''
-            Submits to  
+            Submits to the priority task queue 
         '''
-        self.priority_task_queue.put(
-            (
-                priority_command,
-                args,
-                kwargs,
-            ),
+        self._submit(
+            self.priority_task_queue,
+            priority_command, *args, **kwargs
         )
+    
+    def broadcast_workers(
+        self,
+        command,
+        *args,
+        submit_priority_worker = True,
+        **kwargs
+    ):
+        '''
+            Broadcasts to all workers comms queues
+            If `submit_priority_worker` is also set
+             then also submits to the priority worker
+        '''
+        for queue in self.worker_comms_queue:
+            self._submit(
+                queue, 
+                command, *args, **kwargs
+            )
 
+        if submit_priority_worker:
+            # And send to priority    
+            self._submit( 
+                self.priority_comms_queue,
+                command, *args, **kwargs
+            )
+
+    def submit_worker_task(
+        self,
+        command,
+        *args,
+        **kwargs
+    ):
+        '''
+            Submits to the joint worker task queue
+        '''
+        self._submit( 
+            self.worker_task_queue,
+            command, *args, **kwargs
+        )
 
     def get_postprocessing_data(self, *args):
         '''
@@ -331,88 +382,14 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
             completion_queue = self.manager_completion_queue
         )
 
-#    def _task_ping(self, *args):
-#        '''
-#            Checks that at least one worker is alive
-#        '''
-#        # Requires that the pool is running
-#        assert self.pool_running
-#
-#        # This should not block
-#        self.worker_task_queue.put((commands.PING,))
-#        res = self.worker_ipc.get_item(commands.PING, blocking=True)
-#        assert res == PONG
-#        return PONG
-
-# -> Task synchronise modules
-#   def _task_synchronise_modules(self, *args):
-#       '''
-#           Synchronises loaded modules
-#       '''
-#       module_keys = args[0]
-#       procedure = LoadModulesProcedure(
-#           architectures, executables
-#       )
-#       procedure.execute()
-
-#       # Maintain synchronisation with priority task
-#       self.priority_task_queue.put((
-#           priority_commands.SYNCHRONISE_MODULES,
-#           self._architectures.get_synchronisation_strings(),
-#           self._executables.get_synchronisation_strings(),
-#       ))
-
-# -> TASK set_option
-#    def _task_set_executable(self, *args):
-#        '''
-#            Sets an executable from a key
-#        '''
-#        key = args[0]
-#        SetExecutableProcedure(key, None).execute()
-#        DecompositionPatchProcedure().execute()
-#        # Synch with priority task
-#        self.priority_task_queue.put((
-#            priority_commands.SET_EXECUTABLE,
-#            self._executables.get_current_executable().get_name()
-#        ))
-#
-
-    def _task_synchronisation_status(self, *args):
-        '''
-            Checks that the manager is alive
-        '''
-        arch = self._architectures.get_current_architecture()
-        exe = self._executables.get_current_executable()
-
-        if arch is not None:
-            arch = arch.get_name()
-        if exe is not None:
-            exe = exe.get_name()
-
-        return [arch, exe]
-
-    def _task_set_rz_precision(self, *args):
-        '''
-            Sets the precision of the manager
-        '''
-        self._precision = args[0]
-        set_rz_precision(self._precision)
-
     def synchronise_rz_precision(self):
         '''
             Synchronise precision on workers
         '''
-        for queue in self.worker_comms_queue:
-            queue.put((rottnest_worker.SET_RZ_PRECISION, self._precision))
-       
-        # Synch with priority 
-        self.priority_comms_queue.put((rottnest_worker.SET_RZ_PRECISION, self._precision))
-
-
-
-    def _task_set_executable_params(self, *args):
-        params = args[0]
-        self._executables.set_executable_params(**params)
+        self.broadcast_workers(
+            rottnest_worker.SET_RZ_PRECISION,
+            get_rz_precision()
+        )
 
     def distribute_compilation(self, it: typing.Iterator):
         '''
@@ -439,7 +416,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
                 self.send_total()
 
         self.post_result_queue()
-
 
     def in_place_compilation(self, it: typing.Iterator):
         '''
@@ -509,7 +485,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
 
         # TODO : Make cache force flush a procedure
         PyliqtrParser.force_cache_flush()
-
 
         ### MAIN LOOP
         # NOTE : This also tries to call a cache flush with a tag set
@@ -621,13 +596,19 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
 
         self.cache_time += time.time() - cache_start
 
-    def stop_workers(self):
+    def stop_workers(self, submit_priority_worker=False):
+        '''
+            Orders all workers to shut down
+        '''
         if not self.pool_running:
             # Pool isn't running, skip
             return True
 
-        for queue in self.worker_comms_queue:
-            queue.put((rottnest_worker.SHUTDOWN,))
+        self.broadcast_workers(
+            rottnest_worker.SHUTDOWN,
+            submit_priority_worker = submit_priority_worker
+        )
+
         for i, proc in enumerate(self.pool):
             proc.join()
 
@@ -641,48 +622,10 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         '''
             Sends a shutdown signal to the priority worker
         '''
-        self.priority_task_queue.put((rottnest_worker.SHUTDOWN, [], {}))
-        self.priority_process.join()
+        self.submit_priority(rottnest_worker.SHUTDOWN)
+        #self.priority_process.join()
         return True
 
-
-    ###
-    # PRIORITY WORKER TASKS
-    ###
-
-    def _task_priority_setup(self):
-        '''
-            Caller wrapper function
-        '''
-        self.setup_priority_worker()
-
-    def setup_priority_worker(self):
-        '''
-        Calls synchronisation functions on the
-         priority process
-        '''
-        self.priority_task_queue.put((
-            priority_commands.SYNCHRONISE_MODULES,
-            self._architectures.get_synchronisation_strings(),
-            self._executables.get_synchronisation_strings(),
-        ))
-
-        self.priority_task_queue.put((
-            priority_commands.SET_ARCHITECTURE,
-            self._architectures.get_current_architecture().get_name()
-
-        ))
-        self.priority_task_queue.put((
-            priority_commands.SET_EXECUTABLE,
-            self._executables.get_current_executable().get_name()
-        ))
-
-        self.priority_task_queue.put((
-            priority_commands.SYNCHRONISE_LAYOUTS,
-            list(LayoutProxy.get_layouts())
-        ))
-
-        return
 
     ###
     # WORKER MANAGEMENT FUNCTIONS
@@ -769,14 +712,13 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
                 # Inform the composer
                 self.composer.submit(obj)
                 # Send job to worker
-                self.worker_task_queue.put(
-                    (
-                        rottnest_worker.EXEC_COMPUTE_UNIT,
-                        obj,
-                    )
+                self.submit_worker_task(
+                    rottnest_worker.EXEC_COMPUTE_UNIT,
+                    obj
                 )
                 submitted = True
             else:
+                # TODO: futex if possible
                 print('Queue Full')
                 # Wait for space in queue
                 time.sleep(0.1)

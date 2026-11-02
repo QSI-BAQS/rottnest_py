@@ -349,6 +349,7 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
     def terminate(self):
         '''
             Broadcasts a shutdown to all workers
+            This is a blocking operation
         '''
         self.submit(tasks.TerminateTask)
         success = self.fetch(

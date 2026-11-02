@@ -12,6 +12,7 @@ class SynchroniseModulesTask(PriorityWorkerTask):
     '''
        Synchronises modules 
     '''
+    EXPECT_RESPONSE = True
 
     @classmethod
     def get_command(cls) -> str:
@@ -62,3 +63,4 @@ class SynchroniseModulesTask(PriorityWorkerTask):
             self.get_priority_worker_command(),
             module_keys
         )
+        return True

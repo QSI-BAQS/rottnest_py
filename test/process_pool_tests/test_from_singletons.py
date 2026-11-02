@@ -53,13 +53,8 @@ class ProcessPoolTests(unittest.TestCase):
             time.sleep(1)
 
         # Shutdown the pool
-        pool.stop_workers()
-        print("Triggered stop_workers")
-        return
-
-    def __del__(self):
-        pool = get_pool()
         pool.terminate()
+        return
 
 if __name__ == '__main__':
     tst = ProcessPoolTests()
