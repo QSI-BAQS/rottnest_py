@@ -3,10 +3,10 @@
 '''
 
 # For now this is identical to the pool worker
-from .pool_worker import entrypoint as worker_entrypoint
+from rottnest.process_pool.entrypoints.pool_worker import get_entrypoint as get_worker_entrypoint
 
-def entrypoint(*args, **kwargs):
+def get_entrypoint(*args, **kwargs):
     '''
         Entrypoint for the priority worker
     '''
-    return worker_entrypoint(*args, **kwargs)
+    return get_worker_entrypoint(*args, **kwargs)

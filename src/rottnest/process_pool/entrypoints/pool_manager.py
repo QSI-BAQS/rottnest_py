@@ -4,8 +4,8 @@
 from rottnest.process_pool.process_pool import ComputeUnitExecutorPool
 from rottnest.process_pool import pool_manager
 
-from .entrypoint import ProcessEntrypoint
-from . import process_type
+from rottnest.process_pool.entrypoints.entrypoint import ProcessEntrypoint
+from rottnest.process_pool.entrypoints import process_type
 
 from rottnest.process_pool.single_instantiation import block_instantiation
 

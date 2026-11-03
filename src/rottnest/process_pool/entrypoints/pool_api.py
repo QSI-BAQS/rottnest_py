@@ -5,9 +5,8 @@ from rottnest.process_pool.process_pool import ComputeUnitExecutorPool
 
 from rottnest.process_pool.single_instantiation import block_instantiation
 
-from .entrypoint import ProcessEntrypoint
-from . import process_type
-
+from rottnest.process_pool.entrypoints.entrypoint import ProcessEntrypoint
+from rottnest.process_pool.entrypoints import process_type
 
 
 class PoolAPIHandler(ProcessEntrypoint):
@@ -30,21 +29,26 @@ class PoolAPIHandler(ProcessEntrypoint):
         super().__init__(self)
 
     def get_api(self):
+        '''
+            Gets the API
+        '''
         return self._api
 
     def blockers(self):
         '''
             Block other instantiators
         '''
-
+        # Function import is intentional
         from rottnest.process_pool.pool_manager import ComputeUnitExecutorPoolManager
 
         block_instantiation(
             ComputeUnitExecutorPoolManager,
         )
 
-    def main(self, worker, *args, **kwargs):
-        worker.entrypoint(*args, **kwargs)
+    def main(self, *args, **kwargs):
+        '''
+            API doesn't really have a main loop
+        '''
 
     @classmethod
     def entrypoint(cls):

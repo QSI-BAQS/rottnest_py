@@ -4,6 +4,7 @@
 from rottnest.architecture_interface.rottnest_worker import RottnestWorker
 
 from .rz_collection_composer import RzCollectionResultsComposer
+from . import strings
 
 
 class RzCollectionWorker(RottnestWorker):
@@ -59,6 +60,12 @@ class RzCollectionWorker(RottnestWorker):
                         rz_tracker[op.rz.tag]
                     )
         return compute_unit.unit_id, rz_counter
+
+    def execute_compute_unit_visualiser(
+        self,
+        compute_unit: "ComputeUnit"
+    ):
+        return strings.no_visualiser 
 
     def set_precision(self, precision) -> None:
         '''

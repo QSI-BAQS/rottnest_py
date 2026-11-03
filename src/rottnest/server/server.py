@@ -31,6 +31,7 @@ def rottnestpy_start():
        Main method for the server, starts the server
        and allows the  
     '''    
+    print("Starting Rottnest Server")
     server_handle = rottnestpy_server_start()
     server_handle.serve_forever()
     

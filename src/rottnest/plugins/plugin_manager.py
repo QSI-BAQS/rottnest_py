@@ -13,7 +13,6 @@ from collections import OrderedDict
 
 from .. import config
 
-
 #   Format string as part of a not implemented exception
 PLUGIN_NOT_IMPL_ERROR = "Target {} in module {} does not return a string when calling static or class method get_name()"
 
@@ -29,16 +28,16 @@ class PluginManager:
     def __init__(
             self,
             *,
-            module_tag: str,
+            plugin_tag: str,
             modules: list,
             config_path=None):
         '''
             Generic plugin manager
             Used to manage loading resources from disparate modules
-            :: module_tag : str :: Default tag for module level names of resources
+            :: plugin_tag : str :: Default tag for module level names of resources
         '''
         # Tag for variable name in modules to extract
-        self._module_tag = module_tag
+        self._plugin_tag = plugin_tag
 
         # All modules loaded to extract options
         self._modules = set(modules)
@@ -50,6 +49,7 @@ class PluginManager:
 
         # Currently selection option
         self._current_option: None = None
+        self._instantiated_option: None = None
 
         # Dynamically definable parameter field
         self._parameters = {}
@@ -61,8 +61,14 @@ class PluginManager:
         if config_path is not None:
             self.load_options_from_config(config_path)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._options)
+
+    def get_plugin_tag(self) -> str:
+        '''
+            Module tag getter
+        '''
+        return self._plugin_tag
 
     def __getitem__(self, key):
         '''
@@ -158,14 +164,13 @@ class PluginManager:
         for module in modules:
             plugin_targets = getattr(
                 module,
-                self._module_tag,
+                self._plugin_tag,
                 None
             )
-
             # Module has no targets exposed
             if plugin_targets is None:
                 print(f"Module {module} does not contain any valid plugin targets")
-                print(f'To expose a target at the module level, please set an iterable "{self._module_tag}" variable in the module\'s main namespace (e.g. __init__.py)')
+                print(f'To expose a target at the module level, please set an iterable "{self._plugin_tag}" variable in the module\'s main namespace (e.g. __init__.py)')
                 continue
 
             for target in plugin_targets:
@@ -248,6 +253,7 @@ class PluginManager:
             Defers to either a python module load or a path
         '''
         for entry in args:
+            err = None
             try:
                 module = PluginManager._load_module_from_module_string(
                    entry
@@ -255,7 +261,7 @@ class PluginManager:
                 self._modules.add(module)
                 continue
             except Exception as e:
-                print(str(e))
+                err_module_string = e
 
             # Attempt to treat it as a file path
             try:
@@ -268,6 +274,7 @@ class PluginManager:
                     self._modules.add(module)
                     self._file_paths[module] = entry
             except Exception as e:
+                print(str(err_module_string))
                 print(str(e))
 
         # Force reload
@@ -281,16 +288,82 @@ class PluginManager:
         module = importlib.import_module(module_name)
         return module
 
-    def _set_current_option(self, key: str):
+    @classmethod
+    def from_config_or_default(cls, path) -> 'PluginManager':
         '''
-            Setter for the currently selected option
+           Loading config or default, gets the executable plugins instance
         '''
+        modules = []
+        plugins = cls(modules=modules, config_path=path)
+        return plugins
 
+    @classmethod
+    def with_modules(cls, modules: list[str]) -> 'PluginManager':
+        '''
+           Loadable variant which just expects modules to be
+           push into it
+        '''
+        plugins = cls(modules=modules, config_path=None)
+        return plugins
+
+
+    def get_options(self) -> dict:
+        '''
+            Returns the dictionary of options 
+        '''
+        return self._options
+
+    def get_option_keys(self) -> list[str]:
+        '''
+            Returns the keys of the current loaded options
+        '''
+        return list(self.get_options().keys())
+
+    def get_current_option(self) -> "Option":
+        '''
+            Gets the currently set option
+            Runs the constructor with params
+        '''
+        if self._current_option is None:
+            return None
+        
+        if self._instantiated_option is None:
+            self._instantiated_option = self._current_option(
+                **self.get_parameters()
+            )
+        return self._instantiated_option
+
+    def set_current_option(self, key: str, parameters = None):
+        '''
+            Setter for the currently option
+        '''
         option = self[key]
         if option is None:
+            # TODO: Error Handling
             print(f"Unknown option {key}")
         else:
             self._current_option = option
+
+        # Set parameters or default parameters
+        if parameters is None:
+            self.set_default_parameters()
+        else:
+            self.set_parameters(parameters)
+
+        # Reset the instantiated instance
+        self._instantiated_option = None
+
+    def set_default_parameters(self): 
+        '''
+            Default parameter setter
+        '''
+        if self.get_current_option() is not None:
+            # Sets default params
+            self.set_parameters(
+                self.__process_default_params(
+                    self.get_current_option().get_parameters()
+                )
+            )
 
     def get_parameters(self):
         '''
@@ -303,6 +376,34 @@ class PluginManager:
             Parameters setter
         '''
         self._parameters = parameters
+
+    def set_params_from_kwargs(self, **parameters) -> None:
+        '''
+           This method only exists to catch kwargs nicely 
+        '''
+        self.set_parameters(params)
+
+    def __process_default_params(self, params: dict) -> dict:
+        '''
+            Strips type information from default param dicts
+        '''
+        stripped_params = {}
+        for key, val in params.items():
+            _type_info, value = val
+            stripped_params[key] = value
+
+        return stripped_params
+
+    def get_state(self) -> tuple[str, str, dict]:
+        '''
+            Gets the current state of the plugin
+        '''
+        option = self.get_current_option()
+        if option is not None:
+            option_tag = option.get_name()
+        else:
+            option_tag = None
+        return option_tag, self.get_parameters()
 
 
 # NOTE: Moved it from config
@@ -340,6 +441,9 @@ def default_loader(
 
 
 def _load_default_config(conf_name, plugin_obj):
+    '''
+        Default config loader
+    '''
     for loc in config.configuration_locations:
         config_path = os.path.expanduser(f'{loc}/{conf_name}')
 

@@ -1,3 +1,8 @@
+'''
+    Process type system
+    Contains rules for subprocess spawning
+'''
+
 SERVER = 'SERVER'
 POOL_MANAGER = 'POOL_MANAGER'
 POOL_WORKER = 'POOL_WORKER'
@@ -18,9 +23,9 @@ class ProcessType():
         POOL_WORKER: [RZ_DECOMPOSER],
         POOL_PRIORITY_WORKER: [RZ_DECOMPOSER]
     }
-    
+
     @classmethod
-    def get_type(cls):   
+    def get_type(cls):
         '''
             Getter
         '''
@@ -47,7 +52,7 @@ class ProcessType():
         '''
         process_type = cls.get_type()
         # Check that a rule exists permitting the
-        # spawn type 
+        # spawn type
         assert (
             spawn_type in cls.SPAWN_RULES[process_type]
         )
@@ -64,7 +69,7 @@ def set_type(process_type):
     '''
     return ProcessType.set_type(process_type)
 
-def validate(spawn_type): 
+def validate(spawn_type):
     '''
         Validates the type of process to be spawned
         Dispatch to singleton validation

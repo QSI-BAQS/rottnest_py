@@ -28,7 +28,9 @@ class CallGraph:
         '''
             Generates the root node of the graph
         '''
-        executable = executables.get_current_executable()
+        print("Executable: ", executables.get_current_option()
+)
+        executable = executables.get_current_option()
 
         parser = PyliqtrParser(executable())
         parser.parse()
@@ -49,7 +51,7 @@ class CallGraph:
         if graph_id is None:
             prefix = ''
             parser = cls.generate_root_node()
-            cls.curr_executable_id = id(executables.get_current_executable())
+            cls.curr_executable_id = id(executables.get_current_option())
 
         # Non-root request
         else:

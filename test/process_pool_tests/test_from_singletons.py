@@ -14,8 +14,7 @@ from rottnest.process_pool.pool_status import PoolStatus
 
 from rottnest.plugins import architectures, executables
 
-from rottnest import test_utils
-from rottnest.test_utils.executable import SampleExecutable
+from rottnest.test_utils.plugin_setup import setup_plugins_decorator 
 
 
 LAYOUT_ID = 0
@@ -27,14 +26,11 @@ class ProcessPoolTests(unittest.TestCase):
     '''
         Process pool tests
     '''
+    @setup_plugins_decorator()
     def test_process_pool_from_singletons(self):
         '''
             Tests executing the process pool with an Rz counter architecture
         '''
-
-        executables.load_modules_from_strings(test_utils.__file__)
-        executables.set_current_executable(SampleExecutable.get_name())
-        architectures.set_current_architecture('Rz Counter')
 
         pool = get_pool()
         pool.start()
@@ -57,13 +53,10 @@ class ProcessPoolTests(unittest.TestCase):
             time.sleep(1)
 
         # Shutdown the pool
-        pool.stop_workers()
-        print("Triggered stop_workers")
+        pool.terminate()
         return
 
-    def __del__(self):
-        pool = get_pool()
-        pool.terminate()
-
 if __name__ == '__main__':
-    unittest.main()
+    tst = ProcessPoolTests()
+    tst.test_process_pool_from_singletons()
+    #unittest.main()
