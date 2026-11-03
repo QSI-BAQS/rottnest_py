@@ -21,7 +21,7 @@ class DecomposerPatchStage(stage.RottnestCompilerStage):
             Loads the appropriate patchers from the executable
             And passes them to the monkey patcher
         '''
-        executable = executables.get_current_executable()
+        executable = executables.get_current_option()
         if executable is not None:
             for patcher, fn in executable.pyliqtr_patchers().items():
                 add_pyliqtr_hash(patcher, fn)

@@ -14,6 +14,3 @@ A pass is termed a `procudure` due to keywords in Python.
   
 Procedures inherit from the Stage class, and hence a procedure may also be a stage in a larger procedure.
 
-
-# TODO
-- Expose procedures to the plugin manager

@@ -34,7 +34,7 @@ class Visualiser:
             Worker setup function
             Called to flush the worker when appropriate
         '''
-        arch = architectures.get_current_architecture()
+        arch = architectures.get_current_option()
         cls.current_worker = arch.worker(
             LayoutProxy.get_layouts()
         )
