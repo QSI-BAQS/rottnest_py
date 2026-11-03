@@ -1,5 +1,5 @@
 '''
-    This interface handles the layout controllers 
+    This interface handles the layout controllers
 '''
 from rottnest.procedures.procedure_manager import ProcedureManagerSelector, MPSCChannelProvider, \
     MPSC_LAYOUT_CHANNEL_TAG
@@ -53,24 +53,24 @@ def set_layout(data):
         layout_obj = data
         layout_id = LayoutProxy.add_layout(layout_obj)
         return layout_id
-        
+
 
 def run_layout(layout):
         '''
             Gets the list of currently loaded layouts
         '''
-        current_exec = executables.get_current_executable()
-        current_arch = architectures.get_current_architecture()
+        current_exec = executables.get_current_option()
+        current_arch = architectures.get_current_option()
 
         if current_exec is None:
             #
             # Current executable is not set, will be rejected
-            # 
+            #
             return RUN_LAYOUT_EXEC_ERROR
         elif current_arch is None:
             #
             # Current architecture is not set, will be rejceted
-            # 
+            #
             return RUN_LAYOUT_ARCH_ERROR
         else:
             layout_obj = layout
@@ -79,7 +79,7 @@ def run_layout(layout):
             mpsc_provider: MPSCChannelProvider = MPSCChannelProvider.get_instance()
             mpsc_provider.recreate_channel(MPSC_LAYOUT_CHANNEL_TAG)
             mpsc_reader, _mpscstate = mpsc_provider.get_reader(MPSC_LAYOUT_CHANNEL_TAG)
-                
+
             procedure_manager = ProcedureManagerSelector.get_instance().get_default(app)
             preprocessor_stage = PreprocAndExecuteProcedure()
             websocket = WebSocketPoolSelector.get_current_websocket().get_proxy()
@@ -87,6 +87,6 @@ def run_layout(layout):
                                         preprocessor_stage,
                                         procedure_manager,
                                         mpsc_reader)
-            
+
             return RUN_LAYOUT_MSG_END
 
