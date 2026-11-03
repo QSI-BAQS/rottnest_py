@@ -4,6 +4,7 @@ from typing import Protocol
 from threading import Thread
 
 from .procedure_tuple import ProcedureEntityTag, ProcedureTuple
+from .poll_execution import PollExecutionTuple, PollExecutionType
 from ..procedure import RottnestCompilerProcedure
 from ..stage import RottnestCompilerStage
 
@@ -149,6 +150,22 @@ class ProcedureManager:
         '''
             Returns the procedure table related to the
             current active procedures
+            - This must be serialisable
+        '''
+        raise NotImplementedError
+
+    def get_resolved_procedure_buffer(self) -> list[ProcedureTuple]:
+        '''
+           Returns the procedures that have been resolved 
+            - This must be serialisable
+        '''
+        raise NotImplementedError
+
+    def get_collected_procedures(self) -> list[ProcedureTuple]:
+        '''
+           Returns the procedures that have been resolved (in a buffer)
+               and the procedures that are currently operating 
+            - This must be serialisable
         '''
         raise NotImplementedError
 
@@ -164,13 +181,22 @@ class ProcedureManager:
             Gets the queue in which procedures are stored
         '''
         raise NotImplementedError
+
+    def abort_procedure(self, procedure_id: int) -> None:
+        '''
+           Given a procedure id, if the procedure exists
+           the procedure is to be aborted 
+        '''
+        raise NotImplementedError
         
     def dispatch(self,
-                    proc: RottnestCompilerProcedure,
-                    poll_callback=None,
-                    complete_callback=None,
-                    finaliser_callback=None,
-                    procedure_state_obj=dict()) -> bool:
+                proc: RottnestCompilerProcedure,
+                poll_callback=None,
+                complete_callback=None,
+                finaliser_callback=None,
+                procedure_state_obj=dict(),
+                poll_type:PollExecutionTuple=
+                (PollExecutionType.Immediate, None, None)) -> bool:
                       
         '''
             Will use dispatch immediate but should be overriden to
@@ -251,5 +277,6 @@ class ProcedureManager:
         '''
 
         self.run_manager()
+        return None
         
         

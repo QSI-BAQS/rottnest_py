@@ -22,9 +22,10 @@ def get_current_executable() -> dict:
     exec_data = singleton.get_current_executable()
     # kv[0]    - Name
     # kv[1][0] - Type
-    # kv[1][1] - Argument 
+    # kv[1][1] - Argument
     exec_params = list(map(lambda kv: [kv[0], kv[1][0].__name__, kv[1][1]],\
                            exec_data.get_parameters().items()))
+    
     exec_dict = {
         "name": exec_data.get_name(),
         "parameters": exec_params
@@ -61,6 +62,5 @@ def set_current_params(params: dict) -> Result:
     for (pname, ptuple) in params.items():
 
         params_reduction[pname] = ptuple[1]
-    
     singleton.set_executable_params(**params_reduction)
     return get_current_params()

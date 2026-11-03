@@ -9,14 +9,20 @@ MODULE_PREFIX = 'procedure'
 # Symbols
 EXECUTE_PROCEDURE_IMMEDIATE = 'run_immediate'
 EXECUTE_PROCEDURE_DEFER = 'run_defer'
+GET_PROCEDURES = "list"
 GET_PROCEDURE_STATE = 'get_state'
+ABORT_PROCEDURE = 'abort'
 
+GET_PROCEDURES = 'get_procedures'
+CANCEL_PROCEDURE = 'cancel'
 
 # Routes
 _procedure_routes = [
     EXECUTE_PROCEDURE_IMMEDIATE,
     EXECUTE_PROCEDURE_DEFER,
     GET_PROCEDURE_STATE,
+    GET_PROCEDURES,
+    ABORT_PROCEDURE,
 ]
 
 procedure_routes = [f"{ROTTNEST_PREFIX}.{MODULE_PREFIX}.{route}" for route in _procedure_routes]

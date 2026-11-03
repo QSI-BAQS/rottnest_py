@@ -3,15 +3,14 @@
    operations to occur ot be submitted.
    
 '''
-from rottnest.procedures.procedure_manager import ProcedureManager
-
+from rottnest.procedures.procedure_manager import ProcedureManagerSelector
 
 def procedure_manager_submit_procedure_sync(procedure):
     '''
        Procedure that will be executed immediately
        Result is sent back after completion
     '''
-    procmanager = ProcedureManager.get_instance()
+    procmanager = ProcedureManagerSelector.get_instance().get_default()
     result = procmanager.execute_immediate(procedure)
     return result
 
@@ -20,27 +19,44 @@ def procedure_manager_submit_procedure_async(procedure):
     '''
        Procedure that will be deferred for execution 
     '''
-    procmanager = ProcedureManager.get_instance()
+    procmanager = ProcedureManagerSelector.get_instance().get_default()
     result = procmanager.execute_defer(procedure)
     return result
 
 
-def procedure_manager_get_procedure_state(procedure_id):
+def get_procedure_state(procedure_id):
     '''
        Given a procedure id that the manager
        would have tagged with a integer (pylong)
     '''
-    procmanager = ProcedureManager.get_instance()
-    result = procmanager.get_procedure_state(procedure_id)
+    obj = {
+        "procedure_id": None,
+        "error" : "Procedure Id is not in the active list" 
+    }
+
+    procmanager = ProcedureManagerSelector.get_instance().get_default()
+    result = procmanager.get_procedure(procedure_id)
+    if result is not None:
+        obj = result
+        
+    return obj
+
+def get_procedure_table():
+    '''
+        Gets the list of active procedures that are part
+        of the procedure manager
+    '''
+    procmanager = ProcedureManagerSelector.get_instance().get_default()
+    result = procmanager.get_procedure_table()
     return result
 
-
-
-def procedure_manager_get_procedure_list():
+def abort_procedure(procedure_id):
     '''
-        It will get the list of the available procedures
-        that the manager can execute
-
-        TODO: This needs to be clarified
+       Given a procedure id, the procedure that is running should be aborted 
     '''
-    return []
+    procmanager = ProcedureManagerSelector.get_instance().get_default()
+    result = procmanager.abort_procedure(procedure_id)
+    if result is not None:
+        return { 'procedure_id': procedure_id, 'issued': True }
+    else:
+        return { 'procedure_id': None, 'issued': False }

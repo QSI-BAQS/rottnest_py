@@ -2,6 +2,10 @@ from enum import Enum
 from typing import Protocol
 from rottnest.procedures.procedure import RottnestCompilerProcedure
 from rottnest.procedures.procedure_manager.procedure_state_hook import ProcedureStateHook
+from .poll_execution import PollExecutionType
+
+import time
+import math
 
 class ProcedureTagger(Protocol):
     '''
@@ -32,7 +36,9 @@ class ProcedureEntityStateTag(Enum):
     CONSTRUCTED = 1
     QUEUED = 2
     ACTIVE = 3
-    COMPLETED = 4
+    PAUSED = 4
+    COMPLETED = 5
+    ABORTED = 6
     INVALID = -1
 
 class ProcedureEntityTag:
@@ -80,6 +86,18 @@ class ProcedureEntityTag:
 
         return self.state_tag
 
+    def attempt_abort_procedure(self):
+        '''
+           Sets the state to aborting
+        '''
+        self.state_tag = ProcedureEntityStateTag.ABORTING
+
+    def set_to_aborted(self):
+        '''
+            Sets the state to aborted
+        '''
+        self.state_tag = ProcedureEntityStateTag.ABORTED
+
     def progress_to_active(self):
         '''
            For immediate execution mode, it will just jump from constructed to
@@ -93,6 +111,12 @@ class ProcedureEntityTag:
         '''
         return self.state_tag
 
+    def get_state_tag_name(self):
+        '''
+            Gets the tag of the entity
+        '''
+        return self.state_tag.name
+    
     def set_state(self, state_tag: ProcedureEntityStateTag):
         '''
             Sets the current state tag for the execution
@@ -106,6 +130,7 @@ class ProcedureEntityTag:
         '''
         self.state_tag = ProcedureEntityStateTag.INVALID
 
+
 class ProcedureTuple:
     '''
        Tuple that will hold onto a state object for the
@@ -117,14 +142,20 @@ class ProcedureTuple:
                  state_obj=dict(),
                  poll_callback=None,
                  complete_callback=None,
-                 finaliser_callback=None):
+                 finaliser_callback=None,
+                 poll_type=(PollExecutionType.Immediate, None, None)):
         '''
            Initialises the procedure tuple as a way to handle
            the operations right now 
         '''
+        self.start_time = time.time()
         self.entity_object = entity_obj
         self.procedure = procedure
         self.procedure_state = state_obj
+        self.poll_exec_type = poll_type[0]
+    
+        self.poll_delay: int | None = poll_type[1]
+        self.poll_timeout: int | None = poll_type[2]
         self.procedure_hook = ProcedureStateHook(state_obj,
                                         poll_callback,
                                         complete_callback,
@@ -132,26 +163,37 @@ class ProcedureTuple:
 
 
     @classmethod
-    def with_tagger(cls, tagger: ProcedureTagger,
+    def with_tagger(cls,
+                    tagger: ProcedureTagger,
                     procedure: RottnestCompilerProcedure,
                     poll_callback=None,
                     complete_callback=None,
                     finaliser_callback=None,
-                    state_obj=None) -> 'ProcedureTuple':
+                    state_obj=None,
+                    poll_type=(PollExecutionType.Immediate, None, None)
+                )-> 'ProcedureTuple':
         '''
             Constructs the tuple and generates the id in place 
         '''
         entity_id = tagger.get_next_id()
         proc_entity_tag = ProcedureEntityTag.make(entity_id)
         proc_entity_tag.progress_to_next_state()
+        
+        def _abort_wrapper():
+            procedure.abort_procedure()
+        poll_callback = PollExecutionType.rewrap_for_yieldable(
+                                        poll_type,
+                                        poll_callback,
+                                        _abort_wrapper)
+
         return ProcedureTuple(proc_entity_tag,
                               procedure,
                               state_obj,
                               poll_callback,
                               complete_callback,
-                              finaliser_callback)
+                              finaliser_callback,
+                              poll_type)
         
-
     @classmethod
     def only(cls, proc_tag: ProcedureEntityTag,
              procedure: RottnestCompilerProcedure) -> 'ProcedureTuple':
@@ -160,6 +202,43 @@ class ProcedureTuple:
            an entity id and procedure 
         '''
         return ProcedureTuple(proc_tag, procedure)
+
+    def to_dict(self):
+        '''
+           Converts the tuple to a dictionary that can be
+           serialised 
+        '''
+        return {
+            "procedure_id": self.entity_object.get_procedure_id(),
+            "procedure_tag": self.procedure.TAG,
+            "state_tag": self.entity_object.get_state_tag_name(),
+            "start_time": self.start_time
+        }
+
+    def attempt_to_abort_procedure(self):
+        '''
+           Sets the procedure to be aborted 
+        '''
+        self.entity_object.abort_procedure()
+
+    def run_abort_on_procedure(self):
+        '''
+           Triggers the `abort` call on the procedure 
+        '''
+        self.procedure.abort()
+        self.entity_object.set_to_aborted()
+
+    def is_aborted(self):
+        '''
+           Checks to see if the procedure has been aborted 
+        '''
+        return self.get_entity_state() == ProcedureEntityStateTag.ABORTED
+
+    def to_be_aborted(self):
+        '''
+           Checks to see if the procedure is to be aborted 
+        '''
+        return self.get_entity_state() == ProcedureEntityStateTag.ABORTED
 
     def get_entity_state(self) -> ProcedureEntityStateTag:
         '''

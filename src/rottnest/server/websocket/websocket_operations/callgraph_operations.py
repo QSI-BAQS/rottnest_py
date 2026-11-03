@@ -8,8 +8,10 @@ from rottnest.server.websocket.websocket_operations.operations_spec import \
 from rottnest.procedures.procedure_manager.mpsc_common import MPSC_CALLGRAPH_CHANNEL_TAG, MPSC_VISUALISER_CHANNEL_TAG
 from rottnest.procedures.procedure_manager.mpsc_channel import MPSCChannelProvider
 from rottnest.procedures.procedure_manager import ProcedureManagerSelector
+from rottnest.procedures.procedure_manager.poll_execution import PollExecutionTuple, PollExecutionType
 
-import time
+from typing import Any
+
     
 POLL_TIME_DELAY = 2
 POLL_RETRY_COUNT = 3
@@ -98,7 +100,7 @@ class CallGraphOperations(WebSocketOperationsSpecification):
         CallGraphOperations - Ensures the spec is implemented and checked
     '''
 
-    OPERATIONS = SpecOperations
+    OPERATIONS: type[Any] = SpecOperations
     GET_GRAPH_ACTIVE = False
 
     def __init__(self):
@@ -153,7 +155,8 @@ class CallGraphOperations(WebSocketOperationsSpecification):
                                 self.get_graph_poll,
                                 None,
                                 self.get_graph_finalise,
-                                state_object)
+                                state_object,
+                                PollExecutionType.make_then_yield(2, POLL_RETRY_COUNT))
         
         
             return GET_GRAPH_MSG_ISSUED_TEMPLATE.copy().build()
@@ -179,12 +182,15 @@ class CallGraphOperations(WebSocketOperationsSpecification):
                                             runnode_proc,
                                             mpsc_reader,
                                             POLL_RETRY_COUNT)
+
             proc_manager.dispatch(
                                 runnode_proc,
                                 self.get_visualisation_poll,
                                 None,
                                 self.get_visualisation_finalise,
-                                state_object)
+                                state_object,
+                                PollExecutionType.make_then_yield(2, POLL_RETRY_COUNT))
+
             return GET_RUNNODE_MSG_ISSUED_TEMPLATE.copy().build()
         else:
             return GET_GRAPH_MSG_INVALID_TEMPLATE.copy().build()
@@ -199,16 +205,11 @@ class CallGraphOperations(WebSocketOperationsSpecification):
         counter = state_object.get_counter()
         limit = state_object.get_limit()
         actions = wproxy.get_actions()
-
-        if counter < limit:
-            state_object.increment_counter()
-            proc.poll()
-            time.sleep(POLL_TIME_DELAY) # Yield here
-            graph_package = GET_RUNNODE_MSG_POLL_TEMPLATE.copy()\
-                .build_and_package()
-            actions.websocket_write(wsock, graph_package)
-        else:
-            proc.abort_procedure()
+        state_object.increment_counter()
+        proc.poll()
+        graph_package = GET_RUNNODE_MSG_POLL_TEMPLATE.copy()\
+            .build_and_package()
+        actions.websocket_write(wsock, graph_package)
 
         
     def get_visualisation_finalise(self, state_object: GetGraphStateObject):
@@ -245,16 +246,11 @@ class CallGraphOperations(WebSocketOperationsSpecification):
         counter = state_object.get_counter()
         limit = state_object.get_limit()
         actions = wproxy.get_actions()
-
-        if counter < limit:
-            state_object.increment_counter()
-            proc.poll()
-            time.sleep(POLL_TIME_DELAY) #trigger a yield here
-            graph_package = GET_GRAPH_MSG_POLL_TEMPLATE.copy()\
-                .build_and_package()
-            actions.websocket_write(wsock, graph_package)
-        else:
-            proc.abort_procedure()
+        
+        proc.poll()
+        graph_package = GET_GRAPH_MSG_POLL_TEMPLATE.copy()\
+            .build_and_package()
+        actions.websocket_write(wsock, graph_package)
 
 
 
