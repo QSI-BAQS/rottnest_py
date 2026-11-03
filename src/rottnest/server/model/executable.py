@@ -11,7 +11,7 @@ def get_executables() -> tuple[dict, list]:
     '''
         Returns executables from the singleton instance
     '''
-    return (get_current_executable(), singleton.get_executable_names())
+    return (get_current_executable(), singleton.get_option_keys())
 
 
 def get_current_executable() -> dict:
@@ -19,13 +19,13 @@ def get_current_executable() -> dict:
         Returns the currently loaded executable from the singleton
         instance
     '''
-    exec_data = singleton.get_current_executable()
+    exec_data = singleton.get_current_option()
     # kv[0]    - Name
     # kv[1][0] - Type
     # kv[1][1] - Argument
     exec_params = list(map(lambda kv: [kv[0], kv[1][0].__name__, kv[1][1]],\
                            exec_data.get_parameters().items()))
-    
+
     exec_dict = {
         "name": exec_data.get_name(),
         "parameters": exec_params
@@ -37,20 +37,20 @@ def get_current_executable() -> dict:
 def set_current_executable(name: str) -> Result:
     '''
         It sets the executable using a string name
-        
+
         Returns the currently loaded executable from the singleton
         instance
     '''
     # TODO: Bug here in the set_current_executable
     # BUG: Need to fix ASAP!
-    return singleton.set_current_executable(name)
+    return singleton.set_current_option(name)
 
 
 def get_current_params() -> Result:
     '''
         Gets the parameters for the current executable
     '''
-    return singleton.get_executable_params()
+    return singleton.get_params()
 
 
 def set_current_params(params: dict) -> Result:
@@ -62,5 +62,5 @@ def set_current_params(params: dict) -> Result:
     for (pname, ptuple) in params.items():
 
         params_reduction[pname] = ptuple[1]
-    singleton.set_executable_params(**params_reduction)
+    singleton.set_params_from_kwargs(**params_reduction)
     return get_current_params()
