@@ -16,7 +16,7 @@ class QASMExecutableTests(unittest.TestCase):
         self.assertTrue(executables.set_current_executable("QASM File Circuit"))
         self.assertIsNotNone(executables.get_current_executable())
 
-    def test_trivial_qasm_cicuit(self):
+    def test_trivial_qasm_circuit(self):
         executables.set_current_executable("QASM String Circuit")
         qasm_source = '''
         OPENQASM 2.0;
