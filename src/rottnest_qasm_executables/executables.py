@@ -12,6 +12,28 @@ from rottnest.plugins.parameters import RottnestParameter
 
 from cirq.contrib.qasm_import import circuit_from_qasm
 
+DEFAULT_QASM_TOFFOLI = '''OPENQASM 2.0;
+include "qelib1.inc";
+
+qreg q[3];
+
+h q[0];
+CX q[1], q[0];
+rz(-pi / 4) q[0];
+CX q[2], q[0];
+rz(pi / 4) q[0];
+CX q[2], q[0];
+rz(-pi / 4) q[0];
+CX q[1], q[0];
+rz(pi / 4) q[0];
+rz(pi / 4) q[2];
+CX q[1], q[2];
+rz(pi / 4) q[1];
+rz(-pi / 4) q[2];
+CX q[1], q[2];
+h q[0];
+'''
+
 class QASMStringExecutable(T_RZ_RottnestExecutable):
     @staticmethod
     def get_name():
@@ -20,7 +42,7 @@ class QASMStringExecutable(T_RZ_RottnestExecutable):
     @staticmethod
     def _parameters():
         return {
-            "src": (RottnestParameter.CodeString, None),
+            "src": (RottnestParameter.CodeString, DEFAULT_QASM_TOFFOLI),
         }
 
 
