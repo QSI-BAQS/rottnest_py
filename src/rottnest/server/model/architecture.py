@@ -38,7 +38,7 @@ def get_current_config() -> dict:
     '''
         Gets the parameters for the current architecture
     '''
-    return singleton.get_params()
+    return singleton.get_parameters()
 
 
 def set_current_config(params: dict):

@@ -34,3 +34,16 @@ class ErrorBudgetPlugins(PluginManager):
             modules=modules,
             config_path=config_path
         )
+
+    def get_current_option(self) -> "Option":
+        '''
+            override to fill in a default if no error budget
+            is set
+        '''
+        if (opt := super().get_current_option()) is not None:
+            return opt
+
+        # TODO : revisit this to not be hardcoded?
+        self.set_current_option("Bounded Sum")
+
+        return super().get_current_option()

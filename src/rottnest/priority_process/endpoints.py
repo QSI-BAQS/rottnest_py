@@ -7,7 +7,7 @@ from rottnest.procedures.option_setters import procedure_set_option, procedure_l
 from rottnest.procedures.option_setters.layout_setters import SynchroniseLayoutsProcedure
 from rottnest.procedures.option_setters.procedure_load_modules import LoadModulesProcedure
 
-from rottnest.plugins import architectures  
+from rottnest.plugins import architectures, executables
 
 from . import commands
 from .callgraph import CallGraph
@@ -38,11 +38,14 @@ def set_options(options_setter: dict):
             plugin_tag,
             option_key,
             parameters
-        ).execute() 
+        ).execute()
 
         # Reload visualiser
         if plugin_tag == architectures.get_plugin_tag():
-                 Visualiser.setup_worker()
+             Visualiser.setup_worker()
+
+        if plugin_tag == executables.get_plugin_tag():
+            DecompositionPatchProcedure().execute()
 
 
 def set_option(plugin_tag, option_key, parameters):
@@ -53,12 +56,15 @@ def set_option(plugin_tag, option_key, parameters):
         plugin_tag,
         option_key,
         parameters
-    ).execute() 
+    ).execute()
 
     # Reload visualiser
     if plugin_tag == architectures.get_plugin_tag():
          Visualiser.setup_worker()
-       
+
+    if plugin_tag == executables.get_plugin_tag():
+        DecompositionPatchProcedure().execute()
+
 
 def synchronise_layouts(layouts:dict):
     '''
@@ -75,9 +81,9 @@ def get_callgraph(graph_id: str) -> list:
     return CallGraph.get_graph(graph_id=graph_id)
 
 def get_visualiser(graph_id: str):
-    ''' 
+    '''
         Compiles object to visualiser
-    ''' 
+    '''
     parser = CallGraph.get_visualiser_parser(graph_id)
     Visualiser.build_compute_units(parser)
     return Visualiser.next()

@@ -50,7 +50,7 @@ def get_current_params() -> Result:
     '''
         Gets the parameters for the current executable
     '''
-    return singleton.get_params()
+    return singleton.get_parameters()
 
 
 def set_current_params(params: dict) -> Result:
