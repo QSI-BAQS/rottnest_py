@@ -156,9 +156,13 @@ class LayoutOperations(WebSocketOperationsSpecification):
                     actions.websocket_result_write(websocket, result)
             else:
                 header = RunResultHeaderTag.FINAL_RESULT
-                result = self.run_layout_tag_output(result_data, header)
-                actions.websocket_result_write(websocket, result)
-                
+                if type(result_data) is dict:
+                    result = self.run_layout_tag_output(result_data, header)
+                    actions.websocket_result_write(websocket, result)
+                else:
+                    # TODO: This needs to be removed and the type check is to
+                    #       be fixed
+                    print("WARN: Attempted to send non-serialisable object")
                     
 
     def run_layout_poll_extraction(self, state_object: RunLayoutStateObject):
