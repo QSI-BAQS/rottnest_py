@@ -149,6 +149,21 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
 
             return self.complete() 
 
+    def execute_blocking(
+            self,
+            compiler_environment = None
+        ):
+        '''
+            Blocking execution
+            Useful for testing, should not be
+            used in the server runtime 
+        '''
+        self.execute(
+            compiler_environment=compiler_environment
+        )
+        while not self.complete():
+            self.poll()
+
     def poll(self, compiler_environment = None):
         '''
             Polling function during asynchronous execution

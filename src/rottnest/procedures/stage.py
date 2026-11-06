@@ -166,6 +166,19 @@ class RottnestCompilerStage(abc.ABC):
         '''
         ...
 
+
+    def execute_blocking(
+            self,
+            compiler_environment: "RottnestCompilerStage"
+        ):
+        '''
+            Execute and block till completion
+            Useful for tests, but not for pool use
+        '''
+        self.execute(compiler_environment)
+        while not self.complete():
+            self.poll()
+
     def complete(self):
         '''
             Function to singal that the stage is complete

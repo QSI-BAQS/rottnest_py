@@ -2,7 +2,7 @@
     Stage for synchronising the option module with the pool manager 
 '''
 from rottnest.procedures import stage
-from rottnest.plugins import architectures
+from rottnest.plugins import executables 
 from .utils import underscore_case
 
 class SynchroniseOptionStage(stage.RottnestCompilerStage):
@@ -53,7 +53,7 @@ class SynchroniseOptionStage(stage.RottnestCompilerStage):
         '''
         option = self._plugin_manager.get_current_option()
         plugin_type = self._plugin_manager.get_plugin_tag()
-        parameters = option.get_parameters()
+        parameters = self._plugin_manager.get_parameters()
 
         from rottnest.process_pool import get_pool
         pool = get_pool()
