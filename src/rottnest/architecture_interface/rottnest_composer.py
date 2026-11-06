@@ -278,7 +278,7 @@ class RottnestComposer(abc.ABC):
         '''
             Get number of logical patches needed
         '''
-        return self.memory_manager.logical_patches()
+        return self.memory_manager.get_logical_patches()
 
     def get_next_layout(self) -> int | object:
         '''
