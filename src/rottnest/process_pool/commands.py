@@ -36,3 +36,13 @@ SYNCHRONISATION_STATUS = 'synchronisation_status'
 GET_CURRENT_RESULTS = 'get_current_results'
 GET_RESULTS_STREAM = 'get_results_stream'
 GET_POSTPROCESSING_DATA = 'get_postprocessing_data'
+
+# Postprocessing
+# This will probably eventually just fall under the
+# plugin system
+SET_POSTPROCESSOR_PARAMETERS = 'set_postprocessor'
+GET_POSTPROCESSOR_PARAMETERS =  'get_postprocessor'
+RUN_POSTPROCESSOR =  'run_postprocessor'
+
+
+

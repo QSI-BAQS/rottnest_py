@@ -46,7 +46,7 @@ class RottnestComposer(abc.ABC):
         return MemoryManager
 
     @staticmethod
-    def postprocessor_constructor() -> Type["Postprocessor"]
+    def postprocessor_constructor() -> Type["Postprocessor"]:
         '''
             Dispatch method for module hooking
             of constructors
@@ -70,6 +70,9 @@ class RottnestComposer(abc.ABC):
 
         # Memory management system
         self.memory_manager = self.memory_manager_constructor()(self.ResultsComposer)
+
+        # Postprocessor system
+        self.postprocessor = self.postprocessor_constructor()(self)
 
         # Initial stack frames
         self.setup()
@@ -349,11 +352,26 @@ class RottnestComposer(abc.ABC):
         '''
         return self.memory_manager
 
+    def build_postprocessor(self, **kwargs):
+        '''
+            Postprocessor builder 
+            Rebuilds when args are set
+        '''
+        if len(kwargs) > 0:
+            self.postprocessor = self.PostProcessor(self, **kwargs) 
+
     def get_postprocessor(self):
         '''
             Postprocessor getter
         '''
         return self.postprocessor
+
+    def get_result(self):
+        '''
+            Gets the current result
+            Requires that the run has started 
+        '''
+        return self.stack_frames[0].result
 
 
 class ComposerStackFrame:
@@ -766,12 +784,29 @@ class Postprocessor:
         statistics 
     '''
 
-    def __init__(self):
+    def __init__(self,
+            composer = None,
+            **kwargs
+        ):
         '''
             Constructor
         '''
+        self.composer = composer
         self.layouts = None
         self.result = None
+
+        # Bind parameters
+        params = (
+            self.__class__.get_private_parameters()
+            | self.__class__.get_parameters()
+        )
+        for param_name in params:
+            param_type, param_value = params[param_name]
+
+            if param_name in kwargs:
+                param_value = kwargs[param_name]
+            # Bind the parameters by name to the class instance
+            self.__setattr__(param_name, param_type(param_value))
 
     def set_layouts(self, layouts):
         '''
@@ -779,11 +814,30 @@ class Postprocessor:
         '''
         self.layouts = layouts
 
-    def set_result(self, result):
+    def get_layouts(self):
+        '''
+            Getter for Postprocessor.layouts
+        '''
+        return self.layouts
+
+    def set_result(self, result: "RottnestComposer"):
         '''
             Setter for Postprocessor.result
         '''
         self.result = result
+
+    def get_result(self) -> "RottnestComposer":
+        '''
+            Getter for Postprocessor.result
+        '''
+        return self.result
+
+    def get_current_parameters(self):
+        base_params = self.get_parameters()
+        return {
+            param: (param_type, self.__getattribute__(param))
+            for param, (param_type, _) in base_params.items()
+        }
 
     @classmethod
     def get_parameters(cls):
@@ -835,6 +889,7 @@ class Postprocessor:
             { <name> : (type, None),
               <name> : (type, default_value)}
         '''
+        return {}
 
     @staticmethod
     def _private_parameters():
@@ -852,6 +907,12 @@ class Postprocessor:
               <name> : (type, default_value)}
         '''
         return {}
+
+    def __call__(self, *args, **kwargs):
+        '''
+            Dispatch to postprocess
+        '''
+        return self.postprocess(*args, **kwargs) 
 
     def postprocess(
             self,

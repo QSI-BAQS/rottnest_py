@@ -63,6 +63,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         '''
             Manager class for the process pool
         '''
+        print("Manager Started")
         self.manager_running = True
         self.pool_running = False
 
@@ -275,7 +276,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
 
     def get_postprocessing_data(self, *args):
         '''
-            Gets posprocessing data from the composer
+            Gets postprocessing data from the composer
         '''
         try:
             post = self.composer.get_postprocessing_data()
@@ -357,8 +358,9 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
 
         # Extract task from queue
         recv = task_queue.get(block=True, timeout=TIMEOUT)
-
         task_name, args, kwargs = recv 
+        if task_name != 'poll':
+            print("RECV: ", recv)
         # Dispatch on task name
         task = self._tasks.get(task_name, None)
         if task is None:
@@ -528,16 +530,11 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         print("time:", time.time() - self.run_seq_start)
         return True
 
-
     def process_result_elem(self, wrapped_result: tuple):
         '''
         Blocking read from worker_result_queue and
             process result
         '''
-        #obj = self.worker_result_queue.get(
-        #    timeout=timeout
-        #)
-
         unit_id, result = wrapped_result
 
         result_obj = self.composer.compose_result(unit_id, result)
@@ -559,7 +556,7 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         '''
             Asynch sending of totals
         '''
-        totals = self.composer.stack_frames[0].result.to_runchart()
+        totals = self.composer.get_result().to_runchart()
         self.manager_completion_queue.put((commands.GET_CURRENT_RESULTS, totals))
 
     def get_current_results(self, *args, **kwargs):

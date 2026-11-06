@@ -34,17 +34,16 @@ class SetOptionTask(PriorityWorkerTask):
     @classmethod
     def submit(
             cls,
-            plugin_manager: "PluginManager",
+            plugin_tag: str,
+            option_key: str,
+            parameters: dict,
             *args,
             **kwargs
         ):
         '''
             Build submission from the plugin manager
         '''
-        tag = plugin_manager.get_plugin_tag()
-        option_key, parameters = plugin_manager.get_state()
- 
-        return super().submit(tag, option_key, parameters)
+        return super().submit(plugin_tag, option_key, parameters)
 
     def task(
             self,

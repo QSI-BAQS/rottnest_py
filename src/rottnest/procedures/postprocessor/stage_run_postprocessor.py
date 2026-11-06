@@ -49,7 +49,7 @@ class RunPostprocessorStage(stage.RottnestCompilerStage):
 
         from rottnest.process_pool import get_pool
         pool = get_pool()
-        pool.run(self.parameters)
+        pool.run_postprocessor()
 
     def poll(self):
         '''
