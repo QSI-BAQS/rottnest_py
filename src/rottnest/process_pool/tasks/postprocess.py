@@ -72,8 +72,7 @@ class RunPostprocessorTask(PoolTask):
             **kwargs
     ):
         postprocessor = pool_manager.composer.get_postprocessor()
-        layouts = LayoutProxy.get_layouts()
-        postprocessor.set_layouts(layouts)
+        postprocessor.synch_layouts()
 
         result = pool_manager.composer.get_result().to_runchart()
         postprocessor.set_result(result)

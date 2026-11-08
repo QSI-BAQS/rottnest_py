@@ -63,6 +63,7 @@ class RottnestComposer(abc.ABC):
         self.PostProcessor = self.postprocessor_constructor()
 
         # Layouts
+        # This returns a list of layout ids
         self.layouts = list(
             LayoutProxy.add_layout_with_id(*layout)
             for layout in layouts
@@ -280,6 +281,12 @@ class RottnestComposer(abc.ABC):
         '''
         return self.memory_manager.get_logical_patches()
 
+    def get_layouts(self) -> tuple[int]:
+        '''
+            Layout getter
+        '''
+        return self.layouts
+
     def get_next_layout(self) -> int | object:
         '''
             Gets the id of the next layout to use
@@ -289,6 +296,7 @@ class RottnestComposer(abc.ABC):
             WAIT is currently not implemented
 
             Default implementation is to return the first layout
+            # TODO: WAIT signal
         '''
         return LayoutProxy(self.layouts[0])
 
@@ -808,16 +816,19 @@ class Postprocessor:
             # Bind the parameters by name to the class instance
             self.__setattr__(param_name, param_type(param_value))
 
-    def set_layouts(self, layouts):
+    def synch_layouts(self):
         '''
-            Setter for Postprocessor.layouts
+            Grab current layouts from composer
         '''
-        self.layouts = layouts
+        layout_ids = self.composer.get_layouts()
+        self.layouts = [LayoutProxy.get_layout(layout_id) for layout_id in layout_ids]
+
 
     def get_layouts(self):
         '''
-            Getter for Postprocessor.layouts
+            Synchs and gets layouts 
         '''
+        self.synch_layouts()
         return self.layouts
 
     def set_result(self, result: "RottnestComposer"):

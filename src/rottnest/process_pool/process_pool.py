@@ -560,45 +560,49 @@ class ComputeUnitExecutorPool(StatusTracked, SingleInstantiation):
         '''
             Sets parameters for the postprocessor
         '''
-        self.submit(tasks.SetPostprocessorParametersTask, parameters)
+        self.run_task(tasks.SetPostprocessorParametersTask, parameters)
 
     def get_postprocessor_parameters(self):
         '''
             Getter for the postprocessor
         '''
-        self.submit(tasks.GetPostprocessorParametersTask)
+        self.run_task(tasks.GetPostprocessorParametersTask)
 
     def poll_postprocessor_parameters(self):
         '''
             Poll function for postprocessor parameters
         '''
-        resp = self.fetch(
-            tasks.GetPostprocessorParametersTask,
-            blocking=False
-        )
-
-        if resp is IPCManager.NOT_FOUND:
-            return None
-        return resp
+        return self.poll_task(tasks.GetPostprocessorParametersTask)
 
     def run_postprocessor(self):
         '''
             Runner for the postprocessor
         '''
-        self.submit(tasks.RunPostprocessorTask)
+        self.run_task(tasks.RunPostprocessorTask)
     
     def poll_postprocessor(self):
         '''
             Poll function for postprocessor response
         '''
+        return self.poll_task(tasks.RunPostprocessorTask)
+
+
+    def run_task(self, task, *args, **kwargs):
+        '''
+            Generic task runner
+        '''
+        self.submit(task, *args, **kwargs)
+
+    def poll_task(self, task, *, blocking=False):
+        '''
+            Generic task poller
+        '''
         resp = self.fetch(
-            tasks.RunPostprocessor,
-            blocking=False
-        )
+            task,
+            blocking=blocking
+        ) 
 
         if resp is IPCManager.NOT_FOUND:
             return None
         return resp
-
-
 

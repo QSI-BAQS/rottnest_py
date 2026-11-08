@@ -85,7 +85,14 @@ class RottnestCompilerStage(abc.ABC):
         self._co_dependencies = co_dependencies 
 
         self._complete: bool = False
-        self._asynchronous = asynchronous
+        self._asynchronous = asynchronous 
+
+        if self._asynchronous is True and self.poll is RottnestCompilerStage.poll:
+            raise Exception(f"Asynchronous procedure stage {self.__class__} has no poll method")
+
+        # Test doesn't work with how devolved functions work in python 
+        #if self._asynchronous is False and self.poll is not RottnestCompilerStage.poll:
+        #    raise Exception(f"Synchronous procedure stage {self.__class__} has a poll method")
 
     def get_tag(self) -> str | None:
         '''
@@ -116,7 +123,6 @@ class RottnestCompilerStage(abc.ABC):
             Getter for asynchronous tag
         '''
         return len(self._co_dependencies) > 0 
-
 
     def dependencies_resolved(
         self,

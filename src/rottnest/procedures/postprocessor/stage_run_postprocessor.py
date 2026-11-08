@@ -27,7 +27,7 @@ class RunPostprocessorStage(stage.RottnestCompilerStage):
         super().__init__(
             tag=tag, 
             dependencies=dependencies,
-            asynchronous=False
+            asynchronous=True
         )
 
     def get_result(self):
@@ -51,13 +51,13 @@ class RunPostprocessorStage(stage.RottnestCompilerStage):
         pool = get_pool()
         pool.run_postprocessor()
 
-    def poll(self):
+    def poll(self, compiler_environment):
         '''
             Poll handler
         '''
         from rottnest.process_pool import get_pool
         pool = get_pool()
-        res = pool.poll_postprocessor() 
+        res = pool.poll_postprocessor()
         if res is not None:
             self.result = res
             self._complete = True

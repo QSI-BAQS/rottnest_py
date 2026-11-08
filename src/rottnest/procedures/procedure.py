@@ -7,7 +7,6 @@ from .stage import RottnestCompilerStage #,stage_tag
 from . import exceptions
 
 
-
 class RottnestCompilerProcedure(RottnestCompilerStage):
     '''
         Compiler pass manager
@@ -162,7 +161,7 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
             compiler_environment=compiler_environment
         )
         while not self.complete():
-            self.poll()
+            self.poll(compiler_environment)
 
     def poll(self, compiler_environment = None):
         '''

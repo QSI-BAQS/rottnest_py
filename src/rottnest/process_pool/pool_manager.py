@@ -359,8 +359,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         # Extract task from queue
         recv = task_queue.get(block=True, timeout=TIMEOUT)
         task_name, args, kwargs = recv 
-        if task_name != 'poll':
-            print("RECV: ", recv)
         # Dispatch on task name
         task = self._tasks.get(task_name, None)
         if task is None:
