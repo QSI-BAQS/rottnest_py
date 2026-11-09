@@ -309,7 +309,7 @@ class PluginManager:
 
     def get_options(self) -> dict:
         '''
-            Returns the dictionary of options 
+            Returns the dictionary of options
         '''
         return self._options
 
@@ -326,7 +326,7 @@ class PluginManager:
         '''
         if self._current_option is None:
             return None
-        
+
         if self._instantiated_option is None:
             self._instantiated_option = self._current_option(
                 **self.get_parameters()
@@ -353,7 +353,7 @@ class PluginManager:
         # Reset the instantiated instance
         self._instantiated_option = None
 
-    def set_default_parameters(self): 
+    def set_default_parameters(self):
         '''
             Default parameter setter
         '''
@@ -379,9 +379,9 @@ class PluginManager:
 
     def set_params_from_kwargs(self, **parameters) -> None:
         '''
-           This method only exists to catch kwargs nicely 
+           This method only exists to catch kwargs nicely
         '''
-        self.set_parameters(params)
+        self.set_parameters(parameters)
 
     def __process_default_params(self, params: dict) -> dict:
         '''

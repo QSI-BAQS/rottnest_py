@@ -31,7 +31,7 @@ class ErrorBudget(abc.ABC):
             Simple getter for some base parameters
         '''
         return {
-            'target_error': (float, 1e-2)
+            'target_error': (float, 0.3)
         }
 
     @classmethod

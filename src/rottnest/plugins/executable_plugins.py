@@ -1,6 +1,8 @@
 '''
     Manages loading of executables
 '''
+import rottnest_qasm_executables
+
 from rottnest.config import executables_file_name
 from rottnest.executables.executable import (
     ROTTNEST_EXECUTABLE_MODULE_TAG,
@@ -24,7 +26,9 @@ class ExecutablePlugins(PluginManager):
         '''
 
         if modules is None:
-            modules = []
+            modules = [rottnest_qasm_executables]
+        else:
+            modules = [rottnest_qasm_executables] + modules
 
         # Load from config
         super().__init__(

@@ -6,7 +6,7 @@ import cirq
 from cabaliser.operation_sequence import OperationSequence
 
 from rottnest.input_parsers.qubit_label_tracker import QubitLabelTracker
-from rottnest.input_parsers.rz_tag_tracker import get_shared_rz_tracker 
+from rottnest.input_parsers.rz_tag_tracker import get_shared_rz_tracker
 
 # Load and run the monkey patcher for cirq objects
 from rottnest.monkey_patchers import cirq_patcher
@@ -103,7 +103,7 @@ class CirqParser:
                 # TODO: Clean up the shim interface
                 if isinstance(operation, tuple):
                     operation = operation[0]
-            
+
                 # Handle interrupts
                 if operation == INTERRUPT:
                     if operation.cache_hash() is not NON_CACHING:
@@ -122,7 +122,9 @@ class CirqParser:
 
                 # Append operation to next sequence
                 if operation.gate._n_cabaliser_ops + len(op) > self.sequence_length:
-                    yield op
+                    if len(op) > 0:
+                        yield op
+
                     op = OperationSequence(
                         max(
                             self.sequence_length,
@@ -132,8 +134,8 @@ class CirqParser:
 
                 operation.gate._parse_cabaliser(
                     operation,
-                    op, 
-                    self._qubit_labels, 
+                    op,
+                    self._qubit_labels,
                     self._rz_tracker
                 )
 

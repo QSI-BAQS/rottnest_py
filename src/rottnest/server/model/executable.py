@@ -25,7 +25,7 @@ def get_current_executable() -> dict:
     # kv[1][1] - Argument
     exec_params = list(map(lambda kv: [kv[0], kv[1][0].__name__, kv[1][1]],\
                            exec_data.get_parameters().items()))
-    
+
     exec_dict = {
         "name": exec_data.get_name(),
         "parameters": exec_params
@@ -37,12 +37,10 @@ def get_current_executable() -> dict:
 def set_current_executable(name: str) -> Result:
     '''
         It sets the executable using a string name
-        
+
         Returns the currently loaded executable from the singleton
         instance
     '''
-    # TODO: Bug here in the set_current_executable
-    # BUG: Need to fix ASAP!
     return singleton.set_current_option(name)
 
 
@@ -50,7 +48,7 @@ def get_current_params() -> Result:
     '''
         Gets the parameters for the current executable
     '''
-    return singleton.get_option_params()
+    return singleton.get_parameters()
 
 
 def set_current_params(params: dict) -> Result:
@@ -62,5 +60,5 @@ def set_current_params(params: dict) -> Result:
     for (pname, ptuple) in params.items():
 
         params_reduction[pname] = ptuple[1]
-    singleton.set_option_params(**params_reduction)
+    singleton.set_params_from_kwargs(**params_reduction)
     return get_current_params()

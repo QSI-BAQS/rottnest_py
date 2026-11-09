@@ -4,7 +4,7 @@
     to the controller's caller methods
 '''
 
-from rottnest.plugins import architectures as singleton 
+from rottnest.plugins import architectures as singleton
 from rottnest.server.util.result import Result
 
 def get_architecture_list() -> tuple[object, list]:
@@ -33,13 +33,11 @@ def set_current_architecture(arch: str) -> Result:
     '''
     return singleton.set_current_option(arch)
 
-
 def get_current_config() -> dict:
     '''
         Gets the parameters for the current architecture
     '''
     return singleton.get_option_params()
-
 
 def set_current_config(params: dict):
     '''
