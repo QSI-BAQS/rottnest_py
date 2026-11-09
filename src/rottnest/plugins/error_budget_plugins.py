@@ -34,3 +34,17 @@ class ErrorBudgetPlugins(PluginManager):
             modules=modules,
             config_path=config_path
         )
+
+    def get_current_option(self) -> "Option":
+        '''
+            Gets the currently set option
+            Runs the constructor with params
+        '''
+        option = super().get_current_option()
+        # Temporary fix for a default
+        # TODO: Remove when front end support for error budgets is integrated
+        if option is None:
+            from rottnest_error_budgets import EvenDistribution          
+            self.set_current_option(EvenDistribution.get_name())
+
+        return super().get_current_option()
