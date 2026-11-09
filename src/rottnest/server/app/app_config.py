@@ -137,7 +137,7 @@ def exec_plugin_loader(pth: str):
         current_executable = next(iter(executables)) 
  
     if current_executable is not None:
-        executables.set_current_executable(current_executable)
+        executables.set_current_option(current_executable)
     
     return executables 
 
@@ -149,7 +149,7 @@ def arch_plugin_loader(pth: str):
     from rottnest.server.responder import responder
     from rottnest.plugins import architectures
 
-    for key, arch in architectures.get_architectures().items():
+    for key, arch in architectures.get_options().items():
         desobj = arch.designer.get_designer_data()
         apimap = desobj['api']
         mask = apimap['mask']

@@ -59,8 +59,8 @@ def run_layout(layout):
         '''
             Gets the list of currently loaded layouts
         '''
-        current_exec = executables.get_current_executable()
-        current_arch = architectures.get_current_architecture()
+        current_exec = executables.get_current_option()
+        current_arch = architectures.get_current_option()
 
         if current_exec is None:
             #

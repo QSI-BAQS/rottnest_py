@@ -11,7 +11,7 @@ def get_executables() -> tuple[dict, list]:
     '''
         Returns executables from the singleton instance
     '''
-    return (get_current_executable(), singleton.get_executable_names())
+    return (get_current_executable(), singleton.get_option_keys())
 
 
 def get_current_executable() -> dict:
@@ -19,7 +19,7 @@ def get_current_executable() -> dict:
         Returns the currently loaded executable from the singleton
         instance
     '''
-    exec_data = singleton.get_current_executable()
+    exec_data = singleton.get_current_option()
     # kv[0]    - Name
     # kv[1][0] - Type
     # kv[1][1] - Argument
@@ -43,14 +43,14 @@ def set_current_executable(name: str) -> Result:
     '''
     # TODO: Bug here in the set_current_executable
     # BUG: Need to fix ASAP!
-    return singleton.set_current_executable(name)
+    return singleton.set_current_option(name)
 
 
 def get_current_params() -> Result:
     '''
         Gets the parameters for the current executable
     '''
-    return singleton.get_executable_params()
+    return singleton.get_option_params()
 
 
 def set_current_params(params: dict) -> Result:
@@ -62,5 +62,5 @@ def set_current_params(params: dict) -> Result:
     for (pname, ptuple) in params.items():
 
         params_reduction[pname] = ptuple[1]
-    singleton.set_executable_params(**params_reduction)
+    singleton.set_option_params(**params_reduction)
     return get_current_params()
