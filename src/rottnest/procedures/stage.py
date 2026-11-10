@@ -3,6 +3,7 @@
     Abstract base class for a compiler stage
 '''
 import abc
+from rottnest.utils.interface import interface, interface_argcount
 
 def stage_tag(stage):
     '''
@@ -33,7 +34,7 @@ def stage_tag(stage):
     except AttributeError:
         raise Exception(f"{stage} is not a tagged objedt")
 
-
+@interface
 class RottnestCompilerStage(abc.ABC):
     '''
         RottnestCompilerStage
@@ -94,12 +95,14 @@ class RottnestCompilerStage(abc.ABC):
         #if self._asynchronous is False and self.poll is not RottnestCompilerStage.poll:
         #    raise Exception(f"Synchronous procedure stage {self.__class__} has a poll method")
 
+    @interface_argcount
     def get_tag(self) -> str | None:
         '''
             Getter for the stage tag
         '''
         return self._tag
 
+    @interface_argcount
     def get_dependencies(self) -> list:
         '''
             Getter for the dependencies
@@ -112,6 +115,7 @@ class RottnestCompilerStage(abc.ABC):
         '''
         return self._co_dependencies
 
+    @interface_argcount
     def is_asynchronous(self) -> bool:
         '''
             Getter for asynchronous tag
@@ -124,6 +128,7 @@ class RottnestCompilerStage(abc.ABC):
         '''
         return len(self._co_dependencies) > 0 
 
+    @interface_argcount
     def dependencies_resolved(
         self,
         compiler_environment: type["RottnestCompilerStage"] 
@@ -139,6 +144,7 @@ class RottnestCompilerStage(abc.ABC):
                 return False
         return True
 
+    @interface_argcount
     def codependencies_resolved(
         self,
         compiler_environment: "RottnestCompilerStage"
@@ -161,6 +167,7 @@ class RottnestCompilerStage(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
+    @interface_argcount
     def execute(
         self,
         compiler_environment: "RottnestCompilerStage"
@@ -172,7 +179,7 @@ class RottnestCompilerStage(abc.ABC):
         '''
         ...
 
-
+    @interface_argcount
     def execute_blocking(
             self,
             compiler_environment: "RottnestCompilerStage"
@@ -185,6 +192,7 @@ class RottnestCompilerStage(abc.ABC):
         while not self.complete():
             self.poll()
 
+    @interface_argcount
     def complete(self):
         '''
             Function to singal that the stage is complete
@@ -194,6 +202,7 @@ class RottnestCompilerStage(abc.ABC):
             self.finalise() 
         return self._complete
 
+    @interface_argcount
     def finalise(self):
         '''
             Helper function called before complete returned
@@ -201,6 +210,7 @@ class RottnestCompilerStage(abc.ABC):
         '''
         pass
 
+    @interface_argcount
     def poll(self, compiler_environment=None):
         '''
             Function to perform or re-trigger some incremental work for the stage
