@@ -10,18 +10,7 @@ import unittest
 from parameterized import parameterized as parameterised
 
 from rottnest import procedures
-
-def recurse_package(base_module: "module") -> Iterable[tuple["str", "package"]]:
-    '''
-        Generates all python files in the procedures directory
-    '''
-    for module in pkgutil.iter_modules(base_module.__path__):
-        if not module.ispkg:
-            yield (f'.{module.name}', base_module.__package__)
-
-        else:
-            submodule = importlib.import_module(f'.{module.name}', base_module.__package__)
-            yield from recurse_package(submodule)
+from rottnest.test_utils.recurse_package import recurse_package
 
 class StageInterfaceTest(unittest.TestCase):
     '''

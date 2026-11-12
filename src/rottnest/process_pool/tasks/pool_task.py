@@ -2,6 +2,7 @@
     Base pool task
 '''
 import abc
+from rottnest.utils.interface import interface, interface_argcount, interface_argfilter
 
 def expect_response(fn):
     '''
@@ -24,7 +25,7 @@ def expect_response(fn):
     # Return the wrapper
     return _wrap
 
-
+@interface
 class PoolTask:
     '''
         Base pool task
@@ -45,14 +46,18 @@ class PoolTask:
             PoolTask._collector[cls.get_command()] = cls
         return res
 
+
     @classmethod
     @abc.abstractmethod 
+    @interface_argcount
     def get_command(cls) -> str:
         '''
             Returns the command string 
         '''
 
+
     @classmethod
+    @interface_argcount
     def get_poll_key(cls) -> str:
         '''
             Optional
@@ -62,6 +67,7 @@ class PoolTask:
         return cls.get_command()
 
     @classmethod
+    @interface_argcount
     def get_finalise_key(cls) -> str:
         '''
             Optional
@@ -71,6 +77,7 @@ class PoolTask:
         return cls.get_command() 
  
     @expect_response
+    @interface_argcount
     def __call__(self, pool_manager, *args, **kwargs):
         '''
         '''
@@ -78,6 +85,7 @@ class PoolTask:
         return res
     
     @abc.abstractmethod
+    @interface_argfilter(lambda base, instance: base.__code__.co_argcount <= instance.__code__.co_argcount) 
     def task(self, pool_manager, *args, **kwargs):    
         '''
             Task runner
@@ -101,6 +109,7 @@ class PoolTask:
             kwargs
         )
 
+@interface
 class PriorityWorkerTask(PoolTask):
     '''
         Task that redirects to the priority worker
@@ -112,8 +121,8 @@ class PriorityWorkerTask(PoolTask):
         res = super().__init_subclass__(*args, **kwargs)
         return res
 
-
     @classmethod
+    @interface_argcount
     def get_priority_worker_command(cls) -> str:
         '''
             Optional
@@ -122,6 +131,7 @@ class PriorityWorkerTask(PoolTask):
         '''
         return cls.get_command()
 
+    @interface_argfilter(lambda base, instance: base.__code__.co_argcount <= instance.__code__.co_argcount) 
     def task(self, pool_manager, *args, **kwargs):    
         '''
             Default task is a redirect and submit
