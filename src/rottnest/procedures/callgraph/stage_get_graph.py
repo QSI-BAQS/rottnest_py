@@ -1,6 +1,6 @@
-from rottnest.procedures import stage 
+from rottnest.procedures import procedure 
 from rottnest.process_pool.singleton import get_pool
-from rottnest.debug.util import with_debug_log
+
 
 STAGE_TAG = 'get_graph_stage'
 RESULTS_KEY = 'graph_results'
@@ -30,7 +30,6 @@ class GetGraphProcedure(procedure.RottnestCompilerProcedure):
         '''
         return GetGraphProcedure(graph_id=graph_id, results_ref=results_ref)
 
-    @with_debug_log()
     def abort_procedure(self):
         '''
            Override for the complete if set by the procedure manager 
@@ -38,14 +37,12 @@ class GetGraphProcedure(procedure.RottnestCompilerProcedure):
         self._complete = True
         self._was_aborted = True
 
-    @with_debug_log()
     def was_aborted(self):
         '''
            Checks to see if the procedure was aborted 
         '''
         return self._was_aborted
 
-    @with_debug_log()
     def try_retrieve(self, compiler_environment=None, reporting=True, single_pass=False):
         '''
            Attempts to retrieve the callgraph but may not eb able to do it immediately. 
@@ -60,10 +57,11 @@ class GetGraphProcedure(procedure.RottnestCompilerProcedure):
         else:
             self.results_ref[RESULTS_KEY] = callgraph_results
             return True
-        
 
-    def execute(self, compiler_environment=None, reporting=True, single_pass=False)\
-         -> bool | None:
+    def execute(
+            self,
+            compiler_environment=None,
+        ) -> bool | None:
         '''
            Executes/Dispatches a task to operate on the process pool
                - Get the process pool object
@@ -74,8 +72,7 @@ class GetGraphProcedure(procedure.RottnestCompilerProcedure):
         pool = get_pool()
         pool.get_callgraph(graph_id)
         
-    @with_debug_log()
-    def poll(self):
+    def poll(self, compiler_environment):
         '''
         Polling to check to see if we are to perform a transformation or
         even update the current procedure completion
@@ -83,7 +80,6 @@ class GetGraphProcedure(procedure.RottnestCompilerProcedure):
         if self._complete is not True:
             self._complete = self.try_retrieve()
         
-    @with_debug_log()
     def complete(self):
         '''
            Checks to see if the current procedure is complete or not 

@@ -2,7 +2,7 @@ from rottnest.procedures import stage
 from rottnest.process_pool.singleton import get_pool
 from rottnest.process_pool.pool_status import PoolStatus
 
-from . import stage_start_pool_manager
+from rottnest.procedures.pool import stage_start_pool_manager
 
 STAGE_TAG = 'Synch Pool'
 

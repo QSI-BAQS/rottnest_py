@@ -216,11 +216,3 @@ class RottnestCompilerStage(abc.ABC):
             Function to perform or re-trigger some incremental work for the stage
         '''
         pass
-
-
-    # def is_asynchronous(self):
-    #     '''
-    #         Asynch getter
-    #     '''
-    #     return self._asynchronous
-

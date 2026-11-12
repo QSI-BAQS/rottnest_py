@@ -9,7 +9,7 @@ from rottnest.process_pool.pool_status import PoolStatus
 
 RZ_COUNTER_ID = -1
 
-class PreprocessPass(StatusTracked):
+class PreprocessPass:
     '''
         Handles preprocessing
         Will likely be a template for the Rottnest `pass' structure

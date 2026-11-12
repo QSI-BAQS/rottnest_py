@@ -5,8 +5,9 @@
 '''
 from .stage import RottnestCompilerStage #,stage_tag
 from . import exceptions
+from rottnest.utils.interface import interface, interface_argcount
 
-
+@interface
 class RottnestCompilerProcedure(RottnestCompilerStage):
     '''
         Compiler pass manager
@@ -58,6 +59,7 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
             asynchronous = asynchronous
         )
 
+    @interface_argcount
     def execute(
             self,
             compiler_environment = None,
@@ -149,6 +151,7 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
 
             return self.complete() 
 
+    @interface_argcount
     def execute_blocking(
             self,
             compiler_environment = None
@@ -164,6 +167,7 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
         while not self.complete():
             self.poll(compiler_environment)
 
+    @interface_argcount
     def poll(self, compiler_environment = None):
         '''
             Polling function during asynchronous execution
@@ -183,6 +187,7 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
 
         self.execute(single_pass=True)
 
+    @interface_argcount
     def complete(self) -> bool:
         '''
             Check if this pass is complete
@@ -190,12 +195,14 @@ class RottnestCompilerProcedure(RottnestCompilerStage):
         results = len(self._stages_complete) == len(self._stages)
         return results
 
+    @interface_argcount
     def resolved(self, tag) -> bool:
         '''
             Check if a tag is resolved
         '''
         return tag in self._stages_complete
 
+    @interface_argcount
     def current_asynchronous_stages(self, tag): 
         '''
             Check if a tag is currently executing asynchronously

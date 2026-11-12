@@ -84,7 +84,8 @@ class BaseInterfaceTests(unittest.TestCase):
 
 if __name__ == '__main__':
     tst = BaseInterfaceTests()
-    #tst.test_argcount_validation_matching()
+
     tst.test_argcount_validation_not_matching()
+    tst.test_argcount_validation_matching()
 
     #unittest.main()

@@ -52,7 +52,12 @@ class GetGraphProcedure(procedure.RottnestCompilerProcedure):
             return True
         
 
-    def execute(self, compiler_environment=None, reporting=True, single_pass=False)\
+    def execute(
+        self,
+        compiler_environment=None,
+        *,
+        reporting=True,
+        single_pass=False)\
          -> bool | None:
         '''
            Executes/Dispatches a task to operate on the process pool
