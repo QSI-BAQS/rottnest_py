@@ -187,7 +187,9 @@ def init_subclass_wrapper(cls, *args, **kwargs):
     '''
         Inject over init subclass
     '''
-    cls._prev_init(*args, **kwargs)
+    # Uncommenting this triggers segfaults lol
+    # Looks like a race condition on the binding
+    #cls._prev_init(*args, **kwargs)
     Interface.validate_interface_implementation(cls)
 
 def validate_function_argcount(
