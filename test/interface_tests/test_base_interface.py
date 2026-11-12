@@ -3,7 +3,7 @@
 '''
 
 import unittest
-from rottnest.utils.interface import Interface, interface, interface_argcount, InterfaceSpecificationError
+from rottnest.utils.interface import Interface, interface, interface_argcount, interface_argfilter, InterfaceSpecificationError, InterfaceFilterError
 
 class BaseInterfaceTests(unittest.TestCase):
     '''
@@ -80,6 +80,43 @@ class BaseInterfaceTests(unittest.TestCase):
         except InterfaceSpecificationError:
             pass
         
+
+    def test_argfilter_validation_matching(self):
+        '''
+            Checks that a matching case does not throw an error 
+        '''
+
+        @interface
+        class A:
+            @interface_argfilter(lambda base, instance: True)
+            def foo(self, x):
+                pass
+
+        class B(A):
+            def foo(self, y, z):
+                pass
+
+    def test_argfilter_validation_not_matching(self):
+        '''
+            Checks that a matching case does not throw an error 
+        '''
+
+        @interface
+        class A:
+            @interface_argfilter(lambda base, instance: False)
+            def foo(self, x):
+                pass
+
+        try:
+            # This should throw an exception on instantiation
+            class B(A):
+                def foo(self, y, z):
+                    pass
+            assert False
+
+        except InterfaceFilterError:
+            pass
+            
 
 
 if __name__ == '__main__':

@@ -3,7 +3,13 @@
 '''
 from functools import partial, reduce
 
-class InterfaceSpecificationError(Exception):
+class RottnestInterfaceError(Exception):
+    '''
+        Base class for rottnest interface errors
+        Helps with catching type specific exceptions
+    '''
+
+class InterfaceSpecificationError(RottnestInterfaceError):
     '''
         Interface expects arguements by
     '''
@@ -13,7 +19,7 @@ class InterfaceSpecificationError(Exception):
         )
 
     
-class InterfaceArgnameError(Exception):
+class InterfaceArgnameError(RottnestInterfaceError):
     '''
         Interface expects a missing argument by name 
     '''
@@ -24,7 +30,20 @@ class InterfaceArgnameError(Exception):
         super().__init__(
             f"""Method {fn} is missing arguement {argname}"""
         )
-       
+
+
+class InterfaceFilterError(RottnestInterfaceError):       
+    '''
+        Interface filter function failed
+    '''
+    def __init__(self, fn, expr):
+        '''
+            Argname missing
+        '''
+        super().__init__(
+            f"""Method {fn} failed filter {expr}"""
+        )
+
 
 class Interface:
     '''
@@ -36,6 +55,7 @@ class Interface:
     _INTERFACES = {} 
     _COLLECTOR_ARGCOUNT = []
     _COLLECTOR_ARGNAME = []
+    _COLLECTOR_ARGFILTER = {}
 
     def __init__(
         self,
@@ -49,8 +69,12 @@ class Interface:
         self.base_cls = base_cls
         self.collected_argcount = Interface._COLLECTOR_ARGCOUNT
         self.collected_argname = Interface._COLLECTOR_ARGNAME
+        self.collected_argfilter = Interface._COLLECTOR_ARGFILTER
+
         Interface._COLLECTOR_ARGCOUNT = []
         Interface._COLLECTOR_ARGNAME = []
+        Interface._COLLECTOR_ARGNAME = {} 
+
         Interface._INTERFACES[base_cls] = self
     
     @classmethod
@@ -66,6 +90,10 @@ class Interface:
             Performs the argcount validation
         '''
         expected = base_fn.__code__.co_argcount
+    
+        # Catch classmethod wrappers
+        if isinstance(instance_fn, classmethod):
+            instance_fn = instance_fn.__func__
         observed = instance_fn.__code__.co_argcount
         if expected != observed:
             raise InterfaceSpecificationError(instance_fn, observed, expected)
@@ -83,6 +111,10 @@ class Interface:
             Performs the argname validation
             This is useful for kwargs matching
         '''
+        # Catch classmethod wrappers
+        if isinstance(instance_fn, classmethod):
+            instance_fn = instance_fn.__func__
+
         # Expected names
         # First N terms of co_varnames are the arguments
         expected = base_fn.__code__.co_varnames[:base_fn.__code__.co_argcount]
@@ -92,6 +124,30 @@ class Interface:
         for argname in expected:
             if argname not in observed:
                 raise InterfaceArgnameError(instance_fn, argname)
+
+    @classmethod
+    def validate_argfilter_decorator(cls, expr):
+        '''
+            Registers the class for argcount validation
+        '''
+        def _wrap(fn):
+            cls._COLLECTOR_ARGFILTER[fn] = expr
+            return fn
+        return _wrap 
+
+
+    def validate_argfilter(self, base_fn, instance_fn):
+        '''
+            Performs the argfilter validation
+        '''
+        expr = self.collected_argfilter[base_fn]
+ 
+        # Catch classmethod wrappers
+        if isinstance(instance_fn, classmethod):
+            instance_fn = instance_fn.__func__
+
+        if not expr(base_fn, instance_fn):
+            raise InterfaceFilterError(instance_fn, expr)
 
     @classmethod
     def validate_interface_implementation(cls, implementation: type):
@@ -113,8 +169,8 @@ class Interface:
             this object
         '''
         mapping_proxy = instance.__dict__
-        validation_fns = [self.validate_argcount, self.validate_argname]
-        collectors = [self.collected_argcount, self.collected_argname]  
+        validation_fns = [self.validate_argcount, self.validate_argname, self.validate_argfilter]
+        collectors = [self.collected_argcount, self.collected_argname, self.collected_argfilter]  
 
         # Run validators against collected objects 
         for base_fns, validator in zip(collectors, validation_fns):
@@ -138,6 +194,14 @@ def interface_argname(fn: callable):
         Dispatch to the interface decorator
     '''
     return Interface.validate_argname_decorator(fn)
+
+def interface_argfilter(expr):
+    '''
+        Dispatch to the interface decorator
+    '''
+    return Interface.validate_argfilter_decorator(expr)
+
+
 
 def recurse_bases(obj) -> tuple[type]:
     '''
