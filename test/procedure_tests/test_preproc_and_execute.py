@@ -21,11 +21,11 @@ class PreprocessorProcedureTest(unittest.TestCase):
         '''
         '''
         executables.load_modules_from_strings(test_utils.__file__)
-        executables.set_current_executable(
+        executables.set_current_option(
             SampleExecutable.get_name() 
         )
 
-        architectures.set_current_architecture(PreprocessorArchitecture.get_name())
+        architectures.set_current_option(PreprocessorArchitecture.get_name())
 
         procedure = preprocess_and_execute.PreprocAndExecuteProcedure(reporting=False)
         procedure.execute()

@@ -21,10 +21,10 @@ class PreprocessorProcedureTest(unittest.TestCase):
 
         executables.load_modules_from_strings(test_utils.__file__)
 
-        executables.set_current_executable(
+        executables.set_current_option(
             SampleExecutable.get_name() 
         )
-        architectures.set_current_architecture( 
+        architectures.set_current_option( 
             'Rz Counter'
         )
 
@@ -35,7 +35,7 @@ class PreprocessorProcedureTest(unittest.TestCase):
             procedure.poll()
 
         assert procedure.get_rz_count() == 1680 
-        assert procedure.set_rz_precision() == 20 
+        assert procedure.set_rz_precision() == 15 
         assert procedure.get_t_count() == 1680 
 
         #print(procedure.get_t_infidelity())

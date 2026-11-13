@@ -34,12 +34,12 @@ class PoolProcedureTest(unittest.TestCase):
         LayoutProxy.add_layout_with_id(layout_id, layout)
 
         # Setup the pool
-        architectures.set_current_architecture(
+        architectures.set_current_option(
             'Rz Counter' 
         )
 
         executables.load_modules_from_strings(test_utils.__file__)
-        executables.set_current_executable(
+        executables.set_current_option(
             SampleExecutable.get_name() 
         )
 

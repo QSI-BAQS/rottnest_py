@@ -16,20 +16,20 @@ class PreprocessorStageTest(unittest.TestCase):
     def test_stage_hotswap(self):
         swap_arch = preprocessor.stage_set_preproc_architecture.SetPreprocessingArchitectureStage()
         swap_arch.execute(None)
-        assert architectures.get_current_architecture().get_name() == 'Rz Counter' 
+        assert architectures.get_current_option().get_name() == 'Rz Counter' 
 
 
     def test_stage_reset(self):
 
         # Set an initial architecture
-        architectures.set_current_architecture(
+        architectures.set_current_option(
             'Rz Counter' 
         )
 
         swap_arch = preprocessor.stage_set_preproc_architecture.SetPreprocessingArchitectureStage()
         swap_arch.execute(None)
-        assert architectures.get_current_architecture().get_name() == 'Rz Counter' 
-        arch = architectures.get_current_architecture() 
+        assert architectures.get_current_option().get_name() == 'Rz Counter' 
+        arch = architectures.get_current_option() 
 
         class Obj:
            hotswap_architecture = swap_arch 
@@ -38,8 +38,8 @@ class PreprocessorStageTest(unittest.TestCase):
         reset_arch = preprocessor.stage_reset_preproc_architecture.ResetPreprocessingArchitectureStage() 
         reset_arch.execute(Obj)
         print("TST")
-        print("Arch:", architectures.get_current_architecture())
-#        assert architectures.get_current_architecture() is None
+        print("Arch:", architectures.get_current_option())
+#        assert architectures.get_current_option() is None
 
 
 

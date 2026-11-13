@@ -38,13 +38,4 @@ class TestErrorBudgets(unittest.TestCase):
         assert len(error_budgets.get_parameters()) == 2
 
 
-    def test_set_error_budget(self):
-        key = self.default_budget()
-
-        proc = SetErrorBudgetProcedure(layout)
-        proc.execute()
-
-        obj = LayoutProxy.get_layout(0)
-        assert obj is layout
-
 

@@ -44,7 +44,7 @@ class TestPatchers(unittest.TestCase):
     def test_null_patchers(self):
 
         executables.load_modules_from_strings(test_utils.__file__)
-        executables.set_current_executable(
+        executables.set_current_option(
             SampleExecutable.get_name() 
         )
 
@@ -65,7 +65,7 @@ class TestPatchers(unittest.TestCase):
             Tests that a pyliqtr hash can be added
         '''
         executables.load_modules_from_strings(test_utils.__file__)
-        executables.set_current_executable(
+        executables.set_current_option(
             SampleExecutable.get_name() 
         )
 
