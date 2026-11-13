@@ -241,7 +241,6 @@ def interface(cls):
     # The class constructor also performs registration
     Interface(cls)
 
-    cls._prev_init = cls.__init_subclass__
     # Needs to bind a classmethod to dynamically collect 
     # the subclass
     cls.__init_subclass__ = classmethod(init_subclass_wrapper)

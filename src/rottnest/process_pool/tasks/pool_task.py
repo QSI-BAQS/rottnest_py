@@ -2,31 +2,10 @@
     Base pool task
 '''
 import abc
-from rottnest.utils.interface import interface, interface_argcount, interface_argfilter
+from .pool_task_interface import PoolTaskInterface, expect_response
 
-def expect_response(fn):
-    '''
-        Behaviour check on whether a response is expected from this task 
-    '''
-    def _wrap(self, *args, **kwargs):
-        '''
-            Wrapper function
-        '''
-        result = fn(self, *args, **kwargs) 
 
-        if self.EXPECT_RESPONSE and result is None:
-            raise TypeError(f"{self.__class__.__name__} did not produce a response")
-
-        elif (not self.EXPECT_RESPONSE) and (result is not None): 
-            raise TypeError(f"{self.__class__.__name__} produced an unexpected response: {result}")
-
-        # Passed checks
-        return result
-    # Return the wrapper
-    return _wrap
-
-@interface
-class PoolTask:
+class PoolTask(PoolTaskInterface):
     '''
         Base pool task
     '''
@@ -48,16 +27,12 @@ class PoolTask:
 
 
     @classmethod
-    @abc.abstractmethod 
-    @interface_argcount
     def get_command(cls) -> str:
         '''
             Returns the command string 
         '''
 
-
     @classmethod
-    @interface_argcount
     def get_poll_key(cls) -> str:
         '''
             Optional
@@ -67,7 +42,6 @@ class PoolTask:
         return cls.get_command()
 
     @classmethod
-    @interface_argcount
     def get_finalise_key(cls) -> str:
         '''
             Optional
@@ -77,7 +51,6 @@ class PoolTask:
         return cls.get_command() 
  
     @expect_response
-    @interface_argcount
     def __call__(self, pool_manager, *args, **kwargs):
         '''
         '''
@@ -85,7 +58,6 @@ class PoolTask:
         return res
     
     @abc.abstractmethod
-    @interface_argfilter(lambda base, instance: base.__code__.co_argcount <= instance.__code__.co_argcount) 
     def task(self, pool_manager, *args, **kwargs):    
         '''
             Task runner
@@ -109,7 +81,6 @@ class PoolTask:
             kwargs
         )
 
-@interface
 class PriorityWorkerTask(PoolTask):
     '''
         Task that redirects to the priority worker
@@ -122,7 +93,6 @@ class PriorityWorkerTask(PoolTask):
         return res
 
     @classmethod
-    @interface_argcount
     def get_priority_worker_command(cls) -> str:
         '''
             Optional
@@ -131,7 +101,6 @@ class PriorityWorkerTask(PoolTask):
         '''
         return cls.get_command()
 
-    @interface_argfilter(lambda base, instance: base.__code__.co_argcount <= instance.__code__.co_argcount) 
     def task(self, pool_manager, *args, **kwargs):    
         '''
             Default task is a redirect and submit
