@@ -32,4 +32,11 @@ class PreprocAndExecuteProcedure(procedure.RottnestCompilerProcedure):
             dependencies=dependencies
         )
 
-        
+       
+    def get_results(self): 
+        '''
+            Helper function
+        '''
+        if self.complete():
+            return self.pool_procedure.get_results()
+        raise Exception("Procedure cannot emit results before it is compleete")
