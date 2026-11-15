@@ -20,15 +20,21 @@ class MockComputeUnit():
     def __init__(self, unit_id, qubit_labels=dict()):
         self.unit_id = unit_id
         self._qubit_labels = qubit_labels
+        self._measured_qubit_labels = []
 
     def get_qubit_labels(self):
         return self._qubit_labels
+
+    def get_measured_qubit_labels(self):
+        return self._measured_qubit_labels
 
 class MockCachable():
     def __init__(self, cache_v, qubits=[]):
         self.cache_hash = lambda *a, **ka: cache_v
         self.op = type("DummyOp", (), dict(qubits=qubits))()
         self.non_participatory_qubits = 0
+        self.input_symbols = []
+        self.output_symbols = []
 
 
 def mk_unit_res_pair_factory(res_type):
@@ -41,7 +47,6 @@ def mk_unit_res_pair_factory(res_type):
     return unit_res_pair_factory
 
 
-unit_res_pair = mk_unit_res_pair_factory(ResultsComposer)
 
 def generic_stack_frame(rottnest_hash=0):
     return ComposerStackFrame(rottnest_hash, ResultsComposer, {}, memory_manager=MemoryManager(ResultsComposer))
@@ -81,7 +86,7 @@ class TestMemoryManagerFrame():
         self.costs[cost_type] += len(labels)
 
     def cost_idle(self, n):
-        self.idle += n
+        self.idle += n.get_sequential_tocks()
 
 
 class TestMemoryManager(MemoryManager):
@@ -96,10 +101,10 @@ class TestMemoryManager(MemoryManager):
     def frame_pop(self, frame_id):
         pass
 
-    def frame_delete(self, frame_id, labels=None):
-        if labels is None:
-            labels = []
-        self.frames[frame_id].cost_labels(labels, TestMemoryManagerFrame.COST_DELETE)
+    def frame_delete(self, frame_id, qubit_labels=None):
+        if qubit_labels is None:
+            qubit_labels = []
+        self.frames[frame_id].cost_labels(qubit_labels, TestMemoryManagerFrame.COST_DELETE)
 
         res = self.ResultsComposer(self.frames[frame_id].costs)
 
@@ -120,20 +125,25 @@ class ComposerWithMemoryManager(RottnestComposer):
     def memory_manager_constructor():
         return TestMemoryManager
 
-
+    @staticmethod
+    def results_composer_constructor():
+        return ResultsComposerWithTocks
 
 class ResultsComposerWithTocks(ResultsComposer):
     '''
         ResultsComposer with "proper" tocks, so that idling can be
         tested
     '''
-    def __init__(self, result_obj=None, tocks=0, n_obj=1, unit_id=None, cached=False):
+    def __init__(self, result_obj=None, tocks=0, n_obj=1, unit_id=None, CACHED=False):
         self.tocks = tocks
         if result_obj is None:
             result_obj = {}
         super().__init__(result_obj=result_obj, n_obj=n_obj, unit_id=unit_id)
 
     def get_tocks(self):
+        return self.tocks
+
+    def get_sequential_tocks(self):
         return self.tocks
 
     def parallel_compose(self, other):
@@ -155,8 +165,10 @@ class ResultsComposerWithTocks(ResultsComposer):
     def __add__(self, other):
         self.__iadd__(other)
 
+unit_res_pair = mk_unit_res_pair_factory(ResultsComposerWithTocks)
 
 class TockCostingComposer(ComposerWithMemoryManager):
+
     @staticmethod
     def results_composer_constructor():
         return ResultsComposerWithTocks
@@ -246,7 +258,7 @@ class StackFrameTests(unittest.TestCase):
             frame.submit(MockComputeUnit(i))
 
         # Receive "last" result first
-        frame.receive(ResultsComposer({'val': unit_count}, unit_id=unit_count))
+        frame.receive(ResultsComposerWithTocks({'val': unit_count}, unit_id=unit_count))
 
         # Receive everything else
         for i in range(1, unit_count):
@@ -751,10 +763,12 @@ class MemoryManagerTests(unittest.TestCase):
 
         self.assertTrue(composer.complete())
 
-        res = composer.get_result()._obj
+        result = composer.get_result()
+        res = result._obj
 
         # Three labels passed in
-        self.assertEqual(res[TestMemoryManagerFrame.COST_INIT], 3)
+        self.assertEqual(res[TestMemoryManagerFrame.COST_INIT], 3 * result.get_sequential_tocks())
+
         # Idle == calls to receive (as get_tocks is fixed at 1, and there's no layering)
         self.assertEqual(res[TestMemoryManagerFrame.COST_DELETE], 0)
         self.assertEqual(res[TestMemoryManagerFrame.COST_LOAD], 0)

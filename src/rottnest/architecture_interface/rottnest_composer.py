@@ -66,7 +66,7 @@ class RottnestComposer(abc.ABC):
         # This returns a list of layout ids
         self.layouts = list(
             LayoutProxy.add_layout_with_id(*layout)
-            for layout in layouts
+            for layout in layouts.items()
         )
 
         # Memory management system
