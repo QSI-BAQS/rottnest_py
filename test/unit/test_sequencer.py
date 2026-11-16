@@ -62,7 +62,7 @@ class SequencerTest(unittest.TestCase):
         LayoutProxy.add_layout_with_id(self.layout_id, dummy_layout)
 
         # Load a layout that provides a trivial mem bound
-        architectures._force_set_current_architecture(SequencerArchitecture)
+        architectures._current_option = SequencerArchitecture
 
     def test_toffoli(self):
         SequencerArchitecture.set_mem_bound(1000)

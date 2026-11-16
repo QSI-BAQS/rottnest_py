@@ -17,6 +17,7 @@ def make_dummy_arch(mem_fn):
             return mem_fn(layout)
 
     class DummyArchitecture(RottnestArchitecture):
+
         @staticmethod
         def get_name():
             return "DummyArch"
@@ -109,7 +110,7 @@ class LayoutProxyTests(unittest.TestCase):
         arch_1 = make_dummy_arch(lambda l: l['mem_bound'])
         arch_2 = make_dummy_arch(lambda l: 2 * l['mem_bound'])
 
-        architectures._force_set_current_architecture(arch_1)
+        architectures._current_option = arch_1
 
         LayoutProxy.flush()
 
@@ -119,12 +120,11 @@ class LayoutProxyTests(unittest.TestCase):
         self.assertEqual(layout.num_registers, 10)
 
         # switch arch and force refresh
-        architectures._force_set_current_architecture(arch_2)
+        architectures._current_option(arch_2)
 
         LayoutProxy.force_proxy_refresh()
 
         self.assertEqual(layout.num_registers, 20)
-
 
 
 if __name__ == '__main__':

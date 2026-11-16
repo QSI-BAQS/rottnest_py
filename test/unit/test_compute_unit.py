@@ -24,7 +24,7 @@ class TestComputeUnitSanity(unittest.TestCase):
             Ensures that the exported information is correct
         '''
         cu = ComputeUnit(0)
-        cu.add_context(n_inputs=1, n_qubits=2, n_outputs=3, rz_tracker_dict={}, qubit_labels={})
+        cu.add_context(n_inputs=1, n_qubits=2, n_outputs=3, rz_tracker_dict={}, qubit_labels={}, measured_qubit_labels={})
 
         self.assertEqual(cu.export(), {'n_inputs':1, 'n_outputs':3, 'n_qubits':2})
 
