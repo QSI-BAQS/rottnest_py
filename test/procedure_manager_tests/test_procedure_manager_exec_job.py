@@ -1,5 +1,5 @@
 import unittest
-from rottnest.procedures.procedure_manager import ProcedureManager
+from rottnest.procedures.procedure_manager import ProcedureManagerSelector
 from rottnest.server.app.application import RottnestApplication
 
 from rottnest.plugins import architectures, executables
@@ -33,10 +33,10 @@ class ProcedureManagerTest(unittest.TestCase):
         executables.load_modules_from_strings(
             test_utils.__file__
         )
-        executables.set_current_executable(
+        executables.set_current_option(
             SampleExecutable.get_name() 
         )
-        architectures.set_current_architecture(
+        architectures.set_current_option(
             PreprocessorArchitecture.get_name()
         )
 
@@ -50,12 +50,9 @@ class ProcedureManagerTest(unittest.TestCase):
         #handler.join()
 
         i = 0
-        print("AWAIT", i, flush=True, end='')
         while procman.get_enqueued_size() > 0: 
             i += 1
             time.sleep(1)
-            print("\rAWAIT", i, flush=True, end='')
-        print("Finished")
 
 
 if __name__ == '__main__':

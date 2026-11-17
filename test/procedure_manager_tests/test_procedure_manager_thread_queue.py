@@ -69,7 +69,7 @@ class ProcedureExample(stage.RottnestCompilerStage):
         strfmt = f"{self.__class__.__name__}:{self.proc_id}:{self.executed}"
         return strfmt
 
-    def poll(self):
+    def poll(self, compiler_environment):
         self._complete = True
 
 class ProcedureManagerTest(unittest.TestCase):
