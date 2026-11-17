@@ -223,15 +223,16 @@ class CallGraphOperations(WebSocketOperationsSpecification):
         proc = state_object.get_procedure()
         graph_package = GET_RUNNODE_MSG_INVALID_TEMPLATE.copy()
 
-        if not proc.was_aborted():
-            callgraph_results = reader.read()
-            if callgraph_results is not None:
-                
-                item = callgraph_results.get_object()
-                visual_object = item[1].vis_obj
-                
-                graph_package = GET_RUNNODE_MSG_FINISH_TEMPLATE.copy()\
-                    .set_visualisation(visual_object)
+        # NOTE: Check was here but due to changes in procedures and stages
+        #       this resulted in interface breakage
+        callgraph_results = reader.read()
+        if callgraph_results is not None:
+            
+            item = callgraph_results.get_object()
+            visual_object = item[1].vis_obj
+            
+            graph_package = GET_RUNNODE_MSG_FINISH_TEMPLATE.copy()\
+                .set_visualisation(visual_object)
 
         
         actions.websocket_write(wsock, graph_package.build_and_package())
@@ -246,11 +247,16 @@ class CallGraphOperations(WebSocketOperationsSpecification):
         counter = state_object.get_counter()
         limit = state_object.get_limit()
         actions = wproxy.get_actions()
-        
-        proc.poll()
-        graph_package = GET_GRAPH_MSG_POLL_TEMPLATE.copy()\
-            .build_and_package()
-        actions.websocket_write(wsock, graph_package)
+
+        state_object.increment_counter()
+        if(counter < limit):
+            proc.poll()
+            graph_package = GET_GRAPH_MSG_POLL_TEMPLATE.copy().build_and_package()
+            actions.websocket_write(wsock, graph_package)
+        else:
+            graph_package = GET_GRAPH_MSG_INVALID_TEMPLATE.copy().build_and_package()
+            actions.websocket_write(wsock, graph_package)
+            
 
 
 
@@ -289,16 +295,17 @@ class CallGraphOperations(WebSocketOperationsSpecification):
         reader = state_object.get_reader()
         proc = state_object.get_procedure()
         graph_package = GET_GRAPH_MSG_INVALID_TEMPLATE.copy()
-        CallGraphOperations.GET_GRAPH_ACTIVE = False
+        CallGraphOperations.GET_GRAPH_ACTIVE = False # NOTE: ?
 
         
-        if not proc.was_aborted():
-            callgraph_results = reader.read()
-            if callgraph_results is not None:
-                # NOTE: Why is the id 1?
-                items = callgraph_results.get_object()[1]
-                results = self.translate_items(items)
-                graph_package = GET_GRAPH_MSG_FINISH_TEMPLATE.copy()\
-                    .set_graph(results)
+        # NOTE: Check was here but due to changes in procedures and stages
+        #       this resulted in interface breakage
+        callgraph_results = proc.get_graph()
+        if callgraph_results is not None:
+            items = callgraph_results[1]
+            results = self.translate_items(items)
+            graph_package = GET_GRAPH_MSG_FINISH_TEMPLATE.copy()\
+                .set_graph(results)
+
 
         actions.websocket_write(wsock, graph_package.build_and_package())

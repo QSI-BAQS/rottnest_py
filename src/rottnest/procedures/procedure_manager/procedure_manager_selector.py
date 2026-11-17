@@ -34,7 +34,7 @@ class ProcedureManagerSelector:
     '''
 
     # Selector instance itself
-    _selector_instance = None
+    _selector_instance: 'ProcedureManagerSelector | None' = None
 
     def __init__(self):
         '''
@@ -64,15 +64,23 @@ class ProcedureManagerSelector:
            Gets the instnace of the selector itself 
         '''
         if ProcedureManagerSelector._selector_instance is None:
-            ProcedureManagerSelector._selector_instance = \
-                ProcedureManagerSelector()
+            ProcedureManagerSelector._selector_instance = ProcedureManagerSelector()
         return ProcedureManagerSelector._selector_instance
+
+    @classmethod
+    def get_manager(cls, app: object | None = None) -> ProcedureManager:
+        '''
+           Will instantiate and return the selector and default manager 
+        '''
+        instance = cls.get_instance()
+        return instance.get_default(app)
 
     def get_default(self, app: object | None = None) -> ProcedureManager:
         '''
            Will return the ConcurrentProcedureManager for now
                Will allow for configuration later on
         '''
+            
         return self.get_concurrent_manager(app)
         
         
