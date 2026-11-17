@@ -105,3 +105,11 @@ class RzCollectionComposer(rottnest_composer.RottnestComposer):
     @staticmethod
     def results_composer_constructor():
         return RzCollectionResultsComposer
+
+    def get_postprocessing_data(self):
+        '''
+            Proxy function
+        '''
+        return {}
+
+
