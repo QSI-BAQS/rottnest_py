@@ -1,62 +1,21 @@
-from rottnest.procedures import procedure 
+from rottnest.procedures import stage
 from rottnest.process_pool.singleton import get_pool
 
 
-STAGE_TAG = 'get_graph_stage'
-RESULTS_KEY = 'graph_results'
+STAGE_TAG = 'get_graph'
 
-class GetGraphProcedure(procedure.RottnestCompilerProcedure): 
+class GetGraphStage(stage.RottnestCompilerStage): 
 
     TAG = STAGE_TAG
 
-    def __init__(self, *, tag=TAG, dependencies=None, asynchronous=True,\
-                 graph_id=None, results_ref: None | dict =None):
-
-        self.results_ref = dict()
-        if results_ref is not None:
-            self.results_ref = results_ref
-            self.results_ref[RESULTS_KEY] = None
-
+    def __init__(self, 
+        graph_id=None,
+        tag=None,
+        dependencies=None
+    ):
         self.graph_id = graph_id
-        self._complete = False
-        self._was_aborted = False
-        stages = []
-        super().__init__(None, stages=stages, tag=tag, dependencies=dependencies)
-
-    @classmethod
-    def construct_get_graph_proc(cls, results_ref: dict, graph_id: None | int =None):
-        '''
-           Factory method for constructing the procedure for this stage 
-        '''
-        return GetGraphProcedure(graph_id=graph_id, results_ref=results_ref)
-
-    def abort_procedure(self):
-        '''
-           Override for the complete if set by the procedure manager 
-        '''
-        self._complete = True
-        self._was_aborted = True
-
-    def was_aborted(self):
-        '''
-           Checks to see if the procedure was aborted 
-        '''
-        return self._was_aborted
-
-    def try_retrieve(self, compiler_environment=None, reporting=True, single_pass=False):
-        '''
-           Attempts to retrieve the callgraph but may not eb able to do it immediately. 
-        '''
-        
-        pool = get_pool()
-
-        callgraph_results = pool.get_callgraph_status()
-
-        if callgraph_results is None:
-            return False
-        else:
-            self.results_ref[RESULTS_KEY] = callgraph_results
-            return True
+        self._callgraph_results = None
+        super().__init__(asynchronous=True)
 
     def execute(
             self,
@@ -68,20 +27,26 @@ class GetGraphProcedure(procedure.RottnestCompilerProcedure):
                - Then afterwards, it will have some capability to query the
                    the process pool to extract a graph object 
         '''
-        graph_id = self.graph_id
         pool = get_pool()
-        pool.get_callgraph(graph_id)
+        pool.get_callgraph(self.graph_id)
         
     def poll(self, compiler_environment):
         '''
-        Polling to check to see if we are to perform a transformation or
-        even update the current procedure completion
+            Poll
         '''
-        if self._complete is not True:
-            self._complete = self.try_retrieve()
+        if self._complete:
+            return
+
+        pool = get_pool()
+        callgraph_results = pool.get_callgraph_status()
+
+        if callgraph_results is not None: 
+            self._complete = True
+            self._callgraph_results = callgraph_results
+
+    def __call__(self):
+        '''
+            Binding for namespace in environment
+        '''
+        return self._callgraph_results
         
-    def complete(self):
-        '''
-           Checks to see if the current procedure is complete or not 
-        '''
-        return self._complete
