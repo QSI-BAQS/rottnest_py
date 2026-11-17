@@ -1,6 +1,25 @@
 ## Rottnest 
 
-Python orchestrator for Rottnest
+Python backend for Rottnest - a utility scale fault-tolerant quantum compiler.
+This handles the server backend and is the main logic between different modules. 
+
+
+This repository handles the plugin interface for `executables`, `architectures`, `rz_decomposers` and `error_budgets`.
+Additionally it performs parsing and chunking of utility scale quantum algorithms that match the interface specification. 
+
+Currently supported languages:
+- Cirq
+- Qualtran
+- pyLIQTR 
+- QASM 2.0/3.0 (Cirq parsing subset)
+
+
+# Installation
+
+For pyLIQTR compatibility `rottnest` currently depends on Python 3.11. 
+It is suggested to set it up in a clean python environment (conda or venv) with the correct version. 
+For automatic plugin installation see the main rottnest repository which will also manage the installation of this repository. 
+
 
 ## Dependencies:
 
@@ -57,3 +76,11 @@ Once this is done now we can install the package
 ```
 python setup.py install
 ```
+
+# Execution
+
+The server entrypoint is `python src/rottnest/server/server.py`
+Additionally with the inclusion of the appropriate architecture plugin modules, `rottnest` may be used as a library.  
+See the `rottnest_example_executables` repository for some sample executable modules, along with `t_scheduler` or one of the other architecture modules to set up a simple build environment. 
+
+
