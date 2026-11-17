@@ -15,7 +15,7 @@ from rottnest.plugins import architectures
 
 class MultiQubitMeasureTest(unittest.TestCase):
     def test_measure_count(self):
-        architectures.set_current_architecture("Rz Counter")
+        architectures.set_current_option("Rz Counter")
 
         expected_measured_qubits = 32
         qb = [cirq.NamedQubit(str(x)) for x in range(expected_measured_qubits)]

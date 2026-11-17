@@ -8,8 +8,8 @@ from rottnest.architecture_interface.rottnest_worker import RottnestWorker, PING
 
 from queue import Empty
 
-def task(tsk, *args):
-    return (tsk, args)
+def task(tsk, *args, **kwargs):
+    return (tsk, args, kwargs)
 
 class MockQueue():
     def __init__(self, *contents):
@@ -149,8 +149,10 @@ class RottnestWorkerTest(unittest.TestCase):
             priority=True
         )
 
-        self.assertTrue((PING, PONG) in result_queue.get_received(), f"Expected (PING <task>, PONG <result>), got {result_queue.get_received()} instead")
+        self.assertTrue((PING, (PING, PONG)) in result_queue.get_received(), f"Expected (PING <task>, PONG <result>), got {result_queue.get_received()} instead")
 
 
 if __name__ == "__main__":
-    unittest.main()
+    tst = RottnestWorkerTest()
+    tst.test_priority_ping_pong()
+    #unittest.main()
