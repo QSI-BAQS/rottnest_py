@@ -7,7 +7,7 @@ from rottnest.procedures.procedure_manager import MPSCChannelProvider
 from rottnest.procedures.procedure_manager.mpsc_common import MPSC_VISUALISER_CHANNEL_TAG
 
 
-STAGE_TAG = 'run_visualiser'
+STAGE_TAG = 'get_visualiser'
 
 class RunVisualiserStage(stage.RottnestCompilerStage):
     TAG = STAGE_TAG
@@ -64,13 +64,6 @@ class RunVisualiserStage(stage.RottnestCompilerStage):
                 if self._writer:
                     self._writer.write(obj)
                                   
-
-    def complete(self):
-        '''
-            Returns a complete state  
-        '''
-        return self._complete
-
     def get_result(self):
         '''
             Getter function for the result
