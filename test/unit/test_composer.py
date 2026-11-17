@@ -52,7 +52,7 @@ def generic_stack_frame(rottnest_hash=0):
     return ComposerStackFrame(rottnest_hash, ResultsComposer, {}, memory_manager=MemoryManager(ResultsComposer))
 
 def generic_composer(composer_type=RottnestComposer):
-    return composer_type({0:"dummy_layout"}, [])
+    return composer_type([(0,"dummy_layout"),], [])
 
 
 class TestMemoryManagerFrame():
@@ -1098,4 +1098,6 @@ class MemoryManagerTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    tst = MemoryManagerTests()
+    tst.test_memory_trivial_tocks()
+    #unittest.main()

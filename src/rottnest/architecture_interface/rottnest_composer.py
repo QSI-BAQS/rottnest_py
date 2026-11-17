@@ -3,7 +3,6 @@
 
     This class handles program logic relating
     to the composition of widgets
-
 '''
 import abc
 
@@ -54,6 +53,9 @@ class RottnestComposer(abc.ABC):
         return Postprocessor
 
     def __init__(self, layouts: dict, qubits):
+        '''
+            Constructor
+        '''
         # Tracks qubits irrespective of renaming
         self.qubit_map = {qubit:i for i, qubit in enumerate(qubits)}
 
@@ -66,7 +68,7 @@ class RottnestComposer(abc.ABC):
         # This returns a list of layout ids
         self.layouts = list(
             LayoutProxy.add_layout_with_id(*layout)
-            for layout in layouts.items()
+            for layout in layouts
         )
 
         # Memory management system
