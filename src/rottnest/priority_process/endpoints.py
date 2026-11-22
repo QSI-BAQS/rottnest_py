@@ -22,12 +22,21 @@ def reload_visualiser(fn):
         return res
     return _wrap
 
+def reload_callgraph(fn):
+    def _wrap(*args, **kwargs):
+        CallGraph.reset()
+        res = fn(*args, **kwargs)
+        return res
+    return _wrap
+
+
 def synchronise_modules(module_keys: dict):
     '''
         Synchronises the modules
     '''
     LoadModulesProcedure(module_keys).execute()
 
+@reload_callgraph
 @reload_visualiser
 def set_options(options_setter: dict):
     '''
@@ -47,7 +56,7 @@ def set_options(options_setter: dict):
         if plugin_tag == executables.get_plugin_tag():
             DecompositionPatchProcedure().execute()
 
-
+@reload_callgraph
 def set_option(plugin_tag, option_key, parameters):
     '''
         Sets an option
@@ -65,7 +74,7 @@ def set_option(plugin_tag, option_key, parameters):
     if plugin_tag == executables.get_plugin_tag():
         DecompositionPatchProcedure().execute()
 
-
+@reload_callgraph
 def synchronise_layouts(layouts:dict):
     '''
         Synchronises layouts

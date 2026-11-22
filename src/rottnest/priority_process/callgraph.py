@@ -24,6 +24,17 @@ class CallGraph:
     curr_executable_id = None
 
     @classmethod
+    def reset(cls):
+        '''
+            Forces a reset on the Callgraph
+            Triggered on update
+        '''
+        cls.view_cache = {}
+        cls.hash_cache = {}
+        cls.curr_executable_id = None
+
+
+    @classmethod
     def generate_root_node(cls):
         '''
             Generates the root node of the graph

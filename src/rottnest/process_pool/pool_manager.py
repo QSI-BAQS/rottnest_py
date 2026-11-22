@@ -220,7 +220,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
             ),
         )
 
-
     def submit_priority(
         self,
         priority_command: str,
@@ -285,7 +284,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
             # TODO better error handling
             print("Composer not set")
             return "ERROR" 
-       
 
     def initialise_composer(self, layouts, executable):
         '''
@@ -325,7 +323,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
             proc.start()
         self.pool_running = True
 
-
     def construct_worker_queues(self):
         '''
             Rebuilds communication queues for workers
@@ -340,7 +337,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
 
         # Manager object for worker callback
         self.worker_ipc = IPCManager(self.worker_result_queue)
-
 
     def run_task(self, task_queue=None, completion_queue=None, TIMEOUT=0.25):
         '''
@@ -742,7 +738,6 @@ class ComputeUnitExecutorPoolManager(StatusTracked, SingleInstantiation):
         '''
         if not self.manager_priority_task_queue.empty():
             self.run_priority_task()
-
 
     def check_priority_result(self):
         # Check if process is alive

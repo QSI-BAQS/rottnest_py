@@ -7,9 +7,13 @@ from rottnest.compute_units.layout_proxy import LayoutProxy
 STAGE_TAG = 'synchronise_layouts_stage'
 
 class SynchroniseLayoutsStage(stage.RottnestCompilerStage):
+    '''
+        Stage for layout synchronisation
+        Sets up the layouts then forces a mem bound refresh
+    '''
     TAG = STAGE_TAG
 
-    def __init__(self, layouts: dict, *, tag=None, dependencies=None):
+    def __init__(self, layouts: tuple[int, "Layout"], *, tag=None, dependencies=None):
         '''
             Takes a dicitionary with keys as layout ids and values
              as layouts
@@ -35,5 +39,5 @@ class SynchroniseLayoutsStage(stage.RottnestCompilerStage):
             LayoutProxy.add_layout_with_id(
                 layout_id, layout_json
             )
-
+        LayoutProxy.force_proxy_refresh()
         self._complete = True
